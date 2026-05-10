@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "agent",
+            "if": "Bash(git commit*)",
+            "statusMessage": "Dokumentation wird geprüft und aktualisiert...",
+            "timeout": 120,
+            "prompt": "Ein git-Commit wurde versucht. Führe alle Schritte aus deiner Agenten-Definition durch (docs-agent). Prüfe mit 'git diff --cached --name-only' welche Dateien gestagt sind. Ergänze fehlende Docstrings, aktualisiere CHANGELOG.md, README.md und AGENTS.md wo nötig. Stage alle Dokumentationsänderungen mit 'git add' nach. Wenn alles vollständig ist: {\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}}. Bei unbehebbaren Lücken: {\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Dokumentation unvollständig: <Details>\"}}"
+          },
+          {
+            "type": "agent",
+            "if": "Bash(git commit*)",
+            "statusMessage": "Tests werden geprüft...",
+            "timeout": 300,
+            "prompt": "Ein git-Commit wurde versucht. Führe jetzt alle Tests aus mit: python -m pytest --tb=short -q\n\nFalls ALLE Tests bestehen: gib genau dieses JSON aus und beende:\n{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}}\n\nFalls Tests FEHLSCHLAGEN: Analysiere die Fehler sorgfältig.\n- Liegt der Fehler an veraltetem Testcode (neues Interface, umbenannte Funktion)? → Passe die Tests an.\n- Liegt der Fehler an einem echten Bug im Quellcode? → Repariere den Bug.\nFühre die Tests nach jeder Änderung erneut aus. Maximal 3 Reparaturversuche.\n\nWenn nach den Versuchen alle Tests grün sind: erlaube den Commit mit dem allow-JSON oben.\nWenn die Tests immer noch fehlschlagen: gib genau dieses JSON aus:\n{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Tests fehlgeschlagen – bitte manuell prüfen: <Fehlerzusammenfassung>\"}}"
+          }
+        ]
+      }
+    ]
+  }
+}

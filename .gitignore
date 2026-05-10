@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+*.egg
+
+# Modell-Dateien (zu groß für Git)
+*.safetensors
+*.gguf
+*.pt
+*.ckpt
+*.bin
+*.pth
+fix_5d_tensors_*.safetensors
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Lokale Konfiguration
+.claude/settings.local.json
+.env
+
+# OS
+.DS_Store
+Thumbs.db
