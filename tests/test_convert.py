@@ -219,3 +219,25 @@ class TestStripPrefix:
         sd = {"blocks.0.weight": torch.zeros(1), "blocks.1.weight": torch.zeros(1)}
         result = strip_prefix(sd)
         assert set(result.keys()) == {"blocks.0.weight", "blocks.1.weight"}
+
+
+# ---------------------------------------------------------------------------
+# 5D-Tensor-Handling: mehrere 5D-Tensoren dürfen nicht crashen (Issue #291)
+# ---------------------------------------------------------------------------
+
+class TestFiveDTensorHandling:
+    def test_multiple_5d_tensors_append(self, tmp_path, monkeypatch):
+        """Two 5D tensors for the same arch must both land in the fix file."""
+        monkeypatch.chdir(tmp_path)
+        arch = ModelWan()
+
+        data1 = np.zeros((2, 3, 4, 5, 6), dtype=np.float32)
+        data2 = np.zeros((1, 2, 3, 4, 5), dtype=np.float32)
+
+        arch.handle_nd_tensor("rope.freqs", data1)
+        arch.handle_nd_tensor("rope.freqs2", data2)   # must not raise
+
+        from safetensors.torch import load_file
+        fix = load_file(f"fix_5d_tensors_wan.safetensors")
+        assert "rope.freqs" in fix
+        assert "rope.freqs2" in fix

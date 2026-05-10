@@ -3,7 +3,7 @@
 import os
 import torch
 from tqdm import tqdm
-from safetensors.torch import save_file
+from safetensors.torch import load_file, save_file
 
 QUANTIZATION_THRESHOLD = 1024
 REARRANGE_THRESHOLD = 512
@@ -93,11 +93,18 @@ class ModelHyVid(ModelTemplate):
     ]
 
     def handle_nd_tensor(self, key, data):
-        """Write 5D tensor to a side-car safetensors file for later re-insertion."""
+        """Write 5D tensor to a side-car safetensors file for later re-insertion.
+
+        Appends to an existing fix file so models with multiple 5D tensors
+        (e.g. Wan VACE) don't crash on the second occurrence.
+        """
         path = f"./fix_5d_tensors_{self.arch}.safetensors"
+        existing = {}
         if os.path.isfile(path):
-            raise RuntimeError(f"5D tensor fix file already exists: {path}")
-        save_file({key: torch.from_numpy(data)}, path)
+            # Clone to release the mmap before overwriting the file (Windows)
+            existing = {k: v.clone() for k, v in load_file(path).items()}
+        existing[key] = torch.from_numpy(data)
+        save_file(existing, path)
         tqdm.write(f"5D tensor exported for manual fix: {key} {data.shape}")
 
 
