@@ -722,5 +722,4 @@ if __name__ == "__main__":
         theme=_THEME,
         css=CSS,
         head=_SCROLL_BLOCK_HEAD,
-        analytics_enabled=False,  # belt-and-suspenders: also passed at launch time
     )
