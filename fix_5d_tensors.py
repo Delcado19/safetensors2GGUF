@@ -38,27 +38,46 @@ def _read_file_type(reader):
     return gguf.LlamaFileType(int(field.parts[field.data[-1]].flat[0]))
 
 
-def _add_5d_tensor(writer, key, data):
+def _add_5d_tensor(writer, key, data, on_log=None):
     """Write a single 5D tensor as F32 into the GGUF writer."""
     arr = data.numpy() if isinstance(data, torch.Tensor) else data
     arr = arr.astype(np.float32)
     quantized = gguf.quants.quantize(arr, gguf.GGMLQuantizationType.F32)
     writer.add_tensor(key, quantized, raw_dtype=gguf.GGMLQuantizationType.F32)
-    tqdm.write(f"  inserting 5D tensor: {key} {arr.shape}")
+    msg = f"  inserting 5D tensor: {key} {arr.shape}"
+    if on_log:
+        on_log(msg)
+    else:
+        tqdm.write(msg)
 
 
-def fix_5d_tensors(src_path, dst_path, fix_path=None, overwrite=False):
+def fix_5d_tensors(src_path, dst_path, fix_path=None, overwrite=False, on_progress=None, on_log=None):
     """Insert 5D tensors from fix_path into src GGUF and write to dst_path.
 
-    Returns the list of inserted tensor keys.
+    Args:
+        src_path: Quantized source GGUF file.
+        dst_path: Output GGUF path.
+        fix_path: Side-car safetensors file. Auto-detected when None.
+        overwrite: Skip output existence check.
+        on_progress: Callback(idx, total, key) for each tensor copied.
+        on_log: Callback(msg) for informational messages. Uses logging when None.
+
+    Returns:
+        List of inserted tensor keys.
     """
+    def _info(msg):
+        if on_log:
+            on_log(f"INFO:  {msg}")
+        else:
+            logging.info(msg)
+
     if not os.path.isfile(src_path):
         raise FileNotFoundError(f"Source GGUF not found: {src_path}")
 
     reader = gguf.GGUFReader(src_path)
     arch = _read_arch(reader)
     file_type = _read_file_type(reader)
-    logging.info(f"Source arch: '{arch}'  file_type: {file_type}")
+    _info(f"Source arch: '{arch}'  file_type: {file_type}")
 
     if fix_path is None:
         fix_path = f"./fix_5d_tensors_{arch}.safetensors"
@@ -67,7 +86,7 @@ def fix_5d_tensors(src_path, dst_path, fix_path=None, overwrite=False):
 
     # Clone immediately to release the mmap before writing (Windows)
     fix_sd = {k: v.clone() for k, v in load_file(fix_path).items()}
-    logging.info(f"5D tensors to insert: {list(fix_sd.keys())}")
+    _info(f"5D tensors to insert: {list(fix_sd.keys())}")
 
     if os.path.isfile(dst_path) and not overwrite:
         raise OSError(f"Output exists, use --overwrite: {dst_path}")
@@ -78,28 +97,33 @@ def fix_5d_tensors(src_path, dst_path, fix_path=None, overwrite=False):
         writer.add_file_type(file_type)
 
     inserted = []
+    all_tensors = list(reader.tensors)
+    total = len(all_tensors)
+    iter_tensors = tqdm(all_tensors, desc="Copying tensors") if on_progress is None else all_tensors
 
-    for tensor in tqdm(reader.tensors, desc="Copying tensors"):
+    for idx, tensor in enumerate(iter_tensors):
+        if on_progress is not None:
+            on_progress(idx + 1, total, tensor.name)
         writer.add_tensor(tensor.name, tensor.data, raw_dtype=tensor.tensor_type)
 
         # Insert 5D tensor after its bias counterpart if present
         candidate = tensor.name.replace(".bias", ".weight")
         if candidate in fix_sd and candidate not in inserted:
-            _add_5d_tensor(writer, candidate, fix_sd[candidate])
+            _add_5d_tensor(writer, candidate, fix_sd[candidate], on_log=on_log)
             inserted.append(candidate)
 
     # Insert any remaining 5D tensors not yet placed
     for key, data in fix_sd.items():
         if key not in inserted:
-            _add_5d_tensor(writer, key, data)
+            _add_5d_tensor(writer, key, data, on_log=on_log)
             inserted.append(key)
 
     writer.write_header_to_file(path=dst_path)
     writer.write_kv_data_to_file()
-    writer.write_tensors_to_file(progress=True)
+    writer.write_tensors_to_file(progress=on_log is None)
     writer.close()
 
-    logging.info(f"Written: {dst_path}  (inserted {len(inserted)} 5D tensors)")
+    _info(f"Written: {dst_path}  (inserted {len(inserted)} 5D tensors)")
     return inserted
 
 

@@ -241,3 +241,36 @@ class TestFiveDTensorHandling:
         fix = load_file(f"fix_5d_tensors_wan.safetensors")
         assert "rope.freqs" in fix
         assert "rope.freqs2" in fix
+
+
+# ---------------------------------------------------------------------------
+# Float8 dtype handling — regression for Lumina2 (Issue: nan_to_num unsupported)
+# ---------------------------------------------------------------------------
+
+class TestFloat8Handling:
+    @pytest.mark.skipif(
+        not hasattr(torch, "float8_e4m3fn"),
+        reason="float8_e4m3fn not available in this PyTorch build",
+    )
+    def test_float8_e4m3fn_does_not_raise(self, tmp_path):
+        """handle_tensors must convert float8 to float16 before nan_to_num."""
+        import tempfile
+
+        class _FakeWriter:
+            def add_array(self, *a, **kw): pass
+            def add_tensor(self, *a, **kw): pass
+
+        sd = {"img_mod.weight": torch.zeros(256, 256, dtype=torch.float8_e4m3fn)}
+        handle_tensors(_FakeWriter(), sd, ModelLumina2())  # must not raise
+
+    @pytest.mark.skipif(
+        not hasattr(torch, "float8_e5m2"),
+        reason="float8_e5m2 not available in this PyTorch build",
+    )
+    def test_float8_e5m2_does_not_raise(self, tmp_path):
+        class _FakeWriter:
+            def add_array(self, *a, **kw): pass
+            def add_tensor(self, *a, **kw): pass
+
+        sd = {"img_mod.weight": torch.zeros(256, 256, dtype=torch.float8_e5m2)}
+        handle_tensors(_FakeWriter(), sd, ModelLumina2())  # must not raise

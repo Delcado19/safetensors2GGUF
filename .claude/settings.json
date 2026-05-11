@@ -25,7 +25,8 @@
   "permissions": {
     "allow": [
       "Bash(uv run pytest*)",
-      "Bash(pytest*)"
+      "Bash(pytest*)",
+      "Bash(uv run pytest --tb=short -q)"
     ]
   }
 }

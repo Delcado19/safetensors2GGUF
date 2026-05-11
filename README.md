@@ -1,6 +1,12 @@
 # safetensors2GGUF
 
-Converts Safetensors models to the GGUF format for use with llama.cpp and ComfyUI-GGUF.
+Converts Safetensors / CKPT model checkpoints to GGUF format for use with
+**llama.cpp** and **ComfyUI-GGUF**.
+
+Supports direct Python quantization (F32 / F16 / BF16 / Q8_0) and
+K-quant quantization via a bundled `llama-quantize` binary (Q6_K, Q5_K_M,
+Q4_K_M, Q4_K_S, Q3_K_M, Q2_K).  A Gradio web UI with file browser,
+quantization selector, live size estimate, and cancel button is included.
 
 ## Supported Architectures
 
@@ -21,51 +27,100 @@ Converts Safetensors models to the GGUF format for use with llama.cpp and ComfyU
 ## Installation
 
 ```bash
-pip install -r requirements.txt
+# Install uv (https://docs.astral.sh/uv/) then:
+uv sync
 ```
 
-### Dependencies
-
-```
-gguf
-torch
-safetensors
-tqdm
-```
-
-## Usage
+<details>
+<summary>Using pip instead</summary>
 
 ```bash
-python convert.py --src <path/to/model.safetensors> --dst <output.gguf>
+pip install gguf torch safetensors tqdm gradio
+```
+
+</details>
+
+## Web UI (recommended)
+
+Double-click **`start_gui.bat`** — the browser opens automatically.
+
+Or from the terminal:
+
+```bash
+uv run python gui.py
+```
+
+The UI provides:
+- **File browser** to select the source model without typing paths
+- **Quantization dropdown** with 10 curated levels (see table below)
+- **Live status bar** with percentage embedded in text; scroll-blocked so streaming updates never hijack the viewport
+- **Automatic pipeline** — K-quants trigger a 2-step convert → quantize run;
+  5D tensor insertion (HunyuanVideo / Wan) is chained automatically when needed
+
+## Quantization Levels
+
+| Key | Bits | Backend | Notes |
+|---|---|---|---|
+| `F32` | 32 | Python | Full precision, largest |
+| `F16` | 16 | Python | Half precision, standard default |
+| `BF16` | 16 | Python | Brain float, best for BF16 source models |
+| `Q8_0` | 8 | Python | Very high quality |
+| `Q6_K` | 6 | llama-quantize | Very high quality |
+| `Q5_K_M` | 5 | llama-quantize | High quality |
+| `Q4_K_M` | 4 | llama-quantize | **Recommended** — good quality / size balance |
+| `Q4_K_S` | 4 | llama-quantize | Good quality, smaller |
+| `Q3_K_M` | 3 | llama-quantize | Moderate quality |
+| `Q2_K` | 2 | llama-quantize | Smallest, lowest quality |
+
+K-quants (marked *llama-quantize*) require `llama-quantize.exe`.
+The default path is detected automatically from:
+`H:\ComfyUI-Easy-Install\Add-Ons\Tools\llama.cpp\llama-quantize.exe`
+
+A custom path can be set in the **Advanced** section of the Web UI.
+
+## CLI Usage
+
+```bash
+# Convert to F16 GGUF (auto-detects output name)
+uv run python convert.py --src model.safetensors
+
+# Specify output path
+uv run python convert.py --src model.safetensors --dst model-F16.gguf --overwrite
 ```
 
 ### Options
 
 | Option | Description |
 |---|---|
-| `--src` | Path to the source file (`.safetensors`, `.ckpt`, `.pt`, `.bin`) |
-| `--dst` | Output path for the GGUF file (optional, auto-generated if omitted) |
+| `--src` | Source file (`.safetensors`, `.ckpt`, `.pt`, `.bin`, `.pth`) |
+| `--dst` | Output GGUF path — auto-generated when omitted |
+| `--overwrite` | Skip confirmation if output already exists |
 
-### Output Format
+### 5D Tensor Post-processing (HunyuanVideo / Wan — CLI only)
 
-The generated GGUF file contains:
-- Tensors in **F16** or **BF16** (depending on source dtype)
-- 1D tensors and small tensors (≤ 1024 elements) always in **F32**
-- Metadata for architecture and quantization version
-
-### Post-processing of 5D Tensors (HunyuanVideo / Wan)
-
-Some models contain 5D tensors that GGUF does not support directly.
-These are offloaded to a separate file during conversion:
+When using the Web UI, 5D tensor insertion is applied automatically after
+llama-quantize.  For manual CLI workflows:
 
 ```bash
-# After conversion:
-python fix_5d_tensors.py --src <output.gguf> --dst <final.gguf>
+# 1. Convert to F16
+uv run python convert.py --src model.safetensors
+
+# 2. Quantize with llama-quantize (external step)
+llama-quantize.exe model-F16.gguf model-Q8_0.gguf Q8_0
+
+# 3. Insert 5D tensors
+uv run python fix_5d_tensors.py --src model-Q8_0.gguf --dst model-Q8_0-fixed.gguf
 ```
 
 ## Known Issues
 
 See [Issues Analysis](docs/issues_analysis.md) for common errors and their fixes.
+
+## Running Tests
+
+```bash
+uv run pytest
+```
 
 ## License
 
