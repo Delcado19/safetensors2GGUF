@@ -8,6 +8,11 @@ import threading
 from pathlib import Path
 from typing import Generator
 
+# Disable Gradio telemetry/analytics before the library is imported so that no
+# outbound HTTP requests are made at startup (HuggingFace telemetry endpoint,
+# pkg-version check, Google Fonts CDN are all suppressed).
+os.environ.setdefault("GRADIO_ANALYTICS_ENABLED", "False")
+
 import gradio as gr
 
 from convert import ConversionCancelled, convert_file
@@ -16,7 +21,7 @@ from quantize import (
     ALL_QUANT_CHOICES,
     LLAMA_QUANT_KEYS,
     PYTHON_PRECISIONS,
-    SIZE_RATIOS,
+    estimate_output_size,
     find_exe,
     run_quantize,
 )
@@ -142,19 +147,24 @@ def _fmt_size(bytes_: float) -> str:
 
 
 def update_size_estimate(src: str, quant_key: str) -> str:
-    """Return a Markdown string estimating the output file size for the selected quant type.
+    """Return a Markdown string with the estimated output size.
 
-    Returns an empty string when src is absent or not a file.
+    For .safetensors sources the safetensors header is analysed (no tensor
+    data loaded) so that F32-forced tensors and quantizable tensors are
+    counted separately — gives accurate results for diffusion models where
+    a large fraction of parameters are 1D/small (norms, biases, embeddings).
+    For other formats a source_size × SIZE_RATIOS fallback is used.
     """
-    if not src or not os.path.isfile(src.strip()):
+    src = (src or "").strip()
+    est = estimate_output_size(src, quant_key)
+    if est is None:
         return ""
-    src_bytes = os.path.getsize(src.strip())
-    ratio = SIZE_RATIOS.get(quant_key, 1.0)
-    est = src_bytes * ratio
+    src_bytes = os.path.getsize(src) if os.path.isfile(src) else 0
     line = f"Estimated output: **{_fmt_size(est)}**"
-    if ratio < 1.0:
-        line += f" &nbsp;·&nbsp; {(1 - ratio) * 100:.0f}% smaller than source ({_fmt_size(src_bytes)})"
-    elif ratio > 1.0:
+    if src_bytes > 0 and est < src_bytes:
+        pct = (1 - est / src_bytes) * 100
+        line += f" &nbsp;·&nbsp; {pct:.0f}% smaller than source ({_fmt_size(src_bytes)})"
+    elif src_bytes > 0 and est > src_bytes:
         line += f" &nbsp;·&nbsp; source: {_fmt_size(src_bytes)}"
     return line
 
@@ -223,8 +233,9 @@ _THEME = gr.themes.Soft(
     primary_hue="blue",
     secondary_hue="sky",
     neutral_hue="slate",
-    font=[gr.themes.GoogleFont("Inter"), "ui-sans-serif", "sans-serif"],
-    font_mono=[gr.themes.GoogleFont("JetBrains Mono"), "ui-monospace", "monospace"],
+    # Plain font names (no GoogleFont) to avoid CDN requests at startup
+    font=["Inter", "ui-sans-serif", "sans-serif"],
+    font_mono=["JetBrains Mono", "ui-monospace", "monospace"],
 )
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -706,4 +717,10 @@ _SCROLL_BLOCK_HEAD = (
 )
 
 if __name__ == "__main__":
-    build_app().launch(inbrowser=True, theme=_THEME, css=CSS, head=_SCROLL_BLOCK_HEAD)
+    build_app().launch(
+        inbrowser=True,
+        theme=_THEME,
+        css=CSS,
+        head=_SCROLL_BLOCK_HEAD,
+        analytics_enabled=False,  # belt-and-suspenders: also passed at launch time
+    )

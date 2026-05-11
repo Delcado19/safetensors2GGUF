@@ -7,11 +7,17 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+import json
+import struct
+
 from quantize import (
     ALL_QUANT_CHOICES,
     LLAMA_QUANT_KEYS,
     PYTHON_PRECISIONS,
     SIZE_RATIOS,
+    _QUANT_BYTES_PER_ELEM,
+    _QUANTIZATION_THRESHOLD,
+    estimate_output_size,
     find_exe,
     run_quantize,
 )
@@ -213,3 +219,107 @@ class TestRunQuantize:
 
         kwargs = mock_popen.call_args[1]
         assert kwargs.get("bufsize") == 1, "bufsize=1 required to avoid buffering delay"
+
+
+# ---------------------------------------------------------------------------
+# estimate_output_size / _estimate_from_safetensors
+# ---------------------------------------------------------------------------
+
+def _make_safetensors(tmp_path, tensors: dict) -> str:
+    """Write a minimal safetensors file with the given tensor metadata.
+
+    tensors: { name: {"dtype": "F16", "shape": [...]} }
+    """
+    header = {}
+    offset = 0
+    for name, meta in tensors.items():
+        import math
+        n = math.prod(meta["shape"]) if meta["shape"] else 1
+        dtype_bytes = {"F32": 4, "F16": 2, "BF16": 2, "I32": 4}.get(meta["dtype"], 2)
+        nbytes = n * dtype_bytes
+        header[name] = {
+            "dtype": meta["dtype"],
+            "shape": meta["shape"],
+            "data_offsets": [offset, offset + nbytes],
+        }
+        offset += nbytes
+    header_json = json.dumps(header).encode("utf-8")
+    path = str(tmp_path / "model.safetensors")
+    with open(path, "wb") as fh:
+        fh.write(struct.pack("<Q", len(header_json)))
+        fh.write(header_json)
+        fh.write(b"\x00" * offset)  # dummy tensor data
+    return path
+
+
+class TestEstimateOutputSize:
+    def test_returns_none_for_missing_file(self):
+        assert estimate_output_size("/nonexistent/model.safetensors", "Q4_K_M") is None
+
+    def test_returns_none_for_empty_src(self):
+        assert estimate_output_size("", "Q4_K_M") is None
+
+    def test_1d_tensor_counted_as_f32(self, tmp_path):
+        # BF16 source, 1D tensor → must be stored as F32 (4 bytes/elem)
+        path = _make_safetensors(tmp_path, {
+            "norm.weight": {"dtype": "BF16", "shape": [1024]},
+        })
+        est = estimate_output_size(path, "Q4_K_M")
+        assert est == 1024 * 4  # F32
+
+    def test_small_tensor_counted_as_f32(self, tmp_path):
+        path = _make_safetensors(tmp_path, {
+            "tiny.weight": {"dtype": "BF16", "shape": [32, 32]},  # 1024 elements = threshold
+        })
+        est = estimate_output_size(path, "Q4_K_M")
+        assert est == 32 * 32 * 4  # F32 (≤ threshold)
+
+    def test_f16_1d_not_forced_to_f32(self, tmp_path):
+        # F16 source + 1D → NOT forced to F32 (only BF16/F32 sources trigger that rule)
+        path = _make_safetensors(tmp_path, {
+            "norm.weight": {"dtype": "F16", "shape": [1024]},
+        })
+        est = estimate_output_size(path, "Q4_K_M")
+        bpe = _QUANT_BYTES_PER_ELEM["Q4_K_M"]
+        assert est == int(1024 * bpe)
+
+    def test_large_2d_bf16_tensor_uses_quant_bpe(self, tmp_path):
+        path = _make_safetensors(tmp_path, {
+            "attn.weight": {"dtype": "BF16", "shape": [2048, 2048]},  # 4M elements
+        })
+        n = 2048 * 2048
+        est = estimate_output_size(path, "Q4_K_M")
+        bpe = _QUANT_BYTES_PER_ELEM["Q4_K_M"]
+        assert est == int(n * bpe)
+
+    def test_mixed_model_separates_f32_and_quantizable(self, tmp_path):
+        path = _make_safetensors(tmp_path, {
+            "norm.weight":  {"dtype": "BF16", "shape": [512]},        # 1D → F32
+            "attn.weight":  {"dtype": "BF16", "shape": [1024, 1024]}, # quantizable
+        })
+        n_f32 = 512
+        n_quant = 1024 * 1024
+        bpe = _QUANT_BYTES_PER_ELEM["Q3_K_M"]
+        expected = n_f32 * 4 + int(n_quant * bpe)
+        assert estimate_output_size(path, "Q3_K_M") == expected
+
+    def test_f32_quant_key_makes_everything_f32(self, tmp_path):
+        path = _make_safetensors(tmp_path, {
+            "attn.weight": {"dtype": "BF16", "shape": [512, 512]},
+        })
+        est = estimate_output_size(path, "F32")
+        assert est == 512 * 512 * 4  # all F32
+
+    def test_non_safetensors_uses_ratio_fallback(self, tmp_path):
+        # Write a dummy file of known size
+        p = tmp_path / "model.ckpt"
+        p.write_bytes(b"\x00" * 1_000_000)
+        from quantize import SIZE_RATIOS
+        ratio = SIZE_RATIOS["Q4_K_M"]
+        est = estimate_output_size(str(p), "Q4_K_M")
+        assert est == int(1_000_000 * ratio)
+
+    def test_quant_bpe_all_keys_covered(self):
+        for key in ALL_QUANT_CHOICES:
+            _, k = key
+            assert k in _QUANT_BYTES_PER_ELEM, f"Missing bpe entry for {k}"

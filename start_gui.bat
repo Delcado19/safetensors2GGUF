@@ -14,6 +14,9 @@ echo Starting safetensors2GGUF Web UI...
 echo The browser will open automatically.
 echo Close this window to stop the server.
 echo.
+
+set GRADIO_ANALYTICS_ENABLED=False
+
 uv run python gui.py
 
 if errorlevel 1 (

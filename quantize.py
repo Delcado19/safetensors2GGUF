@@ -8,7 +8,10 @@ GUI to populate the quantization dropdown.
 
 from __future__ import annotations
 
+import json
+import os
 import re
+import struct
 import subprocess
 from pathlib import Path
 
@@ -51,7 +54,8 @@ ALL_QUANT_CHOICES: list[tuple[str, str]] = [
     ("Q2_K  — 2-bit · smallest  [lq]",                    "Q2_K"),
 ]
 
-# Approximate output-size ratio relative to an F16 source file.
+# ── File-level size ratios (used as fallback for non-safetensors sources) ──────
+# Ratio of output file size to F16 source file size.
 # Derived from llama-quantize reference output for Llama-3-8B (F16 = 14.00 GB).
 SIZE_RATIOS: dict[str, float] = {
     "F32":   2.00,
@@ -65,6 +69,118 @@ SIZE_RATIOS: dict[str, float] = {
     "Q3_K_M": round(3.74 / 14.00, 3),  # 0.267
     "Q2_K":  round(2.96  / 14.00, 3),  # 0.211
 }
+
+# ── Per-element bytes for *quantizable* tensors ────────────────────────────────
+# These apply only to tensors that actually get quantized (2D+, > 1024 elements,
+# not in keys_hiprec).  Derived from the same Llama-3-8B reference run:
+#   bytes_per_elem = (output_GB / 14.0) * 2   [since F16 = 2 bytes/elem]
+_QUANT_BYTES_PER_ELEM: dict[str, float] = {
+    "F32":   4.000,
+    "F16":   2.000,
+    "BF16":  2.000,
+    "Q8_0":  round(7.96 / 14.0 * 2, 4),   # 1.1371
+    "Q6_K":  round(6.14 / 14.0 * 2, 4),   # 0.8771
+    "Q5_K_M": round(5.33 / 14.0 * 2, 4),  # 0.7614
+    "Q4_K_M": round(4.58 / 14.0 * 2, 4),  # 0.6543
+    "Q4_K_S": round(4.37 / 14.0 * 2, 4),  # 0.6243
+    "Q3_K_M": round(3.74 / 14.0 * 2, 4),  # 0.5343
+    "Q2_K":  round(2.96 / 14.0 * 2, 4),   # 0.4229
+}
+
+# Safetensors dtype strings that map to high-precision PyTorch dtypes
+# (torch.float32 / torch.bfloat16).  Only for these does convert.py force
+# 1D tensors and small tensors to F32.
+_HIGH_PREC_DTYPES = {"F32", "BF16"}
+
+# Must match convert.QUANTIZATION_THRESHOLD (kept in sync manually)
+_QUANTIZATION_THRESHOLD = 1024
+
+
+def _read_safetensors_header(path: str) -> dict:
+    """Return the metadata dict from a safetensors file header.
+
+    Reads only the header bytes — no tensor data is loaded.
+
+    Raises ValueError or OSError on parse errors.
+    """
+    with open(path, "rb") as fh:
+        raw_len = fh.read(8)
+        if len(raw_len) < 8:
+            raise ValueError("File too short for safetensors header")
+        header_len = struct.unpack("<Q", raw_len)[0]
+        if header_len > 200_000_000:
+            raise ValueError(f"Header length {header_len} suspiciously large")
+        return json.loads(fh.read(header_len).decode("utf-8", errors="replace"))
+
+
+def _estimate_from_safetensors(path: str, quant_key: str) -> int:
+    """Estimate GGUF output size by analysing the safetensors header.
+
+    Separates F32-forced tensors (1D, ≤1024 elements, >4D, or BF16/F32 source
+    that is 1D/small) from quantizable tensors and applies per-element byte
+    counts for each group.
+    """
+    header = _read_safetensors_header(path)
+    bpe = _QUANT_BYTES_PER_ELEM.get(quant_key, 2.0)
+
+    f32_elems = 0
+    quant_elems = 0
+
+    for name, meta in header.items():
+        if name == "__metadata__":
+            continue
+        shape = meta.get("shape")
+        if not shape and shape != []:
+            continue
+        n_elems = 1
+        for d in shape:
+            n_elems *= d
+        ndim = len(shape)
+        high_prec = meta.get("dtype", "F16") in _HIGH_PREC_DTYPES
+
+        if ndim > 4:
+            # 5D+: exported to side-car, re-inserted as F32
+            f32_elems += n_elems
+        elif high_prec and (ndim == 1 or n_elems <= _QUANTIZATION_THRESHOLD):
+            # BF16/F32 source + 1D or small → always stored as F32
+            f32_elems += n_elems
+        else:
+            quant_elems += n_elems
+
+    if quant_key == "F32":
+        return int((f32_elems + quant_elems) * 4)
+
+    f32_bytes = f32_elems * 4
+    quant_bytes = int(quant_elems * bpe)
+    return f32_bytes + quant_bytes
+
+
+def estimate_output_size(src_path: str, quant_key: str) -> int | None:
+    """Estimate GGUF output size in bytes.
+
+    For .safetensors sources the safetensors header is parsed (no tensor data
+    loaded) and each tensor's output format is simulated.  This gives accurate
+    results even for models with a high proportion of F32-forced tensors (bias,
+    norm, positional embeddings) such as diffusion models.
+
+    For all other source formats the estimate falls back to
+    ``source_size × SIZE_RATIOS[quant_key]``.
+
+    Returns None when the source file does not exist or cannot be read.
+    """
+    src_path = (src_path or "").strip()
+    if not src_path or not os.path.isfile(src_path):
+        return None
+
+    if src_path.lower().endswith(".safetensors"):
+        try:
+            return _estimate_from_safetensors(src_path, quant_key)
+        except Exception:
+            pass  # fall through to ratio method
+
+    ratio = SIZE_RATIOS.get(quant_key, 1.0)
+    return int(os.path.getsize(src_path) * ratio)
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Binary discovery
