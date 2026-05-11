@@ -1,10 +1,10 @@
 # safetensors2GGUF
 
-Konvertiert Safetensors-Modelle in das GGUF-Format für die Nutzung mit llama.cpp und ComfyUI-GGUF.
+Converts Safetensors models to the GGUF format for use with llama.cpp and ComfyUI-GGUF.
 
-## Unterstützte Architekturen
+## Supported Architectures
 
-| Architektur | Format |
+| Architecture | Format |
 |---|---|
 | FLUX.1 | Diffusers |
 | Stable Diffusion 3 | Diffusers |
@@ -24,7 +24,7 @@ Konvertiert Safetensors-Modelle in das GGUF-Format für die Nutzung mit llama.cp
 pip install -r requirements.txt
 ```
 
-### Abhängigkeiten
+### Dependencies
 
 ```
 gguf
@@ -33,40 +33,40 @@ safetensors
 tqdm
 ```
 
-## Verwendung
+## Usage
 
 ```bash
-python convert.py --src <pfad/zum/modell.safetensors> --dst <ausgabe.gguf>
+python convert.py --src <path/to/model.safetensors> --dst <output.gguf>
 ```
 
-### Optionen
+### Options
 
-| Option | Beschreibung |
+| Option | Description |
 |---|---|
-| `--src` | Pfad zur Quelldatei (`.safetensors`, `.ckpt`, `.pt`, `.bin`) |
-| `--dst` | Ausgabepfad für die GGUF-Datei (optional, wird automatisch generiert) |
+| `--src` | Path to the source file (`.safetensors`, `.ckpt`, `.pt`, `.bin`) |
+| `--dst` | Output path for the GGUF file (optional, auto-generated if omitted) |
 
-### Ausgabeformat
+### Output Format
 
-Die erzeugte GGUF-Datei enthält:
-- Tensoren in **F16** oder **BF16** (je nach Quelldtype)
-- 1D-Tensoren und kleine Tensoren (≤ 1024 Elemente) immer in **F32**
-- Metadaten für Architektur und Quantisierungsversion
+The generated GGUF file contains:
+- Tensors in **F16** or **BF16** (depending on source dtype)
+- 1D tensors and small tensors (≤ 1024 elements) always in **F32**
+- Metadata for architecture and quantization version
 
-### Nachbearbeitung von 5D-Tensoren (HunyuanVideo / Wan)
+### Post-processing of 5D Tensors (HunyuanVideo / Wan)
 
-Einige Modelle enthalten 5D-Tensoren, die GGUF nicht direkt unterstützt.
-Diese werden während der Konvertierung in eine separate Datei ausgelagert:
+Some models contain 5D tensors that GGUF does not support directly.
+These are offloaded to a separate file during conversion:
 
 ```bash
-# Nach der Konvertierung:
-python fix_5d_tensors.py --src <ausgabe.gguf> --dst <final.gguf>
+# After conversion:
+python fix_5d_tensors.py --src <output.gguf> --dst <final.gguf>
 ```
 
-## Bekannte Probleme
+## Known Issues
 
-Siehe [Issues-Analyse](docs/issues_analysis.md) für häufige Fehler und deren Behebung.
+See [Issues Analysis](docs/issues_analysis.md) for common errors and their fixes.
 
-## Lizenz
+## License
 
 Apache-2.0

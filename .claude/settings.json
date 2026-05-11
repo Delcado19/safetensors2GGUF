@@ -21,5 +21,11 @@
         ]
       }
     ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(uv run pytest*)",
+      "Bash(pytest*)"
+    ]
   }
 }

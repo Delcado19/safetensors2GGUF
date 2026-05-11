@@ -222,7 +222,7 @@ class TestStripPrefix:
 
 
 # ---------------------------------------------------------------------------
-# 5D-Tensor-Handling: mehrere 5D-Tensoren dürfen nicht crashen (Issue #291)
+# 5D tensor handling: multiple 5D tensors must not crash (Issue #291)
 # ---------------------------------------------------------------------------
 
 class TestFiveDTensorHandling:

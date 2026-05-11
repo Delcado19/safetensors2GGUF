@@ -1,16 +1,16 @@
 # Changelog
 
-Alle wesentlichen Änderungen an diesem Projekt werden hier dokumentiert.
+All notable changes to this project are documented here.
 
-Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
+Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
 ### Add
-- Projektstruktur angelegt
-- Dokumentations-Agent konfiguriert (`.claude/agents/docs-agent.md`)
-- Test-Agent als Pre-Commit-Hook konfiguriert
-- `AGENTS.md` mit Übersicht aller konfigurierten Agenten
+- Project structure set up
+- Documentation agent configured (`.claude/agents/docs-agent.md`)
+- Test agent configured as pre-commit hook
+- `AGENTS.md` with overview of all configured agents
 
 ---
 

@@ -1,25 +1,25 @@
-# Agenten & Automatisierung
+# Agents & Automation
 
-Dieses Projekt nutzt Claude Code Hooks und Sub-Agenten, die automatisch vor jedem `git commit` ausgeführt werden.
+This project uses Claude Code Hooks and sub-agents that run automatically before every `git commit`.
 
 ---
 
-## Commit-Pipeline
+## Commit Pipeline
 
 ```
 git commit
     │
     ▼
-┌─────────────┐     fehlgeschlagen     ┌──────────────────────────┐
-│  docs-agent │ ──────────────────────▶│ Commit blockiert         │
-│             │                        │ (Doku unvollständig)     │
-└──────┬──────┘                        └──────────────────────────┘
+┌─────────────┐     failed                ┌──────────────────────────┐
+│  docs-agent │ ──────────────────────────▶│ Commit blocked           │
+│             │                            │ (docs incomplete)        │
+└──────┬──────┘                            └──────────────────────────┘
        │ OK
        ▼
-┌─────────────┐     fehlgeschlagen     ┌──────────────────────────┐
-│ test-agent  │ ──────────────────────▶│ Commit blockiert         │
-│             │                        │ (Tests rot)              │
-└──────┬──────┘                        └──────────────────────────┘
+┌─────────────┐     failed                ┌──────────────────────────┐
+│ test-agent  │ ──────────────────────────▶│ Commit blocked           │
+│             │                            │ (tests failing)          │
+└──────┬──────┘                            └──────────────────────────┘
        │ OK
        ▼
    Commit ✓
@@ -29,48 +29,48 @@ git commit
 
 ## docs-agent
 
-**Datei:** `.claude/agents/docs-agent.md`
-**Trigger:** `PreToolUse` auf `git commit *`
-**Timeout:** 120 Sekunden
+**File:** `.claude/agents/docs-agent.md`
+**Trigger:** `PreToolUse` on `git commit *`
+**Timeout:** 120 seconds
 
-### Was er prüft
-| Bereich | Aktion |
+### What it checks
+| Area | Action |
 |---|---|
-| Python-Docstrings | Ergänzt fehlende Docstrings für öffentliche API |
-| `CHANGELOG.md` | Trägt gestagte Änderungen unter `[Unreleased]` ein |
-| `README.md` | Aktualisiert bei API- oder Installationsänderungen |
-| `AGENTS.md` | Aktualisiert bei neuen Agenten/Hooks |
+| Python docstrings | Adds missing docstrings for public API |
+| `CHANGELOG.md` | Logs staged changes under `[Unreleased]` |
+| `README.md` | Updates on API or installation changes |
+| `AGENTS.md` | Updates when new agents/hooks are added |
 
 ---
 
 ## test-agent
 
-**Konfiguration:** `.claude/settings.local.json` → `hooks.PreToolUse`
-**Trigger:** `PreToolUse` auf `git commit *`
-**Timeout:** 300 Sekunden
+**Config:** `.claude/settings.local.json` → `hooks.PreToolUse`
+**Trigger:** `PreToolUse` on `git commit *`
+**Timeout:** 300 seconds
 
-### Was er tut
-1. Führt `python -m pytest --tb=short -q` aus
-2. Bei Fehlern: analysiert und repariert (max. 3 Versuche)
-   - Veraltete Tests → Tests anpassen
-   - Echter Bug → Quellcode reparieren
-3. Lässt Commit nur durch wenn alle Tests grün sind
-
----
-
-## Konfigurationsdatei
-
-Beide Hooks sind in `.claude/settings.local.json` konfiguriert.
-Die Agenten-Definition des docs-agent liegt in `.claude/agents/docs-agent.md`.
+### What it does
+1. Runs `python -m pytest --tb=short -q`
+2. On failure: analyzes and repairs (max. 3 attempts)
+   - Outdated tests → fix tests
+   - Real bug → fix source code
+3. Only lets the commit through when all tests pass
 
 ---
 
-## Manuelles Ausführen
+## Configuration File
+
+Both hooks are configured in `.claude/settings.local.json`.
+The agent definition for docs-agent is in `.claude/agents/docs-agent.md`.
+
+---
+
+## Running Manually
 
 ```bash
-# Nur Tests laufen lassen
+# Run tests only
 python -m pytest --tb=short
 
-# Dokumentation manuell prüfen lassen
-# (Agent über Claude Code starten)
+# Trigger documentation check manually
+# (start agent via Claude Code)
 ```

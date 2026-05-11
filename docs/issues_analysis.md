@@ -1,118 +1,118 @@
-# Bekannte Konvertierungsfehler und Lösungen
+# Known Conversion Errors and Fixes
 
-Analyse der GitHub Issues von [city96/ComfyUI-GGUF](https://github.com/city96/ComfyUI-GGUF/issues).
+Analysis of GitHub Issues from [city96/ComfyUI-GGUF](https://github.com/city96/ComfyUI-GGUF/issues).
 
 ---
 
-## 1. `inf`/`NaN`-Werte nach der Konvertierung
+## 1. `inf`/`NaN` values after conversion
 
-**Fehlermeldung:**
+**Error message:**
 ```
 ggml_validate_row_data: found inf value at block 0
 llama_model_quantize: failed to quantize: tensor 'norm_final.weight' has invalid data
 ```
 
-**Ursache:** BF16-Werte im Quellmodell überschreiten nach der Konvertierung zu F16 den
-darstellbaren Bereich (> 65504). `llama-quantize` verweigert die Quantisierung.
+**Cause:** BF16 values in the source model exceed the representable F16 range (> 65504)
+after conversion. `llama-quantize` refuses to quantize the file.
 
 **Fix:**
 ```python
-# In handle_tensors(), vor der dtype-Konvertierung:
+# In handle_tensors(), before dtype conversion:
 data = torch.nan_to_num(data, nan=0.0, posinf=65504, neginf=-65504)
 ```
 
 ---
 
-## 2. `size mismatch` beim Laden — BF16-1D-Tensoren
+## 2. `size mismatch` when loading — BF16 1D tensors
 
-**Fehlermeldung:**
+**Error message:**
 ```
 size mismatch for x_pad_token: copying a param with shape torch.Size([3840])
 from checkpoint, the shape in current model is torch.Size([1, 3840])
 ```
 
-**Ursache:** BF16-kodierte 1D-Tensoren werden beim Lesen aus GGUF als doppelt so viele
-Bytes interpretiert (BF16 = 2 Bytes, aber als uint8 gelesen → scheinbar doppelt so lang).
+**Cause:** BF16-encoded 1D tensors are interpreted as twice as many bytes when read
+from GGUF (BF16 = 2 bytes, but read as uint8 → appears twice as long).
 
-**Betroffene Schlüssel:** `x_pad_token`, `cap_pad_token`, `.scale`-Norm-Gewichte.
+**Affected keys:** `x_pad_token`, `cap_pad_token`, `.scale` norm weights.
 
-**Fix:** Diese Schlüssel in `keys_hiprec` der Architekturklasse aufnehmen → werden als F32
-gespeichert und sind immun gegen das Problem.
+**Fix:** Add these keys to `keys_hiprec` of the architecture class → stored as F32,
+immune to this problem.
 
 ---
 
-## 3. Falsche Architekturerkennung
+## 3. Wrong architecture detection
 
-**Fehlermeldung:**
+**Error message:**
 ```
 AssertionError: Unknown model architecture!
-# oder:
+# or:
 AssertionError: Model architecture not allowed for conversion!
 ```
 
-**Ursachen:**
-- Modell ist im **Reference-Format** statt Diffusers-Format (hat `keys_banned`-Schlüssel)
-- Modell ist ein **Merge**, dessen Schlüssel leicht vom Standard abweichen
-- Externe GGUF-Datei ohne `general.architecture`-Feld, Schlüsselabgleich schlägt fehl
+**Causes:**
+- Model is in **reference format** instead of Diffusers format (has `keys_banned` keys)
+- Model is a **merge** whose keys deviate slightly from the standard
+- External GGUF file without `general.architecture` field, key matching fails
 
-**Diagnose:** `keys_detect` der entsprechenden Architekturklasse prüfen, ob die
-Erkennungsschlüssel im State-Dict vorhanden sind.
+**Diagnosis:** Check `keys_detect` of the relevant architecture class to see whether
+the detection keys are present in the state dict.
 
 ---
 
-## 4. `mat1 and mat2 shapes cannot be multiplied` — Matrizenmultiplikationsfehler
+## 4. `mat1 and mat2 shapes cannot be multiplied` — matrix multiplication error
 
-**Fehlermeldung:**
+**Error message:**
 ```
 RuntimeError: mat1 and mat2 shapes cannot be multiplied (NxM and KxM)
 ```
 
-**Ursache A — `shape_fix`-Reshape ohne Metadaten-Wiederherstellung:**
-Für SD1/SDXL werden Tensoren auf `(n//256, 256)` umgeformt. Die Originalform wird als
-`comfy.gguf.orig_shape.<key>`-Metadatenfeld gespeichert. Fehlt dieses Feld beim Laden,
-bleibt der Tensor in der falschen Form → Matmul schlägt fehl.
+**Cause A — `shape_fix` reshape without metadata restoration:**
+For SD1/SDXL, tensors are reshaped to `(n//256, 256)`. The original shape is stored
+as a `comfy.gguf.orig_shape.<key>` metadata field. If this field is missing when
+loading, the tensor remains in the wrong shape → matmul fails.
 
-**Ursache B — Falscher `shape_fix`-Einsatz:**
-`shape_fix=True` darf nur für SD1/SDXL gesetzt werden. Bei anderen Architekturen
-(Flux, SD3 etc.) führt es zu inkompatiblen Tensorformen.
+**Cause B — incorrect `shape_fix` usage:**
+`shape_fix=True` must only be set for SD1/SDXL. For other architectures
+(Flux, SD3, etc.) it produces incompatible tensor shapes.
 
-**Fix:** `shape_fix` nur in `ModelSD1` und `ModelSDXL` aktivieren. `orig_shape`-Metadaten
-immer beim Reshape mitschreiben.
+**Fix:** Enable `shape_fix` only in `ModelSD1` and `ModelSDXL`. Always write
+`orig_shape` metadata alongside the reshape.
 
 ---
 
 ## 5. `GGML_ASSERT(ne[i] > 0)` in llama-quantize
 
-**Fehlermeldung:**
+**Error message:**
 ```
 /ggml/src/ggml.c:22112: GGML_ASSERT(info->ne[i] > 0) failed
 ```
 
-**Ursache:** Die von `convert.py` erzeugte GGUF-Datei enthält Tensoren mit einer
-Dimension = 0, oder die Shape-Metadaten sind für llama.cpps Validator ungültig.
-Häufig bei Merge-Modellen mit ungewöhnlichen Tensor-Shapes.
+**Cause:** The GGUF file produced by `convert.py` contains tensors with a dimension
+of 0, or the shape metadata is invalid for llama.cpp's validator.
+Common with merge models that have unusual tensor shapes.
 
-**Hinweis:** Das F16-GGUF wird erfolgreich erstellt — der Fehler tritt erst beim
-zweiten Schritt (`llama-quantize`) auf.
+**Note:** The F16 GGUF is created successfully — the error only appears during the
+second step (`llama-quantize`).
 
 ---
 
 ## 6. `gather(): Expected dtype int64 for index`
 
-**Fehlermeldung:**
+**Error message:**
 ```
 gather(): Expected dtype int64 for index
 ```
 
-**Ursache:** In der Dequantisierungslogik wird ein Index-Tensor mit `torch.int32`
-erzeugt. PyTorch ≥ 2.6 erfordert `int64` für `torch.gather`.
+**Cause:** An index tensor is created with `torch.int32` in the dequantization logic.
+PyTorch ≥ 2.6 requires `int64` for `torch.gather`.
 
 **Fix:**
 ```python
-# dequant.py ~Zeile 280:
-# vorher:
+# dequant.py ~line 280:
+# before:
 qs = torch.gather(kvalues, dim=-1, index=qs.to(torch.int32))
-# nachher:
+# after:
 qs = torch.gather(kvalues, dim=-1, index=qs.to(torch.int64))
 ```
 
@@ -120,8 +120,8 @@ qs = torch.gather(kvalues, dim=-1, index=qs.to(torch.int64))
 
 ## 7. `only 0-dimensional arrays can be converted to Python scalars`
 
-**Ursache:** Die `gguf`-Bibliothek gibt für skalare Metadatenfelder manchmal 1D-Arrays
-der Größe 1 statt echter 0D-Skalare zurück. `.item()` schlägt dann fehl.
+**Cause:** The `gguf` library sometimes returns 1D arrays of size 1 instead of true
+0D scalars for scalar metadata fields. `.item()` then fails.
 
-**Fix:** Beim Lesen von Metadatenfeldern prüfen ob das Array die Größe 1 hat,
-bevor `.item()` aufgerufen wird.
+**Fix:** When reading metadata fields, check whether the array has size 1 before
+calling `.item()`.

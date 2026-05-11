@@ -1,96 +1,96 @@
-# Architektur
+# Architecture
 
-## Konvertierungspipeline
+## Conversion Pipeline
 
 ```
-Quelldatei (.safetensors / .ckpt / .pt)
+Source file (.safetensors / .ckpt / .pt)
     │
     ▼
 load_state_dict()
-    │  - Lädt Tensoren in den Speicher
-    │  - Erkennt und entfernt State-Dict-Präfixe (z.B. "model.diffusion_model.")
+    │  - Loads tensors into memory
+    │  - Detects and strips state-dict prefixes (e.g. "model.diffusion_model.")
     │
     ▼
 detect_arch()
-    │  - Gleicht Schlüssel im State-Dict gegen keys_detect jeder Architekturklasse ab
-    │  - Wirft AssertionError wenn keine Architektur erkannt wird
+    │  - Matches keys in the state dict against keys_detect of each architecture class
+    │  - Raises AssertionError when no architecture is detected
     │
     ▼
 handle_tensors()
-    │  - Iteriert über alle Tensoren
-    │  - Filtert keys_ignore
-    │  - Konvertiert Dtype: BF16 → F32, float8 → F16
-    │  - Entscheidet Quantisierungstyp:
-    │      1D oder ≤ 1024 Elemente oder keys_hiprec → F32
-    │      BF16-Quelle → BF16
-    │      sonst → F16
-    │  - Reshape für SD1/SDXL (shape_fix): (H,W) → (n//256, 256)
-    │      speichert orig_shape als Metadatenfeld
-    │  - Verarbeitet 5D-Tensoren: auslagern statt schreiben
+    │  - Iterates over all tensors
+    │  - Filters keys_ignore
+    │  - Converts dtype: BF16 → F32, float8 → F16
+    │  - Decides quantization type:
+    │      1D or ≤ 1024 elements or keys_hiprec → F32
+    │      BF16 source → BF16
+    │      otherwise → F16
+    │  - Reshape for SD1/SDXL (shape_fix): (H,W) → (n//256, 256)
+    │      stores orig_shape as metadata field
+    │  - Handles 5D tensors: offload instead of write
     │
     ▼
 GGUFWriter
-    │  - Schreibt Header (arch, file_type, quantization_version)
-    │  - Schreibt KV-Metadaten
-    │  - Schreibt Tensordaten
+    │  - Writes header (arch, file_type, quantization_version)
+    │  - Writes KV metadata
+    │  - Writes tensor data
     │
     ▼
-Ausgabedatei (.gguf)
+Output file (.gguf)
 ```
 
-## Architekturklassen
+## Architecture Classes
 
-Jede unterstützte Modellarchitektur erbt von `ModelTemplate`:
+Each supported model architecture inherits from `ModelTemplate`:
 
 ```python
 class ModelTemplate:
-    arch = "invalid"       # GGUF-Architekturstring
-    shape_fix = False      # Nur True für SD1/SDXL
-    keys_detect = []       # Schlüssellisten zur Erkennung
-    keys_banned = []       # Ungültige Varianten (z.B. Reference-Format)
-    keys_hiprec = []       # Tensoren die F32 brauchen
-    keys_ignore = []       # Tensoren die übersprungen werden
+    arch = "invalid"       # GGUF architecture string
+    shape_fix = False      # True only for SD1/SDXL
+    keys_detect = []       # Key lists for detection
+    keys_banned = []       # Invalid variants (e.g. reference format)
+    keys_hiprec = []       # Tensors that require F32
+    keys_ignore = []       # Tensors to skip
 ```
 
-### Erkennungslogik
+### Detection Logic
 
-`keys_detect` ist eine Liste von Tupeln. Ein Modell wird erkannt wenn **alle** Schlüssel
-eines Tupels im State-Dict vorhanden sind:
+`keys_detect` is a list of tuples. A model is detected when **all** keys
+of a tuple are present in the state dict:
 
 ```python
-# Flux wird erkannt wenn EINES dieser Tupel vollständig passt:
+# Flux is detected when ONE of these tuples matches completely:
 keys_detect = [
     ("transformer_blocks.0.attn.norm_added_k.weight",),          # Diffusers
     ("double_blocks.0.img_attn.proj.weight",),                    # Non-Diffusers
 ]
-# Gleichzeitig: Reference-Format ist verboten:
+# At the same time: reference format is banned:
 keys_banned = ["transformer_blocks.0.attn.norm_added_k.weight"]
 ```
 
-## 5D-Tensor-Handling
+## 5D Tensor Handling
 
-GGUF unterstützt maximal 4-dimensionale Tensoren. Modelle wie HunyuanVideo und Wan
-enthalten vereinzelt 5D-Tensoren (z.B. RoPE-Frequenzen).
+GGUF supports at most 4-dimensional tensors. Models like HunyuanVideo and Wan
+occasionally contain 5D tensors (e.g. RoPE frequencies).
 
-**Zweistufiger Prozess:**
+**Two-step process:**
 
-1. `convert.py`: 5D-Tensor wird **nicht** in die GGUF-Datei geschrieben, sondern in
-   `fix_5d_tensors_<arch>.safetensors` ausgelagert.
+1. `convert.py`: The 5D tensor is **not** written to the GGUF file; instead it is
+   offloaded to `fix_5d_tensors_<arch>.safetensors`.
 
-2. `fix_5d_tensors.py`: Liest die fertig quantisierte GGUF-Datei und fügt den
-   ausgelagerten Tensor als F32 ein.
+2. `fix_5d_tensors.py`: Reads the fully quantized GGUF file and inserts the
+   offloaded tensor as F32.
 
-## Quantisierungsentscheidungsbaum
+## Quantization Decision Tree
 
 ```
 Tensor
- ├─ in keys_ignore?          → überspringen
- ├─ ndim > 4?                → auslagern (5D-Fix)
+ ├─ in keys_ignore?          → skip
+ ├─ ndim > 4?                → offload (5D fix)
  ├─ ndim == 1?               → F32
  ├─ n_params ≤ 1024?         → F32
  ├─ key in keys_hiprec?      → F32
- ├─ shape_fix anwendbar?     → reshape + orig_shape-Metadatum schreiben
- └─ dtype der Quelle?
+ ├─ shape_fix applicable?    → reshape + write orig_shape metadata
+ └─ source dtype?
       BF16 → BF16
-      sonst → F16
+      otherwise → F16
 ```
