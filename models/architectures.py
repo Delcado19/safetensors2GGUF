@@ -20,6 +20,7 @@ class ModelTemplate:
     keys_banned = []
     keys_hiprec = []
     keys_ignore = []
+    keys_unsqueeze = []  # 1D tensors that must be reshaped to [1, D] before writing
 
     def handle_nd_tensor(self, key, data):
         """Handle tensors exceeding MAX_TENSOR_DIMS dimensions.
@@ -172,6 +173,8 @@ class ModelLumina2(ModelTemplate):
     ]
     # nn.Parameter pads — BF16 causes size-doubling on load (Issue #419)
     keys_hiprec = ["x_pad_token", "cap_pad_token"]
+    # ComfyUI NextDiT expects shape [1, D]; older checkpoints store them as [D]
+    keys_unsqueeze = ["x_pad_token", "cap_pad_token"]
 
 
 arch_list = [

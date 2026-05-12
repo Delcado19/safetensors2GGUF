@@ -96,6 +96,23 @@ uv run python convert.py --src model.safetensors --dst model-F16.gguf --overwrit
 | `--dst` | Output GGUF path — auto-generated when omitted |
 | `--overwrite` | Skip confirmation if output already exists |
 
+### Fix Pad Tokens (Lumina 2 — existing GGUFs)
+
+If ComfyUI raises *size mismatch for x_pad_token*, the GGUF was converted before
+the shape fix was introduced.  Repair it with:
+
+```bash
+uv run python fix_pad_tokens.py --src model.gguf --dst model-fixed.gguf
+```
+
+| Option | Description |
+|---|---|
+| `--src` | Source GGUF (1D pad tokens) |
+| `--dst` | Output GGUF path |
+| `--overwrite` | Skip confirmation if output exists |
+
+New conversions are unaffected — `convert.py` stores pad tokens as `[1, D]` automatically.
+
 ### 5D Tensor Post-processing (HunyuanVideo / Wan — CLI only)
 
 When using the Web UI, 5D tensor insertion is applied automatically after

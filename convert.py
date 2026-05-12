@@ -166,6 +166,10 @@ def handle_tensors(writer, state_dict, model_arch, on_progress=None, on_log=None
         elif data.dtype == torch.bfloat16:
             data = data.to(torch.float32)
 
+        # Reshape 1D pad tokens to [1, D] for architectures that require it (e.g. Lumina2)
+        if model_arch.keys_unsqueeze and data.dim() == 1 and key in model_arch.keys_unsqueeze:
+            data = data.unsqueeze(0)
+
         # Clamp inf/nan to prevent llama-quantize validation failures
         data = torch.nan_to_num(data, nan=0.0, posinf=65504.0, neginf=-65504.0)
         data = data.numpy()

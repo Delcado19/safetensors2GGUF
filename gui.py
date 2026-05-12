@@ -17,6 +17,7 @@ import gradio as gr
 
 from convert import ConversionCancelled, convert_file
 from fix_5d_tensors import fix_5d_tensors as _fix_5d
+from fix_pad_tokens import fix_pad_tokens as _fix_pad
 from quantize import (
     ALL_QUANT_CHOICES,
     LLAMA_QUANT_KEYS,
@@ -174,69 +175,93 @@ def update_size_estimate(src: str, quant_key: str) -> str:
 # ──────────────────────────────────────────────────────────────────────────────
 
 CSS = """
-/* ── Prevent Gradio's progress/update events from scrolling the page ── */
-html, body {
-    overflow-anchor: none !important;
-    scroll-behavior: auto !important;
+/* ── Scroll prevention ──────────────────────────────────────────────────── */
+html, body { overflow-anchor: none !important; scroll-behavior: auto !important; }
+
+/* ── Page width ─────────────────────────────────────────────────────────── */
+.gradio-container { max-width: 1100px !important; margin: 0 auto !important; padding-top: 8px !important; }
+
+/* ── App header ─────────────────────────────────────────────────────────── */
+#app-header {
+    background: linear-gradient(120deg, #4f46e5 0%, #0284c7 100%);
+    border-radius: 12px;
+    padding: 18px 24px;
+    margin-bottom: 14px;
+    line-height: 1.4;
+}
+#app-title {
+    font-size: 1.35em; font-weight: 700; color: #fff; margin: 0 0 4px 0;
+    letter-spacing: -0.01em;
+}
+#app-sub { font-size: 0.87em; color: rgba(255,255,255,0.82); margin: 0; }
+#app-sub strong { color: rgba(255,255,255,0.97); }
+
+/* ── Input card ─────────────────────────────────────────────────────────── */
+.card {
+    border: 1.5px solid var(--border-color-primary, #e2e8f0) !important;
+    border-radius: 10px !important;
+    padding: 16px !important;
+    background: var(--background-fill-primary, #fff) !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05) !important;
+    margin-bottom: 10px !important;
 }
 
-/* ── Status bar ── */
+/* ── Browse button alignment ────────────────────────────────────────────── */
+.browse-btn { margin-top: 22px !important; }
+
+/* ── Size estimate ──────────────────────────────────────────────────────── */
+#size-info { font-size: 0.85em; color: var(--body-text-color-subdued); padding-top: 8px; }
+
+/* ── Status bar ─────────────────────────────────────────────────────────── */
 #status-wrap {
-    position: sticky;
-    bottom: 0;
-    z-index: 200;
-    padding: 6px 14px 4px;
-    border-top: 2px solid var(--border-color-accent, #3b82f6);
-    background: var(--background-fill-secondary, #1e293b);
-    border-radius: 0 0 8px 8px;
-    margin-top: 4px;
+    position: sticky; bottom: 0; z-index: 200;
+    padding: 5px 12px 3px;
+    border-top: 2px solid #4f46e5;
+    background: var(--background-fill-secondary, #f8fafc);
+    border-radius: 0 0 10px 10px;
+    margin-top: 6px;
 }
 #status-wrap textarea {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    resize: none !important;
-    font-family: ui-monospace, monospace;
-    font-size: 0.88em;
-    font-weight: 600;
-    color: var(--body-text-color);
-    padding: 0 !important;
+    background: transparent !important; border: none !important;
+    box-shadow: none !important; resize: none !important;
+    font-family: ui-monospace, monospace; font-size: 0.85em;
+    font-weight: 600; color: var(--body-text-color); padding: 0 !important;
 }
 
-/* ── Action buttons — equal height ── */
-#convert-btn, #cancel-btn, #fix-btn {
-    min-height: 52px !important;
-    font-size: 1.05em !important;
-    letter-spacing: 0.03em;
+/* ── Action buttons ─────────────────────────────────────────────────────── */
+#convert-btn, #fix-pad-btn, #fix-5d-btn {
+    min-height: 44px !important; font-size: 1em !important; font-weight: 600 !important;
 }
-
-/* ── Cancel button — red ── */
+#cancel-btn { min-height: 44px !important; }
 #cancel-btn button, #cancel-btn {
-    background: #dc2626 !important;
-    border-color: #b91c1c !important;
-    color: #fff !important;
+    background: #ef4444 !important; border-color: #dc2626 !important; color: #fff !important;
+    border-radius: 8px !important;
 }
-#cancel-btn button:hover, #cancel-btn:hover {
-    background: #b91c1c !important;
-}
+#cancel-btn button:hover, #cancel-btn:hover { background: #dc2626 !important; }
 
-/* ── Log areas ── */
-#conv-log textarea, #fix-log textarea {
-    font-family: ui-monospace, monospace;
-    font-size: 0.82em;
-    line-height: 1.5;
+/* ── Log areas ──────────────────────────────────────────────────────────── */
+#conv-log textarea, #pad-log textarea, #fix-log textarea {
+    font-family: ui-monospace, monospace; font-size: 0.8em; line-height: 1.45;
 }
-#size-info { margin-top: -8px; font-size: 0.9em; }
 """
 
-_THEME = gr.themes.Soft(
-    primary_hue="blue",
+_THEME = gr.themes.Default(
+    primary_hue="indigo",
     secondary_hue="sky",
     neutral_hue="slate",
-    # Plain font names (no GoogleFont) to avoid CDN requests at startup
     font=["Inter", "ui-sans-serif", "sans-serif"],
     font_mono=["JetBrains Mono", "ui-monospace", "monospace"],
 )
+
+_HEADER_HTML = """
+<div id="app-header">
+  <div id="app-title">⬡ safetensors → GGUF</div>
+  <div id="app-sub">Convert model checkpoints to GGUF &nbsp;·&nbsp;
+    <strong>llama.cpp</strong> / <strong>ComfyUI-GGUF</strong> &nbsp;·&nbsp;
+    Types marked <strong>[lq]</strong> require the llama-quantize binary.
+  </div>
+</div>
+"""
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Streaming infrastructure
@@ -453,8 +478,10 @@ def _pipeline(
     # ── Step 2: llama-quantize ───────────────────────────────────────────────
     fix_path = Path(f"fix_5d_tensors_{arch.arch}.safetensors")
     needs_fix = fix_path.is_file()
-    total_steps = 3 if needs_fix else 2
-    step2_end = 0.85 if needs_fix else 0.95
+    # llama-quantize collapses [1, D] pad token shapes back to [D]; re-apply fix afterwards
+    needs_pad_fix = bool(getattr(arch, 'keys_unsqueeze', None))
+    total_steps = 2 + (1 if needs_fix else 0) + (1 if needs_pad_fix else 0)
+    step2_end = 0.85 if needs_fix or needs_pad_fix else 0.95
 
     _log(f"INFO:  [2/{total_steps}] Quantizing to {quant_key} via llama-quantize…")
 
@@ -474,19 +501,32 @@ def _pipeline(
         except OSError:
             pass
 
+    result_path = final_dst
+    current_step = 3
+
     # ── Step 3 (optional): fix 5D tensors ───────────────────────────────────
     if needs_fix:
-        _log(f"INFO:  [3/3] Auto-fixing 5D tensors from {fix_path}…")
-        fixed_dst = final_dst.replace(".gguf", "-fixed.gguf")
+        step3_end = 0.92 if needs_pad_fix else 1.0
+        _log(f"INFO:  [{current_step}/{total_steps}] Auto-fixing 5D tensors from {fix_path}…")
+        fixed_dst = result_path.replace(".gguf", "-fixed.gguf")
 
         def _prog3(idx, total, key):
-            _frac(step2_end + (idx / total * (1.0 - step2_end)) if total else step2_end, f"[3/3] Tensor {idx}/{total}")
+            _frac(step2_end + (idx / total * (step3_end - step2_end)) if total else step2_end,
+                  f"[{current_step}/{total_steps}] Tensor {idx}/{total}")
 
-        _fix_5d(final_dst, fixed_dst, fix_path=str(fix_path), overwrite=True, on_progress=_prog3, on_log=_log)
+        _fix_5d(result_path, fixed_dst, fix_path=str(fix_path), overwrite=True, on_progress=_prog3, on_log=_log)
         _log(f"INFO:  5D tensors inserted → {fixed_dst}")
-        return fixed_dst
+        result_path = fixed_dst
+        current_step += 1
 
-    return final_dst
+    # ── Step N (optional): re-fix pad token shapes collapsed by llama-quantize
+    if needs_pad_fix:
+        _log(f"INFO:  [{current_step}/{total_steps}] Re-fixing pad token shapes ([1, D] collapsed by llama-quantize)…")
+        padfix_tmp = result_path + ".padfix.tmp"
+        _fix_pad(result_path, padfix_tmp, overwrite=True, on_log=_log)
+        Path(padfix_tmp).replace(Path(result_path))
+
+    return result_path
 
 
 def run_convert(
@@ -539,6 +579,21 @@ def run_convert(
         _active_cancel = None
 
 
+def run_fix_pad_tokens(
+    src: str,
+    dst: str,
+    overwrite: bool,
+) -> Generator[tuple[str, str], None, None]:
+    """Run fix_pad_tokens in a background thread and stream (log_text, status_text) updates."""
+    if not src or not src.strip():
+        yield "❌  No source GGUF selected.", "Error — no input"
+        return
+    src = src.strip()
+    dst = dst.strip() or src.replace(".gguf", "-fixed.gguf")
+    q, done, result = _run_job(_fix_pad, src, dst, overwrite=overwrite)
+    yield from _stream(q, done, result)
+
+
 def run_fix(
     src: str,
     dst: str,
@@ -561,66 +616,59 @@ def run_fix(
 # ──────────────────────────────────────────────────────────────────────────────
 
 def build_app() -> gr.Blocks:
-    """Construct and return the Gradio Blocks application.
-
-    Builds the Convert and Fix 5D Tensors tabs, wires all events (browse buttons,
-    size estimate updates, convert/cancel/fix clicks), and returns the app object
-    ready for .launch().
-    """
+    """Construct and return the Gradio Blocks application."""
     default_exe = str(find_exe() or "")
 
-    with gr.Blocks(title="safetensors2GGUF") as app:
-        gr.Markdown(
-            "# safetensors2GGUF\n"
-            "Convert model checkpoints to GGUF for **llama.cpp** and **ComfyUI-GGUF**.  "
-            "Types marked **[lq]** use the bundled llama-quantize binary."
-        )
+    with gr.Blocks(title="safetensors → GGUF") as app:
+        gr.HTML(_HEADER_HTML)
 
         with gr.Tabs():
 
-            # ── Tab 1: Convert ─────────────────────────────────────────────
+            # ── Convert ────────────────────────────────────────────────────
             with gr.Tab("Convert"):
-                with gr.Row(equal_height=False):
-                    with gr.Column(scale=3):
-                        src_path = gr.Textbox(
-                            label="Source Model",
-                            placeholder="/path/to/model.safetensors",
-                            info="Supported: .safetensors  .ckpt  .pt  .bin  .pth",
-                        )
-                        browse_conv_btn = gr.Button("Browse…", size="sm", variant="secondary")
-
-                    with gr.Column(scale=2):
-                        dst_path = gr.Textbox(
-                            label="Output Path",
-                            placeholder="Auto-generated",
-                            info="Folder path, full file path, or use {ftype} as placeholder.",
-                        )
-                        browse_dst_btn = gr.Button("Browse output folder…", size="sm", variant="secondary")
-                        overwrite_conv = gr.Checkbox(label="Overwrite existing output", value=False)
-
-                quant_dropdown = gr.Dropdown(
-                    choices=ALL_QUANT_CHOICES,
-                    value="Q4_K_M",
-                    label="Quantization",
-                    info="Python-native: F32/F16/BF16/Q8_0 · llama-quantize [lq]: all K-quants",
-                )
-                size_info = gr.Markdown("", elem_id="size-info")
+                with gr.Group(elem_classes=["card"]):
+                    with gr.Row(equal_height=False):
+                        with gr.Column(scale=3):
+                            with gr.Row():
+                                src_path = gr.Textbox(
+                                    label="Source model",
+                                    placeholder="model.safetensors / .ckpt / .pt / .bin / .pth",
+                                    scale=9,
+                                )
+                                browse_conv_btn = gr.Button(
+                                    "Browse", size="sm", scale=0, elem_classes=["browse-btn"]
+                                )
+                            with gr.Row():
+                                dst_path = gr.Textbox(
+                                    label="Output path",
+                                    placeholder="Auto-generated next to source",
+                                    scale=9,
+                                )
+                                browse_dst_btn = gr.Button(
+                                    "Browse", size="sm", scale=0, elem_classes=["browse-btn"]
+                                )
+                            quant_dropdown = gr.Dropdown(
+                                choices=ALL_QUANT_CHOICES,
+                                value="Q4_K_M",
+                                label="Quantization",
+                            )
+                        with gr.Column(scale=2):
+                            size_info = gr.Markdown("", elem_id="size-info")
 
                 with gr.Accordion("Advanced", open=False):
                     exe_path = gr.Textbox(
                         label="llama-quantize path",
                         value=default_exe,
                         placeholder=r"H:\...\llama-quantize.exe",
-                        info="Required for [lq] types. Auto-detected from the known ComfyUI location.",
+                        info="Required for [lq] types. Auto-detected from the default ComfyUI path.",
                     )
-                    keep_intermediate = gr.Checkbox(
-                        label="Keep intermediate F16 GGUF (2-step pipeline only)",
-                        value=False,
-                    )
+                    with gr.Row():
+                        keep_intermediate = gr.Checkbox(label="Keep F16 intermediate", value=False)
+                        overwrite_conv = gr.Checkbox(label="Overwrite existing output", value=False)
 
                 with gr.Row():
-                    convert_btn = gr.Button("⚙  Convert", variant="primary", scale=4, elem_id="convert-btn")
-                    cancel_btn  = gr.Button("✕  Cancel",  variant="stop",    scale=1, elem_id="cancel-btn")
+                    convert_btn = gr.Button("▶  Convert", variant="primary", scale=5, elem_id="convert-btn")
+                    cancel_btn  = gr.Button("✕",          variant="stop",    scale=1, elem_id="cancel-btn")
 
                 with gr.Group(elem_id="status-wrap"):
                     conv_status = gr.Textbox(
@@ -628,39 +676,73 @@ def build_app() -> gr.Blocks:
                         lines=1, max_lines=1,
                     )
                 conv_log = gr.Textbox(
-                    label="Log", lines=18, max_lines=18,
+                    label="Log", lines=10, max_lines=10,
                     interactive=False, autoscroll=False, elem_id="conv-log",
                 )
 
-            # ── Tab 2: Fix 5D Tensors ──────────────────────────────────────
-            with gr.Tab("Fix 5D Tensors"):
+            # ── Fix Pad Tokens ─────────────────────────────────────────────
+            with gr.Tab("Fix Pad Tokens"):
                 gr.Markdown(
-                    "Re-insert 5D tensors into a quantized GGUF file.\n\n"
-                    "**Required for HunyuanVideo and Wan models** when running llama-quantize "
-                    "manually outside the Convert tab. The Convert tab auto-chains this step."
+                    "Correct `x_pad_token` / `cap_pad_token` shape `[D]` → `[1, D]` in an "
+                    "existing **Lumina 2** GGUF.  Required when ComfyUI raises "
+                    "*size mismatch for x_pad_token*.  New conversions are not affected."
+                )
+                with gr.Group(elem_classes=["card"]):
+                    with gr.Row():
+                        fix_pad_src = gr.Textbox(
+                            label="Source GGUF",
+                            placeholder="model.gguf",
+                            scale=9,
+                        )
+                        browse_fix_pad_btn = gr.Button(
+                            "Browse", size="sm", scale=0, elem_classes=["browse-btn"]
+                        )
+                    fix_pad_dst = gr.Textbox(
+                        label="Output path",
+                        placeholder="Auto-generated (source-fixed.gguf)",
+                    )
+                    overwrite_fix_pad = gr.Checkbox(label="Overwrite existing output", value=False)
+
+                fix_pad_btn = gr.Button("▶  Fix Pad Tokens", variant="primary", elem_id="fix-pad-btn")
+
+                with gr.Group(elem_id="status-wrap"):
+                    fix_pad_status = gr.Textbox(
+                        value="Ready", show_label=False, interactive=False,
+                        lines=1, max_lines=1,
+                    )
+                pad_log = gr.Textbox(
+                    label="Log", lines=8, max_lines=8,
+                    interactive=False, autoscroll=False, elem_id="pad-log",
                 )
 
-                with gr.Row(equal_height=False):
-                    with gr.Column(scale=3):
+            # ── Fix 5D Tensors ─────────────────────────────────────────────
+            with gr.Tab("Fix 5D Tensors"):
+                gr.Markdown(
+                    "Re-insert 5D tensors into a quantized GGUF.  "
+                    "**Required for HunyuanVideo / Wan** when using llama-quantize outside "
+                    "the Convert tab — the Convert tab chains this step automatically."
+                )
+                with gr.Group(elem_classes=["card"]):
+                    with gr.Row():
                         fix_src = gr.Textbox(
                             label="Source GGUF (quantized)",
-                            placeholder="/path/to/model-Q8_0.gguf",
+                            placeholder="model-Q8_0.gguf",
+                            scale=9,
                         )
-                        browse_fix_btn = gr.Button("Browse…", size="sm", variant="secondary")
+                        browse_fix_btn = gr.Button(
+                            "Browse", size="sm", scale=0, elem_classes=["browse-btn"]
+                        )
+                    fix_dst = gr.Textbox(
+                        label="Output path",
+                        placeholder="Auto-generated (source-fixed.gguf)",
+                    )
+                    fix_file = gr.Textbox(
+                        label="Side-car file",
+                        placeholder="fix_5d_tensors_<arch>.safetensors — auto-detected when empty",
+                    )
+                    overwrite_fix = gr.Checkbox(label="Overwrite existing output", value=False)
 
-                    with gr.Column(scale=2):
-                        fix_dst = gr.Textbox(
-                            label="Output Path",
-                            placeholder="Auto-generated (source-fixed.gguf)",
-                        )
-                        fix_file = gr.Textbox(
-                            label="Side-car file (optional)",
-                            placeholder="fix_5d_tensors_<arch>.safetensors",
-                            info="Leave empty to auto-detect in the current directory",
-                        )
-                        overwrite_fix = gr.Checkbox(label="Overwrite existing output", value=False)
-
-                fix_btn = gr.Button("⚙  Fix 5D Tensors", variant="primary", elem_id="fix-btn")
+                fix_btn = gr.Button("▶  Fix 5D Tensors", variant="primary", elem_id="fix-5d-btn")
 
                 with gr.Group(elem_id="status-wrap"):
                     fix_status = gr.Textbox(
@@ -668,34 +750,32 @@ def build_app() -> gr.Blocks:
                         lines=1, max_lines=1,
                     )
                 fix_log = gr.Textbox(
-                    label="Log", lines=14, max_lines=14,
+                    label="Log", lines=8, max_lines=8,
                     interactive=False, autoscroll=False, elem_id="fix-log",
                 )
 
-        # ── Wire up events ─────────────────────────────────────────────────
-
-        # Browse buttons → native dialogs
+        # ── Events ─────────────────────────────────────────────────────────
         browse_conv_btn.click(browse_model, outputs=src_path)
-        browse_fix_btn.click(browse_gguf, outputs=fix_src)
         browse_dst_btn.click(browse_and_set_dst, inputs=[src_path, quant_dropdown], outputs=dst_path)
+        browse_fix_pad_btn.click(browse_gguf, outputs=fix_pad_src)
+        browse_fix_btn.click(browse_gguf, outputs=fix_src)
 
-        # src_path changes (typing or after browse) → refresh dst suggestion + size estimate
         src_path.change(_auto_dst, inputs=src_path, outputs=dst_path)
         src_path.change(update_size_estimate, inputs=[src_path, quant_dropdown], outputs=size_info)
-
-        # Quantization change → refresh size estimate
         quant_dropdown.change(update_size_estimate, inputs=[src_path, quant_dropdown], outputs=size_info)
 
         conv_event = convert_btn.click(
             fn=run_convert,
             inputs=[src_path, dst_path, quant_dropdown, exe_path, keep_intermediate, overwrite_conv],
             outputs=[conv_log, conv_status],
-            show_progress="hidden",  # prevents Gradio's auto-loader from calling scrollIntoView
+            show_progress="hidden",
         )
-        cancel_btn.click(
-            fn=request_cancel,
-            outputs=[conv_status],
-            cancels=[conv_event],
+        cancel_btn.click(fn=request_cancel, outputs=[conv_status], cancels=[conv_event])
+
+        fix_pad_btn.click(
+            fn=run_fix_pad_tokens,
+            inputs=[fix_pad_src, fix_pad_dst, overwrite_fix_pad],
+            outputs=[pad_log, fix_pad_status],
         )
         fix_btn.click(
             fn=run_fix,

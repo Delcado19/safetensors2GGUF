@@ -20,6 +20,7 @@ handle_tensors()
     │  - Iterates over all tensors
     │  - Filters keys_ignore
     │  - Converts dtype: BF16 → F32, float8 → F16
+    │  - Clamps inf/NaN → 0 / ±65504 (prevents llama-quantize validation failures)
     │  - Decides quantization type:
     │      1D or ≤ 1024 elements or keys_hiprec → F32
     │      BF16 source → BF16
@@ -50,6 +51,7 @@ class ModelTemplate:
     keys_banned = []       # Invalid variants (e.g. reference format)
     keys_hiprec = []       # Tensors that require F32
     keys_ignore = []       # Tensors to skip
+    keys_unsqueeze = []    # 1D tensors reshaped to [1, D] before writing
 ```
 
 ### Detection Logic
@@ -85,6 +87,9 @@ occasionally contain 5D tensors (e.g. RoPE frequencies).
 ```
 Tensor
  ├─ in keys_ignore?          → skip
+ ├─ dtype coercion           float8 → F16, BF16 → F32
+ ├─ inf/NaN clamping         nan→0, ±inf→±65504
+ ├─ key in keys_unsqueeze?   unsqueeze(0): [D] → [1, D]
  ├─ ndim > 4?                → offload (5D fix)
  ├─ ndim == 1?               → F32
  ├─ n_params ≤ 1024?         → F32

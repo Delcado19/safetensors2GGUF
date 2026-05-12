@@ -23,21 +23,30 @@ data = torch.nan_to_num(data, nan=0.0, posinf=65504, neginf=-65504)
 
 ---
 
-## 2. `size mismatch` when loading — BF16 1D tensors
+## 2. `size mismatch for x_pad_token` — Lumina 2 pad token shape
 
 **Error message:**
 ```
 size mismatch for x_pad_token: copying a param with shape torch.Size([3840])
-from checkpoint, the shape in current model is torch.Size([1, 3840])
+from checkpoint, the shape in current model is torch.Size([1, 3840]).
+size mismatch for cap_pad_token: copying a param with shape torch.Size([3840])
+from checkpoint, the shape in current model is torch.Size([1, 3840]).
 ```
 
-**Cause:** BF16-encoded 1D tensors are interpreted as twice as many bytes when read
-from GGUF (BF16 = 2 bytes, but read as uint8 → appears twice as long).
+**Cause:** Older Lumina 2 GGUFs store `x_pad_token` and `cap_pad_token` as 1D tensors
+`[3840]`.  ComfyUI's NextDiT model registers them as `nn.Parameter` with shape
+`[1, 3840]`, so `load_state_dict` raises a size mismatch.
 
-**Affected keys:** `x_pad_token`, `cap_pad_token`, `.scale` norm weights.
+**Fix for existing GGUFs** (one-time repair):
 
-**Fix:** Add these keys to `keys_hiprec` of the architecture class → stored as F32,
-immune to this problem.
+```bash
+uv run python fix_pad_tokens.py --src model.gguf --dst model-fixed.gguf
+```
+
+The GUI offers this as the **Fix Pad Tokens** tab.
+
+**Fix for new conversions:** Already handled automatically — `ModelLumina2.keys_unsqueeze`
+causes `convert.py` to call `unsqueeze(0)` on these tensors before writing them.
 
 ---
 
@@ -125,3 +134,22 @@ qs = torch.gather(kvalues, dim=-1, index=qs.to(torch.int64))
 
 **Fix:** When reading metadata fields, check whether the array has size 1 before
 calling `.item()`.
+
+---
+
+## 8. Unknown architecture for certain ZIB / Flux.2 UNet variants (open, unfixed)
+
+**Error message:**
+```
+AssertionError: Unknown model architecture. Checked: ['flux', 'sd3', ...]
+```
+
+**Affected models:** Some Z-Image Beyond / Flux.2 community fine-tunes whose
+state-dict keys deviate from the standard `keys_detect` patterns.
+
+**Status:** Reported in city96 issue #418, no fix from upstream or this project yet.
+
+**Workaround:** Inspect the state dict with `torch.load` / `load_file` and compare
+the actual top-level key names against `ModelFlux.keys_detect` and
+`ModelLumina2.keys_detect` in `models/architectures.py`. Add the variant's unique
+key as an additional tuple to the matching `keys_detect` list.
