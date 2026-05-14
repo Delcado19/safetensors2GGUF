@@ -19,6 +19,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `tests/test_convert.py`: float8 regression tests
 
 ### Change
+- `AGENTS.md` / `README.md`: Clarify that Claude commit hooks live in `.claude/settings.json`, local permissions live in `.claude/settings.local.json`, tests run through `uv`, and `pyproject.toml`/`uv.lock` are the canonical dependency files
 - `gui.py`: Page width increased from 860 px to 1100 px
 - `gui.py`: Layout cleanup — all three tabs now use the same structure (card for inputs, action button below card, then status bar + log); removed `.card-actions` flex hack and `#size-info` padding tricks
 - `gui.py`: Compact layout — inline Browse buttons, Quantization + size estimate side by side, Overwrite checkbox moved to Advanced, log reduced to 10/8 lines

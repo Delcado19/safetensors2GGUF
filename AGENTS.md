@@ -45,12 +45,12 @@ git commit
 
 ## test-agent
 
-**Config:** `.claude/settings.local.json` → `hooks.PreToolUse`
+**Config:** `.claude/settings.json` → `hooks.PreToolUse`
 **Trigger:** `PreToolUse` on `git commit *`
 **Timeout:** 300 seconds
 
 ### What it does
-1. Runs `python -m pytest --tb=short -q`
+1. Runs `uv run pytest --tb=short -q`
 2. On failure: analyzes and repairs (max. 3 attempts)
    - Outdated tests → fix tests
    - Real bug → fix source code
@@ -60,8 +60,9 @@ git commit
 
 ## Configuration File
 
-Both hooks are configured in `.claude/settings.local.json`.
+Both hooks are configured in `.claude/settings.json`.
 The agent definition for docs-agent is in `.claude/agents/docs-agent.md`.
+Local Claude permissions are stored in `.claude/settings.local.json`; that file is ignored by Git.
 
 ---
 
@@ -69,7 +70,7 @@ The agent definition for docs-agent is in `.claude/agents/docs-agent.md`.
 
 ```bash
 # Run tests only
-python -m pytest --tb=short
+uv run pytest --tb=short
 
 # Trigger documentation check manually
 # (start agent via Claude Code)

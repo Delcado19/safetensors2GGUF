@@ -175,6 +175,11 @@ def update_size_estimate(src: str, quant_key: str) -> str:
 # ──────────────────────────────────────────────────────────────────────────────
 
 CSS = """
+/* ── Override Gradio block background to match page — removes all bands ─── */
+/* Every block container (tabs, rows, columns, HTML, Group…) now inherits    */
+/* the same dark background as the page. Inputs keep input-background-fill.  */
+:root { --block-background-fill: var(--background-fill-primary); }
+
 /* ── Scroll prevention ──────────────────────────────────────────────────── */
 html, body { overflow-anchor: none !important; scroll-behavior: auto !important; }
 
@@ -196,36 +201,78 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
 #app-sub { font-size: 0.87em; color: rgba(255,255,255,0.82); margin: 0; }
 #app-sub strong { color: rgba(255,255,255,0.97); }
 
-/* ── Input card ─────────────────────────────────────────────────────────── */
-.card {
-    border: 1.5px solid var(--border-color-primary, #e2e8f0) !important;
-    border-radius: 10px !important;
-    padding: 16px !important;
-    background: var(--background-fill-primary, #fff) !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05) !important;
-    margin-bottom: 10px !important;
+/* ── Strip outer wrappers: tab-container, any block ancestor of .card ────── */
+.tabitem, .tab-content, .tabs > .tabitem,
+[role="tabpanel"], .tabs > div > div,
+.block:has(> .form.card), .block:has(> .card) {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0 !important;
 }
 
-/* ── Browse button alignment ────────────────────────────────────────────── */
-.browse-btn { margin-top: 22px !important; }
+/* ── Input card ──────────────────────────────────────────────────────────── */
+.card {
+    border: 1.5px solid var(--border-color-primary, #e2e8f0) !important;
+    border-radius: 24px !important;
+    padding: 18px 18px 14px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    margin-bottom: 10px !important;
+}
+.card > .form, .card .form {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+}
+
+/* ── Browse button column ───────────────────────────────────────────────── */
+.browse-col {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    align-self: flex-start !important;
+    display: flex !important;
+    justify-content: flex-start !important;
+}
+.browse-col .block {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+.browse-col button {
+    width: 100% !important;
+}
+.path-input {
+    min-width: 0 !important;
+}
+
+/* ── Path input boxes: rounded ─────────────────────────────────────────── */
+.path-input { margin-top: 0 !important; }
+.path-input .block { border-radius: 8px !important; }
+.path-input textarea { border-radius: 6px !important; }
 
 /* ── Size estimate ──────────────────────────────────────────────────────── */
 #size-info { font-size: 0.85em; color: var(--body-text-color-subdued); padding-top: 8px; }
 
-/* ── Status bar ─────────────────────────────────────────────────────────── */
-#status-wrap {
-    position: sticky; bottom: 0; z-index: 200;
-    padding: 5px 12px 3px;
-    border-top: 2px solid #4f46e5;
-    background: var(--background-fill-secondary, #f8fafc);
-    border-radius: 0 0 10px 10px;
-    margin-top: 6px;
+/* ── Status textbox: Gradio default styling, no custom border colour ─────── */
+#conv-status, #pad-status, #fix-status {
+    margin-top: 6px !important;
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 200 !important;
 }
-#status-wrap textarea {
-    background: transparent !important; border: none !important;
-    box-shadow: none !important; resize: none !important;
-    font-family: ui-monospace, monospace; font-size: 0.85em;
-    font-weight: 600; color: var(--body-text-color); padding: 0 !important;
+#conv-status textarea, #pad-status textarea, #fix-status textarea {
+    font-family: ui-monospace, monospace !important;
+    font-size: 0.85em !important;
+    font-weight: 600 !important;
+    resize: none !important;
 }
 
 /* ── Action buttons ─────────────────────────────────────────────────────── */
@@ -626,34 +673,31 @@ def build_app() -> gr.Blocks:
 
             # ── Convert ────────────────────────────────────────────────────
             with gr.Tab("Convert"):
-                with gr.Group(elem_classes=["card"]):
+                with gr.Column(elem_classes=["card"]):
                     with gr.Row(equal_height=False):
-                        with gr.Column(scale=3):
-                            with gr.Row():
-                                src_path = gr.Textbox(
-                                    label="Source model",
-                                    placeholder="model.safetensors / .ckpt / .pt / .bin / .pth",
-                                    scale=9,
-                                )
-                                browse_conv_btn = gr.Button(
-                                    "Browse", size="sm", scale=0, elem_classes=["browse-btn"]
-                                )
-                            with gr.Row():
-                                dst_path = gr.Textbox(
-                                    label="Output path",
-                                    placeholder="Auto-generated next to source",
-                                    scale=9,
-                                )
-                                browse_dst_btn = gr.Button(
-                                    "Browse", size="sm", scale=0, elem_classes=["browse-btn"]
-                                )
-                            quant_dropdown = gr.Dropdown(
-                                choices=ALL_QUANT_CHOICES,
-                                value="Q4_K_M",
-                                label="Quantization",
+                        with gr.Column(scale=5, elem_classes=["path-input"]):
+                            src_path = gr.Textbox(
+                                label="Source model",
+                                placeholder="model.safetensors / .ckpt / .pt / .bin / .pth",
+                                lines=1, max_lines=1,
                             )
-                        with gr.Column(scale=2):
-                            size_info = gr.Markdown("", elem_id="size-info")
+                        with gr.Column(scale=0, min_width=124, elem_classes=["browse-col"]):
+                            browse_conv_btn = gr.Button("Browse", size="sm")
+                    with gr.Row(equal_height=False):
+                        with gr.Column(scale=5, elem_classes=["path-input"]):
+                            dst_path = gr.Textbox(
+                                label="Output path",
+                                placeholder="Auto-generated next to source",
+                                lines=1, max_lines=1,
+                            )
+                        with gr.Column(scale=0, min_width=124, elem_classes=["browse-col"]):
+                            browse_dst_btn = gr.Button("Browse", size="sm")
+                    quant_dropdown = gr.Dropdown(
+                        choices=ALL_QUANT_CHOICES,
+                        value="Q4_K_M",
+                        label="Quantization",
+                    )
+                size_info = gr.Markdown("", elem_id="size-info")
 
                 with gr.Accordion("Advanced", open=False):
                     exe_path = gr.Textbox(
@@ -670,11 +714,10 @@ def build_app() -> gr.Blocks:
                     convert_btn = gr.Button("▶  Convert", variant="primary", scale=5, elem_id="convert-btn")
                     cancel_btn  = gr.Button("✕",          variant="stop",    scale=1, elem_id="cancel-btn")
 
-                with gr.Group(elem_id="status-wrap"):
-                    conv_status = gr.Textbox(
-                        value="Ready", show_label=False, interactive=False,
-                        lines=1, max_lines=1,
-                    )
+                conv_status = gr.Textbox(
+                    value="Ready", show_label=False, interactive=False,
+                    lines=1, max_lines=1, elem_id="conv-status",
+                )
                 conv_log = gr.Textbox(
                     label="Log", lines=10, max_lines=10,
                     interactive=False, autoscroll=False, elem_id="conv-log",
@@ -687,29 +730,29 @@ def build_app() -> gr.Blocks:
                     "existing **Lumina 2** GGUF.  Required when ComfyUI raises "
                     "*size mismatch for x_pad_token*.  New conversions are not affected."
                 )
-                with gr.Group(elem_classes=["card"]):
-                    with gr.Row():
-                        fix_pad_src = gr.Textbox(
-                            label="Source GGUF",
-                            placeholder="model.gguf",
-                            scale=9,
-                        )
-                        browse_fix_pad_btn = gr.Button(
-                            "Browse", size="sm", scale=0, elem_classes=["browse-btn"]
-                        )
+                with gr.Column(elem_classes=["card"]):
+                    with gr.Row(equal_height=False):
+                        with gr.Column(scale=5, elem_classes=["path-input"]):
+                            fix_pad_src = gr.Textbox(
+                                label="Source GGUF",
+                                placeholder="model.gguf",
+                                lines=1, max_lines=1,
+                            )
+                        with gr.Column(scale=0, min_width=124, elem_classes=["browse-col"]):
+                            browse_fix_pad_btn = gr.Button("Browse", size="sm")
                     fix_pad_dst = gr.Textbox(
                         label="Output path",
                         placeholder="Auto-generated (source-fixed.gguf)",
+                        lines=1, max_lines=1,
                     )
                     overwrite_fix_pad = gr.Checkbox(label="Overwrite existing output", value=False)
 
                 fix_pad_btn = gr.Button("▶  Fix Pad Tokens", variant="primary", elem_id="fix-pad-btn")
 
-                with gr.Group(elem_id="status-wrap"):
-                    fix_pad_status = gr.Textbox(
-                        value="Ready", show_label=False, interactive=False,
-                        lines=1, max_lines=1,
-                    )
+                fix_pad_status = gr.Textbox(
+                    value="Ready", show_label=False, interactive=False,
+                    lines=1, max_lines=1, elem_id="pad-status",
+                )
                 pad_log = gr.Textbox(
                     label="Log", lines=8, max_lines=8,
                     interactive=False, autoscroll=False, elem_id="pad-log",
@@ -722,33 +765,34 @@ def build_app() -> gr.Blocks:
                     "**Required for HunyuanVideo / Wan** when using llama-quantize outside "
                     "the Convert tab — the Convert tab chains this step automatically."
                 )
-                with gr.Group(elem_classes=["card"]):
-                    with gr.Row():
-                        fix_src = gr.Textbox(
-                            label="Source GGUF (quantized)",
-                            placeholder="model-Q8_0.gguf",
-                            scale=9,
-                        )
-                        browse_fix_btn = gr.Button(
-                            "Browse", size="sm", scale=0, elem_classes=["browse-btn"]
-                        )
+                with gr.Column(elem_classes=["card"]):
+                    with gr.Row(equal_height=False):
+                        with gr.Column(scale=5, elem_classes=["path-input"]):
+                            fix_src = gr.Textbox(
+                                label="Source GGUF (quantized)",
+                                placeholder="model-Q8_0.gguf",
+                                lines=1, max_lines=1,
+                            )
+                        with gr.Column(scale=0, min_width=124, elem_classes=["browse-col"]):
+                            browse_fix_btn = gr.Button("Browse", size="sm")
                     fix_dst = gr.Textbox(
                         label="Output path",
                         placeholder="Auto-generated (source-fixed.gguf)",
+                        lines=1, max_lines=1,
                     )
                     fix_file = gr.Textbox(
                         label="Side-car file",
                         placeholder="fix_5d_tensors_<arch>.safetensors — auto-detected when empty",
+                        lines=1, max_lines=1,
                     )
                     overwrite_fix = gr.Checkbox(label="Overwrite existing output", value=False)
 
                 fix_btn = gr.Button("▶  Fix 5D Tensors", variant="primary", elem_id="fix-5d-btn")
 
-                with gr.Group(elem_id="status-wrap"):
-                    fix_status = gr.Textbox(
-                        value="Ready", show_label=False, interactive=False,
-                        lines=1, max_lines=1,
-                    )
+                fix_status = gr.Textbox(
+                    value="Ready", show_label=False, interactive=False,
+                    lines=1, max_lines=1, elem_id="fix-status",
+                )
                 fix_log = gr.Textbox(
                     label="Log", lines=8, max_lines=8,
                     interactive=False, autoscroll=False, elem_id="fix-log",

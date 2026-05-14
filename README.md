@@ -31,6 +31,9 @@ quantization selector, live size estimate, and cancel button is included.
 uv sync
 ```
 
+Dependencies are maintained in `pyproject.toml` and locked in `uv.lock`.
+This project does not maintain a separate `requirements.txt`.
+
 <details>
 <summary>Using pip instead</summary>
 

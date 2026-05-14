@@ -30,6 +30,9 @@ fix_5d_tensors_*.safetensors
 .claude/settings.local.json
 .env
 
+# Local/exported dependency snapshots; pyproject.toml + uv.lock are canonical
+requirements.txt
+
 # OS
 .DS_Store
 Thumbs.db
