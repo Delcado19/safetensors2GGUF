@@ -7,6 +7,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Add
+- `tools/benchmark_llama_quantize.py`: Compare one or more `llama-quantize` binaries on the same GGUF source and report timing/output size
+- `gui.py` / `quantize.py`: Conservative `llama-quantize` discovery for ComfyUI Easy-Install / City96-compatible binaries, plus a native file selector for choosing the executable when it is not found automatically
 - `fix_pad_tokens.py`: Repair Lumina 2 GGUFs with 1D pad token shapes (`[D]` → `[1, D]`) for ComfyUI compatibility; returns output path for consistent streaming integration
 - `gui.py`: **Fix Pad Tokens** tab — GUI front-end for `fix_pad_tokens.py`
 - `gui.py`: K-quant pipeline auto-applies `fix_pad_tokens` after `llama-quantize` for architectures with `keys_unsqueeze` — step count and progress bar updated accordingly
@@ -15,10 +17,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `convert.py`: Unsqueeze step in `handle_tensors` — applies `unsqueeze(0)` for keys listed in `model_arch.keys_unsqueeze` after dtype coercion
 - `quantize.py`: `SIZE_RATIOS` dict — approximate output-size ratios relative to F16 source, used for the live size estimate in the UI
 - `start_gui.bat`: one-click entry point
-- `tests/test_quantize.py`: 24 tests covering type registry, SIZE_RATIOS, find_exe, subprocess interaction
+- `tests/test_quantize.py`: coverage for type registry, SIZE_RATIOS, Easy-Install discovery, subprocess interaction, and benchmark helpers
+- `tests/test_gui.py`: coverage for `llama-quantize` Browse/Detect helper behavior
 - `tests/test_convert.py`: float8 regression tests
+- `pyproject.toml` / `uv.lock`: Add `ruff` as a dev dependency
 
 ### Change
+- `gui.py`: Add an Advanced thread-count control for `llama-quantize` and throttle GUI tensor log lines while keeping per-tensor progress updates
+- `gui.py`: Make the `llama-quantize` path read-only; users select the executable with Browse instead of typing paths manually
 - `AGENTS.md` / `README.md`: Clarify that Claude commit hooks live in `.claude/settings.json`, local permissions live in `.claude/settings.local.json`, tests run through `uv`, and `pyproject.toml`/`uv.lock` are the canonical dependency files
 - `gui.py`: Page width increased from 860 px to 1100 px
 - `gui.py`: Layout cleanup — all three tabs now use the same structure (card for inputs, action button below card, then status bar + log); removed `.card-actions` flex hack and `#size-info` padding tricks
@@ -41,6 +47,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `fix_5d_tensors.py`: `on_progress`, `on_log` callback parameters
 
 ### Fix
+- `gui.py` / `convert.py`: Keep Lumina 2 pad tokens 1D in K-quant intermediates for compatibility with the patched Easy-Install `llama-quantize`, then re-apply the pad-token shape fix after quantization
+- `.claude/settings.json`: Use a repo-local pytest temp directory and disable pytest cache in the commit test hook to avoid Windows temp/cache permission failures
 - `gui.py`: K-quant Lumina 2 conversions — `llama-quantize` collapsed `[1, D]` pad token shapes back to `[D]`; pipeline now re-applies `fix_pad_tokens` automatically after quantization
 - `convert.py`: `nan_to_num` crash on `float8_e4m3fn` tensors (Lumina2 models) — coerce to float16 before clamping
 - `gui.py`: Output filename used stale quantization key when user changed quant after clicking Browse — now uses `{ftype}` placeholder resolved at conversion time

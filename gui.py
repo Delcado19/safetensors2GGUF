@@ -20,6 +20,8 @@ from fix_5d_tensors import fix_5d_tensors as _fix_5d
 from fix_pad_tokens import fix_pad_tokens as _fix_pad
 from quantize import (
     ALL_QUANT_CHOICES,
+    DEFAULT_EXE,
+    EASY_INSTALL_ROOT_ENV,
     LLAMA_QUANT_KEYS,
     PYTHON_PRECISIONS,
     estimate_output_size,
@@ -32,6 +34,7 @@ from quantize import (
 # ──────────────────────────────────────────────────────────────────────────────
 
 _active_cancel: threading.Event | None = None
+GUI_TENSOR_LOG_EVERY = 25
 
 
 def request_cancel() -> str:
@@ -78,6 +81,10 @@ _GGUF_TYPES = [
     ("GGUF files", "*.gguf"),
     ("All files", "*.*"),
 ]
+_LLAMA_QUANTIZE_TYPES = [
+    ("llama-quantize", "llama-quantize.exe llama-quantize"),
+    ("All files", "*.*"),
+]
 
 
 def browse_model() -> str:
@@ -88,6 +95,46 @@ def browse_model() -> str:
 def browse_gguf() -> str:
     """Open a native file dialog filtered to GGUF files; return the selected path."""
     return _browse(_GGUF_TYPES)
+
+
+def llama_quantize_info(path: str | Path | None) -> str:
+    """Return setup guidance for the selected or auto-detected llama-quantize."""
+    path_str = str(path or "").strip()
+    lines: list[str] = []
+    if path_str and Path(path_str).is_file():
+        lines.append(f"Using llama-quantize:\n{path_str}")
+    else:
+        lines.append("No patched llama-quantize binary selected.")
+
+    if os.name == "nt":
+        lines.extend([
+            "",
+            "Windows: the preferred binary is the ComfyUI Easy-Install bundled llama-quantize.exe.",
+            f"Auto-detected default: {DEFAULT_EXE}",
+            f"Optional Easy-Install root override: {EASY_INSTALL_ROOT_ENV}",
+            "If it is not found, use Browse and select llama-quantize.exe.",
+        ])
+    else:
+        lines.extend([
+            "",
+            "macOS/Linux: build llama-quantize from city96/ComfyUI-GGUF + lcpp.patch, then select the built binary with Browse.",
+            "Generic upstream llama.cpp release binaries are not selected automatically.",
+        ])
+    return "\n".join(lines)
+
+
+def detect_llama_quantize_path() -> tuple[str, str]:
+    """Re-run conservative llama-quantize detection for the GUI."""
+    exe = find_exe()
+    path = str(exe or "")
+    return path, llama_quantize_info(path)
+
+
+def browse_llama_quantize(current: str) -> tuple[str, str]:
+    """Select llama-quantize via file picker; keep current value on cancel."""
+    selected = _browse(_LLAMA_QUANTIZE_TYPES)
+    path = selected or (current or "")
+    return path, llama_quantize_info(path)
 
 
 def _pick_dir() -> str:
@@ -452,6 +499,7 @@ def _pipeline(
     dst: str,
     quant_key: str,
     exe_path: str,
+    nthreads: int | float | None,
     keep_intermediate: bool,
     overwrite: bool,
     q: queue.Queue,
@@ -472,6 +520,7 @@ def _pipeline(
     src = src.strip()
     dst_raw = dst.strip() if dst else ""
     exe = exe_path.strip() or None
+    nthreads = int(nthreads or 0) or None
 
     is_kquant = quant_key in LLAMA_QUANT_KEYS
     # Total-step count for k-quants is 2 normally, 3 if a 5D side-car exists.
@@ -504,6 +553,8 @@ def _pipeline(
         interact=False, overwrite=True,
         on_progress=_prog1, on_log=_log,
         target_quant=target_qt, cancel_event=cancel_event,
+        log_tensor_every=GUI_TENSOR_LOG_EVERY,
+        apply_unsqueeze=not is_kquant,
     )
 
     if is_kquant and getattr(arch, "shape_fix", False):
@@ -539,7 +590,11 @@ def _pipeline(
     def _prog2(idx, total, key):
         _frac(0.45 + (idx / total * (step2_end - 0.45)) if total else 0.45, f"[2/{total_steps}] {idx}/{total}")
 
-    run_quantize(intermediate, final_dst, quant_key, exe=exe, on_progress=_prog2, on_log=_log, cancel_event=cancel_event)
+    run_quantize(
+        intermediate, final_dst, quant_key,
+        exe=exe, on_progress=_prog2, on_log=_log,
+        nthreads=nthreads, cancel_event=cancel_event,
+    )
 
     if not keep_intermediate and intermediate:
         try:
@@ -581,6 +636,7 @@ def run_convert(
     dst: str,
     quant_key: str,
     exe_path: str,
+    nthreads: int | float | None,
     keep_intermediate: bool,
     overwrite: bool,
 ) -> Generator[tuple[str, str], None, None]:
@@ -607,7 +663,7 @@ def run_convert(
         import gc
         try:
             result["out"] = _pipeline(
-                src, dst, quant_key, exe_path,
+                src, dst, quant_key, exe_path, nthreads,
                 keep_intermediate, overwrite, q, cancel_event,
             )
         except ConversionCancelled:
@@ -665,6 +721,7 @@ def run_fix(
 def build_app() -> gr.Blocks:
     """Construct and return the Gradio Blocks application."""
     default_exe = str(find_exe() or "")
+    default_exe_info = llama_quantize_info(default_exe)
 
     with gr.Blocks(title="safetensors → GGUF") as app:
         gr.HTML(_HEADER_HTML)
@@ -700,11 +757,33 @@ def build_app() -> gr.Blocks:
                 size_info = gr.Markdown("", elem_id="size-info")
 
                 with gr.Accordion("Advanced", open=False):
-                    exe_path = gr.Textbox(
-                        label="llama-quantize path",
-                        value=default_exe,
-                        placeholder=r"H:\...\llama-quantize.exe",
-                        info="Required for [lq] types. Auto-detected from the default ComfyUI path.",
+                    with gr.Row(equal_height=False):
+                        with gr.Column(scale=5, elem_classes=["path-input"]):
+                            exe_path = gr.Textbox(
+                                label="llama-quantize path",
+                                value=default_exe,
+                                placeholder="Use Browse to select llama-quantize",
+                                lines=1,
+                                max_lines=1,
+                                interactive=False,
+                                info="Required for [lq] types. Auto-detected from Easy-Install, LLAMA_QUANTIZE_PATH, or PATH.",
+                            )
+                        with gr.Column(scale=0, min_width=124, elem_classes=["browse-col"]):
+                            browse_llama_btn = gr.Button("Browse", size="sm")
+                    detect_llama_btn = gr.Button("Detect llama-quantize", size="sm")
+                    llama_update_info = gr.Textbox(
+                        label="llama-quantize setup",
+                        value=default_exe_info,
+                        lines=6,
+                        max_lines=7,
+                        interactive=False,
+                    )
+                    nthreads = gr.Number(
+                        label="llama-quantize threads",
+                        value=0,
+                        precision=0,
+                        minimum=0,
+                        info="0 = let llama-quantize choose automatically.",
                     )
                     with gr.Row():
                         keep_intermediate = gr.Checkbox(label="Keep F16 intermediate", value=False)
@@ -808,9 +887,19 @@ def build_app() -> gr.Blocks:
         src_path.change(update_size_estimate, inputs=[src_path, quant_dropdown], outputs=size_info)
         quant_dropdown.change(update_size_estimate, inputs=[src_path, quant_dropdown], outputs=size_info)
 
+        browse_llama_btn.click(
+            fn=browse_llama_quantize,
+            inputs=[exe_path],
+            outputs=[exe_path, llama_update_info],
+        )
+        detect_llama_btn.click(
+            fn=detect_llama_quantize_path,
+            outputs=[exe_path, llama_update_info],
+        )
+
         conv_event = convert_btn.click(
             fn=run_convert,
-            inputs=[src_path, dst_path, quant_dropdown, exe_path, keep_intermediate, overwrite_conv],
+            inputs=[src_path, dst_path, quant_dropdown, exe_path, nthreads, keep_intermediate, overwrite_conv],
             outputs=[conv_log, conv_status],
             show_progress="hidden",
         )

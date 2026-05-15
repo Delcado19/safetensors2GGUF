@@ -105,7 +105,17 @@ def _quant_type_for(data, key, model_arch, old_dtype, target_quant=None):
     return gguf.GGMLQuantizationType.F16
 
 
-def handle_tensors(writer, state_dict, model_arch, on_progress=None, on_log=None, target_quant=None, cancel_event=None):
+def handle_tensors(
+    writer,
+    state_dict,
+    model_arch,
+    on_progress=None,
+    on_log=None,
+    target_quant=None,
+    cancel_event=None,
+    log_tensor_every: int = 1,
+    apply_unsqueeze: bool = True,
+):
     """Write all tensors from state_dict into the GGUF writer.
 
     Applies dtype coercion, nan/inf clamping, quantization type selection,
@@ -122,6 +132,12 @@ def handle_tensors(writer, state_dict, model_arch, on_progress=None, on_log=None
         on_log: Optional callback(msg) for log messages; uses tqdm.write when None.
         target_quant: GGMLQuantizationType override for non-hiprec tensors.
         cancel_event: Optional threading.Event; raises ConversionCancelled when set.
+        log_tensor_every: Emit every Nth tensor conversion log line. Progress
+            callbacks still fire for every tensor. Values below 1 are treated as 1.
+        apply_unsqueeze: Reshape architecture-specific 1D tensors to [1, D].
+            K-quant intermediates disable this because llama-quantize expects
+            the original 1D Lumina2 pad-token tensors and the GUI fixes them
+            after quantization.
     """
     name_lengths = sorted(
         ((k, len(k)) for k in state_dict), key=lambda x: x[1], reverse=True
@@ -144,6 +160,7 @@ def handle_tensors(writer, state_dict, model_arch, on_progress=None, on_log=None
     items = list(state_dict.items())
     total = len(items)
     iter_items = tqdm(items) if on_progress is None else items
+    log_tensor_every = max(1, int(log_tensor_every or 1))
 
     for idx, (key, data) in enumerate(iter_items):
         if cancel_event is not None and cancel_event.is_set():
@@ -167,7 +184,7 @@ def handle_tensors(writer, state_dict, model_arch, on_progress=None, on_log=None
             data = data.to(torch.float32)
 
         # Reshape 1D pad tokens to [1, D] for architectures that require it (e.g. Lumina2)
-        if model_arch.keys_unsqueeze and data.dim() == 1 and key in model_arch.keys_unsqueeze:
+        if apply_unsqueeze and model_arch.keys_unsqueeze and data.dim() == 1 and key in model_arch.keys_unsqueeze:
             data = data.unsqueeze(0)
 
         # Clamp inf/nan to prevent llama-quantize validation failures
@@ -205,10 +222,17 @@ def handle_tensors(writer, state_dict, model_arch, on_progress=None, on_log=None
             data = gguf.quants.quantize(data, data_qtype)
 
         shape_str = "{" + ", ".join(str(d) for d in reversed(data.shape)) + "}"
-        _emit(
-            f"  {'%-*s' % (max_name_len + 2, key)}"
-            f"  {str(old_dtype):<20} → {data_qtype.name:<8}  {shape_str}"
+        should_log_tensor = (
+            log_tensor_every == 1
+            or idx == 0
+            or idx + 1 == total
+            or (idx + 1) % log_tensor_every == 0
         )
+        if should_log_tensor:
+            _emit(
+                f"  {'%-*s' % (max_name_len + 2, key)}"
+                f"  {str(old_dtype):<20} -> {data_qtype.name:<8}  {shape_str}"
+            )
         writer.add_tensor(key, data, raw_dtype=data_qtype)
 
 
@@ -230,6 +254,8 @@ def convert_file(
     on_log=None,
     target_quant=None,
     cancel_event=None,
+    log_tensor_every: int = 1,
+    apply_unsqueeze: bool = True,
 ):
     """Convert a model checkpoint to GGUF and write it to disk.
 
@@ -244,6 +270,9 @@ def convert_file(
         target_quant: GGMLQuantizationType to use for non-hiprec tensors.
             Auto-detected from source dtype when None.
         cancel_event: Optional threading.Event; raises ConversionCancelled when set.
+        log_tensor_every: Emit every Nth tensor conversion log line while still
+            reporting progress for each tensor.
+        apply_unsqueeze: Reshape architecture-specific 1D tensors to [1, D].
 
     Returns:
         (dst_path, model_arch)
@@ -291,6 +320,8 @@ def convert_file(
             writer, state_dict, model_arch,
             on_progress=on_progress, on_log=on_log,
             target_quant=target_quant, cancel_event=cancel_event,
+            log_tensor_every=log_tensor_every,
+            apply_unsqueeze=apply_unsqueeze,
         )
     except ConversionCancelled:
         # Release writer buffers (may hold GBs of tensor data)

@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *.pyo
 .pytest_cache/
+.pytest-tmp/
 .mypy_cache/
 *.egg-info/
 dist/
@@ -32,6 +33,9 @@ fix_5d_tensors_*.safetensors
 
 # Local/exported dependency snapshots; pyproject.toml + uv.lock are canonical
 requirements.txt
+
+# Local llama.cpp release downloads
+.llama.cpp/
 
 # OS
 .DS_Store

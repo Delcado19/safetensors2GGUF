@@ -1,7 +1,6 @@
 """Tests for conversion logic and architecture detection."""
 
 import os
-import tempfile
 
 import gguf
 import numpy as np
@@ -9,8 +8,6 @@ import pytest
 import torch
 
 from models.architectures import (
-    QUANTIZATION_THRESHOLD,
-    REARRANGE_THRESHOLD,
     CosmosPredict2,
     ModelAura,
     ModelFlux,
@@ -23,7 +20,6 @@ from models.architectures import (
     ModelSDXL,
     ModelWan,
     detect_arch,
-    is_model_arch,
 )
 from convert import _quant_type_for, handle_tensors, strip_prefix
 
@@ -144,6 +140,54 @@ class TestNanToNum:
         dst = self._run_handle(sd, ModelFlux(), tmp_path)
         assert os.path.isfile(dst)
 
+    def test_log_tensor_every_throttles_tensor_lines(self):
+        class _FakeWriter:
+            def add_array(self, *a, **kw): pass
+            def add_tensor(self, *a, **kw): pass
+
+        sd = {
+            f"double_blocks.{idx}.img_attn.proj.weight": torch.zeros(64, 64)
+            for idx in range(5)
+        }
+        logs: list[str] = []
+
+        handle_tensors(
+            _FakeWriter(),
+            sd,
+            ModelFlux(),
+            on_log=logs.append,
+            log_tensor_every=2,
+        )
+
+        tensor_logs = [line for line in logs if "torch.float32" in line]
+        assert len(tensor_logs) == 4  # first, every 2nd, last
+
+    def test_lumina2_pad_tokens_unsqueeze_can_be_disabled_for_kquant_intermediate(self):
+        class _FakeWriter:
+            def __init__(self):
+                self.shapes = {}
+
+            def add_array(self, *a, **kw): pass
+
+            def add_tensor(self, key, data, raw_dtype=None):
+                self.shapes[key] = tuple(data.shape)
+
+        sd = {"x_pad_token": torch.zeros(3840, dtype=torch.float32)}
+
+        writer = _FakeWriter()
+        handle_tensors(writer, sd, ModelLumina2(), on_log=lambda *a: None)
+        assert writer.shapes["x_pad_token"] == (1, 3840)
+
+        writer_no_unsqueeze = _FakeWriter()
+        handle_tensors(
+            writer_no_unsqueeze,
+            sd,
+            ModelLumina2(),
+            on_log=lambda *a: None,
+            apply_unsqueeze=False,
+        )
+        assert writer_no_unsqueeze.shapes["x_pad_token"] == (3840,)
+
 
 # ---------------------------------------------------------------------------
 # shape_fix round-trip: reshape metadata must survive write → read
@@ -238,7 +282,7 @@ class TestFiveDTensorHandling:
         arch.handle_nd_tensor("rope.freqs2", data2)   # must not raise
 
         from safetensors.torch import load_file
-        fix = load_file(f"fix_5d_tensors_wan.safetensors")
+        fix = load_file("fix_5d_tensors_wan.safetensors")
         assert "rope.freqs" in fix
         assert "rope.freqs2" in fix
 
@@ -254,8 +298,6 @@ class TestFloat8Handling:
     )
     def test_float8_e4m3fn_does_not_raise(self, tmp_path):
         """handle_tensors must convert float8 to float16 before nan_to_num."""
-        import tempfile
-
         class _FakeWriter:
             def add_array(self, *a, **kw): pass
             def add_tensor(self, *a, **kw): pass

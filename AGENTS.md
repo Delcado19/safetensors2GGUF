@@ -50,11 +50,15 @@ git commit
 **Timeout:** 300 seconds
 
 ### What it does
-1. Runs `uv run pytest --tb=short -q`
+1. Runs `uv run pytest --tb=short -q --basetemp .pytest-tmp -p no:cacheprovider`
 2. On failure: analyzes and repairs (max. 3 attempts)
    - Outdated tests → fix tests
    - Real bug → fix source code
 3. Only lets the commit through when all tests pass
+
+The repo-local `.pytest-tmp` base directory avoids Windows temp-folder permission
+issues in automated commit hooks. Pytest's cache provider is disabled for the
+hook so stale or locked `.pytest_cache` files cannot block a commit.
 
 ---
 
@@ -70,7 +74,7 @@ Local Claude permissions are stored in `.claude/settings.local.json`; that file 
 
 ```bash
 # Run tests only
-uv run pytest --tb=short
+uv run pytest --tb=short -q --basetemp .pytest-tmp -p no:cacheprovider
 
 # Trigger documentation check manually
 # (start agent via Claude Code)

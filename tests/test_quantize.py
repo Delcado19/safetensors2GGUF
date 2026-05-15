@@ -12,11 +12,13 @@ import struct
 
 from quantize import (
     ALL_QUANT_CHOICES,
+    EASY_INSTALL_QUANTIZE_RELATIVE,
     LLAMA_QUANT_KEYS,
     PYTHON_PRECISIONS,
     SIZE_RATIOS,
     _QUANT_BYTES_PER_ELEM,
-    _QUANTIZATION_THRESHOLD,
+    benchmark_quantize_binary,
+    benchmark_quantize_binaries,
     estimate_output_size,
     find_exe,
     run_quantize,
@@ -101,15 +103,69 @@ class TestRegistry:
 
 class TestFindExe:
     def test_returns_none_when_missing(self, tmp_path):
-        with patch("quantize.DEFAULT_EXE", tmp_path / "nonexistent.exe"):
+        with (
+            patch.dict("os.environ", {}, clear=True),
+            patch("quantize.DEFAULT_EASY_INSTALL_ROOT", tmp_path / "missing"),
+            patch("quantize.EASY_INSTALL_DRIVE_ROOTS", ()),
+            patch("shutil.which", return_value=None),
+        ):
             assert find_exe() is None
 
-    def test_returns_path_when_present(self, tmp_path):
-        fake_exe = tmp_path / "llama-quantize.exe"
+    def test_returns_easy_install_path_when_present(self, tmp_path):
+        fake_exe = tmp_path / EASY_INSTALL_QUANTIZE_RELATIVE
+        fake_exe.parent.mkdir(parents=True)
         fake_exe.touch()
-        with patch("quantize.DEFAULT_EXE", fake_exe):
+        with (
+            patch.dict("os.environ", {}, clear=True),
+            patch("quantize.DEFAULT_EASY_INSTALL_ROOT", tmp_path),
+            patch("quantize.EASY_INSTALL_DRIVE_ROOTS", ()),
+            patch("shutil.which", return_value=None),
+        ):
             result = find_exe()
             assert result == fake_exe
+
+    def test_env_path_takes_precedence(self, tmp_path):
+        env_exe = tmp_path / "env" / "llama-quantize.exe"
+        env_exe.parent.mkdir()
+        env_exe.touch()
+        default_exe = tmp_path / "default" / "llama-quantize.exe"
+        default_exe.parent.mkdir()
+        default_exe.touch()
+
+        with (
+            patch.dict("os.environ", {"LLAMA_QUANTIZE_PATH": str(env_exe)}, clear=True),
+            patch("quantize.DEFAULT_EASY_INSTALL_ROOT", tmp_path / "local"),
+            patch("quantize.EASY_INSTALL_DRIVE_ROOTS", ()),
+            patch("shutil.which", return_value=None),
+        ):
+            assert find_exe() == env_exe
+
+    def test_easy_install_root_env_is_used(self, tmp_path):
+        root = tmp_path / "ComfyUI-Easy-Install"
+        fake_exe = root / EASY_INSTALL_QUANTIZE_RELATIVE
+        fake_exe.parent.mkdir(parents=True)
+        fake_exe.touch()
+
+        with (
+            patch.dict("os.environ", {"COMFYUI_EASY_INSTALL_HOME": str(root)}, clear=True),
+            patch("quantize.DEFAULT_EASY_INSTALL_ROOT", tmp_path / "missing"),
+            patch("quantize.EASY_INSTALL_DRIVE_ROOTS", ()),
+            patch("shutil.which", return_value=None),
+        ):
+            assert find_exe() == fake_exe
+
+    def test_path_lookup_is_last_fallback(self, tmp_path):
+        path_exe = tmp_path / "bin" / "llama-quantize"
+        path_exe.parent.mkdir()
+        path_exe.touch()
+
+        with (
+            patch.dict("os.environ", {}, clear=True),
+            patch("quantize.DEFAULT_EASY_INSTALL_ROOT", tmp_path / "missing"),
+            patch("quantize.EASY_INSTALL_DRIVE_ROOTS", ()),
+            patch("shutil.which", return_value=str(path_exe)),
+        ):
+            assert find_exe() == path_exe
 
 
 # ---------------------------------------------------------------------------
@@ -130,7 +186,12 @@ class TestRunQuantize:
             run_quantize("src.gguf", "dst.gguf", "Q4_K_M", exe=tmp_path / "nope.exe")
 
     def test_raises_file_not_found_when_exe_none_and_default_missing(self):
-        with patch("quantize.DEFAULT_EXE", Path("/nonexistent/llama-quantize.exe")):
+        with (
+            patch.dict("os.environ", {}, clear=True),
+            patch("quantize.DEFAULT_EASY_INSTALL_ROOT", Path("/nonexistent/ComfyUI-Easy-Install")),
+            patch("quantize.EASY_INSTALL_DRIVE_ROOTS", ()),
+            patch("shutil.which", return_value=None),
+        ):
             with pytest.raises(FileNotFoundError):
                 run_quantize("src.gguf", "dst.gguf", "Q4_K_M")
 
@@ -195,7 +256,7 @@ class TestRunQuantize:
             )
 
         # First log entry is the "$ cmd" info line; remaining are from stdout
-        stdout_lines = [l for l in logged if not l.startswith("INFO:")]
+        stdout_lines = [line for line in logged if not line.startswith("INFO:")]
         assert "line one" in stdout_lines
         assert "line two" in stdout_lines
         assert "" not in stdout_lines  # empty lines are dropped
@@ -219,6 +280,62 @@ class TestRunQuantize:
 
         kwargs = mock_popen.call_args[1]
         assert kwargs.get("bufsize") == 1, "bufsize=1 required to avoid buffering delay"
+
+
+# ---------------------------------------------------------------------------
+# Benchmark helpers
+# ---------------------------------------------------------------------------
+
+class TestBenchmarkQuantize:
+    def test_benchmark_quantize_binary_times_and_removes_output(self, tmp_path):
+        src = tmp_path / "source.gguf"
+        src.write_bytes(b"source")
+        exe = tmp_path / "llama-quantize.exe"
+        exe.touch()
+
+        def fake_run_quantize(src_path, dst_path, quant_type, exe=None, nthreads=None, on_log=None):
+            assert quant_type == "Q4_K_M"
+            assert nthreads == 4
+            Path(dst_path).write_bytes(b"output")
+
+        with patch("quantize.run_quantize", side_effect=fake_run_quantize):
+            result = benchmark_quantize_binary(exe, src, "Q4_K_M", nthreads=4, work_dir=tmp_path)
+
+        assert result.exe == str(exe)
+        assert result.quant_type == "Q4_K_M"
+        assert result.output_size == len(b"output")
+        assert result.seconds >= 0
+        assert result.error is None
+        assert not list(tmp_path.glob("llama-quantize-bench-*"))
+
+    def test_benchmark_quantize_binary_records_error_and_removes_output(self, tmp_path):
+        src = tmp_path / "source.gguf"
+        src.write_bytes(b"source")
+        exe = tmp_path / "llama-quantize.exe"
+        exe.touch()
+
+        with patch("quantize.run_quantize", side_effect=RuntimeError("boom")):
+            result = benchmark_quantize_binary(exe, src, "Q4_K_M", work_dir=tmp_path)
+
+        assert result.error == "boom"
+        assert result.output_size == 0
+        assert not list(tmp_path.glob("llama-quantize-bench-*"))
+
+    def test_benchmark_quantize_binaries_preserves_order(self, tmp_path):
+        src = tmp_path / "source.gguf"
+        src.write_bytes(b"source")
+        exe1 = tmp_path / "one.exe"
+        exe2 = tmp_path / "two.exe"
+        exe1.touch()
+        exe2.touch()
+
+        def fake_run_quantize(src_path, dst_path, quant_type, exe=None, nthreads=None, on_log=None):
+            Path(dst_path).write_bytes(str(exe).encode("utf-8"))
+
+        with patch("quantize.run_quantize", side_effect=fake_run_quantize):
+            results = benchmark_quantize_binaries([exe1, exe2], src, "Q5_K_M", work_dir=tmp_path)
+
+        assert [Path(result.exe).name for result in results] == ["one.exe", "two.exe"]
 
 
 # ---------------------------------------------------------------------------

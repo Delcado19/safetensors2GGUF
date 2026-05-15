@@ -1,10 +1,7 @@
 """Tests for loader.py — including the critical shape_fix round-trip."""
 
-import os
-
 import gguf
 import numpy as np
-import pytest
 import torch
 
 from convert import handle_tensors

@@ -59,6 +59,10 @@ The UI provides:
 - **Live status bar** with percentage embedded in text; scroll-blocked so streaming updates never hijack the viewport
 - **Automatic pipeline** — K-quants trigger a 2-step convert → quantize run;
   5D tensor insertion (HunyuanVideo / Wan) is chained automatically when needed
+- **Advanced performance controls** — pass a fixed thread count to
+  `llama-quantize` and keep GUI tensor logging throttled during conversion
+- **llama-quantize picker** — the path is auto-detected or selected with a
+  native file dialog; manual path typing is disabled
 
 ## Quantization Levels
 
@@ -75,11 +79,35 @@ The UI provides:
 | `Q3_K_M` | 3 | llama-quantize | Moderate quality |
 | `Q2_K` | 2 | llama-quantize | Smallest, lowest quality |
 
-K-quants (marked *llama-quantize*) require `llama-quantize.exe`.
-The default path is detected automatically from:
-`H:\ComfyUI-Easy-Install\Add-Ons\Tools\llama.cpp\llama-quantize.exe`
+K-quants (marked *llama-quantize*) require a City96/ComfyUI-GGUF compatible
+`llama-quantize` binary.  Upstream `ggml-org/llama.cpp` release binaries are
+not selected automatically because they do not include the image-model patch
+required for architectures such as Lumina 2.
 
-A custom path can be set in the **Advanced** section of the Web UI.
+The path is detected automatically from:
+1. `LLAMA_QUANTIZE_PATH`
+2. The ComfyUI Easy-Install bundled path:
+`H:\ComfyUI-Easy-Install\Add-Ons\Tools\llama.cpp\llama-quantize.exe`
+3. `COMFYUI_EASY_INSTALL_HOME` plus `Add-Ons\Tools\llama.cpp\llama-quantize.exe`
+4. The system `PATH`
+
+If no compatible binary is found, use the **Browse** button in the **Advanced**
+section and select the `llama-quantize` executable.  The path field is
+read-only on purpose, so users do not have to type or escape Windows paths.
+
+### llama-quantize Sources
+
+Recommended sources:
+
+| OS | Source |
+|---|---|
+| Windows | ComfyUI Easy-Install bundled `Add-Ons\Tools\llama.cpp\llama-quantize.exe` |
+| macOS / Linux | Build `llama-quantize` from `city96/ComfyUI-GGUF` using `tools/lcpp.patch` |
+
+For a self-build, follow `ComfyUI-GGUF/tools/README.md`: clone the matching
+`llama.cpp` version, apply `tools/lcpp.patch`, then build the `llama-quantize`
+target.  Building on Windows requires Visual Studio C++ Build Tools and is
+therefore treated as an advanced fallback, not the default path.
 
 ## CLI Usage
 
@@ -132,6 +160,23 @@ llama-quantize.exe model-F16.gguf model-Q8_0.gguf Q8_0
 uv run python fix_5d_tensors.py --src model-Q8_0.gguf --dst model-Q8_0-fixed.gguf
 ```
 
+## Benchmarking llama-quantize
+
+Use the benchmark helper to compare compatible `llama-quantize`
+binaries on the same source GGUF:
+
+```bash
+uv run python tools/benchmark_llama_quantize.py \
+  --src model-F16.gguf \
+  --quant Q4_K_M \
+  --threads 8 \
+  --exe H:\ComfyUI-Easy-Install\Add-Ons\Tools\llama.cpp\llama-quantize.exe \
+  --exe path\to\another\patched\llama-quantize.exe
+```
+
+The benchmark writes temporary output GGUFs and removes them after timing.  Use
+an F16, BF16, F32, or Q8_0 source GGUF for meaningful measurements.
+
 ## Known Issues
 
 See [Issues Analysis](docs/issues_analysis.md) for common errors and their fixes.
@@ -140,6 +185,7 @@ See [Issues Analysis](docs/issues_analysis.md) for common errors and their fixes
 
 ```bash
 uv run pytest
+uv run ruff check .
 ```
 
 ## License

@@ -13,6 +13,9 @@ import os
 import re
 import struct
 import subprocess
+import tempfile
+import time
+from dataclasses import dataclass
 from pathlib import Path
 
 import gguf
@@ -186,14 +189,80 @@ def estimate_output_size(src_path: str, quant_key: str) -> int | None:
 # Binary discovery
 # ──────────────────────────────────────────────────────────────────────────────
 
-DEFAULT_EXE = Path(r"H:\ComfyUI-Easy-Install\Add-Ons\Tools\llama.cpp\llama-quantize.exe")
+EASY_INSTALL_ROOT_ENV = "COMFYUI_EASY_INSTALL_HOME"
+EASY_INSTALL_QUANTIZE_RELATIVE = Path("Add-Ons") / "Tools" / "llama.cpp" / "llama-quantize.exe"
+DEFAULT_EASY_INSTALL_ROOT = Path(r"H:\ComfyUI-Easy-Install")
+EASY_INSTALL_DRIVE_ROOTS = tuple(Path(f"{drive}:\\ComfyUI-Easy-Install") for drive in "CDEFGHIJKLMNOPQRSTUVWXYZ")
+DEFAULT_EXE = DEFAULT_EASY_INSTALL_ROOT / EASY_INSTALL_QUANTIZE_RELATIVE
 
 _PROGRESS_RE = re.compile(r"\[\s*(\d+)/\s*(\d+)\]")
 
 
+@dataclass(frozen=True)
+class QuantizeBenchmarkResult:
+    """Timing result for one llama-quantize binary."""
+
+    exe: str
+    quant_type: str
+    seconds: float
+    output_size: int
+    error: str | None = None
+
+
+def _easy_install_roots() -> list[Path]:
+    """Return conservative ComfyUI Easy-Install roots to probe."""
+    roots: list[Path] = []
+    env_root = os.environ.get(EASY_INSTALL_ROOT_ENV)
+    if env_root:
+        roots.append(Path(env_root))
+
+    roots.append(DEFAULT_EASY_INSTALL_ROOT)
+
+    roots.extend(EASY_INSTALL_DRIVE_ROOTS)
+
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for root in roots:
+        key = str(root).lower()
+        if key not in seen:
+            unique.append(root)
+            seen.add(key)
+    return unique
+
+
+def _find_easy_install_quantize() -> Path | None:
+    """Return the Easy-Install bundled llama-quantize.exe when available."""
+    for root in _easy_install_roots():
+        candidate = root / EASY_INSTALL_QUANTIZE_RELATIVE
+        if candidate.is_file():
+            return candidate
+    return None
+
+
 def find_exe() -> Path | None:
-    """Return DEFAULT_EXE if it exists on disk, else None."""
-    return DEFAULT_EXE if DEFAULT_EXE.is_file() else None
+    """Return a patched llama-quantize binary path, if one is discoverable.
+
+    Discovery is intentionally conservative.  Upstream llama.cpp release
+    binaries are not auto-selected because ComfyUI-GGUF image models require the
+    City96 patch.  Windows prefers the Easy-Install bundled binary; non-Windows
+    users can provide a locally built City96-patched binary through PATH,
+    LLAMA_QUANTIZE_PATH, or the GUI file picker.
+    """
+    env_path = os.environ.get("LLAMA_QUANTIZE_PATH")
+    if env_path and Path(env_path).is_file():
+        return Path(env_path)
+
+    easy_install_exe = _find_easy_install_quantize()
+    if easy_install_exe is not None:
+        return easy_install_exe
+
+    import shutil
+
+    for name in ("llama-quantize", "llama-quantize.exe"):
+        found = shutil.which(name)
+        if found:
+            return Path(found)
+    return None
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -273,3 +342,63 @@ def run_quantize(
         raise RuntimeError(
             f"llama-quantize exited with code {proc.returncode}"
         )
+
+
+def benchmark_quantize_binary(
+    exe: str | Path,
+    src: str | Path,
+    quant_type: str,
+    nthreads: int | None = None,
+    work_dir: str | Path | None = None,
+    on_log=None,
+) -> QuantizeBenchmarkResult:
+    """Benchmark one llama-quantize binary against a source GGUF.
+
+    The benchmark writes a temporary output GGUF and removes it after timing.
+    Use an F16/BF16/F32/Q8_0 source GGUF for meaningful results.
+    """
+    exe = Path(exe)
+    src = Path(src)
+    if not src.is_file():
+        raise FileNotFoundError(f"Source GGUF not found: {src}")
+    if not exe.is_file():
+        raise FileNotFoundError(f"llama-quantize binary not found: {exe}")
+
+    tmp_parent = Path(work_dir) if work_dir else src.parent
+    tmp_parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="llama-quantize-bench-", dir=tmp_parent) as tmp:
+        dst = Path(tmp) / f"{src.stem}-{quant_type}.gguf"
+        start = time.perf_counter()
+        try:
+            run_quantize(src, dst, quant_type, exe=exe, nthreads=nthreads, on_log=on_log)
+            error = None
+        except Exception as exc:
+            error = str(exc)
+        seconds = time.perf_counter() - start
+        output_size = dst.stat().st_size if dst.exists() else 0
+
+    return QuantizeBenchmarkResult(
+        exe=str(exe),
+        quant_type=quant_type,
+        seconds=seconds,
+        output_size=output_size,
+        error=error,
+    )
+
+
+def benchmark_quantize_binaries(
+    exes: list[str | Path],
+    src: str | Path,
+    quant_type: str,
+    nthreads: int | None = None,
+    work_dir: str | Path | None = None,
+    on_log=None,
+) -> list[QuantizeBenchmarkResult]:
+    """Benchmark multiple llama-quantize binaries on the same source GGUF."""
+    return [
+        benchmark_quantize_binary(
+            exe, src, quant_type,
+            nthreads=nthreads, work_dir=work_dir, on_log=on_log,
+        )
+        for exe in exes
+    ]

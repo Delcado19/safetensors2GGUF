@@ -16,7 +16,7 @@
             "if": "Bash(git commit*)",
             "statusMessage": "Tests werden geprüft...",
             "timeout": 300,
-            "prompt": "Ein git-Commit wurde versucht. Führe jetzt alle Tests aus mit: uv run pytest --tb=short -q\n\nExit-Code 5 bedeutet 'keine Tests gefunden' → gilt als ERFOLG, erlaube den Commit.\n\nFalls ALLE Tests bestehen (Exit-Code 0): erlaube den Commit:\n{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}}\n\nFalls Tests FEHLSCHLAGEN: Analysiere die Fehler sorgfältig.\n- Veralteter Testcode (neues Interface)? → Tests anpassen.\n- Echter Bug im Quellcode? → Bug reparieren.\nNach jeder Änderung Tests erneut ausführen. Maximal 3 Versuche.\n\nNach erfolgreicher Reparatur: allow-JSON ausgeben.\nWenn nicht reparierbar:\n{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Tests fehlgeschlagen: <Zusammenfassung>\"}}"
+            "prompt": "Ein git-Commit wurde versucht. Führe jetzt alle Tests aus mit: uv run pytest --tb=short -q --basetemp .pytest-tmp -p no:cacheprovider\n\nExit-Code 5 bedeutet 'keine Tests gefunden' → gilt als ERFOLG, erlaube den Commit.\n\nFalls ALLE Tests bestehen (Exit-Code 0): erlaube den Commit:\n{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}}\n\nFalls Tests FEHLSCHLAGEN: Analysiere die Fehler sorgfältig.\n- Veralteter Testcode (neues Interface)? → Tests anpassen.\n- Echter Bug im Quellcode? → Bug reparieren.\nNach jeder Änderung Tests erneut mit demselben Befehl ausführen. Maximal 3 Versuche.\n\nNach erfolgreicher Reparatur: allow-JSON ausgeben.\nWenn nicht reparierbar:\n{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Tests fehlgeschlagen: <Zusammenfassung>\"}}"
           }
         ]
       }
@@ -26,7 +26,8 @@
     "allow": [
       "Bash(uv run pytest*)",
       "Bash(pytest*)",
-      "Bash(uv run pytest --tb=short -q)"
+      "Bash(uv run pytest --tb=short -q)",
+      "Bash(uv run pytest --tb=short -q --basetemp .pytest-tmp -p no:cacheprovider)"
     ]
   }
 }

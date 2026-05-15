@@ -1,8 +1,5 @@
 """Tests for fix_5d_tensors.py."""
 
-import os
-import tempfile
-
 import gguf
 import numpy as np
 import pytest
