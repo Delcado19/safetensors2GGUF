@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import patch
 
+import gradio as gr
+
 import gui
 
 
@@ -59,3 +61,37 @@ class TestLlamaQuantizePicker:
 
         assert "city96/ComfyUI-GGUF + lcpp.patch" in info
         assert "Generic upstream llama.cpp release binaries are not selected automatically." in info
+
+
+def _markdown_values(app: gr.Blocks) -> list[str]:
+    """Collect the rendered text of every gr.Markdown component in the app."""
+    return [
+        block.value
+        for block in app.blocks.values()
+        if isinstance(block, gr.Markdown) and isinstance(getattr(block, "value", None), str)
+    ]
+
+
+class TestLayoutParity:
+    """Each tab should start with a description Markdown so Gradio computes
+    a consistent tab width (Gradio 6 sizes tabs by their first child)."""
+
+    def test_build_app_runs_without_error(self):
+        app = gui.build_app()
+        assert isinstance(app, gr.Blocks)
+
+    def test_convert_tab_has_description_header(self):
+        app = gui.build_app()
+        markdown_values = _markdown_values(app)
+        assert any(
+            "Safetensors / CKPT" in v and "GGUF" in v
+            for v in markdown_values
+        ), "Convert tab is missing its description Markdown — tab width parity depends on it."
+
+    def test_all_tabs_have_a_description_header(self):
+        app = gui.build_app()
+        markdown_values = _markdown_values(app)
+        # Convert tab + Fix Pad Tokens + Fix 5D Tensors descriptions
+        assert any("Safetensors / CKPT" in v for v in markdown_values)
+        assert any("x_pad_token" in v for v in markdown_values)
+        assert any("Re-insert 5D tensors" in v for v in markdown_values)

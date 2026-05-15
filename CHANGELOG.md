@@ -23,6 +23,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `pyproject.toml` / `uv.lock`: Add `ruff` as a dev dependency
 
 ### Change
+- `gui.py`: Convert tab — add a description Markdown header so all three tabs share the same first-child structure; Gradio 6 sizes a tab by its first child, so the Convert tab now renders at the same width as the Fix Pad Tokens and Fix 5D Tensors tabs
+- `tests/test_gui.py`: `TestLayoutParity` — assert `build_app()` returns without error and every tab has its description Markdown header
 - `gui.py`: Add an Advanced thread-count control for `llama-quantize` and throttle GUI tensor log lines while keeping per-tensor progress updates
 - `gui.py`: Make the `llama-quantize` path read-only; users select the executable with Browse instead of typing paths manually
 - `AGENTS.md` / `README.md`: Clarify that Claude commit hooks live in `.claude/settings.json`, local permissions live in `.claude/settings.local.json`, tests run through `uv`, and `pyproject.toml`/`uv.lock` are the canonical dependency files

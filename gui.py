@@ -730,6 +730,12 @@ def build_app() -> gr.Blocks:
 
             # ── Convert ────────────────────────────────────────────────────
             with gr.Tab("Convert"):
+                gr.Markdown(
+                    "Convert a **Safetensors / CKPT** model checkpoint to **GGUF**.  "
+                    "Python-native precisions write directly; K-quants run a 2-step "
+                    "pipeline via the bundled `llama-quantize` binary.  5D-tensor and "
+                    "pad-token fixes are chained automatically when needed."
+                )
                 with gr.Column(elem_classes=["card"]):
                     with gr.Row(equal_height=False):
                         with gr.Column(scale=5, elem_classes=["path-input"]):
