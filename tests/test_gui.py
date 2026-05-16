@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from unittest.mock import patch
 
 import gradio as gr
@@ -57,7 +56,7 @@ class TestLlamaQuantizePicker:
         exe.touch()
 
         with patch("gui.os.name", "posix"):
-            info = gui.llama_quantize_info(Path(exe))
+            info = gui.llama_quantize_info("")
 
         assert "city96/ComfyUI-GGUF + lcpp.patch" in info
         assert "Generic upstream llama.cpp release binaries are not selected automatically." in info

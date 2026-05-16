@@ -50,6 +50,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `fix_5d_tensors.py`: `on_progress`, `on_log` callback parameters
 
 ### Fix
+- `tests/test_gui.py`: Make the non-Windows `llama-quantize` guidance test portable on Windows CI by avoiding patched `os.name` path construction
 - `gui.py` / `convert.py`: Keep Lumina 2 pad tokens 1D in K-quant intermediates for compatibility with the patched Easy-Install `llama-quantize`, then re-apply the pad-token shape fix after quantization
 - `.claude/settings.json`: Use a repo-local pytest temp directory and disable pytest cache in the commit test hook to avoid Windows temp/cache permission failures
 - `gui.py`: K-quant Lumina 2 conversions — `llama-quantize` collapsed `[1, D]` pad token shapes back to `[D]`; pipeline now re-applies `fix_pad_tokens` automatically after quantization
