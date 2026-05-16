@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-05-16
+
 ### Add
 - `.github/workflows/ci.yml`: GitHub Actions CI for Windows-based `uv` dependency sync, pytest, and Ruff lint checks
 - `tools/benchmark_llama_quantize.py`: Compare one or more `llama-quantize` binaries on the same GGUF source and report timing/output size
