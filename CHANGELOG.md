@@ -7,6 +7,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Add
+- `.github/workflows/ci.yml`: GitHub Actions CI for Windows-based `uv` dependency sync, pytest, and Ruff lint checks
 - `tools/benchmark_llama_quantize.py`: Compare one or more `llama-quantize` binaries on the same GGUF source and report timing/output size
 - `gui.py` / `quantize.py`: Conservative `llama-quantize` discovery for ComfyUI Easy-Install / City96-compatible binaries, plus a native file selector for choosing the executable when it is not found automatically
 - `fix_pad_tokens.py`: Repair Lumina 2 GGUFs with 1D pad token shapes (`[D]` → `[1, D]`) for ComfyUI compatibility; returns output path for consistent streaming integration

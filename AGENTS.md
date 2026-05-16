@@ -70,6 +70,19 @@ Local Claude permissions are stored in `.claude/settings.local.json`; that file 
 
 ---
 
+## GitHub CI
+
+**File:** `.github/workflows/ci.yml`
+**Trigger:** pushes and pull requests targeting `master`, plus manual `workflow_dispatch`
+
+The CI workflow runs on `windows-latest` and mirrors the local validation gates:
+
+1. `uv sync --dev --frozen`
+2. `uv run pytest --tb=short -q --basetemp .pytest-tmp -p no:cacheprovider`
+3. `uv run ruff check .`
+
+---
+
 ## Running Manually
 
 ```bash
