@@ -15,6 +15,7 @@ from models.architectures import (
     ModelHyVid,
     ModelLTXV,
     ModelLumina2,
+    ModelQwenImage,
     ModelSD1,
     ModelSD3,
     ModelSDXL,
@@ -57,6 +58,21 @@ class TestDetectArch:
         }
         assert detect_arch(sd).arch == "lumina2"
 
+    def test_qwen_image(self):
+        # Qwen-Image / Qwen-Image-Edit: must match before Flux/SD3 would
+        # falsely trigger their banned-key guard on the shared norm_added_k
+        # and add_q_proj tensors.
+        sd = {
+            "time_text_embed.timestep_embedder.linear_2.weight": torch.zeros(1),
+            "transformer_blocks.0.attn.norm_added_q.weight": torch.zeros(1),
+            "transformer_blocks.0.img_mlp.net.0.proj.weight": torch.zeros(1),
+            # Tensors that Flux/SD3 would mark as banned — must not trip
+            # because Qwen-Image is detected first.
+            "transformer_blocks.0.attn.norm_added_k.weight": torch.zeros(1),
+            "transformer_blocks.0.attn.add_q_proj.weight": torch.zeros(1),
+        }
+        assert detect_arch(sd).arch == "qwen_image"
+
     def test_unknown_raises(self):
         with pytest.raises(AssertionError, match="Unknown model architecture"):
             detect_arch({"some.random.key": torch.zeros(1)})
@@ -74,6 +90,7 @@ class TestShapeFix:
     @pytest.mark.parametrize("cls", [
         ModelFlux, ModelSD3, ModelAura, ModelHiDream,
         CosmosPredict2, ModelLTXV, ModelHyVid, ModelWan, ModelLumina2,
+        ModelQwenImage,
     ])
     def test_shape_fix_disabled(self, cls):
         assert cls().shape_fix is False

@@ -15,6 +15,12 @@ os.environ.setdefault("GRADIO_ANALYTICS_ENABLED", "False")
 
 import gradio as gr
 
+from component_extract import (
+    analyze_components,
+    default_output_root,
+    extract_components,
+    format_component_analysis,
+)
 from convert import ConversionCancelled, convert_file
 from fix_5d_tensors import fix_5d_tensors as _fix_5d
 from fix_pad_tokens import fix_pad_tokens as _fix_pad
@@ -95,6 +101,11 @@ def browse_model() -> str:
 def browse_gguf() -> str:
     """Open a native file dialog filtered to GGUF files; return the selected path."""
     return _browse(_GGUF_TYPES)
+
+
+def browse_models_root() -> str:
+    """Open a native directory dialog for the ComfyUI models root."""
+    return _pick_dir()
 
 
 def llama_quantize_info(path: str | Path | None) -> str:
@@ -309,13 +320,13 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
 #size-info { font-size: 0.85em; color: var(--body-text-color-subdued); padding-top: 8px; }
 
 /* ── Status textbox: Gradio default styling, no custom border colour ─────── */
-#conv-status, #pad-status, #fix-status {
+#conv-status, #pad-status, #fix-status, #extract-status {
     margin-top: 6px !important;
     position: sticky !important;
     bottom: 0 !important;
     z-index: 200 !important;
 }
-#conv-status textarea, #pad-status textarea, #fix-status textarea {
+#conv-status textarea, #pad-status textarea, #fix-status textarea, #extract-status textarea {
     font-family: ui-monospace, monospace !important;
     font-size: 0.85em !important;
     font-weight: 600 !important;
@@ -323,7 +334,7 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
 }
 
 /* ── Action buttons ─────────────────────────────────────────────────────── */
-#convert-btn, #fix-pad-btn, #fix-5d-btn {
+#convert-btn, #fix-pad-btn, #fix-5d-btn, #extract-btn {
     min-height: 44px !important; font-size: 1em !important; font-weight: 600 !important;
 }
 #cancel-btn { min-height: 44px !important; }
@@ -334,7 +345,7 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
 #cancel-btn button:hover, #cancel-btn:hover { background: #dc2626 !important; }
 
 /* ── Log areas ──────────────────────────────────────────────────────────── */
-#conv-log textarea, #pad-log textarea, #fix-log textarea {
+#conv-log textarea, #pad-log textarea, #fix-log textarea, #extract-log textarea {
     font-family: ui-monospace, monospace; font-size: 0.8em; line-height: 1.45;
 }
 """
@@ -714,6 +725,71 @@ def run_fix(
     yield from _stream(q, done, result)
 
 
+def analyze_sdxl_components(src: str, models_root: str) -> tuple[str, str, str]:
+    """Analyze embedded SDXL VAE/CLIP components for GUI display."""
+    if not src or not src.strip():
+        return "❌  No checkpoint selected.", "Error — no input", ""
+
+    src = src.strip()
+    if not Path(src).is_file():
+        return f"❌  Source file not found: {src}", "Error", ""
+
+    root = Path(models_root.strip()) if models_root and models_root.strip() else default_output_root(src)
+    try:
+        analysis = analyze_components(src, root)
+    except Exception as exc:
+        return f"❌  {exc}", "Error", str(root)
+
+    return format_component_analysis(analysis), "Analysis complete", str(root)
+
+
+def run_extract_components(
+    src: str,
+    models_root: str,
+    extract_vae: bool,
+    extract_clip_l: bool,
+    extract_clip_g: bool,
+    overwrite: bool,
+) -> Generator[tuple[str, str], None, None]:
+    """Extract selected SDXL components and stream (log_text, status_text)."""
+    if not src or not src.strip():
+        yield "❌  No checkpoint selected.", "Error — no input"
+        return
+    if not any((extract_vae, extract_clip_l, extract_clip_g)):
+        yield "❌  No components selected.", "Error — no selection"
+        return
+
+    src = src.strip()
+    root = Path(models_root.strip()) if models_root and models_root.strip() else default_output_root(src)
+    q: queue.Queue = queue.Queue()
+    done = threading.Event()
+    result: dict = {}
+
+    def worker() -> None:
+        try:
+            def _on_log(msg: str) -> None:
+                q.put(("log", msg))
+
+            written = extract_components(
+                src,
+                root,
+                extract_vae=extract_vae,
+                extract_clip_l=extract_clip_l,
+                extract_clip_g=extract_clip_g,
+                overwrite=overwrite,
+                on_log=_on_log,
+            )
+            result["out"] = ", ".join(item.path for item in written) or "nothing written"
+        except Exception as exc:
+            result["error"] = str(exc)
+        finally:
+            q.put(("done",))
+            done.set()
+
+    threading.Thread(target=worker, daemon=True).start()
+    yield from _stream(q, done, result)
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Layout
 # ──────────────────────────────────────────────────────────────────────────────
@@ -883,15 +959,72 @@ def build_app() -> gr.Blocks:
                     interactive=False, autoscroll=False, elem_id="fix-log",
                 )
 
+            # ── Extract Components ─────────────────────────────────────────
+            with gr.Tab("Extract Components"):
+                gr.Markdown(
+                    "Analyze an **SDXL** checkpoint for embedded VAE, CLIP-L, and CLIP-G "
+                    "components, compare them with local standard files when present, "
+                    "then export selected components to the ComfyUI models folder."
+                )
+                with gr.Column(elem_classes=["card"]):
+                    with gr.Row(equal_height=False):
+                        with gr.Column(scale=5, elem_classes=["path-input"]):
+                            extract_src = gr.Textbox(
+                                label="Source checkpoint",
+                                placeholder="SDXL .safetensors checkpoint",
+                                lines=1, max_lines=1,
+                            )
+                        with gr.Column(scale=0, min_width=124, elem_classes=["browse-col"]):
+                            browse_extract_src_btn = gr.Button("Browse", size="sm")
+                    with gr.Row(equal_height=False):
+                        with gr.Column(scale=5, elem_classes=["path-input"]):
+                            extract_root = gr.Textbox(
+                                label="ComfyUI models root",
+                                placeholder="Auto-detected from source path",
+                                lines=1, max_lines=1,
+                            )
+                        with gr.Column(scale=0, min_width=124, elem_classes=["browse-col"]):
+                            browse_extract_root_btn = gr.Button("Browse", size="sm")
+                    with gr.Row():
+                        extract_vae = gr.Checkbox(label="VAE", value=False)
+                        extract_clip_l = gr.Checkbox(label="CLIP-L", value=True)
+                        extract_clip_g = gr.Checkbox(label="CLIP-G", value=True)
+                    overwrite_extract = gr.Checkbox(label="Overwrite existing output", value=False)
+
+                with gr.Row():
+                    analyze_components_btn = gr.Button("Analyze", variant="secondary", scale=1)
+                    extract_components_btn = gr.Button(
+                        "▶  Extract Selected",
+                        variant="primary",
+                        scale=2,
+                        elem_id="extract-btn",
+                    )
+
+                extract_status = gr.Textbox(
+                    value="Ready", show_label=False, interactive=False,
+                    lines=1, max_lines=1, elem_id="extract-status",
+                )
+                extract_log = gr.Textbox(
+                    label="Analysis / Log", lines=10, max_lines=12,
+                    interactive=False, autoscroll=False, elem_id="extract-log",
+                )
+
         # ── Events ─────────────────────────────────────────────────────────
         browse_conv_btn.click(browse_model, outputs=src_path)
         browse_dst_btn.click(browse_and_set_dst, inputs=[src_path, quant_dropdown], outputs=dst_path)
         browse_fix_pad_btn.click(browse_gguf, outputs=fix_pad_src)
         browse_fix_btn.click(browse_gguf, outputs=fix_src)
+        browse_extract_src_btn.click(browse_model, outputs=extract_src)
+        browse_extract_root_btn.click(browse_models_root, outputs=extract_root)
 
         src_path.change(_auto_dst, inputs=src_path, outputs=dst_path)
         src_path.change(update_size_estimate, inputs=[src_path, quant_dropdown], outputs=size_info)
         quant_dropdown.change(update_size_estimate, inputs=[src_path, quant_dropdown], outputs=size_info)
+        extract_src.change(
+            lambda src: str(default_output_root(src)) if src and str(src).strip() else "",
+            inputs=extract_src,
+            outputs=extract_root,
+        )
 
         browse_llama_btn.click(
             fn=browse_llama_quantize,
@@ -920,6 +1053,23 @@ def build_app() -> gr.Blocks:
             fn=run_fix,
             inputs=[fix_src, fix_dst, fix_file, overwrite_fix],
             outputs=[fix_log, fix_status],
+        )
+        analyze_components_btn.click(
+            fn=analyze_sdxl_components,
+            inputs=[extract_src, extract_root],
+            outputs=[extract_log, extract_status, extract_root],
+        )
+        extract_components_btn.click(
+            fn=run_extract_components,
+            inputs=[
+                extract_src,
+                extract_root,
+                extract_vae,
+                extract_clip_l,
+                extract_clip_g,
+                overwrite_extract,
+            ],
+            outputs=[extract_log, extract_status],
         )
 
     return app

@@ -90,7 +90,8 @@ class TestLayoutParity:
     def test_all_tabs_have_a_description_header(self):
         app = gui.build_app()
         markdown_values = _markdown_values(app)
-        # Convert tab + Fix Pad Tokens + Fix 5D Tensors descriptions
+        # Convert tab + Fix Pad Tokens + Fix 5D Tensors + Extract Components descriptions
         assert any("Safetensors / CKPT" in v for v in markdown_values)
         assert any("x_pad_token" in v for v in markdown_values)
         assert any("Re-insert 5D tensors" in v for v in markdown_values)
+        assert any("Analyze an **SDXL** checkpoint" in v for v in markdown_values)

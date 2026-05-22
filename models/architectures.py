@@ -84,6 +84,29 @@ class CosmosPredict2(ModelTemplate):
     keys_ignore = ["_extra_state", "accum_"]
 
 
+class ModelQwenImage(ModelTemplate):
+    """Qwen-Image and Qwen-Image-Edit DiT (incl. 2509 multi-image edit variant).
+
+    Shares tensor names with Flux/SD3 (e.g. transformer_blocks.0.attn.norm_added_k.weight,
+    transformer_blocks.0.attn.add_q_proj.weight). Must be probed before ModelFlux/ModelSD3
+    in arch_list, otherwise the banned-key heuristic there misclassifies Qwen-Image as
+    a reference-format Flux/SD3 and aborts conversion.
+
+    keys_detect mirrors upstream ComfyUI-GGUF tools/convert.py ModelQwenImage so that
+    abliterated 2509 single-file checkpoints (e.g. jiangchengchengNLP/Qwen-Edit-2509-abliterated)
+    convert cleanly without producing the false-positive "reference format" assertion.
+    """
+
+    arch = "qwen_image"
+    keys_detect = [
+        (
+            "time_text_embed.timestep_embedder.linear_2.weight",
+            "transformer_blocks.0.attn.norm_added_q.weight",
+            "transformer_blocks.0.img_mlp.net.0.proj.weight",
+        )
+    ]
+
+
 class ModelHyVid(ModelTemplate):
     arch = "hyvid"
     keys_detect = [
@@ -178,6 +201,11 @@ class ModelLumina2(ModelTemplate):
 
 
 arch_list = [
+    # ModelQwenImage must precede ModelFlux/ModelSD3 — Qwen-Image shares
+    # transformer_blocks.0.attn.norm_added_k.weight and add_q_proj.weight
+    # with those architectures, which would otherwise trigger their
+    # reference-format keys_banned guard and abort conversion.
+    ModelQwenImage,
     ModelFlux,
     ModelSD3,
     ModelAura,
