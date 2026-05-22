@@ -6,6 +6,20 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Change
+- `convert.py`: Stream safetensors tensors one at a time instead of loading the full state-dict into RAM. Replaces `safetensors.torch.load_file()` with a new `_LazyStateDict` wrapper around `safe_open()` that materializes tensors on demand via `get_tensor()`. Required to convert checkpoints larger than physical RAM (e.g. the 19 GiB FP8 `Qwen-Edit-abliterated-4step-v1.safetensors` on a 16 GiB system, which previously crashed mid-conversion with `KERNEL_DATA_INPAGE_ERROR` and segfaults caused by excessive Windows paging). Source dtype detection now reads dtypes from the safetensors header instead of iterating `.values()`, so dominant-dtype detection also stays out of RAM. `.ckpt` / `.pt` / `.bin` / `.pth` sources keep the existing eager path because `torch.load` has no streaming API.
+- `convert.py`: `strip_prefix` refactored to share its prefix rules with the lazy path via a new `_build_key_map(keys)` helper. Public API and behaviour for eager dicts unchanged.
+- `convert.py`: `GGUFWriter` now runs with `use_temp_file=True` so converted tensors spill to a `SpooledTemporaryFile` (256 MiB RAM buffer, remainder on disk in `%TEMP%`) instead of accumulating every F16/BF16 tensor in `self.tensors`. Without this, lazy-streaming on the read side only deferred the OOM: the Qwen-Edit 19 GiB FP8 conversion progressed to tensor 1384/1933 (71%) before crashing because the writer had buffered roughly 27 GiB of F16-equivalent tensor data in RAM. Pairs with `_LazyStateDict` to keep peak RAM bounded end-to-end.
+
+### Add
+- `models/architectures.py`: `ModelQwenImage` — Qwen-Image and Qwen-Image-Edit DiT support (incl. 2509 multi-image edit variant and abliterated forks like `jiangchengchengNLP/Qwen-Edit-2509-abliterated`). Placed before `ModelFlux` / `ModelSD3` in `arch_list` because Qwen-Image shares `transformer_blocks.0.attn.norm_added_k.weight` and `add_q_proj.weight` with those architectures, which would otherwise trigger their reference-format `keys_banned` guard and abort conversion with "Model architecture not allowed for conversion. Use diffusers format, not reference format." Detection keys mirror upstream ComfyUI-GGUF `tools/convert.py` (`time_text_embed.timestep_embedder.linear_2.weight` + `transformer_blocks.0.attn.norm_added_q.weight` + `transformer_blocks.0.img_mlp.net.0.proj.weight`)
+- `component_extract.py`: Analyze embedded SDXL VAE / CLIP-L / CLIP-G components, compare them against local ComfyUI standard files, and export selected components
+- `gui.py`: **Extract Components** tab for SDXL component analysis and optional VAE / CLIP-L / CLIP-G export
+- `tests/test_component_extract.py`: Coverage for SDXL component analysis, CLIP-G Q/K/V splitting, and `text_projection` transposition
+- `README.md` / `docs/architecture.md`: Document the possible future Text Encoder to GGUF workflow, planned encoder-family coverage, and primary SDXL / OpenCLIP / CLIP / Qwen2.5-VL / Qwen3 / T5 / Mistral source links
+- `README.md` / `docs/architecture.md`: Record a possible future checkpoint-level GGUF workflow covering component splitting, per-component quantization, mixed safetensors/GGUF layouts, and a ComfyUI loader-node direction
+- `README.md` / `docs/architecture.md`: Record City96's `lcpp.patch` as a primary implementation reference for image GGUF architecture registration, tensor quantization policy, metadata bypasses, and future llama.cpp forward-porting
+
 ## [0.1.0] - 2026-05-16
 
 ### Add

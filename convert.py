@@ -8,13 +8,15 @@ Usage:
 """
 
 import os
+import json
+import struct
 import logging
 import argparse
 
 import gguf
 import torch
 from tqdm import tqdm
-from safetensors.torch import load_file
+from safetensors import safe_open
 
 from models.architectures import (
     detect_arch,
@@ -41,29 +43,124 @@ _FLOAT8_DTYPES: tuple = tuple(
 )
 
 
-def strip_prefix(state_dict):
-    """Remove known state-dict prefixes used by various checkpoint formats."""
-    # Mixed state dicts (VAE + UNet merged)
+# Map safetensors header dtype strings to torch dtypes — used by _LazyStateDict
+# to report tensor dtypes without materializing the tensor data itself.
+_ST_DTYPE_MAP: dict = {
+    "F32":     torch.float32,
+    "F16":     torch.float16,
+    "BF16":    torch.bfloat16,
+    "F64":     torch.float64,
+    "F8_E4M3": getattr(torch, "float8_e4m3fn", None),
+    "F8_E5M2": getattr(torch, "float8_e5m2", None),
+    "I8":      torch.int8,
+    "I16":     torch.int16,
+    "I32":     torch.int32,
+    "I64":     torch.int64,
+    "U8":      torch.uint8,
+    "BOOL":    torch.bool,
+}
+
+
+def _read_safetensors_header(path: str) -> dict:
+    """Return the JSON header of a safetensors file (no tensor data loaded)."""
+    with open(path, "rb") as f:
+        (hdr_len,) = struct.unpack("<Q", f.read(8))
+        return json.loads(f.read(hdr_len))
+
+
+def _build_key_map(keys) -> dict:
+    """Return a {logical_key: on_disk_key} mapping after applying prefix rules.
+
+    Mirrors strip_prefix's behaviour but on key lists, so the same prefix logic
+    can drive both the eager (dict) and lazy (safetensors-streaming) paths.
+    """
+    keys = [k for k in keys if k != "__metadata__"]
+
+    # Mixed state dicts (VAE + UNet merged) — keep only keys carrying the prefix.
     for pfx in ["model.diffusion_model.", "model."]:
-        if any(k.startswith(pfx) for k in state_dict):
+        if any(k.startswith(pfx) for k in keys):
             logging.info(f"Stripping mixed prefix '{pfx}'")
-            return {
-                k.replace(pfx, ""): v
-                for k, v in state_dict.items()
-                if pfx in k
-            }
+            return {k.replace(pfx, ""): k for k in keys if pfx in k}
 
-    # Uniform prefix (all keys start with it)
+    # Uniform prefix (all keys start with it).
     for pfx in ["net."]:
-        if all(k.startswith(pfx) for k in state_dict):
+        if all(k.startswith(pfx) for k in keys):
             logging.info(f"Stripping uniform prefix '{pfx}'")
-            return {k[len(pfx):]: v for k, v in state_dict.items()}
+            return {k[len(pfx):]: k for k in keys}
 
-    return state_dict
+    return {k: k for k in keys}
+
+
+def strip_prefix(state_dict):
+    """Remove known state-dict prefixes used by various checkpoint formats.
+
+    Eager path: returns a new dict containing the renamed tensors.  Kept for
+    non-safetensors sources and existing tests; safetensors sources go through
+    _LazyStateDict which applies the same prefix rules via _build_key_map.
+    """
+    key_map = _build_key_map(state_dict.keys())
+    return {logical: state_dict[on_disk] for logical, on_disk in key_map.items()}
+
+
+class _LazyStateDict:
+    """Dict-like lazy view over a safetensors file.
+
+    Materializes tensors one at a time via ``safe_open().get_tensor()`` so peak
+    RAM stays bounded to a single tensor instead of the full state-dict.
+    Required to convert checkpoints larger than physical RAM (e.g. 19 GiB FP8
+    Qwen-Image-Edit on a 16 GiB system) without triggering Windows page-in
+    failures (KERNEL_DATA_INPAGE_ERROR) or OOM-driven segfaults.
+
+    Implements the subset of the dict interface used by detect_arch (membership,
+    iteration) and handle_tensors (``items()``, ``len()``), plus a ``dtype_of()``
+    accessor that convert_file uses for dominant-dtype detection without
+    materializing any tensor data.
+
+    Note: ``.values()`` is intentionally not implemented because iterating it
+    would defeat the streaming purpose by loading every tensor at once.
+    """
+
+    def __init__(self, path: str, key_map: dict, header: dict):
+        self._path = path
+        self._key_map = key_map      # logical_key -> on_disk_key
+        self._header = header        # raw safetensors JSON header
+        self._fh = safe_open(path, framework="pt", device="cpu")
+
+    def __contains__(self, key):
+        return key in self._key_map
+
+    def __iter__(self):
+        return iter(self._key_map)
+
+    def __len__(self):
+        return len(self._key_map)
+
+    def keys(self):
+        return list(self._key_map.keys())
+
+    def __getitem__(self, key):
+        return self._fh.get_tensor(self._key_map[key])
+
+    def items(self):
+        """Yield (logical_key, tensor) one at a time — bounded peak RAM."""
+        for logical, on_disk in self._key_map.items():
+            yield logical, self._fh.get_tensor(on_disk)
+
+    def dtype_of(self, key):
+        """Return the torch dtype for ``key`` from the header — no tensor load."""
+        st_dtype = self._header[self._key_map[key]]["dtype"]
+        return _ST_DTYPE_MAP.get(st_dtype)
 
 
 def load_state_dict(path):
-    """Load a model checkpoint from disk and return a clean state dict."""
+    """Load a model checkpoint from disk and return a (possibly lazy) state-dict.
+
+    For ``.safetensors`` sources, returns a ``_LazyStateDict`` that streams
+    tensors one at a time — keeps peak RAM bounded for checkpoints larger than
+    physical memory.  For ``.ckpt``/``.pt``/``.bin``/``.pth`` sources, returns
+    a normal eager dict (torch.load has no streaming API, and these formats
+    are rarely >RAM in practice).
+    """
     if any(path.endswith(ext) for ext in (".ckpt", ".pt", ".bin", ".pth")):
         sd = torch.load(path, map_location="cpu", weights_only=True)
         for subkey in ("model", "module"):
@@ -72,10 +169,12 @@ def load_state_dict(path):
                 break
         if len(sd) < 20:
             raise RuntimeError(f"Unexpected checkpoint structure (keys: {list(sd.keys())})")
-    else:
-        sd = load_file(path)
+        return strip_prefix(sd)
 
-    return strip_prefix(sd)
+    # safetensors: lazy streaming (avoids OOM on >RAM checkpoints)
+    header = _read_safetensors_header(path)
+    key_map = _build_key_map(header.keys())
+    return _LazyStateDict(path, key_map, header)
 
 
 def _quant_type_for(data, key, model_arch, old_dtype, target_quant=None):
@@ -157,9 +256,12 @@ def handle_tensors(
         else:
             tqdm.write(msg)
 
-    items = list(state_dict.items())
-    total = len(items)
-    iter_items = tqdm(items) if on_progress is None else items
+    # Iterate state_dict directly — never materialize all tensors into a list,
+    # otherwise _LazyStateDict's streaming would degrade to eager load.
+    total = len(state_dict)
+    iter_items = state_dict.items()
+    if on_progress is None:
+        iter_items = tqdm(iter_items, total=total)
     log_tensor_every = max(1, int(log_tensor_every or 1))
 
     for idx, (key, data) in enumerate(iter_items):
@@ -291,7 +393,13 @@ def convert_file(
     if target_quant is not None and target_quant in _QUANT_FTYPE:
         ftype_name, ftype_gguf = _QUANT_FTYPE[target_quant]
     else:
-        dtypes = [v.dtype for v in state_dict.values()]
+        # Pull dtypes from the safetensors header (no tensor materialization)
+        # for lazy state-dicts; fall back to ``.values()`` for eager dicts.
+        if isinstance(state_dict, _LazyStateDict):
+            dtypes = [state_dict.dtype_of(k) for k in state_dict.keys()]
+            dtypes = [d for d in dtypes if d is not None]
+        else:
+            dtypes = [v.dtype for v in state_dict.values()]
         main_dtype = max(set(dtypes), key=dtypes.count)
         if main_dtype == torch.bfloat16:
             ftype_name, ftype_gguf = "BF16", gguf.LlamaFileType.MOSTLY_BF16
@@ -311,7 +419,12 @@ def convert_file(
 
     _info(f"Output: {dst_path}  [{ftype_name}]")
 
-    writer = gguf.GGUFWriter(path=None, arch=model_arch.arch)
+    # use_temp_file=True spills converted tensors to a tempfile-backed
+    # SpooledTemporaryFile (256 MiB RAM buffer, rest on disk) instead of
+    # accumulating every F16/BF16 tensor in self.tensors.  Required for the
+    # same reason _LazyStateDict is required on the read side: keeps peak RAM
+    # bounded when converting checkpoints larger than physical memory.
+    writer = gguf.GGUFWriter(path=None, arch=model_arch.arch, use_temp_file=True)
     writer.add_quantization_version(gguf.GGML_QUANT_VERSION)
     writer.add_file_type(ftype_gguf)
 
