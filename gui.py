@@ -1,4 +1,4 @@
-"""Web UI for safetensors2GGUF — Gradio frontend for convert, quantize, and fix_5d."""
+"""Web UI for safetensors2GGUF — Gradio frontend for GGUF convert, safetensors convert, quantize, and fix_5d."""
 
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ from component_extract import (
     format_component_analysis,
 )
 from convert import ConversionCancelled, convert_file
+from convert_safetensors import convert_to_safetensors
 from fix_5d_tensors import fix_5d_tensors as _fix_5d
 from fix_pad_tokens import fix_pad_tokens as _fix_pad
 from quantize import (
@@ -34,6 +35,7 @@ from quantize import (
     find_exe,
     run_quantize,
 )
+from safetensors_quant import SAFETENSORS_DTYPE_CHOICES
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Cancel support
@@ -804,8 +806,8 @@ def build_app() -> gr.Blocks:
 
         with gr.Tabs():
 
-            # ── Convert ────────────────────────────────────────────────────
-            with gr.Tab("Convert"):
+            # ── Convert → GGUF ─────────────────────────────────────────────
+            with gr.Tab("Convert → GGUF"):
                 gr.Markdown(
                     "Convert a **Safetensors / CKPT** model checkpoint to **GGUF**.  "
                     "Python-native precisions write directly; K-quants run a 2-step "
@@ -882,6 +884,84 @@ def build_app() -> gr.Blocks:
                 conv_log = gr.Textbox(
                     label="Log", lines=10, max_lines=10,
                     interactive=False, autoscroll=False, elem_id="conv-log",
+                )
+
+            # ── Convert → Safetensors ──────────────────────────────────────
+            with gr.Tab("Convert → Safetensors"):
+                gr.Markdown(
+                    "Convert a **Safetensors / CKPT** model checkpoint to a quantized "
+                    "**Safetensors** file — no GGUF, no llama-quantize.  FP8 uses "
+                    "ComfyUI's `scaled_fp8` convention (per-layer `weight_scale`); "
+                    "NVFP4 uses Nvidia's 16-block scaled format — both load natively "
+                    "in ComfyUI without the GGUF loader node."
+                )
+                with gr.Column(elem_classes=["card"]):
+                    with gr.Row(equal_height=False):
+                        with gr.Column(scale=5, elem_classes=["path-input"]):
+                            st_src_path = gr.Textbox(
+                                label="Source model",
+                                placeholder="model.safetensors / .ckpt / .pt / .bin / .pth",
+                                lines=1, max_lines=1,
+                            )
+                        with gr.Column(scale=0, min_width=124, elem_classes=["browse-col"]):
+                            browse_st_src_btn = gr.Button("Browse", size="sm")
+                    with gr.Row(equal_height=False):
+                        with gr.Column(scale=5, elem_classes=["path-input"]):
+                            st_dst_path = gr.Textbox(
+                                label="Output path",
+                                placeholder="Auto-generated next to source",
+                                lines=1, max_lines=1,
+                            )
+                        with gr.Column(scale=0, min_width=124, elem_classes=["browse-col"]):
+                            browse_st_dst_btn = gr.Button("Browse", size="sm")
+                    st_format_dropdown = gr.Dropdown(
+                        choices=SAFETENSORS_DTYPE_CHOICES,
+                        value="FP8",
+                        label="Output format",
+                    )
+                    overwrite_st = gr.Checkbox(label="Overwrite existing output", value=False)
+
+                st_convert_btn = gr.Button("▶  Convert", variant="primary", elem_id="st-convert-btn")
+                st_status = gr.Textbox(
+                    value="Ready", show_label=False, interactive=False,
+                    lines=1, max_lines=1, elem_id="st-status",
+                )
+                st_log = gr.Textbox(
+                    label="Log", lines=10, max_lines=10,
+                    interactive=False, autoscroll=False, elem_id="st-log",
+                )
+
+                def _browse_st_src():
+                    return browse_model()
+
+                def _browse_st_dst():
+                    result = _browse(_MODEL_TYPES)
+                    return result
+
+                def _run_st_convert(src, dst, fmt, overwrite):
+                    if not src or not os.path.isfile(src):
+                        yield "Error: source file not found", ""
+                        return
+                    log_lines: list[str] = []
+
+                    def _on_log(msg):
+                        log_lines.append(msg)
+
+                    try:
+                        dst_final, _ = convert_to_safetensors(
+                            src, dst_path=(dst or None), target_key=fmt,
+                            overwrite=overwrite, on_log=_on_log,
+                        )
+                        yield f"Done → {dst_final}", "\n".join(log_lines)
+                    except Exception as exc:
+                        yield f"Error: {exc}", "\n".join(log_lines)
+
+                browse_st_src_btn.click(_browse_st_src, outputs=st_src_path)
+                browse_st_dst_btn.click(_browse_st_dst, outputs=st_dst_path)
+                st_convert_btn.click(
+                    _run_st_convert,
+                    inputs=[st_src_path, st_dst_path, st_format_dropdown, overwrite_st],
+                    outputs=[st_status, st_log],
                 )
 
             # ── Fix Pad Tokens ─────────────────────────────────────────────

@@ -95,3 +95,22 @@ class TestLayoutParity:
         assert any("x_pad_token" in v for v in markdown_values)
         assert any("Re-insert 5D tensors" in v for v in markdown_values)
         assert any("Analyze an **SDXL** checkpoint" in v for v in markdown_values)
+
+
+def test_convert_safetensors_tab_present():
+    """The renamed 'Convert -> GGUF' tab and new 'Convert -> Safetensors' tab
+    (Task 5) must both exist, and the new tab's format dropdown must offer
+    the SAFETENSORS_DTYPE_CHOICES keys (Task 1)."""
+    app = gui.build_app()
+    label_texts = [
+        getattr(block, "label", None)
+        for block in app.blocks.values()
+    ]
+    assert "Output format" in label_texts
+
+    dropdown = next(
+        block for block in app.blocks.values()
+        if isinstance(block, gr.Dropdown) and getattr(block, "label", None) == "Output format"
+    )
+    from safetensors_quant import SAFETENSORS_DTYPE_CHOICES
+    assert dropdown.choices == [tuple(c) for c in SAFETENSORS_DTYPE_CHOICES]
