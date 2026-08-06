@@ -24,6 +24,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from huggingface_hub import hf_hub_download
+
 from quantize import _easy_install_roots
 
 CONVERT_SCRIPT_RELATIVE = Path("python_embeded") / "Lib" / "site-packages" / "llama_cpp" / "bin" / "convert_hf_to_gguf.py"
@@ -55,3 +57,38 @@ def find_embedded_python() -> Path | None:
         if candidate.is_file():
             return candidate
     return None
+
+
+_MANDATORY_FILES = ("config.json",)
+_OPTIONAL_TOKENIZER_FILES = (
+    "tokenizer.json", "tokenizer_config.json", "tokenizer.model", "special_tokens_map.json",
+)
+
+
+def fetch_base_config_files(repo_id: str, dest_dir: Path, on_log=None) -> list[str]:
+    """Download config.json + whichever tokenizer files exist for repo_id into dest_dir.
+
+    config.json is mandatory (RuntimeError if missing); tokenizer files are
+    best-effort since repos vary in which ones they ship.
+    """
+    def _log(msg):
+        if on_log:
+            on_log(msg)
+
+    downloaded: list[str] = []
+    for filename in _MANDATORY_FILES:
+        try:
+            hf_hub_download(repo_id, filename, local_dir=str(dest_dir))
+            downloaded.append(filename)
+        except Exception as exc:
+            raise RuntimeError(f"Required file {filename!r} not found in {repo_id!r}: {exc}") from exc
+
+    for filename in _OPTIONAL_TOKENIZER_FILES:
+        try:
+            hf_hub_download(repo_id, filename, local_dir=str(dest_dir))
+            downloaded.append(filename)
+            _log(f"INFO:  Downloaded {filename}")
+        except Exception:
+            continue  # optional — not every repo ships every tokenizer variant
+
+    return downloaded

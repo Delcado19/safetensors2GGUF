@@ -45,3 +45,38 @@ class TestFindEmbeddedPython:
         with patch("text_encoder_convert._easy_install_roots", return_value=[tmp_path]):
             found = find_embedded_python()
             assert found == py_exe
+
+
+class TestFetchBaseConfigFiles:
+    def test_downloads_config_and_available_tokenizer_files(self, tmp_path):
+        from text_encoder_convert import fetch_base_config_files
+
+        calls = []
+
+        def _fake_download(repo_id, filename, local_dir):
+            calls.append(filename)
+            if filename not in ("config.json", "tokenizer.json"):
+                raise Exception("not found")  # simulate missing optional file
+            out = Path(local_dir) / filename
+            out.write_text("{}")
+            return str(out)
+
+        with patch("text_encoder_convert.hf_hub_download", side_effect=_fake_download):
+            downloaded = fetch_base_config_files("Qwen/Qwen3-8B", tmp_path)
+
+        assert "config.json" in downloaded
+        assert "tokenizer.json" in downloaded
+        assert (tmp_path / "config.json").is_file()
+
+    def test_raises_if_config_json_missing(self, tmp_path):
+        from text_encoder_convert import fetch_base_config_files
+
+        def _always_fail(repo_id, filename, local_dir):
+            raise Exception("404")
+
+        with patch("text_encoder_convert.hf_hub_download", side_effect=_always_fail):
+            try:
+                fetch_base_config_files("bad/repo", tmp_path)
+                assert False, "expected RuntimeError"
+            except RuntimeError:
+                pass
