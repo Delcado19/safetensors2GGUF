@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fix
+- `safetensors_quant_nvfp4.py`: Guard zero/near-zero blocks against NaN division. Original code relied on implicit `argmin(NaN)→0, _KVALUES[0]==0` coincidence; replaced with explicit `torch.where` guard detecting post-cast zero block scales and deliberately zeroing normalized values for affected blocks. Prevents silent correctness bugs if PyTorch's NaN-handling behavior changes across versions/backends. Added `test_zero_block_no_nan_and_reconstructs_to_zero` to cover all-zero and near-zero tensors.
+
 ### Change
 - `convert.py`: Stream safetensors tensors one at a time instead of loading the full state-dict into RAM. Replaces `safetensors.torch.load_file()` with a new `_LazyStateDict` wrapper around `safe_open()` that materializes tensors on demand via `get_tensor()`. Required to convert checkpoints larger than physical RAM (e.g. the 19 GiB FP8 `Qwen-Edit-abliterated-4step-v1.safetensors` on a 16 GiB system, which previously crashed mid-conversion with `KERNEL_DATA_INPAGE_ERROR` and segfaults caused by excessive Windows paging). Source dtype detection now reads dtypes from the safetensors header instead of iterating `.values()`, so dominant-dtype detection also stays out of RAM. `.ckpt` / `.pt` / `.bin` / `.pth` sources keep the existing eager path because `torch.load` has no streaming API.
 - `convert.py`: `strip_prefix` refactored to share its prefix rules with the lazy path via a new `_build_key_map(keys)` helper. Public API and behaviour for eager dicts unchanged.

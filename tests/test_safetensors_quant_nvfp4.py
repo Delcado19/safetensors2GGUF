@@ -53,3 +53,23 @@ class TestQuantizeNvfp4:
         assert recon.shape == data.shape
         # 4-bit float has coarse steps; allow generous relative tolerance
         assert torch.allclose(recon, data, atol=data.abs().max().item() * 0.35)
+
+    def test_zero_block_no_nan_and_reconstructs_to_zero(self):
+        # Verify that zero/near-zero blocks don't produce NaN through division by zero.
+        # This guards against: block_scale_fp8 → 0.0 after cast, then normalized = blocks / 0.0 → NaN.
+        from safetensors_quant_nvfp4 import dequantize_nvfp4  # test-only helper
+
+        # All-zero tensor: one large zero block
+        data_zero = torch.zeros(2, 32, dtype=torch.float32)
+        out_zero = quantize_nvfp4(data_zero, "block.weight")
+        recon_zero = dequantize_nvfp4(out_zero, "block.weight")
+        assert torch.isfinite(recon_zero).all(), "reconstruction contains NaN or Inf"
+        assert torch.allclose(recon_zero, data_zero, atol=1e-6)
+
+        # Near-zero tensor (values below FP8 representability): should quantize without NaN
+        data_tiny = torch.full((2, 32), 1e-9, dtype=torch.float32)
+        out_tiny = quantize_nvfp4(data_tiny, "block.weight")
+        recon_tiny = dequantize_nvfp4(out_tiny, "block.weight")
+        assert torch.isfinite(recon_tiny).all(), "reconstruction of tiny values contains NaN or Inf"
+        # Tiny values should reconstruct to near-zero (they underflow to 0 in FP8)
+        assert recon_tiny.abs().max() < 1e-6

@@ -49,7 +49,14 @@ def quantize_nvfp4(data: torch.Tensor, key: str) -> dict[str, torch.Tensor]:
     block_scale = (block_amax / 6.0 / scale_2).clamp(min=1e-12)
     block_scale_fp8 = block_scale.to(torch.float8_e4m3fn)
 
-    normalized = blocks / (block_scale_fp8.to(torch.float32) * scale_2)
+    # Guard against division by zero: if block_scale_fp8 underflows to 0.0 after fp8 cast,
+    # explicitly set normalized to 0 instead of relying on NaN→argmin(0) coincidence.
+    block_scale_fp32 = block_scale_fp8.to(torch.float32)
+    normalized = torch.where(
+        block_scale_fp32 == 0,
+        torch.zeros_like(blocks),
+        blocks / (block_scale_fp32 * scale_2)
+    )
     idx = _nearest_e2m1_index(normalized)  # (*lead, n_blocks, 16) -> index per elem
 
     idx = idx.reshape(*lead, n_blocks_per_row, GROUP_SIZE // 2, 2)
