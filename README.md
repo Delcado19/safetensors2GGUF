@@ -56,6 +56,16 @@ pip install gguf torch safetensors tqdm gradio huggingface_hub
 
 </details>
 
+`uv sync` only installs the Python packages. Two pipelines need an external
+tool that isn't installed this way:
+
+- **GGUF K-quants** (`Q6_K`, `Q5_K_M`, …) need a `llama-quantize` binary —
+  see [llama-quantize Sources](#llama-quantize-sources) below. F32/F16/BF16/Q8_0
+  and the Safetensors output mode work with `uv sync` alone.
+- **Text-encoder → GGUF conversion** needs a ComfyUI-Easy-Install install with
+  its bundled `convert_hf_to_gguf.py` + embedded Python — see
+  [Text-Encoder Conversion](#text-encoder-conversion) below.
+
 ## Web UI (recommended)
 
 Double-click **`start_gui.bat`** — the browser opens automatically.
