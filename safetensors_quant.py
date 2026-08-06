@@ -1,0 +1,77 @@
+"""Quantized Safetensors → Safetensors output backend.
+
+Companion to convert.py's GGUF writer: reuses the same architecture detection
+and high-precision-tensor rule (keys_hiprec / 1D / <=1024 elems / >4D) but
+writes a plain .safetensors file instead of a GGUF container. See
+docs/superpowers/plans/2026-08-05-safetensors-output-and-text-encoder-support.md
+for the ComfyUI-compatibility research this format registry is based on
+(comfy/quant_ops.py QUANT_ALGOS in city96/ComfyUI-GGUF).
+"""
+
+from __future__ import annotations
+
+import torch
+
+QUANTIZATION_THRESHOLD = 1024
+
+# Ordered choices for the GUI dropdown: (display label, key)
+SAFETENSORS_DTYPE_CHOICES: list[tuple[str, str]] = [
+    ("F16       — Half precision",                                    "F16"),
+    ("F16 mixed — Half precision, hiprec tensors stay F32",            "F16_MIXED"),
+    ("FP8       — float8_e4m3fn, scaled (ComfyUI scaled-fp8 format)",  "FP8"),
+    ("FP8 mixed — FP8 scaled, hiprec tensors stay F32",                "FP8_MIXED"),
+    ("NVFP4     — Nvidia 4-bit blockscaled (16-elem blocks)",          "NVFP4"),
+    ("NVFP4 mixed — NVFP4, hiprec tensors stay F32",                   "NVFP4_MIXED"),
+]
+
+_MIXED_KEYS = {"F16_MIXED", "FP8_MIXED", "NVFP4_MIXED"}
+_BASE_KEY = {
+    "F16": "F16", "F16_MIXED": "F16",
+    "FP8": "FP8", "FP8_MIXED": "FP8",
+    "NVFP4": "NVFP4", "NVFP4_MIXED": "NVFP4",
+}
+
+
+def is_hiprec_st(key: str, data: torch.Tensor, model_arch, old_dtype: torch.dtype) -> bool:
+    """Return True if ``key`` must stay high-precision (F32), mirroring
+    convert._quant_type_for's rule so 'mixed' safetensors output matches the
+    existing GGUF mixed-precision behaviour exactly."""
+    if old_dtype not in (torch.float32, torch.bfloat16):
+        return False
+    n_dims = data.dim()
+    if n_dims == 1:
+        return True
+    if data.numel() <= QUANTIZATION_THRESHOLD:
+        return True
+    if any(x in key for x in model_arch.keys_hiprec):
+        return True
+    return False
+
+
+def quantize_tensor_st(
+    data: torch.Tensor, key: str, model_arch, target_key: str
+) -> dict[str, torch.Tensor]:
+    """Quantize one tensor for safetensors output.
+
+    Returns a dict of {tensor_name: tensor} — one entry for F16/FP8-unscaled,
+    multiple entries (weight + scale tensors) for FP8-scaled and NVFP4.
+    """
+    old_dtype = data.dtype
+    base = _BASE_KEY[target_key]
+    mixed = target_key in _MIXED_KEYS
+
+    if mixed and is_hiprec_st(key, data, model_arch, old_dtype):
+        return {key: data.to(torch.float32)}
+
+    if base == "F16":
+        return {key: data.to(torch.float16)}
+
+    if base == "FP8":
+        from safetensors_quant_fp8 import quantize_fp8_scaled
+        return quantize_fp8_scaled(data, key)
+
+    if base == "NVFP4":
+        from safetensors_quant_nvfp4 import quantize_nvfp4
+        return quantize_nvfp4(data, key)
+
+    raise ValueError(f"Unknown target_key: {target_key!r}")
