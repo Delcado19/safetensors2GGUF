@@ -207,10 +207,11 @@ an F16, BF16, F32, or Q8_0 source GGUF for meaningful measurements.
 
 ## Possible Future Extensions
 
-### Text Encoder to GGUF
+### Text Encoder to GGUF (in progress)
 
-A future workflow could add a dedicated Text Encoder conversion path for
-HF/Transformers-style models before quantization:
+A dedicated Text Encoder conversion path for HF/Transformers-style models is
+being implemented. Discovery functions for `convert_hf_to_gguf.py` and embedded
+Python are now available in `text_encoder_convert.py`. The workflow will support:
 
 1. Inspect a local text encoder or Hugging Face repo for `config.json`,
    tokenizer files, and one or more `.safetensors` shards.
