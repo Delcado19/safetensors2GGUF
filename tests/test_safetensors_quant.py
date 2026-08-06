@@ -77,3 +77,18 @@ class TestQuantizeTensorFp8:
         out = quantize_tensor_st(data, "block.bias", ModelFlux(), "FP8_MIXED")
         assert set(out.keys()) == {"block.bias"}
         assert out["block.bias"].dtype == torch.float32
+
+
+class TestQuantizeTensorNvfp4:
+    def test_nvfp4_returns_packed_and_two_scales(self):
+        data = torch.randn(32, 32, dtype=torch.float32)
+        out = quantize_tensor_st(data, "block.weight", ModelFlux(), "NVFP4")
+        assert set(out.keys()) == {
+            "block.weight", "block.weight.weight_scale", "block.weight.weight_scale_2",
+        }
+
+    def test_nvfp4_mixed_keeps_hiprec_tensor_unpacked(self):
+        data = torch.randn(4, 4, dtype=torch.float32)
+        out = quantize_tensor_st(data, "block.bias", ModelFlux(), "NVFP4_MIXED")
+        assert set(out.keys()) == {"block.bias"}
+        assert out["block.bias"].dtype == torch.float32
