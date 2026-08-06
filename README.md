@@ -40,6 +40,9 @@ and cancel button is included for all three pipelines.
 ## Installation
 
 ```bash
+git clone https://github.com/Delcado19/safetensors2GGUF.git
+cd safetensors2GGUF
+
 # Install uv (https://docs.astral.sh/uv/) then:
 uv sync
 ```
