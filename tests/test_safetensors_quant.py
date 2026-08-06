@@ -62,3 +62,18 @@ class TestQuantizeTensorF16:
         data = torch.randn(64, 64, dtype=torch.float32)
         out = quantize_tensor_st(data, "block.weight", ModelFlux(), "F16_MIXED")
         assert out["block.weight"].dtype == torch.float16
+
+
+class TestQuantizeTensorFp8:
+    def test_fp8_returns_weight_and_scale(self):
+        data = torch.randn(64, 64, dtype=torch.float32)
+        out = quantize_tensor_st(data, "block.weight", ModelFlux(), "FP8")
+        assert "block.weight" in out
+        assert "block.weight.weight_scale" in out
+        assert out["block.weight"].dtype == torch.float8_e4m3fn
+
+    def test_fp8_mixed_keeps_hiprec_tensor_f32_unscaled(self):
+        data = torch.randn(4, 4, dtype=torch.float32)
+        out = quantize_tensor_st(data, "block.bias", ModelFlux(), "FP8_MIXED")
+        assert set(out.keys()) == {"block.bias"}
+        assert out["block.bias"].dtype == torch.float32
