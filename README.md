@@ -13,6 +13,7 @@ quantization selector, live size estimate, and cancel button is included.
 | Architecture | Format |
 |---|---|
 | FLUX.1 | Diffusers |
+| FLUX.2 (klein / Dev) | Diffusers (shares `flux` arch tag with Flux.1) |
 | Stable Diffusion 3 | Diffusers |
 | SDXL | Diffusers / Non-Diffusers |
 | SD 1.x | Diffusers / Non-Diffusers |
@@ -23,6 +24,8 @@ quantization selector, live size estimate, and cancel button is included.
 | Cosmos | Diffusers |
 | AuraFlow | Diffusers |
 | Lumina 2 | Diffusers |
+| Z-Image (Turbo / Base) | Diffusers (shares `lumina2` arch tag) |
+| Qwen-Image / Qwen-Image-Edit (incl. 2511) | Diffusers |
 
 ## Installation
 

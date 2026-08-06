@@ -345,3 +345,13 @@ Tensor
       BF16 → BF16
       otherwise → F16
 ```
+
+## Architecture Coverage Verification
+
+Three architectures require no new code because their tensor-key layout matches existing families:
+
+**Flux.2 (klein / Dev)**: Detected as `arch="flux"` — tensor names and structure are identical to Flux.1. Verified against `snofsSexNudesAndOtherFunStuff_distilledV12Fp8.safetensors` from the planning checkpoint set. ComfyUI-GGUF also reuses `arch="flux"` for Flux.2 variants, confirming this is correct classification, not a false positive.
+
+**Z-Image (Turbo / Base)**: Detected as `arch="lumina2"` — shares the identical NextDiT tensor-key layout with Lumina2 (e.g., `cap_embedder`, `context_refiner`, `noise_refiner`, `x_pad_token`, `cap_pad_token`). Verified against `jibMixZIT_v10.safetensors`. Coverage is validated by the existing `test_lumina2` test in `tests/test_convert.py`.
+
+**Qwen-Image / Qwen-Image-Edit (incl. 2511)**: Covered by the existing `ModelQwenImage` class (introduced in commit `400f861`). The 2511 revision checkpoint could not be re-verified against a raw `.safetensors` source due to availability constraints; only a pre-quantized GGUF was available during planning. Future maintainers should re-verify against a raw safetensors source when one becomes available, though detection correctness is not blocked on this.
