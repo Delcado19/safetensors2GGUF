@@ -255,6 +255,22 @@ bare HF/Transformers text-encoder checkpoints (Qwen, T5, CLIP, Mistral variants)
 GGUF format. This is separate from SDXL CLIP-L/CLIP-G extraction and uses
 ComfyUI-Easy-Install's bundled `convert_hf_to_gguf.py` + embedded Python runtime.
 
+> **Known limitation:** unlike `llama-quantize` (see
+> [llama-quantize Sources](#llama-quantize-sources)), there is currently **no
+> manual-path override** — no env var, no GUI Browse button — for
+> `convert_hf_to_gguf.py` or the embedded Python interpreter. This tab only
+> searches for a ComfyUI-Easy-Install installation. If you don't have one,
+> this GUI tab won't work yet. You can still convert manually, outside this
+> tool, by cloning `llama.cpp` yourself:
+> ```bash
+> git clone https://github.com/ggml-org/llama.cpp
+> cd llama.cpp && pip install -r requirements.txt
+> # Assemble a directory with your weights renamed to model.safetensors, plus
+> # the base model's config.json + tokenizer files (see step 1 under
+> # Implementation below for exactly what this tool automates), then:
+> python convert_hf_to_gguf.py /path/to/assembled-dir --outfile model.gguf --outtype f16
+> ```
+
 ### Workflow
 
 Text-encoder conversion requires:
