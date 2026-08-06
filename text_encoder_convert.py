@@ -22,6 +22,9 @@ Workflow implemented here:
 
 from __future__ import annotations
 
+import shutil
+import subprocess
+import tempfile
 from pathlib import Path
 
 from huggingface_hub import hf_hub_download
@@ -92,3 +95,71 @@ def fetch_base_config_files(repo_id: str, dest_dir: Path, on_log=None) -> list[s
             continue  # optional — not every repo ships every tokenizer variant
 
     return downloaded
+
+
+def convert_text_encoder(
+    weights_path: str,
+    base_repo_id: str,
+    dst_path: str | None = None,
+    outtype: str = "f16",
+    on_log=None,
+    cancel_event=None,
+) -> str:
+    """Convert a bare single-file text-encoder checkpoint to GGUF.
+
+    Downloads config.json/tokenizer files for base_repo_id, assembles a temp
+    HF-style model directory with the local weights, then runs
+    convert_hf_to_gguf.py via the ComfyUI-Easy-Install embedded Python.
+    """
+    def _log(msg):
+        if on_log:
+            on_log(msg)
+        else:
+            print(msg)
+
+    script = find_convert_script()
+    if script is None:
+        raise FileNotFoundError(
+            "convert_hf_to_gguf.py not found — expected under a ComfyUI-Easy-Install "
+            f"root at {CONVERT_SCRIPT_RELATIVE}"
+        )
+    py_exe = find_embedded_python()
+    if py_exe is None:
+        raise FileNotFoundError(
+            f"Embedded python.exe not found — expected under a ComfyUI-Easy-Install "
+            f"root at {EMBEDDED_PYTHON_RELATIVE}"
+        )
+
+    if dst_path is None:
+        dst_path = f"{weights_path.rsplit('.', 1)[0]}-{outtype}.gguf"
+
+    with tempfile.TemporaryDirectory(prefix="s2g_text_encoder_") as tmpdir:
+        tmp_path = Path(tmpdir)
+        _log(f"INFO:  Fetching config/tokenizer for {base_repo_id}…")
+        fetch_base_config_files(base_repo_id, tmp_path, on_log=_log)
+
+        weights_dst = tmp_path / "model.safetensors"
+        shutil.copy2(weights_path, weights_dst)
+
+        cmd = [
+            str(py_exe), str(script), str(tmp_path),
+            "--outfile", dst_path,
+            "--outtype", outtype,
+        ]
+        _log(f"INFO:  $ {' '.join(cmd)}")
+
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding="utf-8", errors="replace", bufsize=1,
+        )
+        for line in proc.stdout:
+            if cancel_event is not None and cancel_event.is_set():
+                proc.terminate()
+                proc.wait()
+                raise RuntimeError("cancelled")
+            _log(line.rstrip())
+        proc.wait()
+        if proc.returncode != 0:
+            raise RuntimeError(f"convert_hf_to_gguf.py exited with code {proc.returncode}")
+
+    return dst_path
