@@ -205,37 +205,82 @@ uv run python tools/benchmark_llama_quantize.py \
 The benchmark writes temporary output GGUFs and removes them after timing.  Use
 an F16, BF16, F32, or Q8_0 source GGUF for meaningful measurements.
 
-## Possible Future Extensions
+## Safetensors Output
 
-### Text Encoder to GGUF (in progress)
+The **Convert → Safetensors** tab in the Web UI (or `convert_safetensors.py` CLI)
+produces quantized `.safetensors` files as an alternative to GGUF.  This is useful
+when you want ComfyUI-compatible weights without the GGUF container format.
 
-A dedicated Text Encoder conversion path for HF/Transformers-style models is
-being implemented. Discovery functions for `convert_hf_to_gguf.py` and embedded
-Python are now available in `text_encoder_convert.py`. The workflow will support:
+| Key | Format | Backend | Notes |
+|---|---|---|---|
+| `F16` | Half precision | Python | Standard default, smallest non-quantized size |
+| `F16_MIXED` | Half precision, high-precision tensors stay F32 | Python | Matches GGUF K-quant behavior for critical layers |
+| `FP8` | float8_e4m3fn, scaled (ComfyUI scaled-fp8 format) | Python | Per-layer `weight_scale` via ComfyUI convention |
+| `FP8_MIXED` | FP8 scaled, high-precision tensors stay F32 | Python | Aggressive 8-bit quantization with protection |
+| `NVFP4` | Nvidia 4-bit blockscaled (16-element blocks) | Python | Per-block + global scale, 16-block format |
+| `NVFP4_MIXED` | NVFP4, high-precision tensors stay F32 | Python | Fine-grained 4-bit with critical-layer fallback |
 
-1. Inspect a local text encoder or Hugging Face repo for `config.json`,
-   tokenizer files, and one or more `.safetensors` shards.
-2. Convert the source model to an intermediate GGUF with llama.cpp's
-   `convert_hf_to_gguf.py`.
-3. Quantize the GGUF with a compatible `llama-quantize` binary.
-4. Write the result to the ComfyUI text encoder folder and keep the original
-   source files untouched.
+**Why these formats:** FP8 and NVFP4 use ComfyUI's established scaled quantization
+conventions (see `comfy/quant_ops.py` in `city96/ComfyUI-GGUF`). ComfyUI has no
+loader for unscaled/generic FP4 formats, so bare 4-bit output would produce files
+nothing can load — only the explicitly scaled variants are included.
 
-This is separate from SDXL CLIP-L / CLIP-G extraction.  SDXL CLIP files often
-need architecture-specific key mapping, while Qwen/T5-like text encoders should
-prefer the upstream HF-to-GGUF conversion route when the architecture is
-supported.  Standard CLIP-L references, such as OpenAI's
-`clip-vit-large-patch14`, are useful comparison sources for future CLIP encoder
-conversion work, but still need separate validation from Qwen/T5-style text
-encoders.
+## Text-Encoder Conversion
 
-Planned coverage for implementation:
+The **Convert Text Encoder → GGUF** tab (or `text_encoder_convert.py` CLI) converts
+bare HF/Transformers text-encoder checkpoints (Qwen, T5, CLIP, Mistral variants) to
+GGUF format. This is separate from SDXL CLIP-L/CLIP-G extraction and uses
+ComfyUI-Easy-Install's bundled `convert_hf_to_gguf.py` + embedded Python runtime.
 
-| Model family | Text encoder family | Implementation note |
+### Workflow
+
+Text-encoder conversion requires:
+
+1. **Source weights file**: A single `.safetensors` checkpoint (bare model file, not
+   a directory). Since standalone text-encoder `.safetensors` files lack `config.json`
+   and tokenizer files, you must also provide:
+
+2. **Base model HF repo ID**: The base model's Hugging Face repository (not a
+   fine-tune's repo). For example:
+   - For a Qwen-Image text encoder: `Qwen/Qwen2.5-VL-7B-Instruct`
+   - For a Z-Image text encoder: A Qwen3 4B base model
+   - For FLUX.2 klein: A Qwen3 4B or 8B base model
+
+   The repo ID must have `config.json` (mandatory) and tokenizer files
+   (`tokenizer.json`, `tokenizer.model`, etc.) — these are fetched from HuggingFace
+   and assembled with your weights into a temporary HF-style directory.
+
+3. **Output path and type**: Choose an output filename and quantization type
+   (F32/F16/BF16/Q8_0).
+
+### Implementation
+
+The pipeline:
+
+1. Assembles a temporary directory with your source weights (renamed to
+   `model.safetensors` to preserve the original file) and downloaded
+   config/tokenizer files.
+2. Runs `convert_hf_to_gguf.py` via ComfyUI-Easy-Install's embedded `python.exe`.
+3. Returns the quantized GGUF at your chosen output path.
+
+This is a subprocess pipeline, not part of the DiT architecture detection system.
+Per-family text-encoder handling (e.g., SDXL CLIP key mapping, Qwen mmproj pairing)
+is not automated — the generic HF-to-GGUF conversion handles supported standard
+architectures. Unsupported or non-standard architectures require manual key mapping.
+
+If `convert_hf_to_gguf.py` or the embedded Python runtime are not found in
+ComfyUI-Easy-Install, the Setup textbox in the UI will show the discovery results
+(Found / Not Found).
+
+### Reference: Encoder Family per Model Family
+
+Candidate models for text-encoder GGUF conversion:
+
+| Model family | Text encoder family | Status |
 |---|---|---|
-| SDXL 1.0 | CLIP-L + OpenCLIP-bigG | CLIP-specific extraction and key mapping |
-| Qwen-Image / Qwen-Image-Edit | Qwen2.5-VL 7B + mmproj | Multimodal text/image encoder path; keep mmproj paired with the GGUF encoder |
-| Z-Image / Z-Image-Turbo | Qwen3 4B | HF/Transformers Qwen path, then GGUF quantization |
+| SDXL 1.0 | CLIP-L + OpenCLIP-bigG | CLIP-specific extraction and key mapping (not generic HF-to-GGUF route) |
+| Qwen-Image / Qwen-Image-Edit | Qwen2.5-VL 7B + mmproj | Multimodal text/image encoder; keep mmproj paired with the GGUF encoder |
+| Z-Image / Z-Image-Turbo | Qwen3 4B | Standard HF/Transformers path via `convert_hf_to_gguf.py` |
 | FLUX.1 / FLUX.1 Kontext | CLIP-L + T5-XXL | Existing Flux dual-encoder layout |
 | FLUX.2 [klein] 4B | Qwen3 4B | Must keep 4B encoder paired with 4B model |
 | FLUX.2 [klein] 9B | Qwen3 8B | Must keep 8B encoder paired with 9B model |
@@ -300,6 +345,8 @@ Tooling references:
   <https://github.com/ggml-org/llama.cpp/blob/master/convert_hf_to_gguf.py>
 - ComfyUI-GGUF text encoder loader support:
   <https://github.com/city96/ComfyUI-GGUF>
+
+## Possible Future Extensions
 
 ### Image GGUF Quantization Reference
 
