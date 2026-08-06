@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import torch
 
-QUANTIZATION_THRESHOLD = 1024
+from models.architectures import QUANTIZATION_THRESHOLD
 
 # Ordered choices for the GUI dropdown: (display label, key)
 SAFETENSORS_DTYPE_CHOICES: list[tuple[str, str]] = [
