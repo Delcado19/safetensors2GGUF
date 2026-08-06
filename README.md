@@ -196,10 +196,10 @@ After analysis, select the components to export.  VAE files are written to
 converted from the embedded OpenCLIP key layout to the Comfy/HF key layout,
 including Q/K/V split and `text_projection` transposition.
 
-### 5D Tensor Post-processing (HunyuanVideo / Wan — CLI only)
+### 5D Tensor Post-processing (HunyuanVideo / Wan)
 
-When using the Web UI, 5D tensor insertion is applied automatically after
-llama-quantize.  For manual CLI workflows:
+The Web UI applies this automatically after llama-quantize — no manual step
+needed there.  For manual CLI workflows:
 
 ```bash
 # 1. Convert to F16

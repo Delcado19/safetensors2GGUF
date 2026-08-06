@@ -177,5 +177,5 @@ README for the full discovery order).
 - HunyuanVideo/Wan 5D tensors still need the separate
   `fix_5d_tensors.py` pass after quantization — the Web UI chains this
   automatically; the CLI workflow is documented under
-  [5D Tensor Post-processing](../README.md#5d-tensor-post-processing-hunyuanvideo--wan---cli-only)
+  [5D Tensor Post-processing](../README.md#5d-tensor-post-processing-hunyuanvideo--wan)
   in the main README.
