@@ -134,28 +134,129 @@ the selected ComfyUI `models` root:
 - `models/clip/clip_l.safetensors`
 - `models/clip/clip_g.safetensors`
 
-## Future Extension: Text Encoder to GGUF
+## Safetensors Output Pipeline
 
-Text Encoder conversion is a separate future track from SDXL component
-extraction.  For HF/Transformers-style text encoders such as Qwen or T5, the
-likely pipeline is:
+`convert_safetensors.py` is a sibling to the GGUF writer above: it reuses the
+same `load_state_dict()` / `detect_arch()` machinery, but writes a plain
+quantized `.safetensors` file instead of a GGUF container, so ComfyUI can load
+the result natively (no GGUF loader node needed).
 
 ```
-HF repo / local text encoder folder
-  -> validate config, tokenizer, and safetensors shards
-  -> llama.cpp convert_hf_to_gguf.py
-  -> compatible llama-quantize binary
-  -> ComfyUI models/text_encoders output
+Source file (.safetensors / .ckpt / .pt)
+    │
+    ▼
+load_state_dict() + detect_arch()      (shared with the GGUF pipeline above)
+    │
+    ▼
+convert_to_safetensors() in convert_safetensors.py
+    │  - Iterates state_dict.items() directly (never list()s it) so the
+    │      _LazyStateDict streaming from the GGUF pipeline still bounds peak
+    │      RAM to ~1 tensor; list()-ing here previously reintroduced the
+    │      >RAM OOM crash _LazyStateDict was built to fix
+    │  - Filters keys_ignore
+    │  - Coerces float8 source tensors → float16 before nan_to_num
+    │      (nan_to_num has no float8 kernel)
+    │  - Clamps inf/NaN → 0 / ±65504
+    │  - No 5D side-car export, no shape_fix reshape, no 1D-pad-token
+    │      unsqueeze — those exist only to satisfy GGUF/llama-quantize
+    │      constraints that a plain safetensors file doesn't have
+    │
+    ▼
+quantize_tensor_st() in safetensors_quant.py       (per tensor)
+    │  - target_key one of F16 / F16_MIXED / FP8 / FP8_MIXED / NVFP4 / NVFP4_MIXED
+    │  - *_MIXED: keys_hiprec / 1D / ≤1024-elem tensors stay F32 — mirrors
+    │      convert.py's _quant_type_for exactly, one mixed-precision rule
+    │      shared by both output pipelines, not reinvented per format
+    │  - FP8/NVFP4 (both mixed and non-mixed): 1D tensors (biases, norm
+    │      weights) always stay F32 regardless of the mixed flag — a
+    │      per-layer weight_scale/nvfp4 scale on a 1D tensor has no consumer
+    │      in ComfyUI's scaled-quant loader and would silently load back
+    │      wrong by up to ~448x
+    │  - FP8 → safetensors_quant_fp8.quantize_fp8_scaled(): float8_e4m3fn +
+    │      per-layer float32 weight_scale (ComfyUI scaled_fp8 convention)
+    │  - NVFP4 → safetensors_quant_nvfp4.quantize_nvfp4(): uint8-packed
+    │      16-elem-block E2M1 + per-block float8_e4m3fn weight_scale +
+    │      global float32 weight_scale_2 (ComfyUI nvfp4 convention);
+    │      tensors whose last dim isn't a multiple of 16 (e.g. 3x3 conv
+    │      kernels) can't be block-packed — quantize_tensor_st catches that
+    │      ValueError and falls back to a plain F16 write for that tensor
+    │      instead of aborting the whole conversion
+    │
+    ▼
+save_file() with _quantization_metadata
+    │  - Per-layer {"format": "float8_e4m3fn" | "nvfp4"} JSON, written only
+    │      for layers that actually produced scale-tensor siblings
+    │
+    ▼
+Output file (.safetensors)
 ```
 
-The tool should keep this path source-driven rather than trying to quantize
-`.safetensors` files directly.  Local `.gguf` files can already be re-quantized;
-local `.safetensors` text encoders need a conversion step first.  SDXL CLIP-L
-and CLIP-G remain special cases because they require checkpoint-specific
-extraction and key mapping before they can be considered for GGUF conversion.
-OpenAI's `clip-vit-large-patch14` is the likely standard CLIP-L reference for
-this branch of future work; it should be handled as a CLIP-specific conversion
-case rather than assuming the same path as Qwen/T5-style text encoders.
+Format references (verified during planning against `city96/ComfyUI-GGUF`'s
+`comfy/quant_ops.py` `QUANT_ALGOS` registry, so ComfyUI can actually load the
+output): scaled FP8 uses a plain per-layer `weight_scale` float32 scalar;
+NVFP4 uses the TensorRT-Model-Optimizer-style 16-element block scale plus a
+global scale, matching ComfyUI's native `nvfp4` loader. There is intentionally
+no plain/generic FP4 mode — ComfyUI has no loader for it.
+
+## Text-Encoder Conversion Pipeline
+
+`text_encoder_convert.py` converts a bare single-file HF/Transformers-style
+text-encoder checkpoint (Qwen3, T5/UMT5, Mistral, …) to GGUF. It is a fully
+separate subprocess pipeline, not part of the DiT architecture-detection
+system above — it never imports `models.architectures` or `convert.py`.
+
+```
+Source weights (.safetensors, bare file — no config.json/tokenizer)
+  + Base model HF repo ID (manual field, e.g. "Qwen/Qwen3-8B")
+    │
+    ▼
+find_convert_script() / find_embedded_python()
+    │  - Search ComfyUI-Easy-Install roots (reuses quantize._easy_install_roots(),
+    │      not duplicated) for python_embeded/Lib/site-packages/llama_cpp/bin/
+    │      convert_hf_to_gguf.py and python_embeded/python.exe
+    │  - Raise FileNotFoundError if either is missing
+    │
+    ▼
+fetch_base_config_files(repo_id, dest_dir)
+    │  - Downloads config.json (mandatory, RuntimeError if missing) and
+    │      best-effort tokenizer files (tokenizer.json, tokenizer_config.json,
+    │      tokenizer.model, special_tokens_map.json) from HuggingFace Hub
+    │      via huggingface_hub.hf_hub_download
+    │
+    ▼
+convert_text_encoder() assembles a temp directory
+    │  - Copies (not moves) the source weights to <tmpdir>/model.safetensors
+    │      so convert_hf_to_gguf.py's HF-layout auto-discovery finds them,
+    │      and the user's original file is left untouched
+    │  - Runs convert_hf_to_gguf.py as a subprocess via the ComfyUI-Easy-
+    │      Install embedded python.exe (it already has transformers/torch/
+    │      mistral_common installed — not vendored into this repo)
+    │  - Streams subprocess stdout to on_log line by line; polls
+    │      cancel_event, terminates the subprocess and raises
+    │      RuntimeError("cancelled") if set
+    │  - Raises RuntimeError on non-zero subprocess exit
+    │
+    ▼
+Output file (.gguf)
+```
+
+The base-model repo ID is always a manual text field — there is no
+auto-detection heuristic mapping a bare checkpoint to its base model's HF
+repo. Per-family automation (SDXL CLIP key mapping, Qwen multimodal `mmproj`
+pairing) is explicitly **not** implemented; the generic `convert_hf_to_gguf.py`
+path handles whatever base architectures llama.cpp's converter itself
+supports, and unsupported/non-standard architectures require manual key
+mapping outside this tool.
+
+### Future Work: Per-Family Text-Encoder Automation
+
+The generic HF-to-GGUF path above is what's implemented today. The following
+remains future work, not yet automated by this tool: SDXL CLIP-L and CLIP-G
+remain special cases because they require checkpoint-specific extraction and
+key mapping before they can be considered for GGUF conversion — OpenAI's
+`clip-vit-large-patch14` is the likely standard CLIP-L reference for this
+branch of future work, handled as a CLIP-specific conversion case rather than
+assuming the same generic path as Qwen/T5-style text encoders.
 
 ### Planned Text Encoder Families
 

@@ -1,4 +1,4 @@
-"""Web UI for safetensors2GGUF — Gradio frontend for GGUF convert, safetensors convert, quantize, and fix_5d."""
+"""Web UI for safetensors2GGUF — Gradio frontend for GGUF convert, safetensors convert, text-encoder convert, quantize, and fix_5d."""
 
 from __future__ import annotations
 

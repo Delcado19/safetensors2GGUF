@@ -41,7 +41,7 @@ This project does not maintain a separate `requirements.txt`.
 <summary>Using pip instead</summary>
 
 ```bash
-pip install gguf torch safetensors tqdm gradio
+pip install gguf torch safetensors tqdm gradio huggingface_hub
 ```
 
 </details>

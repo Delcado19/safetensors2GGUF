@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Docs
+- `docs/architecture.md`: Added "Safetensors Output Pipeline" and "Text-Encoder Conversion Pipeline" sections (matching the existing GGUF "Conversion Pipeline" diagram style), documenting `convert_safetensors.py`/`safetensors_quant*.py` and `text_encoder_convert.py` end-to-end, including the post-final-review fixes (unconditional 1D skip for FP8/NVFP4, NVFP4 non-16-multiple fallback, lazy-streaming iteration). Replaced the stale "Future Extension: Text Encoder to GGUF" section — which still described the generic HF-to-GGUF subprocess path as unimplemented — with a "Future Work: Per-Family Text-Encoder Automation" subsection scoped to what's actually still missing (SDXL CLIP-specific extraction, Qwen `mmproj` pairing), since the generic path shipped in Tasks 7-10.
+- `README.md`: Added `huggingface_hub` to the "Using pip instead" fallback install command — it was missing despite being a required dependency for text-encoder conversion.
+- `gui.py`: Module docstring now mentions the text-encoder convert tab alongside GGUF convert, safetensors convert, quantize, and fix_5d.
+
 ### Fix
 - Final integration review fix wave for the Safetensors-output / Text-Encoder feature branch (5 cross-task findings):
   - `safetensors_quant.py` (`quantize_tensor_st`): NVFP4 quantization of a tensor whose last dimension isn't a multiple of 16 (e.g. a 3x3 conv kernel, last dim 3 — routine in SDXL/SD1.5 UNets and some DiT patch-embed layers) now catches `quantize_nvfp4`'s `ValueError` and falls back to a plain F16 write for that one tensor, instead of crashing the whole conversion after many tensors were already processed.
