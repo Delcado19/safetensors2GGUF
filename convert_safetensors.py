@@ -18,6 +18,15 @@ from convert import load_state_dict
 from models.architectures import detect_arch
 from safetensors_quant import quantize_tensor_st
 
+# Float8 dtypes — resolved once at import time; empty tuple on older PyTorch builds.
+_FLOAT8_DTYPES: tuple = tuple(
+    d for d in (
+        getattr(torch, "float8_e4m3fn", None),
+        getattr(torch, "float8_e5m2",   None),
+    )
+    if d is not None
+)
+
 _TARGET_TO_QUANT_FORMAT = {
     "FP8": "float8_e4m3fn", "FP8_MIXED": "float8_e4m3fn",
     "NVFP4": "nvfp4", "NVFP4_MIXED": "nvfp4",
@@ -76,6 +85,11 @@ def convert_to_safetensors(
             on_progress(idx + 1, total, key)
         if any(x in key for x in model_arch.keys_ignore):
             continue
+
+        # Coerce dtypes that nan_to_num cannot handle:
+        #   float8   → float16  (nan_to_num rejects float8)
+        if _FLOAT8_DTYPES and data.dtype in _FLOAT8_DTYPES:
+            data = data.to(torch.float16)
 
         data = torch.nan_to_num(data, nan=0.0, posinf=65504.0, neginf=-65504.0)
         quantized = quantize_tensor_st(data, key, model_arch, target_key)

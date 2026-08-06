@@ -26,6 +26,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `README.md` / `docs/architecture.md`: Document the possible future Text Encoder to GGUF workflow, planned encoder-family coverage, and primary SDXL / OpenCLIP / CLIP / Qwen2.5-VL / Qwen3 / T5 / Mistral source links
 - `README.md` / `docs/architecture.md`: Record a possible future checkpoint-level GGUF workflow covering component splitting, per-component quantization, mixed safetensors/GGUF layouts, and a ComfyUI loader-node direction
 - `README.md` / `docs/architecture.md`: Record City96's `lcpp.patch` as a primary implementation reference for image GGUF architecture registration, tensor quantization policy, metadata bypasses, and future llama.cpp forward-porting
+- `convert_safetensors.py`: End-to-end converter from model checkpoint to quantized `.safetensors` file. Sibling to `convert.py`'s GGUF writer: reuses architecture detection and state-dict loading, writes plain quantized safetensors output (no GGUF backend, no 5D side-car export, no shape_fix, no 1D-pad-token unsqueeze). Supports F16/F16-mixed, FP8/FP8-mixed, NVFP4/NVFP4-mixed quantization via `safetensors_quant.py`; includes callbacks for progress reporting, logging, and cancellation.
+- `tests/test_convert_safetensors.py`: Coverage for safetensors quantized output (file I/O, dtype matching, FP8 scale tensors, quantization metadata, overwrite protection, and float8-input dtype coercion regression test)
 
 ## [0.1.0] - 2026-05-16
 

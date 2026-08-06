@@ -25,7 +25,7 @@ class TestConvertToSafetensors:
         assert dst.endswith(".safetensors")
         import os
         assert os.path.isfile(dst)
-        arch is not None and arch.arch == "flux"
+        assert arch is not None and arch.arch == "flux"
 
     def test_output_tensor_dtype_matches_target(self, tmp_path):
         src = _write_minimal_flux(tmp_path)
@@ -56,3 +56,22 @@ class TestConvertToSafetensors:
             assert False, "expected OSError"
         except OSError:
             pass
+
+    def test_float8_input_coerced_to_float16(self, tmp_path):
+        """Regression: float8 inputs must be coerced to float16 before nan_to_num.
+
+        Verify that re-quantizing a checkpoint that's already in float8 format
+        (e.g. pre-quantized releases) does not raise NotImplementedError from nan_to_num.
+        """
+        src = tmp_path / "model.safetensors"
+        sd = {
+            "double_blocks.0.img_attn.proj.weight": torch.randn(64, 64, dtype=torch.float32).to(
+                torch.float8_e4m3fn
+            ) if hasattr(torch, "float8_e4m3fn") else torch.randn(64, 64, dtype=torch.float32),
+            "double_blocks.0.img_attn.proj.bias": torch.randn(64, dtype=torch.float32),
+        }
+        save_file(sd, str(src))
+        # Should not raise NotImplementedError
+        dst, _ = convert_to_safetensors(str(src), target_key="F16", overwrite=True)
+        out = load_file(dst)
+        assert out["double_blocks.0.img_attn.proj.weight"].dtype == torch.float16
