@@ -130,10 +130,10 @@ Recommended sources:
 | Windows | ComfyUI Easy-Install bundled `Add-Ons\Tools\llama.cpp\llama-quantize.exe` |
 | macOS / Linux | Build `llama-quantize` from `city96/ComfyUI-GGUF` using `tools/lcpp.patch` |
 
-For a self-build, follow `ComfyUI-GGUF/tools/README.md`: clone the matching
-`llama.cpp` version, apply `tools/lcpp.patch`, then build the `llama-quantize`
-target.  Building on Windows requires Visual Studio C++ Build Tools and is
-therefore treated as an advanced fallback, not the default path.
+For a self-build (required on Linux/macOS, and on Windows without Easy-Install),
+see **[docs/building-llama-quantize.md](docs/building-llama-quantize.md)** for
+exact prerequisites and commands per OS — including a Visual Studio path and an
+MSYS2/MinGW-w64 path that doesn't require installing Visual Studio at all.
 
 The City96 patch is also a primary implementation reference, not only a build
 step.  It documents how image GGUF architectures are registered in
