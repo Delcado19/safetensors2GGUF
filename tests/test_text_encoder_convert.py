@@ -1,14 +1,16 @@
-"""Tests for text_encoder_convert.py — locating convert_hf_to_gguf.py and embedded Python."""
+"""Tests for text_encoder_convert.py — auto-cloning llama.cpp and running convert_hf_to_gguf.py."""
 
 from __future__ import annotations
 
+import subprocess
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
 from text_encoder_convert import (
     TEXT_ENCODER_OUTTYPES,
+    ensure_llama_cpp,
     find_convert_script,
-    find_embedded_python,
 )
 
 
@@ -20,31 +22,58 @@ class TestOuttypes:
             assert isinstance(value, str) and value
 
 
+class TestEnsureLlamaCpp:
+    def test_returns_existing_dir_without_cloning(self, tmp_path):
+        (tmp_path / "convert_hf_to_gguf.py").write_text("# stub")
+        with patch("text_encoder_convert._llama_cpp_dir", return_value=tmp_path), \
+             patch("text_encoder_convert.subprocess.run") as mock_run:
+            found = ensure_llama_cpp()
+            assert found == tmp_path
+            mock_run.assert_not_called()
+
+    def test_clones_when_missing(self, tmp_path):
+        clone_dir = tmp_path / "llama.cpp"
+
+        def _fake_clone(cmd, **kwargs):
+            clone_dir.mkdir(parents=True)
+            (clone_dir / "convert_hf_to_gguf.py").write_text("# stub")
+            return subprocess.CompletedProcess(cmd, 0)
+
+        with patch("text_encoder_convert._llama_cpp_dir", return_value=clone_dir), \
+             patch("text_encoder_convert.subprocess.run", side_effect=_fake_clone) as mock_run:
+            found = ensure_llama_cpp()
+            assert found == clone_dir
+            assert (clone_dir / "convert_hf_to_gguf.py").is_file()
+            cmd = mock_run.call_args[0][0]
+            assert cmd[:2] == ["git", "clone"]
+            assert "--depth" in cmd
+            assert str(clone_dir) in cmd
+            assert "https://github.com/ggml-org/llama.cpp" in cmd
+
+    def test_raises_runtime_error_when_git_not_found(self, tmp_path):
+        with patch("text_encoder_convert._llama_cpp_dir", return_value=tmp_path / "llama.cpp"), \
+             patch("text_encoder_convert.subprocess.run", side_effect=FileNotFoundError()):
+            try:
+                ensure_llama_cpp()
+                assert False, "expected RuntimeError"
+            except RuntimeError as exc:
+                assert "git" in str(exc).lower()
+
+    def test_raises_runtime_error_when_clone_fails(self, tmp_path):
+        err = subprocess.CalledProcessError(1, ["git", "clone"], stderr="fatal: network error")
+        with patch("text_encoder_convert._llama_cpp_dir", return_value=tmp_path / "llama.cpp"), \
+             patch("text_encoder_convert.subprocess.run", side_effect=err):
+            try:
+                ensure_llama_cpp()
+                assert False, "expected RuntimeError"
+            except RuntimeError as exc:
+                assert "network error" in str(exc)
+
+
 class TestFindConvertScript:
-    def test_returns_none_when_not_found(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("COMFYUI_EASY_INSTALL_HOME", str(tmp_path / "nonexistent"))
-        with patch("text_encoder_convert._easy_install_roots", return_value=[tmp_path]):
-            assert find_convert_script() is None
-
-    def test_finds_script_under_easy_install_root(self, tmp_path):
-        script_dir = tmp_path / "python_embeded" / "Lib" / "site-packages" / "llama_cpp" / "bin"
-        script_dir.mkdir(parents=True)
-        script = script_dir / "convert_hf_to_gguf.py"
-        script.write_text("# stub")
-        with patch("text_encoder_convert._easy_install_roots", return_value=[tmp_path]):
-            found = find_convert_script()
-            assert found == script
-
-
-class TestFindEmbeddedPython:
-    def test_finds_python_exe_under_easy_install_root(self, tmp_path):
-        py_dir = tmp_path / "python_embeded"
-        py_dir.mkdir(parents=True)
-        py_exe = py_dir / "python.exe"
-        py_exe.write_text("stub")
-        with patch("text_encoder_convert._easy_install_roots", return_value=[tmp_path]):
-            found = find_embedded_python()
-            assert found == py_exe
+    def test_returns_script_path_under_llama_cpp_dir(self, tmp_path):
+        with patch("text_encoder_convert.ensure_llama_cpp", return_value=tmp_path):
+            assert find_convert_script() == tmp_path / "convert_hf_to_gguf.py"
 
 
 class TestFetchBaseConfigFiles:
@@ -83,16 +112,16 @@ class TestFetchBaseConfigFiles:
 
 
 class TestConvertTextEncoder:
-    def test_raises_when_convert_script_not_found(self, tmp_path):
+    def test_propagates_error_when_llama_cpp_unavailable(self, tmp_path):
         from text_encoder_convert import convert_text_encoder
 
         weights = tmp_path / "model.safetensors"
         weights.write_bytes(b"stub")
-        with patch("text_encoder_convert.find_convert_script", return_value=None):
+        with patch("text_encoder_convert.find_convert_script", side_effect=RuntimeError("git not found")):
             try:
                 convert_text_encoder(str(weights), "Qwen/Qwen3-8B")
-                assert False, "expected FileNotFoundError"
-            except FileNotFoundError:
+                assert False, "expected RuntimeError"
+            except RuntimeError:
                 pass
 
     def test_runs_subprocess_with_expected_args(self, tmp_path):
@@ -102,11 +131,8 @@ class TestConvertTextEncoder:
         weights.write_bytes(b"stub")
         script = tmp_path / "convert_hf_to_gguf.py"
         script.write_text("# stub")
-        py_exe = tmp_path / "python.exe"
-        py_exe.write_text("stub")
 
         with patch("text_encoder_convert.find_convert_script", return_value=script), \
-             patch("text_encoder_convert.find_embedded_python", return_value=py_exe), \
              patch("text_encoder_convert.fetch_base_config_files", return_value=["config.json"]), \
              patch("text_encoder_convert.subprocess.Popen") as mock_popen:
             mock_proc = mock_popen.return_value
@@ -121,7 +147,7 @@ class TestConvertTextEncoder:
 
         assert out == str(tmp_path / "out.gguf")
         called_cmd = mock_popen.call_args[0][0]
-        assert str(py_exe) == called_cmd[0]
+        assert sys.executable == called_cmd[0]
         assert str(script) == called_cmd[1]
         assert "--outtype" in called_cmd
         assert "f16" in called_cmd

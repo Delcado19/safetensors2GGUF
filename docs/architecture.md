@@ -210,11 +210,14 @@ Source weights (.safetensors, bare file — no config.json/tokenizer)
   + Base model HF repo ID (manual field, e.g. "Qwen/Qwen3-8B")
     │
     ▼
-find_convert_script() / find_embedded_python()
-    │  - Search ComfyUI-Easy-Install roots (reuses quantize._easy_install_roots(),
-    │      not duplicated) for python_embeded/Lib/site-packages/llama_cpp/bin/
-    │      convert_hf_to_gguf.py and python_embeded/python.exe
-    │  - Raise FileNotFoundError if either is missing
+ensure_llama_cpp() / find_convert_script()
+    │  - Clones ggml-org/llama.cpp (shallow, --depth 1) into .llama.cpp/ next
+    │      to this repo on first use, override via S2G_LLAMA_CPP_HOME env var
+    │  - Skipped if convert_hf_to_gguf.py is already present in that dir
+    │  - Raises RuntimeError if git is missing or the clone fails
+    │  - convert_hf_to_gguf.py's own imports (transformers, sentencepiece,
+    │      protobuf) are satisfied by this repo's own venv — declared as
+    │      regular pyproject.toml dependencies, not a separate environment
     │
     ▼
 fetch_base_config_files(repo_id, dest_dir)
@@ -228,9 +231,8 @@ convert_text_encoder() assembles a temp directory
     │  - Copies (not moves) the source weights to <tmpdir>/model.safetensors
     │      so convert_hf_to_gguf.py's HF-layout auto-discovery finds them,
     │      and the user's original file is left untouched
-    │  - Runs convert_hf_to_gguf.py as a subprocess via the ComfyUI-Easy-
-    │      Install embedded python.exe (it already has transformers/torch/
-    │      mistral_common installed — not vendored into this repo)
+    │  - Runs convert_hf_to_gguf.py as a subprocess of sys.executable — this
+    │      tool's own interpreter, no external ComfyUI Python needed
     │  - Streams subprocess stdout to on_log line by line; polls
     │      cancel_event, terminates the subprocess and raises
     │      RuntimeError("cancelled") if set
@@ -239,6 +241,12 @@ convert_text_encoder() assembles a temp directory
     ▼
 Output file (.gguf)
 ```
+
+`convert_hf_to_gguf.py` in current llama.cpp imports its per-architecture
+model classes from a sibling `conversion/` package (~90 files, one per
+architecture family) rather than being a single self-contained script —
+vendoring it would mean tracking that whole package. A shallow git clone
+avoids that maintenance burden and stays current with upstream automatically.
 
 The base-model repo ID is always a manual text field — there is no
 auto-detection heuristic mapping a bare checkpoint to its base model's HF

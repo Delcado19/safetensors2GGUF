@@ -12,8 +12,8 @@ single-file **text-encoder** checkpoints (Qwen3, T5/UMT5, Mistral, …) to GGUF.
   block-scaled NVFP4, each with a "mixed" variant that keeps critical layers
   at F32.
 - **Text-encoder → GGUF** — converts bare text-encoder checkpoints that lack
-  `config.json`/tokenizer files, using a base model's HuggingFace repo ID plus
-  ComfyUI-Easy-Install's bundled converter.
+  `config.json`/tokenizer files, using a base model's HuggingFace repo ID; runs
+  fully standalone, auto-cloning `llama.cpp` on first use.
 
 A Gradio web UI with file browser, quantization selector, live size estimate,
 and cancel button is included for all three pipelines.
@@ -54,19 +54,20 @@ This project does not maintain a separate `requirements.txt`.
 <summary>Using pip instead</summary>
 
 ```bash
-pip install gguf torch safetensors tqdm gradio huggingface_hub
+pip install gguf torch safetensors tqdm gradio huggingface_hub transformers sentencepiece protobuf
 ```
 
 </details>
 
-`uv sync` only installs the Python packages. Two pipelines need an external
-tool that isn't installed this way:
+`uv sync` covers everything except GGUF K-quants:
 
 - **GGUF K-quants** (`Q6_K`, `Q5_K_M`, …) need a `llama-quantize` binary —
-  see [llama-quantize Sources](#llama-quantize-sources) below. F32/F16/BF16/Q8_0
-  and the Safetensors output mode work with `uv sync` alone.
-- **Text-encoder → GGUF conversion** needs a ComfyUI-Easy-Install install with
-  its bundled `convert_hf_to_gguf.py` + embedded Python — see
+  see [llama-quantize Sources](#llama-quantize-sources) below. F32/F16/BF16/Q8_0,
+  the Safetensors output mode, and text-encoder conversion all work with
+  `uv sync` alone.
+- **Text-encoder → GGUF conversion** needs `git` on `PATH`: it auto-clones
+  `llama.cpp` (for its `convert_hf_to_gguf.py`) into `.llama.cpp/` on first
+  use — no ComfyUI installation required. See
   [Text-Encoder Conversion](#text-encoder-conversion) below.
 
 ## Web UI (recommended)
@@ -252,8 +253,11 @@ nothing can load — only the explicitly scaled variants are included.
 
 The **Convert Text Encoder → GGUF** tab converts
 bare HF/Transformers text-encoder checkpoints (Qwen, T5, CLIP, Mistral variants) to
-GGUF format. This is separate from SDXL CLIP-L/CLIP-G extraction and uses
-ComfyUI-Easy-Install's bundled `convert_hf_to_gguf.py` + embedded Python runtime.
+GGUF format. This is separate from SDXL CLIP-L/CLIP-G extraction and runs
+entirely in this tool's own Python environment — no ComfyUI installation
+required. `llama.cpp` (for its `convert_hf_to_gguf.py`) is cloned
+automatically into `.llama.cpp/` the first time you use this tab; that needs
+`git` on `PATH` and an internet connection, but only once.
 
 ### Workflow
 
@@ -280,20 +284,23 @@ Text-encoder conversion requires:
 
 The pipeline:
 
-1. Assembles a temporary directory with your source weights (renamed to
+1. Clones `llama.cpp` into `.llama.cpp/` next to this repo if not already
+   present (skipped on subsequent runs).
+2. Assembles a temporary directory with your source weights (renamed to
    `model.safetensors` to preserve the original file) and downloaded
    config/tokenizer files.
-2. Runs `convert_hf_to_gguf.py` via ComfyUI-Easy-Install's embedded `python.exe`.
-3. Returns the quantized GGUF at your chosen output path.
+3. Runs `convert_hf_to_gguf.py` with this tool's own Python interpreter
+   (`transformers`/`sentencepiece`/`protobuf` are regular dependencies in
+   `pyproject.toml`, installed by `uv sync`).
+4. Returns the quantized GGUF at your chosen output path.
 
 This is a subprocess pipeline, not part of the DiT architecture detection system.
 Per-family text-encoder handling (e.g., SDXL CLIP key mapping, Qwen mmproj pairing)
 is not automated — the generic HF-to-GGUF conversion handles supported standard
 architectures. Unsupported or non-standard architectures require manual key mapping.
 
-If `convert_hf_to_gguf.py` or the embedded Python runtime are not found in
-ComfyUI-Easy-Install, the Setup textbox in the UI will show the discovery results
-(Found / Not Found).
+Override the clone location with the `S2G_LLAMA_CPP_HOME` environment variable
+if you already have a llama.cpp checkout elsewhere and want to reuse it.
 
 ### Reference: Encoder Family per Model Family
 

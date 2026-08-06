@@ -36,12 +36,7 @@ from quantize import (
     run_quantize,
 )
 from safetensors_quant import SAFETENSORS_DTYPE_CHOICES
-from text_encoder_convert import (
-    TEXT_ENCODER_OUTTYPES,
-    convert_text_encoder,
-    find_convert_script,
-    find_embedded_python,
-)
+from text_encoder_convert import TEXT_ENCODER_OUTTYPES, convert_text_encoder
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Cancel support
@@ -1122,13 +1117,8 @@ def build_app() -> gr.Blocks:
                     "the HuggingFace repo ID you provide (not the fine-tuned "
                     "checkpoint's repo, which usually doesn't have one — the "
                     "**original base model's** repo).  Runs `convert_hf_to_gguf.py` "
-                    "from your ComfyUI-Easy-Install Python environment."
-                )
-                script_found = find_convert_script()
-                py_found = find_embedded_python()
-                te_setup_info = (
-                    f"convert_hf_to_gguf.py: {script_found or 'NOT FOUND'}\n"
-                    f"embedded python.exe: {py_found or 'NOT FOUND'}"
+                    "from an auto-cloned llama.cpp checkout (first run downloads it, "
+                    "needs `git` + internet — no ComfyUI installation required)."
                 )
                 with gr.Column(elem_classes=["card"]):
                     with gr.Row(equal_height=False):
@@ -1153,9 +1143,6 @@ def build_app() -> gr.Blocks:
                     )
                     te_outtype = gr.Dropdown(
                         choices=TEXT_ENCODER_OUTTYPES, value="f16", label="Output type",
-                    )
-                    te_setup = gr.Textbox(
-                        label="Setup", value=te_setup_info, lines=2, max_lines=2, interactive=False,
                     )
 
                 with gr.Row():
