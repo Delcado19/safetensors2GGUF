@@ -1,12 +1,22 @@
 # safetensors2GGUF
 
-Converts Safetensors / CKPT model checkpoints to GGUF format for use with
-**llama.cpp** and **ComfyUI-GGUF**.
+Converts Safetensors / CKPT diffusion model checkpoints to **GGUF** for use with
+**llama.cpp** and **ComfyUI-GGUF**, or to a quantized **Safetensors** file that
+ComfyUI can load natively without the GGUF loader node. Also converts bare
+single-file **text-encoder** checkpoints (Qwen3, T5/UMT5, Mistral, …) to GGUF.
 
-Supports direct Python quantization (F32 / F16 / BF16 / Q8_0) and
-K-quant quantization via a bundled `llama-quantize` binary (Q6_K, Q5_K_M,
-Q4_K_M, Q4_K_S, Q3_K_M, Q2_K).  A Gradio web UI with file browser,
-quantization selector, live size estimate, and cancel button is included.
+- **GGUF output** — direct Python quantization (F32 / F16 / BF16 / Q8_0) and
+  K-quant quantization via a bundled `llama-quantize` binary (Q6_K, Q5_K_M,
+  Q4_K_M, Q4_K_S, Q3_K_M, Q2_K).
+- **Safetensors output** — F16, ComfyUI-compatible scaled FP8, and Nvidia
+  block-scaled NVFP4, each with a "mixed" variant that keeps critical layers
+  at F32.
+- **Text-encoder → GGUF** — converts bare text-encoder checkpoints that lack
+  `config.json`/tokenizer files, using a base model's HuggingFace repo ID plus
+  ComfyUI-Easy-Install's bundled converter.
+
+A Gradio web UI with file browser, quantization selector, live size estimate,
+and cancel button is included for all three pipelines.
 
 ## Supported Architectures
 
