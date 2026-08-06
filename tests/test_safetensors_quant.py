@@ -92,3 +92,44 @@ class TestQuantizeTensorNvfp4:
         out = quantize_tensor_st(data, "block.bias", ModelFlux(), "NVFP4_MIXED")
         assert set(out.keys()) == {"block.bias"}
         assert out["block.bias"].dtype == torch.float32
+
+    def test_nvfp4_non_multiple_of_16_last_dim_falls_back_to_f16(self):
+        # Regression for review finding #1: a real conv weight (e.g. 3x3 conv,
+        # last dim 3) must not crash the whole conversion — quantize_nvfp4
+        # raises ValueError internally, and the dispatcher must catch it and
+        # fall back to a plain F16 write for that one tensor.
+        data = torch.randn(8, 3, dtype=torch.float32)
+        out = quantize_tensor_st(data, "conv.weight", ModelFlux(), "NVFP4")
+        assert set(out.keys()) == {"conv.weight"}
+        assert out["conv.weight"].dtype == torch.float16
+        assert out["conv.weight"].shape == data.shape
+
+
+class TestQuantizeTensor1dNeverScaled:
+    """Regression for review finding #2: 1D tensors (biases, norm weights)
+    must never get a .weight_scale sibling under FP8/NVFP4, even in
+    non-mixed mode — no consumer reads a bias-scale, so a scaled 1D tensor
+    loads back unscaled and wrong by up to ~448x."""
+
+    def test_fp8_non_mixed_1d_tensor_stays_plain_f32(self):
+        data = torch.randn(64, dtype=torch.float32)
+        out = quantize_tensor_st(data, "block.bias", ModelFlux(), "FP8")
+        assert set(out.keys()) == {"block.bias"}
+        assert out["block.bias"].dtype == torch.float32
+
+    def test_nvfp4_non_mixed_1d_tensor_stays_plain_f32(self):
+        data = torch.randn(64, dtype=torch.float32)
+        out = quantize_tensor_st(data, "block.bias", ModelFlux(), "NVFP4")
+        assert set(out.keys()) == {"block.bias"}
+        assert out["block.bias"].dtype == torch.float32
+
+    def test_fp8_non_mixed_1d_tensor_protected_even_with_f16_source(self):
+        # is_hiprec_st gates its threshold/keys_hiprec logic on
+        # old_dtype in (float32, bfloat16) — for a float16-sourced checkpoint
+        # it always returns False. Confirm the new unconditional 1D check
+        # does not rely on that gate (it must protect 1D tensors regardless
+        # of source dtype).
+        data = torch.randn(64, dtype=torch.float16)
+        out = quantize_tensor_st(data, "block.bias", ModelFlux(), "FP8")
+        assert set(out.keys()) == {"block.bias"}
+        assert "block.bias.weight_scale" not in out

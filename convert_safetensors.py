@@ -76,9 +76,14 @@ def convert_to_safetensors(
     layer_formats: dict[str, dict] = {}
     quant_format = _TARGET_TO_QUANT_FORMAT.get(target_key)
 
-    items = list(state_dict.items())
-    total = len(items)
-    for idx, (key, data) in enumerate(items):
+    # Iterate state_dict.items() directly (not list(...)) — load_state_dict
+    # returns a lazy _LazyStateDict for .safetensors sources that streams one
+    # tensor at a time; materializing it into a list here would defeat that
+    # and reintroduce the >RAM OOM crash fixed in commit 72a49dc (review
+    # finding #3). len() is cheap — _LazyStateDict.__len__ reads the key map,
+    # not tensor data.
+    total = len(state_dict)
+    for idx, (key, data) in enumerate(state_dict.items()):
         if cancel_event is not None and cancel_event.is_set():
             raise RuntimeError("cancelled")
         if on_progress:

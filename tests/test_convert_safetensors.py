@@ -39,6 +39,16 @@ class TestConvertToSafetensors:
         out = load_file(dst)
         assert "double_blocks.0.img_attn.proj.weight.weight_scale" in out
 
+    def test_fp8_non_mixed_bias_has_no_scale_sibling(self, tmp_path):
+        # Regression for review finding #2: non-mixed FP8 must not scale-
+        # quantize 1D bias tensors — no consumer reads a bias-scale, so the
+        # bias would load unscaled and be wrong by up to ~448x.
+        src = _write_minimal_flux(tmp_path)
+        dst, _ = convert_to_safetensors(str(src), target_key="FP8", overwrite=True)
+        out = load_file(dst)
+        assert "double_blocks.0.img_attn.proj.bias.weight_scale" not in out
+        assert out["double_blocks.0.img_attn.proj.bias"].dtype == torch.float32
+
     def test_quantization_metadata_written(self, tmp_path):
         src = _write_minimal_flux(tmp_path)
         dst, _ = convert_to_safetensors(str(src), target_key="FP8", overwrite=True)

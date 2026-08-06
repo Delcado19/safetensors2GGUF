@@ -66,12 +66,34 @@ def quantize_tensor_st(
     if base == "F16":
         return {key: data.to(torch.float16)}
 
+    # FP8/NVFP4 scale-tensor conventions only make sense for weight matrices:
+    # ComfyUI's scaled-quant loader applies a layer's .weight_scale only to its
+    # .weight tensor, so a quantized 1D tensor (bias, norm weight) would load
+    # back unscaled and be wrong by up to ~448x. Unlike the `mixed and
+    # is_hiprec_st(...)` check above, this must apply unconditionally — not
+    # just in *_MIXED mode — because there is no accuracy or size benefit to
+    # scale-quantizing tiny 1D tensors either way. Mirrors convert.py's
+    # _quant_type_for, which always keeps 1D tensors at F32 regardless of
+    # target_quant (review finding #2).
+    if data.dim() == 1:
+        return {key: data.to(torch.float32)}
+
     if base == "FP8":
         from safetensors_quant_fp8 import quantize_fp8_scaled
         return quantize_fp8_scaled(data, key)
 
     if base == "NVFP4":
         from safetensors_quant_nvfp4 import quantize_nvfp4
-        return quantize_nvfp4(data, key)
+        try:
+            return quantize_nvfp4(data, key)
+        except ValueError:
+            # Tensor's last dim isn't a multiple of 16 (e.g. 3x3 conv kernels
+            # with last dim 3, or some DiT patch-embed layers) — NVFP4's
+            # 16-element block packing can't apply. Fall back to a plain F16
+            # write for this one tensor instead of crashing the whole
+            # conversion after many tensors have already been processed
+            # (review finding #1). No on_log hook exists at this call depth,
+            # so this fallback is silent by design.
+            return {key: data.to(torch.float16)}
 
     raise ValueError(f"Unknown target_key: {target_key!r}")

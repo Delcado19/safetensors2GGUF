@@ -97,6 +97,32 @@ class TestLayoutParity:
         assert any("Analyze an **SDXL** checkpoint" in v for v in markdown_values)
 
 
+class TestRunTeConvertCancel:
+    """Regression for review finding #4: cancelling the Text Encoder tab must
+    render 'Cancelled', not 'Error: cancelled', matching run_st_convert's
+    existing special-case handling of RuntimeError("cancelled")."""
+
+    def test_cancelled_run_reports_cancelled_not_error(self, tmp_path):
+        src = tmp_path / "model.safetensors"
+        src.touch()
+
+        with patch("gui.convert_text_encoder", side_effect=RuntimeError("cancelled")):
+            *_, (log, status) = gui.run_te_convert(str(src), "org/repo", "", "f16")
+
+        assert status == "Cancelled"
+        assert "Error" not in status
+
+    def test_other_runtime_error_still_reports_error(self, tmp_path):
+        src = tmp_path / "model.safetensors"
+        src.touch()
+
+        with patch("gui.convert_text_encoder", side_effect=RuntimeError("boom")):
+            *_, (log, status) = gui.run_te_convert(str(src), "org/repo", "", "f16")
+
+        assert status == "Error"
+        assert "boom" in log
+
+
 def test_convert_safetensors_tab_present():
     """The renamed 'Convert -> GGUF' tab and new 'Convert -> Safetensors' tab
     (Task 5) must both exist, and the new tab's format dropdown must offer

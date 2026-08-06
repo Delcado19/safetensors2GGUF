@@ -831,6 +831,16 @@ def run_te_convert(
                 cancel_event=cancel_event,
             )
             result["out"] = out_path
+        except RuntimeError as exc:
+            # convert_text_encoder raises plain RuntimeError("cancelled") on
+            # cancel_event, same convention as convert_to_safetensors — see
+            # run_st_convert's matching handler above (review finding #4:
+            # without this, cancelling this tab showed "Error: cancelled"
+            # instead of "Cancelled").
+            if str(exc) == "cancelled":
+                result["cancelled"] = True
+            else:
+                result["error"] = str(exc)
         except Exception as exc:
             result["error"] = str(exc)
         finally:
@@ -1065,7 +1075,10 @@ def build_app() -> gr.Blocks:
                             browse_st_dst_btn = gr.Button("Browse", size="sm")
                     st_format_dropdown = gr.Dropdown(
                         choices=SAFETENSORS_DTYPE_CHOICES,
-                        value="FP8",
+                        # Default to the mixed variant, not plain "FP8": mixed
+                        # keeps hiprec tensors at F32 for extra safety margin,
+                        # and is the recommended default (review finding #2).
+                        value="FP8_MIXED",
                         label="Output format",
                     )
                     overwrite_st = gr.Checkbox(label="Overwrite existing output", value=False)

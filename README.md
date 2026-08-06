@@ -207,8 +207,8 @@ an F16, BF16, F32, or Q8_0 source GGUF for meaningful measurements.
 
 ## Safetensors Output
 
-The **Convert → Safetensors** tab in the Web UI (or `convert_safetensors.py` CLI)
-produces quantized `.safetensors` files as an alternative to GGUF.  This is useful
+The **Convert → Safetensors** tab in the Web UI produces quantized `.safetensors`
+files as an alternative to GGUF.  This is useful
 when you want ComfyUI-compatible weights without the GGUF container format.
 
 | Key | Format | Backend | Notes |
@@ -227,7 +227,7 @@ nothing can load — only the explicitly scaled variants are included.
 
 ## Text-Encoder Conversion
 
-The **Convert Text Encoder → GGUF** tab (or `text_encoder_convert.py` CLI) converts
+The **Convert Text Encoder → GGUF** tab converts
 bare HF/Transformers text-encoder checkpoints (Qwen, T5, CLIP, Mistral variants) to
 GGUF format. This is separate from SDXL CLIP-L/CLIP-G extraction and uses
 ComfyUI-Easy-Install's bundled `convert_hf_to_gguf.py` + embedded Python runtime.
