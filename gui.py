@@ -42,6 +42,10 @@ from safetensors_quant import SAFETENSORS_DTYPE_CHOICES
 # ──────────────────────────────────────────────────────────────────────────────
 
 _active_cancel: threading.Event | None = None
+# Separate cancel slot for the Convert -> Safetensors tab so a running GGUF
+# conversion and a running safetensors conversion don't share (and stomp on)
+# the same cancel_event.
+_active_cancel_st: threading.Event | None = None
 GUI_TENSOR_LOG_EVERY = 25
 
 
@@ -49,6 +53,14 @@ def request_cancel() -> str:
     """Signal the active conversion to stop; called by the Cancel button."""
     if _active_cancel is not None:
         _active_cancel.set()
+        return "Cancelling…"
+    return "No active conversion"
+
+
+def request_cancel_st() -> str:
+    """Signal the active Convert -> Safetensors conversion to stop."""
+    if _active_cancel_st is not None:
+        _active_cancel_st.set()
         return "Cancelling…"
     return "No active conversion"
 
@@ -322,13 +334,13 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
 #size-info { font-size: 0.85em; color: var(--body-text-color-subdued); padding-top: 8px; }
 
 /* ── Status textbox: Gradio default styling, no custom border colour ─────── */
-#conv-status, #pad-status, #fix-status, #extract-status {
+#conv-status, #pad-status, #fix-status, #extract-status, #st-status {
     margin-top: 6px !important;
     position: sticky !important;
     bottom: 0 !important;
     z-index: 200 !important;
 }
-#conv-status textarea, #pad-status textarea, #fix-status textarea, #extract-status textarea {
+#conv-status textarea, #pad-status textarea, #fix-status textarea, #extract-status textarea, #st-status textarea {
     font-family: ui-monospace, monospace !important;
     font-size: 0.85em !important;
     font-weight: 600 !important;
@@ -336,18 +348,18 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
 }
 
 /* ── Action buttons ─────────────────────────────────────────────────────── */
-#convert-btn, #fix-pad-btn, #fix-5d-btn, #extract-btn {
+#convert-btn, #fix-pad-btn, #fix-5d-btn, #extract-btn, #st-convert-btn {
     min-height: 44px !important; font-size: 1em !important; font-weight: 600 !important;
 }
-#cancel-btn { min-height: 44px !important; }
-#cancel-btn button, #cancel-btn {
+#cancel-btn, #st-cancel-btn { min-height: 44px !important; }
+#cancel-btn button, #cancel-btn, #st-cancel-btn button, #st-cancel-btn {
     background: #ef4444 !important; border-color: #dc2626 !important; color: #fff !important;
     border-radius: 8px !important;
 }
-#cancel-btn button:hover, #cancel-btn:hover { background: #dc2626 !important; }
+#cancel-btn button:hover, #cancel-btn:hover, #st-cancel-btn button:hover, #st-cancel-btn:hover { background: #dc2626 !important; }
 
 /* ── Log areas ──────────────────────────────────────────────────────────── */
-#conv-log textarea, #pad-log textarea, #fix-log textarea, #extract-log textarea {
+#conv-log textarea, #pad-log textarea, #fix-log textarea, #extract-log textarea, #st-log textarea {
     font-family: ui-monospace, monospace; font-size: 0.8em; line-height: 1.45;
 }
 """
@@ -695,6 +707,67 @@ def run_convert(
         _active_cancel = None
 
 
+def run_st_convert(
+    src: str,
+    dst: str,
+    fmt: str,
+    overwrite: bool,
+) -> Generator[tuple[str, str], None, None]:
+    """Run convert_to_safetensors in a background thread and stream (log_text, status_text).
+
+    Mirrors run_convert's worker-thread + cancel_event pattern (Task 5 review
+    fix: the tab originally ran conversion synchronously in the click handler,
+    which blocked the UI with no live log/progress and no way to cancel).
+    Uses a dedicated _active_cancel_st slot rather than _active_cancel so this
+    tab's Cancel button never interferes with a concurrent GGUF conversion.
+    """
+    global _active_cancel_st
+
+    if not src or not src.strip():
+        yield "❌  No source file selected.", "Error — no input"
+        return
+
+    cancel_event = threading.Event()
+    _active_cancel_st = cancel_event
+
+    q: queue.Queue = queue.Queue()
+    done = threading.Event()
+    result: dict = {}
+
+    def worker() -> None:
+        try:
+            out_path, _ = convert_to_safetensors(
+                src.strip(),
+                dst_path=(dst.strip() or None) if dst else None,
+                target_key=fmt,
+                overwrite=overwrite,
+                on_progress=lambda idx, total, key: q.put(("progress", idx, total, key)),
+                on_log=lambda msg: q.put(("log", msg)),
+                cancel_event=cancel_event,
+            )
+            result["out"] = out_path
+        except RuntimeError as exc:
+            # convert_to_safetensors raises plain RuntimeError("cancelled") on
+            # cancel_event (no dedicated exception type, unlike convert.py's
+            # ConversionCancelled) — distinguish it so _stream shows "Cancelled"
+            # instead of treating a user-requested stop as an error.
+            if str(exc) == "cancelled":
+                result["cancelled"] = True
+            else:
+                result["error"] = str(exc)
+        except Exception as exc:
+            result["error"] = str(exc)
+        finally:
+            q.put(("done",))
+            done.set()
+
+    threading.Thread(target=worker, daemon=True).start()
+    try:
+        yield from _stream(q, done, result)
+    finally:
+        _active_cancel_st = None
+
+
 def run_fix_pad_tokens(
     src: str,
     dst: str,
@@ -921,7 +994,10 @@ def build_app() -> gr.Blocks:
                     )
                     overwrite_st = gr.Checkbox(label="Overwrite existing output", value=False)
 
-                st_convert_btn = gr.Button("▶  Convert", variant="primary", elem_id="st-convert-btn")
+                with gr.Row():
+                    st_convert_btn = gr.Button("▶  Convert", variant="primary", scale=5, elem_id="st-convert-btn")
+                    st_cancel_btn  = gr.Button("✕",          variant="stop",    scale=1, elem_id="st-cancel-btn")
+
                 st_status = gr.Textbox(
                     value="Ready", show_label=False, interactive=False,
                     lines=1, max_lines=1, elem_id="st-status",
@@ -938,31 +1014,15 @@ def build_app() -> gr.Blocks:
                     result = _browse(_MODEL_TYPES)
                     return result
 
-                def _run_st_convert(src, dst, fmt, overwrite):
-                    if not src or not os.path.isfile(src):
-                        yield "Error: source file not found", ""
-                        return
-                    log_lines: list[str] = []
-
-                    def _on_log(msg):
-                        log_lines.append(msg)
-
-                    try:
-                        dst_final, _ = convert_to_safetensors(
-                            src, dst_path=(dst or None), target_key=fmt,
-                            overwrite=overwrite, on_log=_on_log,
-                        )
-                        yield f"Done → {dst_final}", "\n".join(log_lines)
-                    except Exception as exc:
-                        yield f"Error: {exc}", "\n".join(log_lines)
-
                 browse_st_src_btn.click(_browse_st_src, outputs=st_src_path)
                 browse_st_dst_btn.click(_browse_st_dst, outputs=st_dst_path)
-                st_convert_btn.click(
-                    _run_st_convert,
+                st_convert_event = st_convert_btn.click(
+                    fn=run_st_convert,
                     inputs=[st_src_path, st_dst_path, st_format_dropdown, overwrite_st],
-                    outputs=[st_status, st_log],
+                    outputs=[st_log, st_status],
+                    show_progress="hidden",
                 )
+                st_cancel_btn.click(fn=request_cancel_st, outputs=[st_status], cancels=[st_convert_event])
 
             # ── Fix Pad Tokens ─────────────────────────────────────────────
             with gr.Tab("Fix Pad Tokens"):
