@@ -36,6 +36,12 @@ from quantize import (
     run_quantize,
 )
 from safetensors_quant import SAFETENSORS_DTYPE_CHOICES
+from text_encoder_convert import (
+    TEXT_ENCODER_OUTTYPES,
+    convert_text_encoder,
+    find_convert_script,
+    find_embedded_python,
+)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Cancel support
@@ -46,6 +52,10 @@ _active_cancel: threading.Event | None = None
 # conversion and a running safetensors conversion don't share (and stomp on)
 # the same cancel_event.
 _active_cancel_st: threading.Event | None = None
+# Separate cancel slot for the Convert Text Encoder -> GGUF tab, distinct from
+# both _active_cancel and _active_cancel_st, so all three conversion tabs can
+# run (and be cancelled) independently without stomping on each other.
+_active_cancel_te: threading.Event | None = None
 GUI_TENSOR_LOG_EVERY = 25
 
 
@@ -61,6 +71,14 @@ def request_cancel_st() -> str:
     """Signal the active Convert -> Safetensors conversion to stop."""
     if _active_cancel_st is not None:
         _active_cancel_st.set()
+        return "Cancelling…"
+    return "No active conversion"
+
+
+def request_cancel_te() -> str:
+    """Signal the active Convert Text Encoder -> GGUF conversion to stop."""
+    if _active_cancel_te is not None:
+        _active_cancel_te.set()
         return "Cancelling…"
     return "No active conversion"
 
@@ -768,6 +786,64 @@ def run_st_convert(
         _active_cancel_st = None
 
 
+def run_te_convert(
+    src: str,
+    repo_id: str,
+    dst: str,
+    outtype: str,
+) -> Generator[tuple[str, str], None, None]:
+    """Run convert_text_encoder in a background thread and stream (log_text, status_text).
+
+    Mirrors run_st_convert's worker-thread + cancel_event + _stream pattern
+    (see Task 5 review fix) instead of the plan brief's literal synchronous
+    example, so this tab gets live log streaming and a working Cancel button
+    like every other conversion tab in this file. Uses a dedicated
+    _active_cancel_te slot, separate from _active_cancel and _active_cancel_st,
+    so this tab's Cancel button never interferes with a concurrent GGUF or
+    safetensors conversion. convert_text_encoder has no on_progress callback
+    (only on_log), so no progress-bar wiring is needed — _stream's status text
+    stays "Running…" until completion.
+    """
+    global _active_cancel_te
+
+    if not src or not src.strip():
+        yield "❌  No source file selected.", "Error — no input"
+        return
+    if not repo_id or not repo_id.strip():
+        yield "❌  Base model HF repo ID is required.", "Error — no repo ID"
+        return
+
+    cancel_event = threading.Event()
+    _active_cancel_te = cancel_event
+
+    q: queue.Queue = queue.Queue()
+    done = threading.Event()
+    result: dict = {}
+
+    def worker() -> None:
+        try:
+            out_path = convert_text_encoder(
+                src.strip(),
+                repo_id.strip(),
+                dst_path=(dst.strip() or None) if dst else None,
+                outtype=outtype,
+                on_log=lambda msg: q.put(("log", msg)),
+                cancel_event=cancel_event,
+            )
+            result["out"] = out_path
+        except Exception as exc:
+            result["error"] = str(exc)
+        finally:
+            q.put(("done",))
+            done.set()
+
+    threading.Thread(target=worker, daemon=True).start()
+    try:
+        yield from _stream(q, done, result)
+    finally:
+        _active_cancel_te = None
+
+
 def run_fix_pad_tokens(
     src: str,
     dst: str,
@@ -1023,6 +1099,76 @@ def build_app() -> gr.Blocks:
                     show_progress="hidden",
                 )
                 st_cancel_btn.click(fn=request_cancel_st, outputs=[st_status], cancels=[st_convert_event])
+
+            # ── Convert Text Encoder → GGUF ─────────────────────────────────
+            with gr.Tab("Convert Text Encoder → GGUF"):
+                gr.Markdown(
+                    "Convert a **bare single-file text-encoder checkpoint** (Qwen3, "
+                    "Mistral, T5/UMT5, …) to GGUF.  Requires the base model's "
+                    "`config.json`/tokenizer files — downloaded automatically from "
+                    "the HuggingFace repo ID you provide (not the fine-tuned "
+                    "checkpoint's repo, which usually doesn't have one — the "
+                    "**original base model's** repo).  Runs `convert_hf_to_gguf.py` "
+                    "from your ComfyUI-Easy-Install Python environment."
+                )
+                script_found = find_convert_script()
+                py_found = find_embedded_python()
+                te_setup_info = (
+                    f"convert_hf_to_gguf.py: {script_found or 'NOT FOUND'}\n"
+                    f"embedded python.exe: {py_found or 'NOT FOUND'}"
+                )
+                with gr.Column(elem_classes=["card"]):
+                    with gr.Row(equal_height=False):
+                        with gr.Column(scale=5, elem_classes=["path-input"]):
+                            te_src_path = gr.Textbox(
+                                label="Text-encoder weights file",
+                                placeholder="qwen3_8b_abliterated.safetensors",
+                                lines=1, max_lines=1,
+                            )
+                        with gr.Column(scale=0, min_width=124, elem_classes=["browse-col"]):
+                            browse_te_src_btn = gr.Button("Browse", size="sm")
+                    te_base_repo = gr.Textbox(
+                        label="Base model HF repo ID",
+                        placeholder="e.g. Qwen/Qwen3-8B",
+                        lines=1, max_lines=1,
+                        info="The ORIGINAL base model's repo (config.json/tokenizer source), not the fine-tune's.",
+                    )
+                    te_dst_path = gr.Textbox(
+                        label="Output path",
+                        placeholder="Auto-generated next to source",
+                        lines=1, max_lines=1,
+                    )
+                    te_outtype = gr.Dropdown(
+                        choices=TEXT_ENCODER_OUTTYPES, value="f16", label="Output type",
+                    )
+                    te_setup = gr.Textbox(
+                        label="Setup", value=te_setup_info, lines=2, max_lines=2, interactive=False,
+                    )
+
+                with gr.Row():
+                    te_convert_btn = gr.Button("▶  Convert", variant="primary", scale=5, elem_id="te-convert-btn")
+                    te_cancel_btn  = gr.Button("✕",          variant="stop",    scale=1, elem_id="te-cancel-btn")
+
+                te_status = gr.Textbox(
+                    value="Ready", show_label=False, interactive=False,
+                    lines=1, max_lines=1, elem_id="te-status",
+                )
+                te_log = gr.Textbox(
+                    label="Log", lines=10, max_lines=10,
+                    interactive=False, autoscroll=False, elem_id="te-log",
+                )
+
+                def _browse_te_src():
+                    return browse_model()
+
+                browse_te_src_btn.click(_browse_te_src, outputs=te_src_path)
+                te_convert_event = te_convert_btn.click(
+                    fn=run_te_convert,
+                    inputs=[te_src_path, te_base_repo, te_dst_path, te_outtype],
+                    outputs=[te_log, te_status],
+                    show_progress="hidden",
+                )
+                te_cancel_btn.click(fn=request_cancel_te, outputs=[te_status], cancels=[te_convert_event])
 
             # ── Fix Pad Tokens ─────────────────────────────────────────────
             with gr.Tab("Fix Pad Tokens"):

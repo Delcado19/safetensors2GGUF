@@ -114,3 +114,11 @@ def test_convert_safetensors_tab_present():
     )
     from safetensors_quant import SAFETENSORS_DTYPE_CHOICES
     assert dropdown.choices == [tuple(c) for c in SAFETENSORS_DTYPE_CHOICES]
+
+
+def test_text_encoder_tab_present():
+    """The 'Convert Text Encoder -> GGUF' tab (Task 10) must exist."""
+    from gui import build_app
+    app = build_app()
+    label_texts = [getattr(b, "label", None) for b in app.blocks.values()]
+    assert any("Base model HF repo ID" == t for t in label_texts)
