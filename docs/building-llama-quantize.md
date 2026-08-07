@@ -137,9 +137,12 @@ path isn't covered by city96's own instructions above (which assume MSVC) —
 if it fails to apply/build against tag `b3962`, fall back to the MSVC path.
 
 1. Install [MSYS2](https://www.msys2.org/), then from an **MSYS2 MinGW64**
-   shell:
+   shell, install just the compiler (not the `-toolchain` meta-package, which
+   also pulls in gdb, extra binutils, and other tools you don't need here)
+   via `pacman` — MSYS2's package manager, adopted from Arch Linux but
+   running natively on Windows here, not a sign you're in the wrong OS:
    ```bash
-   pacman -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake git
+   pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake git
    ```
 2. Clone, check out the tag, and apply the patch exactly as in steps 1-2
    above, from the MinGW64 shell.
