@@ -1,3 +1,4 @@
+![safetensors2GGUF](assets/safetensors2GGUF.jpg)
 # safetensors2GGUF
 
 Converts Safetensors / CKPT diffusion model checkpoints to **GGUF** for use with
