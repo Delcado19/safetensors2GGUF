@@ -137,6 +137,83 @@ def _find_built_quantize_binary(build_dir: Path) -> Path | None:
     return None
 
 
+def _locate_msvc_build_env(on_log=None) -> dict[str, str] | None:
+    """On Windows, when cmake isn't already on PATH, locate an installed
+    Visual Studio C++ toolchain via vswhere and return an environment dict
+    with vcvarsall.bat's variables merged in (PATH, INCLUDE, LIB, ...) — the
+    same trick setuptools/distutils use to invoke MSVC from a plain script.
+
+    Handles the common case where Visual Studio (with the "Desktop
+    development with C++" workload, which bundles its own cmake) is
+    installed, but its tools were never added to the user's regular PATH —
+    they're normally only available in a "Developer Command Prompt".
+
+    Returns None (the caller then falls back to the inherited environment
+    and cmake's own "not found" error) if this isn't Windows, cmake is
+    already reachable, or no suitable Visual Studio installation is found.
+    """
+    if sys.platform != "win32" or shutil.which("cmake") is not None:
+        return None
+
+    def _log(msg):
+        if on_log:
+            on_log(msg)
+
+    program_files_x86 = os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")
+    vswhere = Path(program_files_x86) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe"
+    if not vswhere.is_file():
+        return None
+
+    try:
+        result = subprocess.run(
+            [
+                str(vswhere), "-latest", "-products", "*",
+                "-requires", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+                "-property", "installationPath",
+            ],
+            capture_output=True, text=True, check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+    install_path = result.stdout.strip()
+    if not install_path:
+        return None
+
+    vcvarsall = Path(install_path) / "VC" / "Auxiliary" / "Build" / "vcvarsall.bat"
+    if not vcvarsall.is_file():
+        return None
+
+    _log(f"INFO:  cmake/a C++ compiler not on PATH — found Visual Studio at {install_path}, using it instead…")
+    # Run via a temp .bat file rather than `cmd /c "call \"...\" x64 && set"`
+    # directly: subprocess's list2cmdline re-quotes an argument that itself
+    # contains spaces AND quotes (the vcvarsall path), mangling the nested
+    # quotes so cmd.exe can't find the batch file at all (returns exit 1,
+    # "command not found" for the literal quoted path). A batch file sidesteps
+    # that double-quoting entirely — cmd.exe parses its own contents directly.
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".bat", delete=False, encoding="utf-8"
+        ) as bat_file:
+            bat_file.write(f'@echo off\r\ncall "{vcvarsall}" x64\r\nset\r\n')
+            bat_path = bat_file.name
+        try:
+            result = subprocess.run(
+                ["cmd", "/c", bat_path], capture_output=True, text=True, check=True,
+            )
+        finally:
+            os.unlink(bat_path)
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+    env = dict(os.environ)
+    for line in result.stdout.splitlines():
+        key, sep, value = line.partition("=")
+        if sep:
+            env[key] = value
+    return env
+
+
 def ensure_plain_llama_quantize(on_log=None) -> Path:
     """Return a plain (unpatched) llama-quantize binary, building it once from
     the auto-cloned llama.cpp checkout via cmake.
@@ -144,8 +221,10 @@ def ensure_plain_llama_quantize(on_log=None) -> Path:
     Deliberately separate from the City96-patched llama-quantize used for
     diffusion-model GGUFs (see docs/building-llama-quantize.md) — that patch is
     documented as unsafe for LLM/text GGUFs (tuned for diffusion tensor
-    layouts). Requires `cmake` and a C++ compiler toolchain on PATH; raises
-    RuntimeError with guidance if either is missing or the build fails.
+    layouts). Requires `cmake` and a C++ compiler toolchain — either already
+    on PATH, or (Windows only) discoverable as an installed Visual Studio via
+    _locate_msvc_build_env(). Raises RuntimeError with guidance if neither is
+    available or the build fails.
     """
     def _log(msg):
         if on_log:
@@ -157,12 +236,22 @@ def ensure_plain_llama_quantize(on_log=None) -> Path:
         return existing
 
     llama_cpp_dir = ensure_llama_cpp(on_log=on_log)
+    build_env = _locate_msvc_build_env(on_log=on_log)
+    # On Windows, subprocess's env= only sets the CHILD process's environment
+    # block — CreateProcess still resolves a bare "cmake" against the CALLING
+    # process's own PATH, not build_env's, so a cmake found only via the
+    # located Visual Studio would otherwise raise FileNotFoundError despite
+    # being right there in build_env["PATH"]. Resolve the absolute path
+    # ourselves against build_env's PATH to sidestep that.
+    cmake_exe = "cmake"
+    if build_env is not None:
+        cmake_exe = shutil.which("cmake", path=build_env.get("PATH")) or "cmake"
 
     _log("INFO:  Building plain llama-quantize from source (first run only, needs cmake + a C++ compiler)…")
     try:
         subprocess.run(
-            ["cmake", "-B", str(build_dir), "-S", str(llama_cpp_dir)],
-            check=True, capture_output=True, text=True,
+            [cmake_exe, "-B", str(build_dir), "-S", str(llama_cpp_dir)],
+            check=True, capture_output=True, text=True, env=build_env,
         )
     except FileNotFoundError as exc:
         raise RuntimeError(
@@ -173,8 +262,9 @@ def ensure_plain_llama_quantize(on_log=None) -> Path:
         raise RuntimeError(f"Failed to configure llama.cpp build: {exc.stderr or exc}") from exc
 
     proc = subprocess.Popen(
-        ["cmake", "--build", str(build_dir), "--config", "Release", "--target", "llama-quantize"],
+        [cmake_exe, "--build", str(build_dir), "--config", "Release", "--target", "llama-quantize"],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace", bufsize=1,
+        env=build_env,
     )
     for line in proc.stdout:
         _log(line.rstrip())

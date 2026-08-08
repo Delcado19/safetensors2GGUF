@@ -34,15 +34,21 @@ under `.llama.cpp/build-quantize/` afterward. No manual clone, no patch, no
 `cmake --build`.
 
 The **only** thing you need to provide yourself is `cmake` and a C++
-compiler on `PATH` — the exact same toolchain as the "Prerequisites" and
-per-OS install commands below (Linux `apt install build-essential cmake`,
-macOS `xcode-select --install` + `brew install cmake`, Windows MSYS2
+compiler — the exact same toolchain as the "Prerequisites" and per-OS
+install commands below (Linux `apt install build-essential cmake`, macOS
+`xcode-select --install` + `brew install cmake`, Windows MSYS2
 `pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake`, or a Visual Studio
-"Desktop development with C++" install). If either is missing, the tool
-raises a clear error naming what's missing rather than silently failing —
-install it and retry; no manual build step is otherwise required. Skip the
-"Clone llama.cpp"/"Get and apply lcpp.patch"/"Build llama-quantize" steps
-below entirely — those only apply to the diffusion-model patched binary.
+"Desktop development with C++" install). If neither is on `PATH`, the tool
+raises a clear error naming what's missing — except on **Windows with Visual
+Studio installed**: VS bundles its own `cmake` and MSVC compiler but doesn't
+add them to `PATH` by default (they're normally only available in a
+"Developer Command Prompt"), so the tool locates an installed VS via
+`vswhere` and uses its toolchain automatically — no manual "Developer Command
+Prompt" step needed. If you don't have VS and cmake/a compiler are genuinely
+missing, install them and retry; no manual build step is otherwise required.
+Skip the "Clone llama.cpp"/"Get and apply lcpp.patch"/"Build llama-quantize"
+steps below entirely — those only apply to the diffusion-model patched
+binary.
 
 ## Prerequisites (all platforms)
 

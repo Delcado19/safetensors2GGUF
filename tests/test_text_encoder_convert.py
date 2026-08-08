@@ -169,6 +169,55 @@ class TestConvertTextEncoder:
         assert "f16" in called_cmd
 
 
+class TestLocateMsvcBuildEnv:
+    def test_returns_none_when_not_windows(self):
+        from text_encoder_convert import _locate_msvc_build_env
+
+        with patch("text_encoder_convert.sys.platform", "linux"):
+            assert _locate_msvc_build_env() is None
+
+    def test_returns_none_when_cmake_already_on_path(self):
+        from text_encoder_convert import _locate_msvc_build_env
+
+        with patch("text_encoder_convert.sys.platform", "win32"), \
+             patch("text_encoder_convert.shutil.which", return_value=r"C:\cmake\cmake.exe"):
+            assert _locate_msvc_build_env() is None
+
+    def test_returns_none_when_vswhere_missing(self):
+        from text_encoder_convert import _locate_msvc_build_env
+
+        with patch("text_encoder_convert.sys.platform", "win32"), \
+             patch("text_encoder_convert.shutil.which", return_value=None), \
+             patch("text_encoder_convert.Path.is_file", return_value=False):
+            assert _locate_msvc_build_env() is None
+
+    def test_parses_vcvarsall_environment_when_found(self, tmp_path):
+        from text_encoder_convert import _locate_msvc_build_env
+
+        vs_install = tmp_path / "VS"
+        vcvarsall = vs_install / "VC" / "Auxiliary" / "Build" / "vcvarsall.bat"
+        vcvarsall.parent.mkdir(parents=True)
+        vcvarsall.write_text("@echo off")
+
+        def _fake_run(cmd, **kwargs):
+            if cmd[0].endswith("vswhere.exe"):
+                return subprocess.CompletedProcess(cmd, 0, stdout=str(vs_install) + "\n")
+            # simulates `cmd /c "call vcvarsall.bat x64 && set"` output
+            return subprocess.CompletedProcess(
+                cmd, 0, stdout="PATH=C:\\VS\\bin;C:\\Windows\nINCLUDE=C:\\VS\\include\n"
+            )
+
+        with patch("text_encoder_convert.sys.platform", "win32"), \
+             patch("text_encoder_convert.shutil.which", return_value=None), \
+             patch("text_encoder_convert.Path.is_file", return_value=True), \
+             patch("text_encoder_convert.subprocess.run", side_effect=_fake_run):
+            env = _locate_msvc_build_env()
+
+        assert env is not None
+        assert env["PATH"] == "C:\\VS\\bin;C:\\Windows"
+        assert env["INCLUDE"] == "C:\\VS\\include"
+
+
 class TestEnsurePlainLlamaQuantize:
     def test_returns_existing_built_binary_without_building(self, tmp_path):
         from text_encoder_convert import ensure_plain_llama_quantize
@@ -203,6 +252,7 @@ class TestEnsurePlainLlamaQuantize:
 
         with patch("text_encoder_convert._quantize_build_dir", return_value=build_dir), \
              patch("text_encoder_convert.ensure_llama_cpp", return_value=llama_cpp_dir), \
+             patch("text_encoder_convert._locate_msvc_build_env", return_value=None), \
              patch("text_encoder_convert.subprocess.run") as mock_run, \
              patch("text_encoder_convert.subprocess.Popen", side_effect=_fake_build):
             mock_run.return_value = subprocess.CompletedProcess([], 0)
@@ -213,12 +263,51 @@ class TestEnsurePlainLlamaQuantize:
         assert configure_cmd[0] == "cmake"
         assert "-B" in configure_cmd and str(build_dir) in configure_cmd
 
+    def test_resolves_cmake_absolute_path_from_located_msvc_env(self, tmp_path):
+        # Regression: on Windows, subprocess's env= only sets the CHILD
+        # process's environment block — CreateProcess still resolves a bare
+        # "cmake" against the CALLING process's own PATH, not env's, so a
+        # cmake found only via _locate_msvc_build_env's PATH would otherwise
+        # raise FileNotFoundError despite being right there in that PATH.
+        # ensure_plain_llama_quantize must resolve the absolute path itself.
+        from text_encoder_convert import ensure_plain_llama_quantize
+
+        build_dir = tmp_path / "build-quantize"
+        llama_cpp_dir = tmp_path / "llama.cpp"
+        vs_cmake_dir = tmp_path / "vs-cmake-bin"
+        vs_cmake_dir.mkdir()
+        resolved_cmake = str(vs_cmake_dir / "cmake.exe")
+        msvc_env = {"PATH": str(vs_cmake_dir)}
+
+        def _fake_build(*args, **kwargs):
+            (build_dir / "bin").mkdir(parents=True)
+            (build_dir / "bin" / "llama-quantize").write_bytes(b"stub")
+            proc = type("P", (), {})()
+            proc.stdout = iter([])
+            proc.wait = lambda: 0
+            proc.returncode = 0
+            return proc
+
+        with patch("text_encoder_convert._quantize_build_dir", return_value=build_dir), \
+             patch("text_encoder_convert.ensure_llama_cpp", return_value=llama_cpp_dir), \
+             patch("text_encoder_convert._locate_msvc_build_env", return_value=msvc_env), \
+             patch("text_encoder_convert.shutil.which", return_value=resolved_cmake) as mock_which, \
+             patch("text_encoder_convert.subprocess.run") as mock_run, \
+             patch("text_encoder_convert.subprocess.Popen", side_effect=_fake_build) as mock_popen:
+            mock_run.return_value = subprocess.CompletedProcess([], 0)
+            ensure_plain_llama_quantize()
+
+        mock_which.assert_called_once_with("cmake", path=str(vs_cmake_dir))
+        assert mock_run.call_args[0][0][0] == resolved_cmake
+        assert mock_popen.call_args[0][0][0] == resolved_cmake
+
     def test_raises_runtime_error_when_cmake_not_found(self, tmp_path):
         from text_encoder_convert import ensure_plain_llama_quantize
 
         build_dir = tmp_path / "build-quantize"
         with patch("text_encoder_convert._quantize_build_dir", return_value=build_dir), \
              patch("text_encoder_convert.ensure_llama_cpp", return_value=tmp_path / "llama.cpp"), \
+             patch("text_encoder_convert._locate_msvc_build_env", return_value=None), \
              patch("text_encoder_convert.subprocess.run", side_effect=FileNotFoundError()):
             try:
                 ensure_plain_llama_quantize()
