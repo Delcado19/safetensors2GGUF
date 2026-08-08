@@ -18,9 +18,31 @@ bypasses so `llama-quantize` doesn't reject a GGUF for missing LLM-only fields
 
 **This patched binary is only for diffusion-model GGUFs.** Do not use it to
 quantize LLM/text-encoder GGUFs — use a plain upstream `llama-quantize`
-release for those (or better, skip this entirely for text-encoder conversion:
-see [Text-Encoder Conversion](../README.md#text-encoder-conversion), which
-doesn't need `llama-quantize` at all).
+release for those.
+
+## Text-encoder K-quants build automatically — you don't need this guide for them
+
+If you only want K-quants (`Q6_K`…`Q2_K`) for **text-encoder** conversion (the
+**Convert Text Encoder → GGUF** tab), you don't need to follow this guide at
+all: `text_encoder_convert.ensure_plain_llama_quantize()` builds a **plain,
+unpatched** `llama-quantize` automatically the first time it's needed —
+from the same `llama.cpp` checkout already auto-cloned for
+`convert_hf_to_gguf.py` (see
+[Text-Encoder Conversion](../README.md#text-encoder-conversion)), cached
+under `.llama.cpp/build-quantize/` afterward. No manual clone, no patch, no
+`cmake` commands to type — the tool runs them for you via `cmake -B` /
+`cmake --build`.
+
+The **only** thing you need to provide yourself is `cmake` and a C++
+compiler on `PATH` — the exact same toolchain as the "Prerequisites" and
+per-OS install commands below (Linux `apt install build-essential cmake`,
+macOS `xcode-select --install` + `brew install cmake`, Windows MSYS2
+`pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake`, or a Visual Studio
+"Desktop development with C++" install). If either is missing, the tool
+raises a clear error naming what's missing rather than silently failing —
+install it and retry; no manual build step is otherwise required. Skip the
+"Clone llama.cpp"/"Get and apply lcpp.patch"/"Build llama-quantize" steps
+below entirely — those only apply to the diffusion-model patched binary.
 
 ## Prerequisites (all platforms)
 

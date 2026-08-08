@@ -263,7 +263,7 @@ The format dropdown covers three backends:
 | Formats | Backend | Needs base repo ID? | Extra prerequisites |
 |---|---|---|---|
 | `F32`/`F16`/`BF16`/`Q8_0` | `convert_hf_to_gguf.py` (llama.cpp, auto-cloned) | Yes | `git` |
-| `Q6_K`…`Q2_K` (K-quants) | Same, then a **plain** `llama-quantize` second pass | Yes | `git`, plus `cmake` + a C++ compiler (for the one-time `llama-quantize` build) |
+| `Q6_K`…`Q2_K` (K-quants) | Same, then a **plain** `llama-quantize` second pass | Yes | `git`, plus `cmake` + a C++ compiler ([install instructions](docs/building-llama-quantize.md#text-encoder-k-quants-build-automatically--you-dont-need-this-guide-for-them) — the build itself is automatic) |
 | `FP8`/`FP8_MIXED`/`NVFP4`/`NVFP4_MIXED` | This tool's own safetensors quantizer (`safetensors_quant*.py`) | **No** | None — no llama.cpp, no download |
 
 The K-quant path deliberately builds its **own** plain llama-quantize from the
