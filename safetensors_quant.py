@@ -100,6 +100,17 @@ def quantize_tensor_st(
 
     if base == "NVFP4":
         from safetensors_quant_nvfp4 import quantize_nvfp4
+
+        # Shape-safety, not precision — applies regardless of `mixed`. NVFP4
+        # halves the on-disk last dim (2 values/byte); for tensors ComfyUI's
+        # model_detection.py reads raw to infer architecture hyperparameters
+        # (see models.architectures.ModelTemplate.keys_shape_critical), that
+        # corrupts the inferred config and crashes model loading downstream —
+        # confirmed for Lumina2/Z-Image's cap_embedder.1.weight against a live
+        # ComfyUI install (docs/issues_analysis.md #9).
+        if any(x in key for x in getattr(model_arch, "keys_shape_critical", [])):
+            return {key: data.to(torch.float16)}
+
         try:
             return quantize_nvfp4(data, key)
         except ValueError:

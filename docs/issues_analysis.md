@@ -156,33 +156,59 @@ key as an additional tuple to the matching `keys_detect` list.
 
 ---
 
-## 9. NVFP4 safetensors output crashes ComfyUI on Lumina2 / Z-Image (open, unfixed)
+## 9. NVFP4 safetensors output could crash ComfyUI on hyperparameter-detection tensors (fixed for 8 of 12 architectures)
 
-**Error message:**
+**Error message (before the fix):**
 ```
 RuntimeError: Error(s) in loading state_dict for NextDiT:
     size mismatch for cap_embedder.0.weight: copying a param with shape torch.Size([2560])
     from checkpoint, the shape in current model is torch.Size([1280]).
 ```
 
-**Affected models:** Any Lumina2/Z-Image checkpoint converted with this tool's
-`NVFP4`/`NVFP4_MIXED` safetensors output target.
+**Affected models:** Any checkpoint whose architecture-detection tensor (see below)
+got NVFP4-packed by this tool's `NVFP4`/`NVFP4_MIXED` safetensors output target.
 
-**Cause:** ComfyUI's `model_detection.py` infers the `cap_feat_dim` hyperparameter
-directly from `cap_embedder.1.weight.shape[1]` — read from the raw on-disk tensor,
-**before** any dequantization happens. NVFP4 packs two 4-bit values per byte, which
-halves that tensor's on-disk last dimension. ComfyUI therefore infers half the real
-`cap_feat_dim` and builds a NextDiT model sized for it; loading then fails on
-`cap_embedder.0.weight` (an untouched, correctly-shaped LayerNorm weight) because it
-doesn't match the wrongly-inferred model size. `FP8`/`FP8_MIXED` output is unaffected
-(dtype changes, but the shape stays the same, so ComfyUI's shape-based detection isn't
-fooled) — see [CHANGELOG.md](../CHANGELOG.md) `[Unreleased]` for the related scale-
-tensor-naming fix this was found alongside.
+**Cause:** ComfyUI's `comfy/model_detection.py` infers architecture hyperparameters
+directly from specific tensors' raw on-disk shapes, **before** any dequantization
+happens — this is a universal pattern across ComfyUI's supported architectures, not a
+Lumina2-only quirk (e.g. Flux infers `in_channels` from `img_in.weight.shape[1]`,
+Lumina2 infers `cap_feat_dim` from `cap_embedder.1.weight.shape[1]`). NVFP4 packs two
+4-bit values per byte, halving the packed tensor's on-disk last dimension, which
+corrupts that inference. `FP8`/`FP8_MIXED` output is unaffected (dtype changes, but the
+shape stays the same). This is why searching for "ComfyUI NVFP4 broken" turns up
+nothing — published NVFP4 checkpoints conventionally leave small embedding/patchify
+"glue" layers unquantized anyway (standard practice: negligible size savings,
+disproportionate quality/compatibility sensitivity), so nobody publishing real NVFP4
+checkpoints hits this. This tool's non-mixed `NVFP4` mode packed everything indiscriminately, which is the actual gap — not a ComfyUI bug.
 
-**Status:** This is a gap in ComfyUI's own shape-based architecture detection (it
-doesn't special-case quantized/packed tensors); not something this tool's file format
-can work around without disabling NVFP4 specifically for `cap_embedder.1.weight`. No
-fix from upstream or this project yet.
+**Fix:** Added `ModelTemplate.keys_shape_critical` (`models/architectures.py`) — tensors
+excluded from NVFP4 packing (falls back to F16) **unconditionally**, regardless of the
+`*_MIXED` flag, since this is a shape-safety constraint rather than a precision one.
+Every architecture was individually checked against a live ComfyUI install's
+`comfy/model_detection.py` (and, where the tensor's own type was ambiguous from the
+detection code alone, against the actual model class in `comfy/ldm/`) for tensors whose
+raw `.shape[-1]` (or `.shape[1]` for a 2D weight) is read to infer hyperparameters:
 
-**Workaround:** Use `FP8`/`FP8_MIXED` instead of `NVFP4`/`NVFP4_MIXED` for
-Lumina2/Z-Image checkpoints until this is resolved.
+| Architecture | Shape-critical tensor | Note |
+|---|---|---|
+| `ModelFlux` | `img_in.weight` | `in_channels` from `.shape[1]` |
+| `ModelQwenImage` | `img_in.weight` | same convention as Flux |
+| `ModelSD3` | `context_embedder.weight` | `in_features` from `.shape[1]` |
+| `ModelAura` | `cond_seq_linear.weight` | `cond_seq_dim` from `.shape[1]` |
+| `ModelLumina2` | `cap_embedder.1.weight` | `cap_feat_dim` from `.shape[1]` |
+| `CosmosPredict2` | `x_embedder.proj.1.weight` | Linear inside `PatchEmbed`'s `Sequential` (index 1, after a `Rearrange`) |
+| `ModelHyVid` | `txt_in.input_embedder.weight` | `context_in_dim` from `.shape[1]`; `img_in.proj.weight` is a Conv and safe (only its kernel-width last dim is touched, and ComfyUI reads `.shape[1]`/`.shape[2:]` there, not `.shape[-1]`) |
+| `ModelWan` | `head.modulation` | 3D `nn.Parameter` `(1, 2, dim)` — `dim` from `.shape[-1]`; not 1D, so the unconditional 1D-skip doesn't already cover it |
+| `ModelLTXV` | `transformer_blocks.0.attn2.to_k.weight` | `cross_attention_dim` from `.shape[1]` |
+| `ModelHiDream` | *(none — audited, confirmed safe)* | its `unet_config` is entirely hardcoded constants, no shape reads at all |
+
+**Status:** Fixed for `ModelFlux`, `ModelQwenImage`, `ModelSD3`, `ModelAura`,
+`ModelLumina2`, `CosmosPredict2`, `ModelHyVid`, `ModelWan`, `ModelLTXV` (9 of 12 — and
+`ModelHiDream` confirmed to need no fix, so 10 of 12 are resolved one way or the other).
+`ModelSDXL` and `ModelSD1` remain **unaudited**: ComfyUI infers `context_dim` there by
+scanning block indices dynamically for the first `attn2.to_k.weight` rather than a
+single fixed tensor name, so pinning the exact key needs more work than the DiT
+architectures above.
+
+**Workaround (for `ModelSDXL`/`ModelSD1`):** Prefer `FP8`/`FP8_MIXED` over
+`NVFP4`/`NVFP4_MIXED` until these are audited, since FP8 never changes tensor shape.

@@ -21,6 +21,15 @@ class ModelTemplate:
     keys_hiprec = []
     keys_ignore = []
     keys_unsqueeze = []  # 1D tensors that must be reshaped to [1, D] before writing
+    # Tensors whose raw on-disk shape ComfyUI's model_detection.py reads directly
+    # to infer architecture hyperparameters (e.g. Lumina2's cap_feat_dim from
+    # cap_embedder.1.weight.shape[1], Flux's in_channels from img_in.weight.shape[1]),
+    # BEFORE any dequantization happens. NVFP4 packs 2 values per uint8 byte, halving
+    # the on-disk last dimension, which corrupts that inference and crashes model
+    # loading (see docs/issues_analysis.md #9). Must be excluded from NVFP4 packing
+    # unconditionally — not just in *_MIXED mode, since this is a shape-safety
+    # constraint, not a precision one (FP8 is unaffected: it changes dtype, not shape).
+    keys_shape_critical = []
 
     def handle_nd_tensor(self, key, data):
         """Handle tensors exceeding MAX_TENSOR_DIMS dimensions.
@@ -41,6 +50,8 @@ class ModelFlux(ModelTemplate):
         ("double_blocks.0.img_attn.proj.weight",),
     ]
     keys_banned = ["transformer_blocks.0.attn.norm_added_k.weight"]
+    # ComfyUI's model_detection.py infers in_channels from img_in.weight.shape[1]
+    keys_shape_critical = ["img_in.weight"]
 
 
 class ModelSD3(ModelTemplate):
@@ -50,6 +61,8 @@ class ModelSD3(ModelTemplate):
         ("joint_blocks.0.x_block.attn.qkv.weight",),
     ]
     keys_banned = ["transformer_blocks.0.attn.add_q_proj.weight"]
+    # ComfyUI's model_detection.py infers context_embedder_config from context_embedder.weight.shape[1]
+    keys_shape_critical = ["context_embedder.weight"]
 
 
 class ModelAura(ModelTemplate):
@@ -59,6 +72,8 @@ class ModelAura(ModelTemplate):
         ("joint_transformer_blocks.3.ff_context.out_projection.weight",),
     ]
     keys_banned = ["joint_transformer_blocks.3.ff_context.out_projection.weight"]
+    # ComfyUI's model_detection.py infers cond_seq_dim from cond_seq_linear.weight.shape[1]
+    keys_shape_critical = ["cond_seq_linear.weight"]
 
 
 class ModelHiDream(ModelTemplate):
@@ -70,6 +85,9 @@ class ModelHiDream(ModelTemplate):
         )
     ]
     keys_hiprec = [".ff_i.gate.weight", "img_emb.emb_pos"]
+    # Audited against ComfyUI's model_detection.py: HiDream's unet_config is all
+    # hardcoded constants, no shape-based hyperparameter inference — safe as-is,
+    # no keys_shape_critical needed.
 
 
 class CosmosPredict2(ModelTemplate):
@@ -82,6 +100,10 @@ class CosmosPredict2(ModelTemplate):
     ]
     keys_hiprec = ["pos_embedder"]
     keys_ignore = ["_extra_state", "accum_"]
+    # ComfyUI's model_detection.py infers in_channels/model_channels from
+    # x_embedder.proj.1.weight.shape[1]/.shape[0] (a genuine nn.Linear inside the
+    # PatchEmbed Sequential, index 1 after the Rearrange at index 0)
+    keys_shape_critical = ["x_embedder.proj.1.weight"]
 
 
 class ModelQwenImage(ModelTemplate):
@@ -105,6 +127,9 @@ class ModelQwenImage(ModelTemplate):
             "transformer_blocks.0.img_mlp.net.0.proj.weight",
         )
     ]
+    # ComfyUI's model_detection.py infers in_channels from img_in.weight.shape[1]
+    # (a Linear layer, same convention as Flux's img_in.weight)
+    keys_shape_critical = ["img_in.weight"]
 
 
 class ModelHyVid(ModelTemplate):
@@ -115,6 +140,12 @@ class ModelHyVid(ModelTemplate):
             "txt_in.individual_token_refiner.blocks.1.self_attn_qkv.weight",
         )
     ]
+    # ComfyUI's model_detection.py infers context_in_dim from
+    # txt_in.input_embedder.weight.shape[1] (a genuine nn.Linear); img_in.proj.weight
+    # is a Conv and safe — only shape[-1] (kernel width, never a multiple of 16) is
+    # touched by our NVFP4 packing, and shape[1]/shape[2:] (in_channels/patch_size)
+    # read by ComfyUI there are untouched.
+    keys_shape_critical = ["txt_in.input_embedder.weight"]
 
     def handle_nd_tensor(self, key, data):
         """Write 5D tensor to a side-car safetensors file for later re-insertion.
@@ -143,6 +174,9 @@ class ModelWan(ModelHyVid):
     ]
     # nn.Parameter — cannot load from BF16 source
     keys_hiprec = [".modulation"]
+    # ComfyUI's model_detection.py infers dim from head.modulation.shape[-1] — a 3D
+    # nn.Parameter (1, 2, dim), NOT 1D, so the unconditional 1D-skip doesn't cover it.
+    keys_shape_critical = ["head.modulation"]
 
 
 class ModelLTXV(ModelTemplate):
@@ -156,6 +190,9 @@ class ModelLTXV(ModelTemplate):
     ]
     # nn.Parameter — cannot load from BF16 base quant
     keys_hiprec = ["scale_shift_table"]
+    # ComfyUI's model_detection.py infers cross_attention_dim from
+    # transformer_blocks.0.attn2.to_k.weight.shape[1]
+    keys_shape_critical = ["transformer_blocks.0.attn2.to_k.weight"]
 
 
 class ModelSDXL(ModelTemplate):
@@ -171,6 +208,11 @@ class ModelSDXL(ModelTemplate):
         ),
         ("label_emb.0.0.weight",),
     ]
+    # NOT AUDITED for keys_shape_critical: ComfyUI's model_detection.py infers
+    # context_dim from the first attn2.to_k.weight.shape[1] it finds by scanning
+    # block indices dynamically, rather than a single fixed tensor name — unlike
+    # the DiT architectures above, pinning the exact key requires resolving that
+    # scan for this specific block layout. See docs/issues_analysis.md #9.
 
 
 class ModelSD1(ModelTemplate):
@@ -187,6 +229,8 @@ class ModelSD1(ModelTemplate):
             "output_blocks.8.2.conv.weight",
         ),
     ]
+    # NOT AUDITED for keys_shape_critical — see ModelSDXL comment above; same
+    # dynamic attn2.to_k.weight scan applies. See docs/issues_analysis.md #9.
 
 
 class ModelLumina2(ModelTemplate):
@@ -198,6 +242,8 @@ class ModelLumina2(ModelTemplate):
     keys_hiprec = ["x_pad_token", "cap_pad_token"]
     # ComfyUI NextDiT expects shape [1, D]; older checkpoints store them as [D]
     keys_unsqueeze = ["x_pad_token", "cap_pad_token"]
+    # ComfyUI's model_detection.py infers cap_feat_dim from cap_embedder.1.weight.shape[1]
+    keys_shape_critical = ["cap_embedder.1.weight"]
 
 
 arch_list = [

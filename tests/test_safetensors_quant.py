@@ -9,7 +9,17 @@ from safetensors_quant import (
     is_hiprec_st,
     quantize_tensor_st,
 )
-from models.architectures import ModelFlux, ModelLumina2
+from models.architectures import (
+    ModelAura,
+    ModelFlux,
+    ModelHyVid,
+    ModelLTXV,
+    ModelLumina2,
+    ModelQwenImage,
+    ModelSD3,
+    ModelWan,
+    CosmosPredict2,
+)
 
 
 class TestRegistry:
@@ -103,6 +113,49 @@ class TestQuantizeTensorNvfp4:
         assert set(out.keys()) == {"conv.weight"}
         assert out["conv.weight"].dtype == torch.float16
         assert out["conv.weight"].shape == data.shape
+
+    def test_nvfp4_shape_critical_tensor_falls_back_to_f16_unconditionally(self):
+        # Regression: ComfyUI's model_detection.py infers Lumina2's cap_feat_dim
+        # from cap_embedder.1.weight.shape[1] BEFORE dequantizing. NVFP4 halves
+        # the on-disk last dim, corrupting that inference and crashing model
+        # load (docs/issues_analysis.md #9). Must be skipped even in non-mixed
+        # base NVFP4 mode — this is a shape-safety constraint, not a precision
+        # one gated by *_MIXED.
+        data = torch.randn(32, 32, dtype=torch.float32)
+        out = quantize_tensor_st(data, "cap_embedder.1.weight", ModelLumina2(), "NVFP4")
+        assert set(out.keys()) == {"cap_embedder.1.weight"}
+        assert out["cap_embedder.1.weight"].dtype == torch.float16
+        assert out["cap_embedder.1.weight"].shape == data.shape
+
+    def test_nvfp4_non_shape_critical_tensor_still_packs(self):
+        # Sanity: keys_shape_critical must not blanket-disable NVFP4 for an
+        # architecture — only the specific flagged tensor(s).
+        data = torch.randn(32, 32, dtype=torch.float32)
+        out = quantize_tensor_st(data, "layers.0.attention.qkv.weight", ModelLumina2(), "NVFP4")
+        assert out["layers.0.attention.qkv.weight"].dtype == torch.uint8
+
+    def test_nvfp4_shape_critical_protection_per_architecture(self):
+        # Verifies keys_shape_critical for every architecture audited against a
+        # live ComfyUI model_detection.py (see docs/issues_analysis.md #9): each
+        # listed tensor must fall back to F16 under non-mixed NVFP4, since
+        # ComfyUI reads its raw on-disk shape to infer hyperparameters before
+        # any dequantization happens.
+        cases = [
+            (ModelFlux(), "img_in.weight"),
+            (ModelSD3(), "context_embedder.weight"),
+            (ModelAura(), "cond_seq_linear.weight"),
+            (CosmosPredict2(), "x_embedder.proj.1.weight"),
+            (ModelQwenImage(), "img_in.weight"),
+            (ModelHyVid(), "txt_in.input_embedder.weight"),
+            (ModelWan(), "head.modulation"),
+            (ModelLTXV(), "transformer_blocks.0.attn2.to_k.weight"),
+        ]
+        for arch, key in cases:
+            data = torch.randn(32, 32, dtype=torch.float32)
+            out = quantize_tensor_st(data, key, arch, "NVFP4")
+            assert set(out.keys()) == {key}, f"{arch.arch}/{key}"
+            assert out[key].dtype == torch.float16, f"{arch.arch}/{key}"
+            assert out[key].shape == data.shape, f"{arch.arch}/{key}"
 
 
 class TestQuantizeTensor1dNeverScaled:
