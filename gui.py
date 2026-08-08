@@ -219,6 +219,26 @@ def browse_and_set_dst(src: str, quant_key: str) -> str:
     return dir_path + "\\"
 
 
+def browse_and_set_dst_st(src: str) -> str:
+    """Open directory picker and compose a .safetensors output path template.
+
+    Mirrors browse_and_set_dst but for the Convert -> Safetensors tab: that
+    tab's browse button previously opened a model-file *open* dialog
+    (_MODEL_TYPES via askopenfilename), which is wrong for choosing an output
+    location. Uses the same {ftype} placeholder trick as the GGUF tab so the
+    filename reflects whatever output format is selected at convert time, not
+    the format that happened to be selected when Browse was clicked.
+    """
+    dir_path = _pick_dir()
+    if not dir_path:
+        return ""  # user cancelled — leave dst_path unchanged
+    src = (src or "").strip()
+    if src:
+        stem = _strip_model_suffix(src)
+        return str(Path(dir_path) / f"{stem.name}-{{ftype}}.safetensors")
+    return dir_path + "\\"
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Size estimate
 # ──────────────────────────────────────────────────────────────────────────────
@@ -528,6 +548,24 @@ def _resolve_dst(src: str, dst: str | None, quant_key: str) -> str | None:
     return dst
 
 
+def _resolve_dst_st(src: str, dst: str | None, target_key: str) -> str | None:
+    """Resolve the user-supplied Safetensors output path; mirrors _resolve_dst."""
+    if not dst:
+        return None
+    dst = dst.strip()
+    if not dst:
+        return None
+
+    if dst.endswith(("/", "\\")) or Path(dst).is_dir():
+        stem = _strip_model_suffix(src)
+        return str(Path(dst) / f"{stem.name}-{target_key}.safetensors")
+
+    if "{ftype}" in dst:
+        return dst.replace("{ftype}", target_key)
+
+    return dst
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Conversion pipeline
 # ──────────────────────────────────────────────────────────────────────────────
@@ -751,7 +789,7 @@ def run_st_convert(
         try:
             out_path, _ = convert_to_safetensors(
                 src.strip(),
-                dst_path=(dst.strip() or None) if dst else None,
+                dst_path=_resolve_dst_st(src.strip(), dst, fmt),
                 target_key=fmt,
                 overwrite=overwrite,
                 on_progress=lambda idx, total, key: q.put(("progress", idx, total, key)),
@@ -1094,12 +1132,12 @@ def build_app() -> gr.Blocks:
                 def _browse_st_src():
                     return browse_model()
 
-                def _browse_st_dst():
-                    result = _browse(_MODEL_TYPES)
-                    return result
-
                 browse_st_src_btn.click(_browse_st_src, outputs=st_src_path)
-                browse_st_dst_btn.click(_browse_st_dst, outputs=st_dst_path)
+                browse_st_dst_btn.click(
+                    browse_and_set_dst_st,
+                    inputs=[st_src_path],
+                    outputs=st_dst_path,
+                )
                 st_convert_event = st_convert_btn.click(
                     fn=run_st_convert,
                     inputs=[st_src_path, st_dst_path, st_format_dropdown, overwrite_st],
