@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import torch
 
+from safetensors_quant import layer_key
+
 GROUP_SIZE = 16
 # e2m1 values doubled — identical table to gguf.quants.NVFP4.kvalues
 _KVALUES = torch.tensor(
@@ -63,18 +65,20 @@ def quantize_nvfp4(data: torch.Tensor, key: str) -> dict[str, torch.Tensor]:
     packed = (idx[..., 0] | (idx[..., 1] << 4)).to(torch.uint8)
     packed = packed.reshape(*lead, last // 2)
 
+    prefix = layer_key(key)
     return {
         key: packed,
-        f"{key}.weight_scale": block_scale_fp8.squeeze(-1),
-        f"{key}.weight_scale_2": scale_2.reshape(1),
+        f"{prefix}.weight_scale": block_scale_fp8.squeeze(-1),
+        f"{prefix}.weight_scale_2": scale_2.reshape(1),
     }
 
 
 def dequantize_nvfp4(tensors: dict[str, torch.Tensor], key: str) -> torch.Tensor:
     """Reverse quantize_nvfp4 — used by tests to verify round-trip accuracy."""
+    prefix = layer_key(key)
     packed = tensors[key]
-    block_scale = tensors[f"{key}.weight_scale"].to(torch.float32)
-    scale_2 = tensors[f"{key}.weight_scale_2"]
+    block_scale = tensors[f"{prefix}.weight_scale"].to(torch.float32)
+    scale_2 = tensors[f"{prefix}.weight_scale_2"]
 
     lo = (packed & 0x0F).to(torch.int64)
     hi = ((packed >> 4) & 0x0F).to(torch.int64)

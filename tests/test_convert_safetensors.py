@@ -37,7 +37,7 @@ class TestConvertToSafetensors:
         src = _write_minimal_flux(tmp_path)
         dst, _ = convert_to_safetensors(str(src), target_key="FP8", overwrite=True)
         out = load_file(dst)
-        assert "double_blocks.0.img_attn.proj.weight.weight_scale" in out
+        assert "double_blocks.0.img_attn.proj.weight_scale" in out
 
     def test_fp8_non_mixed_bias_has_no_scale_sibling(self, tmp_path):
         # Regression for review finding #2: non-mixed FP8 must not scale-
@@ -56,6 +56,24 @@ class TestConvertToSafetensors:
         with safe_open(dst, framework="pt") as f:
             meta = f.metadata()
         assert meta is not None and "_quantization_metadata" in meta
+
+    def test_quantization_metadata_layer_key_has_no_weight_suffix(self, tmp_path):
+        # Regression: ComfyUI's convert_old_quants() writes the comfy_quant
+        # sidecar as "{layer}.comfy_quant" where `layer` is the module prefix
+        # WITHOUT a trailing "weight" component. A "layers" dict keyed by the
+        # full tensor name (".../proj.weight") produces a sidecar tensor name
+        # ComfyUI's loader never looks up, silently discarding weight_scale
+        # and leaving the model to load the raw quantized bytes unscaled.
+        import json
+
+        src = _write_minimal_flux(tmp_path)
+        dst, _ = convert_to_safetensors(str(src), target_key="FP8", overwrite=True)
+        from safetensors import safe_open
+        with safe_open(dst, framework="pt") as f:
+            meta = f.metadata()
+        layers = json.loads(meta["_quantization_metadata"])["layers"]
+        assert "double_blocks.0.img_attn.proj" in layers
+        assert "double_blocks.0.img_attn.proj.weight" not in layers
 
     def test_refuses_overwrite_without_flag(self, tmp_path):
         src = _write_minimal_flux(tmp_path)

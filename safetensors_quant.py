@@ -24,6 +24,22 @@ SAFETENSORS_DTYPE_CHOICES: list[tuple[str, str]] = [
     ("NVFP4 mixed — NVFP4, hiprec tensors stay F32",                   "NVFP4_MIXED"),
 ]
 
+def layer_key(key: str) -> str:
+    """Return the module-prefix ComfyUI's quantized-op loader expects scale/
+    comfy_quant sidecar tensors under.
+
+    ComfyUI's per-layer loader (comfy/ops.py _load_quantized_weight_body)
+    looks up scale tensors as ``{module_prefix}weight_scale`` — a SIBLING of
+    ``{module_prefix}weight``, not nested under it. For a tensor named
+    "foo.weight" that means the scale tensor must be named "foo.weight_scale",
+    not "foo.weight.weight_scale". Confirmed against a real ComfyUI 0.29.2
+    "unet unexpected" key dump that showed our old ``<key>.weight_scale``
+    naming left every scale/comfy_quant tensor unconsumed — FP8 loaded raw
+    unscaled bytes (visible as noise), NVFP4 crashed outright.
+    """
+    return key[: -len(".weight")] if key.endswith(".weight") else key
+
+
 _MIXED_KEYS = {"F16_MIXED", "FP8_MIXED", "NVFP4_MIXED"}
 _BASE_KEY = {
     "F16": "F16", "F16_MIXED": "F16",

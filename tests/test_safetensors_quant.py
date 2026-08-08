@@ -69,7 +69,7 @@ class TestQuantizeTensorFp8:
         data = torch.randn(64, 64, dtype=torch.float32)
         out = quantize_tensor_st(data, "block.weight", ModelFlux(), "FP8")
         assert "block.weight" in out
-        assert "block.weight.weight_scale" in out
+        assert "block.weight_scale" in out
         assert out["block.weight"].dtype == torch.float8_e4m3fn
 
     def test_fp8_mixed_keeps_hiprec_tensor_f32_unscaled(self):
@@ -84,7 +84,7 @@ class TestQuantizeTensorNvfp4:
         data = torch.randn(32, 32, dtype=torch.float32)
         out = quantize_tensor_st(data, "block.weight", ModelFlux(), "NVFP4")
         assert set(out.keys()) == {
-            "block.weight", "block.weight.weight_scale", "block.weight.weight_scale_2",
+            "block.weight", "block.weight_scale", "block.weight_scale_2",
         }
 
     def test_nvfp4_mixed_keeps_hiprec_tensor_unpacked(self):

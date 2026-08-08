@@ -153,3 +153,36 @@ state-dict keys deviate from the standard `keys_detect` patterns.
 the actual top-level key names against `ModelFlux.keys_detect` and
 `ModelLumina2.keys_detect` in `models/architectures.py`. Add the variant's unique
 key as an additional tuple to the matching `keys_detect` list.
+
+---
+
+## 9. NVFP4 safetensors output crashes ComfyUI on Lumina2 / Z-Image (open, unfixed)
+
+**Error message:**
+```
+RuntimeError: Error(s) in loading state_dict for NextDiT:
+    size mismatch for cap_embedder.0.weight: copying a param with shape torch.Size([2560])
+    from checkpoint, the shape in current model is torch.Size([1280]).
+```
+
+**Affected models:** Any Lumina2/Z-Image checkpoint converted with this tool's
+`NVFP4`/`NVFP4_MIXED` safetensors output target.
+
+**Cause:** ComfyUI's `model_detection.py` infers the `cap_feat_dim` hyperparameter
+directly from `cap_embedder.1.weight.shape[1]` — read from the raw on-disk tensor,
+**before** any dequantization happens. NVFP4 packs two 4-bit values per byte, which
+halves that tensor's on-disk last dimension. ComfyUI therefore infers half the real
+`cap_feat_dim` and builds a NextDiT model sized for it; loading then fails on
+`cap_embedder.0.weight` (an untouched, correctly-shaped LayerNorm weight) because it
+doesn't match the wrongly-inferred model size. `FP8`/`FP8_MIXED` output is unaffected
+(dtype changes, but the shape stays the same, so ComfyUI's shape-based detection isn't
+fooled) — see [CHANGELOG.md](../CHANGELOG.md) `[Unreleased]` for the related scale-
+tensor-naming fix this was found alongside.
+
+**Status:** This is a gap in ComfyUI's own shape-based architecture detection (it
+doesn't special-case quantized/packed tensors); not something this tool's file format
+can work around without disabling NVFP4 specifically for `cap_embedder.1.weight`. No
+fix from upstream or this project yet.
+
+**Workaround:** Use `FP8`/`FP8_MIXED` instead of `NVFP4`/`NVFP4_MIXED` for
+Lumina2/Z-Image checkpoints until this is resolved.

@@ -12,7 +12,7 @@ class TestQuantizeNvfp4:
         data = torch.randn(32, 32, dtype=torch.float32)
         out = quantize_nvfp4(data, "block.weight")
         assert set(out.keys()) == {
-            "block.weight", "block.weight.weight_scale", "block.weight.weight_scale_2",
+            "block.weight", "block.weight_scale", "block.weight_scale_2",
         }
 
     def test_weight_is_packed_uint8_half_last_dim(self):
@@ -25,14 +25,14 @@ class TestQuantizeNvfp4:
     def test_scale_is_fp8_e4m3fn_per_16_block(self):
         data = torch.randn(4, 32, dtype=torch.float32)
         out = quantize_nvfp4(data, "block.weight")
-        scale = out["block.weight.weight_scale"]
+        scale = out["block.weight_scale"]
         assert scale.dtype == torch.float8_e4m3fn
         assert scale.shape == (4, 2)  # 32 elems / 16-block
 
     def test_scale_2_is_global_float32_scalar(self):
         data = torch.randn(4, 32, dtype=torch.float32)
         out = quantize_nvfp4(data, "block.weight")
-        s2 = out["block.weight.weight_scale_2"]
+        s2 = out["block.weight_scale_2"]
         assert s2.dtype == torch.float32
         assert s2.numel() == 1
 

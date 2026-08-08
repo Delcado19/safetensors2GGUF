@@ -16,7 +16,7 @@ from safetensors.torch import save_file
 
 from convert import load_state_dict
 from models.architectures import detect_arch
-from safetensors_quant import quantize_tensor_st
+from safetensors_quant import layer_key, quantize_tensor_st
 
 # Float8 dtypes — resolved once at import time; empty tuple on older PyTorch builds.
 _FLOAT8_DTYPES: tuple = tuple(
@@ -100,7 +100,12 @@ def convert_to_safetensors(
         quantized = quantize_tensor_st(data, key, model_arch, target_key)
         out_tensors.update(quantized)
         if quant_format and len(quantized) > 1:
-            layer_formats[key] = {"format": quant_format}
+            # ComfyUI's convert_old_quants() writes the comfy_quant sidecar as
+            # "{layer}.comfy_quant" where `layer` is the module prefix (no
+            # trailing "weight") — must match the scale-tensor naming in
+            # safetensors_quant.layer_key(), or the sidecar never lines up
+            # with the tensor ComfyUI's loader is inspecting.
+            layer_formats[layer_key(key)] = {"format": quant_format}
 
     metadata = {"comfy.gguf_source_arch": model_arch.arch}
     if layer_formats:
