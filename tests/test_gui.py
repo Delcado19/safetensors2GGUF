@@ -106,8 +106,8 @@ class TestRunTeConvertCancel:
         src = tmp_path / "model.safetensors"
         src.touch()
 
-        with patch("gui.convert_text_encoder", side_effect=RuntimeError("cancelled")):
-            *_, (log, status) = gui.run_te_convert(str(src), "org/repo", "", "f16")
+        with patch("gui.convert_text_encoder_any", side_effect=RuntimeError("cancelled")):
+            *_, (log, status) = gui.run_te_convert(str(src), "org/repo", "", "F16")
 
         assert status == "Cancelled"
         assert "Error" not in status
@@ -116,8 +116,8 @@ class TestRunTeConvertCancel:
         src = tmp_path / "model.safetensors"
         src.touch()
 
-        with patch("gui.convert_text_encoder", side_effect=RuntimeError("boom")):
-            *_, (log, status) = gui.run_te_convert(str(src), "org/repo", "", "f16")
+        with patch("gui.convert_text_encoder_any", side_effect=RuntimeError("boom")):
+            *_, (log, status) = gui.run_te_convert(str(src), "org/repo", "", "F16")
 
         assert status == "Error"
         assert "boom" in log

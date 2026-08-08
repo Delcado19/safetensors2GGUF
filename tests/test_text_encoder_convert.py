@@ -8,7 +8,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 from text_encoder_convert import (
+    TEXT_ENCODER_FORMAT_CHOICES,
     TEXT_ENCODER_OUTTYPES,
+    TEXT_ENCODER_SAFETENSORS_FORMATS,
     ensure_llama_cpp,
     find_convert_script,
 )
@@ -20,6 +22,20 @@ class TestOuttypes:
         for label, value in TEXT_ENCODER_OUTTYPES:
             assert isinstance(label, str) and label
             assert isinstance(value, str) and value
+
+
+class TestFormatChoices:
+    def test_is_list_of_tuples(self):
+        assert isinstance(TEXT_ENCODER_FORMAT_CHOICES, list)
+        for label, key in TEXT_ENCODER_FORMAT_CHOICES:
+            assert isinstance(label, str) and label
+            assert isinstance(key, str) and key
+
+    def test_covers_gguf_direct_kquant_and_safetensors_formats(self):
+        keys = {key for _, key in TEXT_ENCODER_FORMAT_CHOICES}
+        assert {"F32", "F16", "BF16", "Q8_0"} <= keys
+        assert {"Q6_K", "Q5_K_M", "Q4_K_M", "Q4_K_S", "Q3_K_M", "Q2_K"} <= keys
+        assert TEXT_ENCODER_SAFETENSORS_FORMATS <= keys
 
 
 class TestEnsureLlamaCpp:
@@ -151,3 +167,154 @@ class TestConvertTextEncoder:
         assert str(script) == called_cmd[1]
         assert "--outtype" in called_cmd
         assert "f16" in called_cmd
+
+
+class TestEnsurePlainLlamaQuantize:
+    def test_returns_existing_built_binary_without_building(self, tmp_path):
+        from text_encoder_convert import ensure_plain_llama_quantize
+
+        build_dir = tmp_path / "build-quantize"
+        (build_dir / "bin").mkdir(parents=True)
+        binary = build_dir / "bin" / "llama-quantize"
+        binary.write_bytes(b"stub")
+
+        with patch("text_encoder_convert._quantize_build_dir", return_value=build_dir), \
+             patch("text_encoder_convert.subprocess.run") as mock_run, \
+             patch("text_encoder_convert.subprocess.Popen") as mock_popen:
+            found = ensure_plain_llama_quantize()
+            assert found == binary
+            mock_run.assert_not_called()
+            mock_popen.assert_not_called()
+
+    def test_builds_when_missing(self, tmp_path):
+        from text_encoder_convert import ensure_plain_llama_quantize
+
+        build_dir = tmp_path / "build-quantize"
+        llama_cpp_dir = tmp_path / "llama.cpp"
+
+        def _fake_build(*args, **kwargs):
+            (build_dir / "bin").mkdir(parents=True)
+            (build_dir / "bin" / "llama-quantize").write_bytes(b"stub")
+            proc = type("P", (), {})()
+            proc.stdout = iter(["[100%] Built target llama-quantize\n"])
+            proc.wait = lambda: 0
+            proc.returncode = 0
+            return proc
+
+        with patch("text_encoder_convert._quantize_build_dir", return_value=build_dir), \
+             patch("text_encoder_convert.ensure_llama_cpp", return_value=llama_cpp_dir), \
+             patch("text_encoder_convert.subprocess.run") as mock_run, \
+             patch("text_encoder_convert.subprocess.Popen", side_effect=_fake_build):
+            mock_run.return_value = subprocess.CompletedProcess([], 0)
+            found = ensure_plain_llama_quantize()
+
+        assert found == build_dir / "bin" / "llama-quantize"
+        configure_cmd = mock_run.call_args[0][0]
+        assert configure_cmd[0] == "cmake"
+        assert "-B" in configure_cmd and str(build_dir) in configure_cmd
+
+    def test_raises_runtime_error_when_cmake_not_found(self, tmp_path):
+        from text_encoder_convert import ensure_plain_llama_quantize
+
+        build_dir = tmp_path / "build-quantize"
+        with patch("text_encoder_convert._quantize_build_dir", return_value=build_dir), \
+             patch("text_encoder_convert.ensure_llama_cpp", return_value=tmp_path / "llama.cpp"), \
+             patch("text_encoder_convert.subprocess.run", side_effect=FileNotFoundError()):
+            try:
+                ensure_plain_llama_quantize()
+                assert False, "expected RuntimeError"
+            except RuntimeError as exc:
+                assert "cmake" in str(exc).lower()
+
+
+class TestConvertTextEncoderKquant:
+    def test_runs_gguf_pass_then_quantize(self, tmp_path):
+        from text_encoder_convert import convert_text_encoder_kquant
+
+        weights = tmp_path / "model.safetensors"
+        weights.write_bytes(b"stub")
+        dst = str(tmp_path / "out-Q4_K_M.gguf")
+        exe = tmp_path / "llama-quantize"
+        exe.write_bytes(b"stub")
+
+        with patch("text_encoder_convert.convert_text_encoder") as mock_convert, \
+             patch("text_encoder_convert.ensure_plain_llama_quantize", return_value=exe), \
+             patch("text_encoder_convert.run_quantize") as mock_quantize:
+            out = convert_text_encoder_kquant(
+                str(weights), "Qwen/Qwen3-8B", dst_path=dst, quant_key="Q4_K_M",
+            )
+
+        assert out == dst
+        mock_convert.assert_called_once()
+        assert mock_convert.call_args.kwargs["outtype"] == "f16"
+        mock_quantize.assert_called_once()
+        quantize_args = mock_quantize.call_args
+        assert quantize_args.args[1] == dst
+        assert quantize_args.args[2] == "Q4_K_M"
+        assert quantize_args.kwargs["exe"] == exe
+
+
+class TestConvertTextEncoderToSafetensors:
+    def test_quantizes_without_hf_download(self, tmp_path):
+        import torch
+        from safetensors.torch import save_file, load_file
+        from text_encoder_convert import convert_text_encoder_to_safetensors
+
+        src = tmp_path / "model.safetensors"
+        save_file(
+            {
+                # 64x64 (4096 elems) — well above QUANTIZATION_THRESHOLD (1024),
+                # so it doesn't get treated as a small hiprec tensor in *_MIXED mode.
+                "model.layers.0.self_attn.q_proj.weight": torch.randn(64, 64, dtype=torch.float32),
+                "model.layers.0.self_attn.q_proj.bias": torch.randn(64, dtype=torch.float32),
+            },
+            str(src),
+        )
+
+        with patch("text_encoder_convert.hf_hub_download") as mock_download:
+            out = convert_text_encoder_to_safetensors(str(src), target_key="FP8_MIXED")
+            mock_download.assert_not_called()
+
+        result = load_file(out)
+        # load_state_dict() strips a shared "model." prefix (existing, generic
+        # mixed-checkpoint behavior — also matches real HF LLM state dicts).
+        assert "layers.0.self_attn.q_proj.weight" in result
+        assert result["layers.0.self_attn.q_proj.weight"].dtype == torch.float8_e4m3fn
+        assert "layers.0.self_attn.q_proj.weight_scale" in result
+        # 1D bias always stays plain/unscaled
+        assert "layers.0.self_attn.q_proj.bias_scale" not in result
+
+
+class TestConvertTextEncoderAny:
+    def test_dispatches_safetensors_formats_without_repo_id(self, tmp_path):
+        from text_encoder_convert import convert_text_encoder_any
+
+        with patch("text_encoder_convert.convert_text_encoder_to_safetensors", return_value="out.safetensors") as mock_st:
+            out = convert_text_encoder_any(str(tmp_path / "m.safetensors"), "", None, "NVFP4_MIXED")
+        assert out == "out.safetensors"
+        mock_st.assert_called_once()
+
+    def test_dispatches_kquant_formats(self, tmp_path):
+        from text_encoder_convert import convert_text_encoder_any
+
+        with patch("text_encoder_convert.convert_text_encoder_kquant", return_value="out.gguf") as mock_kq:
+            out = convert_text_encoder_any(str(tmp_path / "m.safetensors"), "Qwen/Qwen3-8B", None, "Q4_K_M")
+        assert out == "out.gguf"
+        mock_kq.assert_called_once()
+
+    def test_dispatches_direct_gguf_formats(self, tmp_path):
+        from text_encoder_convert import convert_text_encoder_any
+
+        with patch("text_encoder_convert.convert_text_encoder", return_value="out.gguf") as mock_gguf:
+            out = convert_text_encoder_any(str(tmp_path / "m.safetensors"), "Qwen/Qwen3-8B", None, "F16")
+        assert out == "out.gguf"
+        assert mock_gguf.call_args.kwargs["outtype"] == "f16"
+
+    def test_unknown_format_raises(self, tmp_path):
+        from text_encoder_convert import convert_text_encoder_any
+
+        try:
+            convert_text_encoder_any(str(tmp_path / "m.safetensors"), "repo", None, "BOGUS")
+            assert False, "expected ValueError"
+        except ValueError:
+            pass

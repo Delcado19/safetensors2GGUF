@@ -36,7 +36,11 @@ from quantize import (
     run_quantize,
 )
 from safetensors_quant import SAFETENSORS_DTYPE_CHOICES
-from text_encoder_convert import TEXT_ENCODER_OUTTYPES, convert_text_encoder
+from text_encoder_convert import (
+    TEXT_ENCODER_FORMAT_CHOICES,
+    TEXT_ENCODER_SAFETENSORS_FORMATS,
+    convert_text_encoder_any,
+)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Cancel support
@@ -823,9 +827,9 @@ def run_te_convert(
     src: str,
     repo_id: str,
     dst: str,
-    outtype: str,
+    format_key: str,
 ) -> Generator[tuple[str, str], None, None]:
-    """Run convert_text_encoder in a background thread and stream (log_text, status_text).
+    """Run convert_text_encoder_any in a background thread and stream (log_text, status_text).
 
     Mirrors run_st_convert's worker-thread + cancel_event + _stream pattern
     (see Task 5 review fix) instead of the plan brief's literal synchronous
@@ -833,17 +837,19 @@ def run_te_convert(
     like every other conversion tab in this file. Uses a dedicated
     _active_cancel_te slot, separate from _active_cancel and _active_cancel_st,
     so this tab's Cancel button never interferes with a concurrent GGUF or
-    safetensors conversion. convert_text_encoder has no on_progress callback
-    (only on_log), so no progress-bar wiring is needed — _stream's status text
-    stays "Running…" until completion.
+    safetensors conversion. The base repo ID is only required for GGUF
+    formats (direct outtypes and K-quants both need convert_hf_to_gguf.py's
+    config/tokenizer download); FP8/NVFP4 safetensors formats need no
+    HuggingFace download at all, so an empty repo ID is fine for those.
     """
     global _active_cancel_te
 
     if not src or not src.strip():
         yield "❌  No source file selected.", "Error — no input"
         return
-    if not repo_id or not repo_id.strip():
-        yield "❌  Base model HF repo ID is required.", "Error — no repo ID"
+    needs_repo_id = format_key not in TEXT_ENCODER_SAFETENSORS_FORMATS
+    if needs_repo_id and (not repo_id or not repo_id.strip()):
+        yield "❌  Base model HF repo ID is required for GGUF output.", "Error — no repo ID"
         return
 
     cancel_event = threading.Event()
@@ -855,17 +861,17 @@ def run_te_convert(
 
     def worker() -> None:
         try:
-            out_path = convert_text_encoder(
+            out_path = convert_text_encoder_any(
                 src.strip(),
-                repo_id.strip(),
+                repo_id.strip() if repo_id else "",
                 dst_path=(dst.strip() or None) if dst else None,
-                outtype=outtype,
+                format_key=format_key,
                 on_log=lambda msg: q.put(("log", msg)),
                 cancel_event=cancel_event,
             )
             result["out"] = out_path
         except RuntimeError as exc:
-            # convert_text_encoder raises plain RuntimeError("cancelled") on
+            # convert_text_encoder_any raises plain RuntimeError("cancelled") on
             # cancel_event, same convention as convert_to_safetensors — see
             # run_st_convert's matching handler above (review finding #4:
             # without this, cancelling this tab showed "Error: cancelled"
@@ -1150,13 +1156,21 @@ def build_app() -> gr.Blocks:
             with gr.Tab("Convert Text Encoder → GGUF"):
                 gr.Markdown(
                     "Convert a **bare single-file text-encoder checkpoint** (Qwen3, "
-                    "Mistral, T5/UMT5, …) to GGUF.  Requires the base model's "
-                    "`config.json`/tokenizer files — downloaded automatically from "
-                    "the HuggingFace repo ID you provide (not the fine-tuned "
-                    "checkpoint's repo, which usually doesn't have one — the "
-                    "**original base model's** repo).  Runs `convert_hf_to_gguf.py` "
-                    "from an auto-cloned llama.cpp checkout (first run downloads it, "
-                    "needs `git` + internet — no ComfyUI installation required)."
+                    "Mistral, T5/UMT5, …) to GGUF or quantized safetensors.\n\n"
+                    "**GGUF formats** (F32/F16/BF16/Q8_0/K-quants) need the base "
+                    "model's `config.json`/tokenizer files — downloaded automatically "
+                    "from the HuggingFace repo ID you provide (the **original base "
+                    "model's** repo, not the fine-tune's, which usually doesn't have "
+                    "one). Runs `convert_hf_to_gguf.py` from an auto-cloned llama.cpp "
+                    "checkout (first run downloads it, needs `git` + internet). "
+                    "K-quants (Q6_K…Q2_K) additionally build a **plain** llama-quantize "
+                    "from that checkout via `cmake` on first use — needs `cmake` + a "
+                    "C++ compiler. This is deliberately a different binary than the "
+                    "City96-patched one used for diffusion models (see "
+                    "docs/building-llama-quantize.md) — that patch isn't safe for LLM/text GGUFs.\n\n"
+                    "**FP8/NVFP4 formats** write a quantized `.safetensors` file "
+                    "instead — no base repo ID, no HuggingFace download, no llama.cpp "
+                    "involved at all."
                 )
                 with gr.Column(elem_classes=["card"]):
                     with gr.Row(equal_height=False):
@@ -1170,17 +1184,17 @@ def build_app() -> gr.Blocks:
                             browse_te_src_btn = gr.Button("Browse", size="sm")
                     te_base_repo = gr.Textbox(
                         label="Base model HF repo ID",
-                        placeholder="e.g. Qwen/Qwen3-8B",
+                        placeholder="e.g. Qwen/Qwen3-8B  (ignored for FP8/NVFP4 formats)",
                         lines=1, max_lines=1,
-                        info="The ORIGINAL base model's repo (config.json/tokenizer source), not the fine-tune's.",
+                        info="The ORIGINAL base model's repo (config.json/tokenizer source), not the fine-tune's. Only needed for GGUF output.",
                     )
                     te_dst_path = gr.Textbox(
                         label="Output path",
                         placeholder="Auto-generated next to source",
                         lines=1, max_lines=1,
                     )
-                    te_outtype = gr.Dropdown(
-                        choices=TEXT_ENCODER_OUTTYPES, value="f16", label="Output type",
+                    te_format = gr.Dropdown(
+                        choices=TEXT_ENCODER_FORMAT_CHOICES, value="F16", label="Format",
                     )
 
                 with gr.Row():
@@ -1202,7 +1216,7 @@ def build_app() -> gr.Blocks:
                 browse_te_src_btn.click(_browse_te_src, outputs=te_src_path)
                 te_convert_event = te_convert_btn.click(
                     fn=run_te_convert,
-                    inputs=[te_src_path, te_base_repo, te_dst_path, te_outtype],
+                    inputs=[te_src_path, te_base_repo, te_dst_path, te_format],
                     outputs=[te_log, te_status],
                     show_progress="hidden",
                 )

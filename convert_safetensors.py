@@ -41,6 +41,7 @@ def convert_to_safetensors(
     on_progress=None,
     on_log=None,
     cancel_event=None,
+    model_arch=None,
 ):
     """Convert a model checkpoint to a quantized .safetensors file.
 
@@ -52,6 +53,10 @@ def convert_to_safetensors(
         on_progress: Optional callback(idx, total, key).
         on_log: Optional callback(msg); prints when None.
         cancel_event: Optional threading.Event; raises RuntimeError("cancelled") when set.
+        model_arch: Pre-resolved architecture instance (e.g. a bare
+            ``models.architectures.ModelTemplate()`` for text-encoder checkpoints,
+            which aren't in ``arch_list`` and would otherwise fail ``detect_arch``).
+            When None (default), auto-detected via ``detect_arch`` as before.
 
     Returns:
         (dst_path, model_arch)
@@ -63,7 +68,8 @@ def convert_to_safetensors(
             print(msg)
 
     state_dict = load_state_dict(path)
-    model_arch = detect_arch(state_dict)
+    if model_arch is None:
+        model_arch = detect_arch(state_dict)
     _log(f"INFO:  Architecture: {model_arch.arch}")
 
     if dst_path is None:

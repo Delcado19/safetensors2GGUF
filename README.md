@@ -254,15 +254,27 @@ nothing can load — only the explicitly scaled variants are included.
 
 The **Convert Text Encoder → GGUF** tab converts
 bare HF/Transformers text-encoder checkpoints (Qwen, T5, CLIP, Mistral variants) to
-GGUF format. This is separate from SDXL CLIP-L/CLIP-G extraction and runs
-entirely in this tool's own Python environment — no ComfyUI installation
-required. `llama.cpp` (for its `convert_hf_to_gguf.py`) is cloned
-automatically into `.llama.cpp/` the first time you use this tab; that needs
-`git` on `PATH` and an internet connection, but only once.
+GGUF **or** quantized safetensors. This is separate from SDXL CLIP-L/CLIP-G
+extraction and runs entirely in this tool's own Python environment — no
+ComfyUI installation required.
+
+The format dropdown covers three backends:
+
+| Formats | Backend | Needs base repo ID? | Extra prerequisites |
+|---|---|---|---|
+| `F32`/`F16`/`BF16`/`Q8_0` | `convert_hf_to_gguf.py` (llama.cpp, auto-cloned) | Yes | `git` |
+| `Q6_K`…`Q2_K` (K-quants) | Same, then a **plain** `llama-quantize` second pass | Yes | `git`, plus `cmake` + a C++ compiler (for the one-time `llama-quantize` build) |
+| `FP8`/`FP8_MIXED`/`NVFP4`/`NVFP4_MIXED` | This tool's own safetensors quantizer (`safetensors_quant*.py`) | **No** | None — no llama.cpp, no download |
+
+The K-quant path deliberately builds its **own** plain llama-quantize from the
+auto-cloned llama.cpp checkout via `cmake` (cached under `.llama.cpp/build-quantize/`,
+built once) — **not** the City96-patched binary used for diffusion-model GGUFs
+(see [Building llama-quantize](docs/building-llama-quantize.md)), since that patch
+is documented as unsafe for LLM/text GGUFs.
 
 ### Workflow
 
-Text-encoder conversion requires:
+For **GGUF formats** (direct outtypes and K-quants), text-encoder conversion requires:
 
 1. **Source weights file**: A single `.safetensors` checkpoint (bare model file, not
    a directory). Since standalone text-encoder `.safetensors` files lack `config.json`
@@ -278,13 +290,14 @@ Text-encoder conversion requires:
    (`tokenizer.json`, `tokenizer.model`, etc.) — these are fetched from HuggingFace
    and assembled with your weights into a temporary HF-style directory.
 
-3. **Output path and type**: Choose an output filename and quantization type
-   (F32/F16/BF16/Q8_0).
+3. **Output path and format**: Choose an output filename and one of the formats above.
+
+For **FP8/FP8_MIXED/NVFP4/NVFP4_MIXED**, only the source weights file and an
+output path are needed — the base repo ID field is ignored.
 
 ### Implementation
 
-The pipeline:
-
+**GGUF path:**
 1. Clones `llama.cpp` into `.llama.cpp/` next to this repo if not already
    present (skipped on subsequent runs).
 2. Assembles a temporary directory with your source weights (renamed to
@@ -293,12 +306,24 @@ The pipeline:
 3. Runs `convert_hf_to_gguf.py` with this tool's own Python interpreter
    (`transformers`/`sentencepiece`/`protobuf` are regular dependencies in
    `pyproject.toml`, installed by `uv sync`).
-4. Returns the quantized GGUF at your chosen output path.
+4. For K-quants: builds a plain `llama-quantize` from the same clone (`cmake`,
+   cached after the first run) and runs it as a second pass on the F16 output.
+5. Returns the output at your chosen path.
 
-This is a subprocess pipeline, not part of the DiT architecture detection system.
-Per-family text-encoder handling (e.g., SDXL CLIP key mapping, Qwen mmproj pairing)
-is not automated — the generic HF-to-GGUF conversion handles supported standard
-architectures. Unsupported or non-standard architectures require manual key mapping.
+**Safetensors path (FP8/NVFP4):** loads the checkpoint, applies the same
+per-tensor FP8-scaled/NVFP4-block-scaled quantization used for diffusion models
+(`safetensors_quant_fp8.py`/`safetensors_quant_nvfp4.py`), and writes a
+ComfyUI-native quantized `.safetensors` file — no architecture-specific tensor
+protection is needed here (unlike diffusion DiTs, ComfyUI's text-encoder loaders
+build models from fixed config presets rather than inferring hyperparameters
+from checkpoint tensor shapes, so there's no analogous shape-corruption risk;
+see [docs/issues_analysis.md](docs/issues_analysis.md) #9 for that class of bug).
+
+This is a subprocess/library pipeline, not part of the DiT architecture detection
+system. Per-family text-encoder handling (e.g., SDXL CLIP key mapping, Qwen mmproj
+pairing) is not automated — the generic HF-to-GGUF conversion handles supported
+standard architectures. Unsupported or non-standard architectures require manual
+key mapping.
 
 Override the clone location with the `S2G_LLAMA_CPP_HOME` environment variable
 if you already have a llama.cpp checkout elsewhere and want to reuse it.

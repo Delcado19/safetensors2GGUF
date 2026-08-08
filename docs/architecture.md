@@ -201,9 +201,20 @@ no plain/generic FP4 mode — ComfyUI has no loader for it.
 ## Text-Encoder Conversion Pipeline
 
 `text_encoder_convert.py` converts a bare single-file HF/Transformers-style
-text-encoder checkpoint (Qwen3, T5/UMT5, Mistral, …) to GGUF. It is a fully
-separate subprocess pipeline, not part of the DiT architecture-detection
-system above — it never imports `models.architectures` or `convert.py`.
+text-encoder checkpoint (Qwen3, T5/UMT5, Mistral, …) to GGUF (direct outtypes
+or K-quants) or to a quantized safetensors file (FP8/NVFP4). `convert_text_encoder_any()`
+dispatches on the selected `TEXT_ENCODER_FORMAT_CHOICES` key to one of three
+backends:
+
+- **Direct GGUF outtypes** (F32/F16/BF16/Q8_0): `convert_text_encoder()`, the
+  original subprocess pipeline below — no DiT architecture-detection involved.
+- **K-quants** (Q6_K…Q2_K): `convert_text_encoder_kquant()` runs the F16 GGUF
+  pipeline to a temp intermediate, then a second llama-quantize pass (see below).
+- **Safetensors** (FP8/FP8_MIXED/NVFP4/NVFP4_MIXED): `convert_text_encoder_to_safetensors()`
+  reuses `convert_safetensors.convert_to_safetensors()` with a bare
+  `models.architectures.ModelTemplate()` instance (text encoders aren't in
+  `arch_list`) — the only place this module imports `models.architectures` or
+  `convert.py`.
 
 ```
 Source weights (.safetensors, bare file — no config.json/tokenizer)
@@ -241,6 +252,28 @@ convert_text_encoder() assembles a temp directory
     ▼
 Output file (.gguf)
 ```
+
+**K-quant second pass** (`convert_text_encoder_kquant()`): after the F16 GGUF
+above, `ensure_plain_llama_quantize()` builds a **plain, unpatched**
+llama-quantize once via `cmake -B .llama.cpp/build-quantize` from the same
+auto-cloned checkout (needs `cmake` + a C++ compiler; cached after the first
+build) and `quantize.run_quantize()` (shared with the diffusion-model
+pipeline) runs it against the F16 intermediate. This binary is intentionally
+separate from the City96-patched `llama-quantize` used for diffusion-model
+GGUFs (see [building-llama-quantize.md](building-llama-quantize.md)) — that
+patch is documented as unsafe for LLM/text GGUFs.
+
+**Safetensors branch** (`convert_text_encoder_to_safetensors()`): loads the
+checkpoint via `convert.load_state_dict()` and quantizes it with the same
+`safetensors_quant_fp8.py`/`safetensors_quant_nvfp4.py` backends used for
+diffusion models, but with a generic `ModelTemplate()` (empty `keys_hiprec`/
+`keys_shape_critical`) instead of a detected architecture. This is safe
+because ComfyUI's text-encoder loaders (`comfy/text_encoders/*.py`) build
+models from fixed config presets keyed by filename/CLIPType, not by inferring
+hyperparameters from checkpoint tensor shapes — so there's no analogue to the
+DiT shape-corruption risk documented in
+[issues_analysis.md](issues_analysis.md) #9, and no per-architecture audit is
+needed here. No HuggingFace download or llama.cpp involved.
 
 `convert_hf_to_gguf.py` in current llama.cpp imports its per-architecture
 model classes from a sibling `conversion/` package (~90 files, one per
