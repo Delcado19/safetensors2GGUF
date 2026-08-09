@@ -4,7 +4,32 @@ from __future__ import annotations
 
 import torch
 
-from safetensors_quant_nvfp4 import quantize_nvfp4
+from safetensors_quant_nvfp4 import _swizzle_block_scale, quantize_nvfp4
+
+
+def _vllm_swizzle_blockscale_reference(scale: torch.Tensor) -> torch.Tensor:
+    """Literal transcription of vLLM's swizzle_blockscale()
+    (vllm/model_executor/layers/quantization/utils/nvfp4_utils.py), minus the
+    .cuda() call. Used only to independently verify _swizzle_block_scale
+    against the reference implementation — a self-consistent round-trip test
+    (quantize -> dequantize) can't catch a swizzle/unswizzle direction bug
+    that's self-inverting, so this is the one check that actually
+    discriminates a correct layout from a plausible-looking wrong one."""
+    def round_up(x, m):
+        return ((x + m - 1) // m) * m
+
+    scale_ndim = scale.ndim
+    if scale_ndim == 2:
+        scale = scale.unsqueeze(0)  # (1, M, K)
+    B, M, K = scale.shape
+    M_padded, K_padded = round_up(M, 128), round_up(K, 4)
+    padded = torch.zeros((B, M_padded, K_padded), dtype=scale.dtype, device=scale.device)
+    padded[:B, :M, :K] = scale
+    padded = padded.reshape(B, M_padded // 128, 4, 32, K_padded // 4, 4)
+    swizzled = padded.permute(0, 1, 4, 3, 2, 5).contiguous()
+    if scale_ndim == 2:
+        return swizzled.reshape(M_padded, K_padded)
+    return swizzled.reshape(B, M_padded, K_padded)
 
 
 class TestQuantizeNvfp4:
@@ -27,7 +52,31 @@ class TestQuantizeNvfp4:
         out = quantize_nvfp4(data, "block.weight")
         scale = out["block.weight_scale"]
         assert scale.dtype == torch.float8_e4m3fn
-        assert scale.shape == (4, 2)  # 32 elems / 16-block
+        # ComfyUI's cuBLAS NVFP4 kernel needs the scale padded/swizzled to
+        # (roundup(rows,128), roundup(n_blocks,4)) — see _swizzle_block_scale.
+        assert scale.shape == (128, 4)
+
+    def test_scale_swizzled_shape_matches_comfy_kitchen_kernel_formula(self):
+        # 4 rows -> roundup(4,128)=128; 96 elems -> 6 blocks of 16 -> roundup(6,4)=8
+        data = torch.randn(4, 96, dtype=torch.float32)
+        out = quantize_nvfp4(data, "block.weight")
+        assert out["block.weight_scale"].shape == (128, 8)
+
+        # rows already a multiple of 128, blocks already a multiple of 4 -> no padding
+        data2 = torch.randn(128, 64, dtype=torch.float32)
+        out2 = quantize_nvfp4(data2, "block.weight")
+        assert out2["block.weight_scale"].shape == (128, 4)
+
+    def test_swizzle_matches_vllm_reference_implementation(self):
+        torch.manual_seed(0)
+        for m, k in [(4, 2), (128, 4), (37, 11), (200, 9)]:
+            scale = (torch.rand(m, k) * 400 - 200).to(torch.float8_e4m3fn)
+            ours = _swizzle_block_scale(scale)
+            reference = _vllm_swizzle_blockscale_reference(scale)
+            assert ours.shape == reference.shape
+            assert torch.equal(ours.to(torch.float32), reference.to(torch.float32)), (
+                f"swizzle mismatch for shape ({m}, {k})"
+            )
 
     def test_scale_2_is_global_float32_scalar(self):
         data = torch.randn(4, 32, dtype=torch.float32)

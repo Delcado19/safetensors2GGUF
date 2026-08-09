@@ -212,3 +212,40 @@ architectures above.
 
 **Workaround (for `ModelSDXL`/`ModelSD1`):** Prefer `FP8`/`FP8_MIXED` over
 `NVFP4`/`NVFP4_MIXED` until these are audited, since FP8 never changes tensor shape.
+
+## 10. `AssertionError: Invalid B scale shape` — NVFP4 weight_scale wasn't padded/swizzled for ComfyUI's cuBLAS kernel
+
+**Error message:**
+```
+AssertionError: Invalid B scale shape
+  File "comfy_kitchen/backends/cuda/__init__.py", line 1642, in scaled_mm_nvfp4
+    assert block_scale_b.size() == (roundup_n, roundup_sk), "Invalid B scale shape"
+```
+
+**Affected models:** Any NVFP4/NVFP4_MIXED-converted checkpoint containing a `Linear`
+weight whose output-feature count isn't a multiple of 128 (or whose 16-element block
+count isn't a multiple of 4) — e.g. Lumina2/Z-Image's `final_layer.linear.weight`, the
+layer this was first reported on. Most transformer block weights happen to have output
+widths that are already multiples of 128 (hidden_size, mlp_dim, …), which is why this
+went unnoticed until a checkpoint with an odd-sized output projection was tested.
+
+**Cause:** ComfyUI's `comfy_kitchen` CUDA backend (`scaled_mm_nvfp4`, the kernel behind
+its native NVFP4 matmul) requires each layer's block-scale tensor pre-padded to
+`(roundup(out_features, 128), roundup(in_features // 16, 4))` **and** physically
+rearranged into a 128x4 block-interleaved ("swizzled") layout before being read by the
+cuBLAS FP4 GEMM — this is the same convention used by vLLM's `swizzle_blockscale()`
+(`nvfp4_utils.py`) and TensorRT-Model-Optimizer NVFP4 checkpoint exports. This tool wrote
+a plain, unpadded `(out_features, in_features // 16)` block-scale tensor. When
+`out_features` isn't already a multiple of 128, the kernel's shape assertion fails
+outright (the crash reported here). When it's already a multiple of 128 (the common case
+for most transformer block weights), the assertion silently passes but the scale values
+are read in the wrong order — every such layer in every prior NVFP4/NVFP4_MIXED
+conversion loaded with quietly wrong weights, not just the one layer that happened to
+crash.
+
+**Fix:** Added `_swizzle_block_scale()`/`_unswizzle_block_scale()` to
+`safetensors_quant_nvfp4.py`, applied unconditionally (not just `*_MIXED`, since this is
+a layout-correctness constraint, not a precision one) for 2D weight tensors — the only
+case that reaches this kernel path in ComfyUI. Verified by reading `comfy_kitchen`'s CUDA
+backend source directly for the exact `roundup_n`/`roundup_sk` formula, then
+cross-checked against vLLM's open-source implementation of the identical layout.

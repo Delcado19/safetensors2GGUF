@@ -29,6 +29,59 @@ def _nearest_e2m1_index(x: torch.Tensor) -> torch.Tensor:
     return diffs.argmin(dim=-1)
 
 
+def _round_up(x: int, multiple: int) -> int:
+    return ((x + multiple - 1) // multiple) * multiple
+
+
+def _swizzle_index_map(m_padded: int, k_padded: int, device: torch.device) -> torch.Tensor:
+    """Index map for comfy_kitchen/cuBLAS's 128x4 block-interleaved NVFP4
+    scale-factor layout — mirrors vLLM's swizzle_blockscale()
+    (vllm/model_executor/layers/quantization/utils/nvfp4_utils.py), the same
+    layout TensorRT-Model-Optimizer NVFP4 checkpoints use.
+    idx_map[i, j] is the flat index into a plain row-major (m_padded,
+    k_padded) buffer of the value that belongs at swizzled position (i, j).
+    Built once per shape and reused for both the forward swizzle and (in
+    dequantize_nvfp4, for round-trip tests) its exact gather/scatter inverse.
+    """
+    idx = torch.arange(m_padded * k_padded, device=device).reshape(m_padded, k_padded)
+    idx = idx.reshape(m_padded // 128, 4, 32, k_padded // 4, 4)
+    idx = idx.permute(0, 3, 2, 1, 4).contiguous()
+    return idx.reshape(m_padded, k_padded)
+
+
+def _swizzle_block_scale(scale: torch.Tensor) -> torch.Tensor:
+    """Pad a (rows, k_blocks) NVFP4 block-scale matrix to 128x4 alignment and
+    rearrange it into the block-interleaved layout ComfyUI's comfy_kitchen
+    CUDA kernel (scaled_mm_nvfp4) requires for its cuBLAS FP4 GEMM.
+
+    The kernel asserts block_scale.size() == (roundup(N,128), roundup(K//16,4))
+    — necessary but not sufficient: the values inside that shape are NOT
+    plain row-major, they're 128x4-tile-interleaved. Zero-padding to the
+    right shape without this permutation either crashes ("Invalid B scale
+    shape" when N isn't already a multiple of 128 — reported for Lumina2/
+    Z-Image's final_layer.linear.weight) or, when the shape happens to match,
+    silently loads wrong scale values (garbage output, no crash).
+    """
+    m, k = scale.shape
+    m_padded, k_padded = _round_up(m, 128), _round_up(k, 4)
+    padded = torch.zeros(m_padded * k_padded, dtype=scale.dtype, device=scale.device)
+    padded.view(m_padded, k_padded)[:m, :k] = scale
+    idx_map = _swizzle_index_map(m_padded, k_padded, scale.device)
+    return padded[idx_map.reshape(-1)].reshape(m_padded, k_padded)
+
+
+def _unswizzle_block_scale(swizzled: torch.Tensor, m: int, k: int) -> torch.Tensor:
+    """Inverse of _swizzle_block_scale — used only by dequantize_nvfp4()'s
+    test-only round-trip helper, via exact scatter-inverse of the same
+    index map (not a hand-derived second permutation, to avoid an
+    independently-wrong "inverse")."""
+    m_padded, k_padded = swizzled.shape
+    idx_map = _swizzle_index_map(m_padded, k_padded, swizzled.device)
+    flat = torch.empty(m_padded * k_padded, dtype=swizzled.dtype, device=swizzled.device)
+    flat[idx_map.reshape(-1)] = swizzled.reshape(-1)
+    return flat.reshape(m_padded, k_padded)[:m, :k]
+
+
 def quantize_nvfp4(data: torch.Tensor, key: str) -> dict[str, torch.Tensor]:
     """Quantize one 2D+ tensor to NVFP4 (uint8-packed, 16-elem block scale + global scale).
 
@@ -65,10 +118,20 @@ def quantize_nvfp4(data: torch.Tensor, key: str) -> dict[str, torch.Tensor]:
     packed = (idx[..., 0] | (idx[..., 1] << 4)).to(torch.uint8)
     packed = packed.reshape(*lead, last // 2)
 
+    weight_scale = block_scale_fp8.squeeze(-1)
+    if len(lead) == 1:
+        # The common case (nn.Linear weight, 2D (out_features, in_features)):
+        # ComfyUI's cuBLAS NVFP4 kernel needs the 128x4-swizzled layout — see
+        # _swizzle_block_scale. Higher-rank tensors (e.g. raw Conv2d kernels)
+        # never reach that kernel path in ComfyUI (it reshapes them to 2D
+        # itself before quantizing, a different on-disk convention this tool
+        # doesn't replicate), so they're left unswizzled here.
+        weight_scale = _swizzle_block_scale(weight_scale)
+
     prefix = layer_key(key)
     return {
         key: packed,
-        f"{prefix}.weight_scale": block_scale_fp8.squeeze(-1),
+        f"{prefix}.weight_scale": weight_scale,
         f"{prefix}.weight_scale_2": scale_2.reshape(1),
     }
 
@@ -77,7 +140,7 @@ def dequantize_nvfp4(tensors: dict[str, torch.Tensor], key: str) -> torch.Tensor
     """Reverse quantize_nvfp4 — used by tests to verify round-trip accuracy."""
     prefix = layer_key(key)
     packed = tensors[key]
-    block_scale = tensors[f"{prefix}.weight_scale"].to(torch.float32)
+    block_scale = tensors[f"{prefix}.weight_scale"]
     scale_2 = tensors[f"{prefix}.weight_scale_2"]
 
     lo = (packed & 0x0F).to(torch.int64)
@@ -85,6 +148,13 @@ def dequantize_nvfp4(tensors: dict[str, torch.Tensor], key: str) -> torch.Tensor
     *lead, half = packed.shape
     idx = torch.stack([lo, hi], dim=-1).reshape(*lead, half * 2)
     idx = idx.reshape(*lead, half * 2 // GROUP_SIZE, GROUP_SIZE)
+
+    if len(lead) == 1:
+        # Undo _swizzle_block_scale's 128x4 interleave and drop the padding
+        # rows/cols back down to the tensor's real (rows, n_blocks) shape.
+        m, n_blocks = lead[0], idx.shape[-2]
+        block_scale = _unswizzle_block_scale(block_scale, m, n_blocks)
+    block_scale = block_scale.to(torch.float32)
 
     values = _KVALUES[idx]
     values = values * block_scale.unsqueeze(-1) * scale_2
