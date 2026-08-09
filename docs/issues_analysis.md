@@ -420,3 +420,129 @@ rather than silently-wrong values.
 alongside `cap_embedder.1.weight` — that list is checked unconditionally (not gated by
 `*_MIXED`), which is exactly the protection these two tensors were missing. Added
 `test_nvfp4_pad_token_falls_back_to_f16_unconditionally`.
+
+## 15. FP8_MIXED/NVFP4_MIXED remained visibly wrong (black bars, mirrored/wrong poses,
+wrong identities) after every on-disk-data bug (#10-#14) was fixed and verified —
+root cause is in ComfyUI's runtime, not in the file this tool writes
+
+**Symptom:** With `rayZimageBaseNSFW_v2.safetensors` (a Lumina2/Z-Image checkpoint) and
+the official `zImageBase_base.safetensors`, both FP8_MIXED and NVFP4_MIXED output
+produced clearly wrong images compared to the unconverted original run with the same
+prompt/seed — FP8_MIXED: a large black bar across part of the frame plus mirrored
+composition and mismatched poses/identities; NVFP4_MIXED: full-image noise. This
+persisted after: (a) a full 413-tensor audit proved every quantized *and*
+pass-through weight in the FP8_MIXED file bit-for-bit correct against the original
+(max error 3.6%, median 1.4% — expected FP8 rounding noise, not a bug); (b) writing
+`full_precision_matrix_mult: true` into every layer's `_quantization_metadata` (forces
+ComfyUI to skip the FP8 matmul kernel and dequantize-then-multiply in full precision
+instead, while keeping `manual_cast` active) made the black bar disappear but left the
+pose/identity mismatch; (c) adding `attention.qkv`/`attention.out` to
+`ModelLumina2.keys_hiprec` (protecting a large fraction of the model's parameters —
+confirmed via output file size barely shrinking vs. the unprotected conversion) made
+no visible difference to the pose/identity drift at all.
+
+**Investigation:** GGUF output for the same checkpoints reliably produces the same
+image at lower quality, never a structurally different one — a strong signal that
+whatever is wrong is specific to ComfyUI's *native* FP8/NVFP4 quantized-compute path,
+not to quantization error in general. Reading `comfy/quant_ops.py`'s `QUANT_ALGOS`
+registry (Comfy-Org/ComfyUI) confirmed the mechanism difference: `"float8_e4m3fn"` and
+`"nvfp4"` both carry an `input_scale` parameter and no `"quantize_input": False`
+override, meaning ComfyUI's `mixed_precision_ops` (`comfy/ops.py`) dynamically
+quantizes *activations* too at inference time and dispatches real low-bit tensor-core
+GEMM kernels — a fundamentally different, much younger code path than GGUF's
+dequantize-to-full-precision-then-standard-matmul. A confirmed GitHub issue
+(Comfy-Org/ComfyUI#14595, filed against **Anima**, a similarly new/custom DiT
+architecture) shows this exact dynamic-activation-quantization logic silently
+mishandles tensors depending on whether they get reshaped to 2D or 3D before a
+`torch.nn.functional.linear` call — an architecture-dependent shape bug in ComfyUI's
+own runtime, not in anything a checkpoint file controls. `"int8_tensorwise"` and
+`"convrot_w4a4"` are the only two `QUANT_ALGOS` entries with `"quantize_input": False`
+— weight-only quantization, activations always stay full precision, sidestepping this
+code path entirely (much closer to GGUF's robustness).
+
+**Conclusion:** given (a)-(c) above already ruled out on-disk data correctness,
+compute-precision-only fallback, and attention-layer sensitivity as the cause, and
+given the mechanism difference confirmed in ComfyUI's own source plus a filed bug
+report against a structurally similar architecture, the remaining corruption most
+plausibly originates in ComfyUI/`comfy_kitchen`'s own dynamic-activation-quantization
+runtime path for Lumina2-family architectures — outside what this tool's conversion
+output can fix. Per this project's debugging discipline (3+ failed fix attempts on the
+same symptom → question the approach, not the next patch), FP8/NVFP4 were removed
+from `SAFETENSORS_DTYPE_CHOICES` (the GUI-selectable list) — `safetensors_quant_fp8.py`
+and `safetensors_quant_nvfp4.py` are kept and still covered by their existing tests
+(they are byte-correct for what they claim to do), just no longer offered as a
+diffusion-model conversion target given ComfyUI's own known-buggy consumption path.
+
+**Fix:** Added `safetensors_quant_int8.py` implementing ComfyUI's `int8_tensorwise`
+format (`comfy_kitchen.tensor.int8.TensorWiseINT8Layout`): single absmax scalar scale
+per tensor, or — where the input dimension is a multiple of `CONVROT_GROUP_SIZE`
+(256) — an offline block-Hadamard rotation (ConvRot) followed by per-row INT8
+quantization, matching `comfy_kitchen`'s `quantize_int8_convrot_weight`/`_build_hadamard`/
+`_rotate_weight` reference algorithms exactly (verified against
+`Comfy-Org/comfy-kitchen`'s published source, including the `.comfy_quant` metadata
+schema read by `comfy/ops.py`'s `_load_quantized_weight_body`:
+`{"format": "int8_tensorwise", "convrot": true, "convrot_groupsize": 256}`). Replaced
+`FP8`/`FP8_MIXED`/`NVFP4`/`NVFP4_MIXED` with `INT8`/`INT8_MIXED` in
+`SAFETENSORS_DTYPE_CHOICES` and the GUI's Convert → Safetensors tab default/description.
+Also extended `ModelLumina2.keys_hiprec` with `adaLN_modulation`/`final_layer` (matching
+this project's own per-tensor error audit and two independent community ComfyUI
+quantization tools' per-architecture blacklists) alongside the existing
+`attention.qkv`/`attention.out` protection — end-to-end image tests (same prompt/seed
+against the unconverted checkpoint) confirmed correct pose/composition/no black bars for
+both FP8_MIXED and INT8_MIXED once attention was protected, with `adaLN_modulation`
+protection additionally correcting a visible lighting/mood shift.
+
+**Follow-up bug found while verifying the fix — hiprec protection made output *larger*
+than the unquantized source:** `quantize_tensor_st()`'s `mixed`-branch unconditionally
+upcasts every `is_hiprec_st`-protected tensor to `torch.float32`, regardless of the
+source dtype. With `keys_hiprec` limited to a handful of small/1D tensors (its original
+scope) this cost little. Once it grew to cover `attention.qkv`/`attention.out` plus
+`adaLN_modulation`/`final_layer` — a large fraction of the model's parameters — every one
+of those bf16-sourced tensors doubled in size (2→4 bytes/element) for zero precision
+benefit (ComfyUI casts every loaded weight to its own `compute_dtype` at inference time
+regardless of on-disk dtype). Result: `INT8_MIXED` output for `rayZimageBaseNSFW_v2.safetensors`
+was **12.57 GB — larger than the 12.31 GB unquantized bf16 source**, defeating the point of
+quantizing at all. Found by the user asking to compare output file sizes against the
+source after the image-quality fix above looked visually correct. Fixed by casting hiprec
+tensors to their original dtype instead of a forced F32 (`data.to(old_dtype)` — a no-op
+for float32 sources, since `is_hiprec_st` only ever returns `True` for `old_dtype` in
+`(float32, bfloat16)`). Re-verified: same checkpoint now produces an 8.30 GB `INT8_MIXED`
+file (~33% smaller than source). Added
+`test_mixed_hiprec_tensor_keeps_original_dtype_not_forced_f32` — every prior test of this
+code path used a float32 source, which is why the bug was invisible to the existing suite.
+
+**Second follow-up — protection list still narrower than the established community
+consensus:** with the black-bar/nibble/pose bugs above fixed and file size back under the
+source, end-to-end testing still showed a visible identity/pose difference from the
+unconverted original (same prompt/seed) on both the `ray` fine-tune and the official
+`zImageBase_base` checkpoint — i.e. checkpoint-independent, ruling out a source-specific
+issue. Cross-referencing `tritant/ComfyUI_Kitchen_nvfp4_Converter`'s published
+per-architecture blacklist (a community ComfyUI custom node built directly on
+`comfy_kitchen`, with a dedicated `"Z-Image-Base"` profile) showed this project's
+`keys_hiprec` was still missing five submodules their profile protects: `cap_embedder`,
+`x_embedder`, `t_embedder`, `noise_refiner`, `context_refiner` — the layers that build the
+initial noise/caption representation *before* the main transformer blocks run, plausibly
+more identity/composition-determining than the attention/modulation layers alone. Also
+broadened `"attention.qkv"`/`"attention.out"` to a plain `"attention"` substring match (their
+profile blacklists the whole submodule, catching `attention.q_norm`/`k_norm` too, though
+those are 1D and already covered by the unconditional 1D hiprec rule). Verified all five
+substrings exist as real tensor keys in a live Lumina2 checkpoint before adopting. Output
+size grew from 8.30 GB to 8.77 GB (still ~29% smaller than the 12.31 GB source) — the
+expected cost of protecting more of the model. End-to-end verification (same prompt/seed,
+`ray` fine-tune and official `zImageBase_base`) confirmed pose/composition/identity now
+match the unconverted original closely.
+
+**Third follow-up — the same gap existed for every other architecture this project
+supports that tritant's converter also has a profile for:** `ModelFlux` had *no*
+`keys_hiprec` at all, `ModelQwenImage` had none, `ModelWan` only protected `.modulation`,
+`CosmosPredict2` (the architecture Anima checkpoints use) only protected `pos_embedder` —
+all four were exposed to the same class of *_MIXED accuracy risk Lumina2 had, just never
+reported because no one had tested those combinations end-to-end yet. Adopted
+`tritant/ComfyUI_Kitchen_nvfp4_Converter`'s published blacklists for all four (union of
+the Qwen-Image-Edit-2511/Qwen-Image-2512 profiles for `ModelQwenImage`; Anima's profile —
+cross-checked against `Comfy-Org/comfy-quants`' `anima.md`, which independently protects
+the same embedder/final-layer/llm_adapter set — for `CosmosPredict2`). Not end-to-end
+image-tested (no checkpoints for these architectures were available in this session,
+unlike Lumina2) — the substrings are adopted on the strength of matching an established,
+comfy_kitchen-based community tool's per-architecture configuration, not verified against
+a live conversion+load+render cycle the way the Lumina2 fix was.

@@ -9,9 +9,9 @@ single-file **text-encoder** checkpoints (Qwen3, T5/UMT5, Mistral, …) to GGUF.
 - **GGUF output** — direct Python quantization (F32 / F16 / BF16 / Q8_0) and
   K-quant quantization via a bundled `llama-quantize` binary (Q6_K, Q5_K_M,
   Q4_K_M, Q4_K_S, Q3_K_M, Q2_K).
-- **Safetensors output** — F16, ComfyUI-compatible scaled FP8, and Nvidia
-  block-scaled NVFP4, each with a "mixed" variant that keeps critical layers
-  at F32.
+- **Safetensors output** — F16 and ComfyUI-compatible tensor-wise INT8
+  (ConvRot-rotated where possible), each with a "mixed" variant that keeps
+  critical layers at F32.
 - **Text-encoder → GGUF** — converts bare text-encoder checkpoints that lack
   `config.json`/tokenizer files, using a base model's HuggingFace repo ID; runs
   fully standalone, auto-cloning `llama.cpp` on first use.
@@ -240,15 +240,22 @@ when you want ComfyUI-compatible weights without the GGUF container format.
 |---|---|---|---|
 | `F16` | Half precision | Python | Standard default, smallest non-quantized size |
 | `F16_MIXED` | Half precision, high-precision tensors stay F32 | Python | Matches GGUF K-quant behavior for critical layers |
-| `FP8` | float8_e4m3fn, scaled (ComfyUI scaled-fp8 format) | Python | Per-layer `weight_scale` via ComfyUI convention |
-| `FP8_MIXED` | FP8 scaled, high-precision tensors stay F32 | Python | Aggressive 8-bit quantization with protection |
-| `NVFP4` | Nvidia 4-bit blockscaled (16-element blocks) | Python | Per-block + global scale, 16-block format |
-| `NVFP4_MIXED` | NVFP4, high-precision tensors stay F32 | Python | Fine-grained 4-bit with critical-layer fallback |
+| `INT8` | int8_tensorwise, ConvRot-rotated where possible (ComfyUI convention) | Python | Per-layer `weight_scale`; weight-only quantization, no runtime activation quant |
+| `INT8_MIXED` | INT8/ConvRot, high-precision tensors stay F32 | Python | Aggressive 8-bit quantization with protection |
 
-**Why these formats:** FP8 and NVFP4 use ComfyUI's established scaled quantization
-conventions (see `comfy/quant_ops.py` in `city96/ComfyUI-GGUF`). ComfyUI has no
-loader for unscaled/generic FP4 formats, so bare 4-bit output would produce files
-nothing can load — only the explicitly scaled variants are included.
+**Why INT8 and not FP8/NVFP4:** ComfyUI's native FP8/NVFP4 formats dynamically
+quantize *activations* too at inference time (`QUANT_ALGOS["quantize_input"]`
+defaults `True`), through a runtime path with a confirmed architecture-dependent
+bug (Comfy-Org/ComfyUI#14595) that produced visibly wrong output (black bars,
+wrong poses/identities, full-image noise) on Lumina2/Z-Image checkpoints even
+after this tool's own on-disk data was verified byte-correct. `int8_tensorwise`
+is one of only two `QUANT_ALGOS` entries ComfyUI marks `"quantize_input": False`
+— weight-only quantization, activations always stay full precision, avoiding
+that runtime path entirely. See
+[docs/issues_analysis.md](docs/issues_analysis.md) #15. The FP8/NVFP4
+implementations (`safetensors_quant_fp8.py`/`safetensors_quant_nvfp4.py`)
+remain in the codebase and are still used by the separate text-encoder
+conversion path below, which hasn't shown this issue.
 
 ## Text-Encoder Conversion
 

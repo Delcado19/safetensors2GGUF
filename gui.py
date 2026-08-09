@@ -1088,10 +1088,15 @@ def build_app() -> gr.Blocks:
             with gr.Tab("Convert → Safetensors"):
                 gr.Markdown(
                     "Convert a **Safetensors / CKPT** model checkpoint to a quantized "
-                    "**Safetensors** file — no GGUF, no llama-quantize.  FP8 uses "
-                    "ComfyUI's `scaled_fp8` convention (per-layer `weight_scale`); "
-                    "NVFP4 uses Nvidia's 16-block scaled format — both load natively "
-                    "in ComfyUI without the GGUF loader node."
+                    "**Safetensors** file — no GGUF, no llama-quantize. INT8 uses "
+                    "ComfyUI's `int8_tensorwise` convention (per-layer `weight_scale`), "
+                    "rotating each weight with a block-Hadamard transform (ConvRot) "
+                    "before quantizing where the input dimension allows it — loads "
+                    "natively in ComfyUI without the GGUF loader node. FP8/NVFP4 are "
+                    "not offered here: ComfyUI dynamically quantizes *activations* too "
+                    "for those formats, through a path with a confirmed "
+                    "architecture-dependent bug (Comfy-Org/ComfyUI#14595) — INT8 only "
+                    "quantizes weights, sidestepping it (docs/issues_analysis.md #15)."
                 )
                 with gr.Column(elem_classes=["card"]):
                     with gr.Row(equal_height=False):
@@ -1114,10 +1119,10 @@ def build_app() -> gr.Blocks:
                             browse_st_dst_btn = gr.Button("Browse", size="sm")
                     st_format_dropdown = gr.Dropdown(
                         choices=SAFETENSORS_DTYPE_CHOICES,
-                        # Default to the mixed variant, not plain "FP8": mixed
+                        # Default to the mixed variant, not plain "INT8": mixed
                         # keeps hiprec tensors at F32 for extra safety margin,
                         # and is the recommended default (review finding #2).
-                        value="FP8_MIXED",
+                        value="INT8_MIXED",
                         label="Output format",
                     )
                     overwrite_st = gr.Checkbox(label="Overwrite existing output", value=False)

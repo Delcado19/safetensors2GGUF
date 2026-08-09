@@ -15,13 +15,23 @@ import torch
 from models.architectures import QUANTIZATION_THRESHOLD
 
 # Ordered choices for the GUI dropdown: (display label, key)
+#
+# FP8/NVFP4 (scaled float8_e4m3fn, NVFP4 blockscaled) are deliberately not
+# offered here even though safetensors_quant_fp8.py/safetensors_quant_nvfp4.py
+# still implement them correctly (verified byte-exact against ComfyUI's own
+# kernels, docs/issues_analysis.md #10-#13). The remaining image corruption on
+# Lumina2/Z-Image traces to QUANT_ALGOS["float8_e4m3fn"/"nvfp4"]["quantize_input"]
+# defaulting True in ComfyUI itself — both formats dynamically quantize
+# *activations* at inference time through a path with a confirmed
+# architecture-dependent shape bug (Comfy-Org/ComfyUI#14595), not to anything
+# our conversion controls. int8_tensorwise sets quantize_input=False (weight-only
+# quantization, activations always full precision), sidestepping that path
+# entirely — see docs/issues_analysis.md #15.
 SAFETENSORS_DTYPE_CHOICES: list[tuple[str, str]] = [
-    ("F16       — Half precision",                                    "F16"),
-    ("F16 mixed — Half precision, hiprec tensors stay F32",            "F16_MIXED"),
-    ("FP8       — float8_e4m3fn, scaled (ComfyUI scaled-fp8 format)",  "FP8"),
-    ("FP8 mixed — FP8 scaled, hiprec tensors stay F32",                "FP8_MIXED"),
-    ("NVFP4     — Nvidia 4-bit blockscaled (16-elem blocks)",          "NVFP4"),
-    ("NVFP4 mixed — NVFP4, hiprec tensors stay F32",                   "NVFP4_MIXED"),
+    ("F16       — Half precision",                                       "F16"),
+    ("F16 mixed — Half precision, hiprec tensors stay F32",               "F16_MIXED"),
+    ("INT8      — Tensor-wise INT8, ConvRot-rotated where possible",      "INT8"),
+    ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32",                "INT8_MIXED"),
 ]
 
 def layer_key(key: str) -> str:
@@ -40,11 +50,12 @@ def layer_key(key: str) -> str:
     return key[: -len(".weight")] if key.endswith(".weight") else key
 
 
-_MIXED_KEYS = {"F16_MIXED", "FP8_MIXED", "NVFP4_MIXED"}
+_MIXED_KEYS = {"F16_MIXED", "FP8_MIXED", "NVFP4_MIXED", "INT8_MIXED"}
 _BASE_KEY = {
     "F16": "F16", "F16_MIXED": "F16",
     "FP8": "FP8", "FP8_MIXED": "FP8",
     "NVFP4": "NVFP4", "NVFP4_MIXED": "NVFP4",
+    "INT8": "INT8", "INT8_MIXED": "INT8",
 }
 
 
@@ -77,7 +88,19 @@ def quantize_tensor_st(
     mixed = target_key in _MIXED_KEYS
 
     if mixed and is_hiprec_st(key, data, model_arch, old_dtype):
-        return {key: data.to(torch.float32)}
+        # Keep the tensor's ORIGINAL dtype, not a forced F32 upcast: is_hiprec_st
+        # only ever returns True when old_dtype is already float32 or bfloat16
+        # (its own gate), so this is a no-op for float32 sources but avoids
+        # doubling every bfloat16 hiprec tensor's on-disk size for zero
+        # precision benefit — ComfyUI casts every loaded weight to its own
+        # compute_dtype regardless of what's on disk, so storing bf16 as F32
+        # here buys nothing at inference time. Previously invisible because
+        # `keys_hiprec` only covered a handful of small tensors per model; once
+        # it grew to cover a large fraction of a model (Lumina2's attention +
+        # modulation protection, docs/issues_analysis.md #15) the forced F32
+        # upcast made INT8_MIXED output *larger* than the unquantized bf16
+        # source — defeating the point of quantizing at all.
+        return {key: data.to(old_dtype)}
 
     if base == "F16":
         return {key: data.to(torch.float16)}
@@ -122,5 +145,27 @@ def quantize_tensor_st(
             # (review finding #1). No on_log hook exists at this call depth,
             # so this fallback is silent by design.
             return {key: data.to(torch.float16)}
+
+    if base == "INT8":
+        from safetensors_quant_int8 import quantize_int8_convrot, quantize_int8_tensorwise
+
+        # Shape-safety, not precision — same rationale as the NVFP4 branch
+        # above: tensors ComfyUI reads raw (pre-dequant) to infer architecture
+        # hyperparameters must never change on-disk shape.
+        if any(x in key for x in getattr(model_arch, "keys_shape_critical", [])):
+            return {key: data.to(torch.float16)}
+
+        if data.dim() != 2:
+            # ConvRot's block-Hadamard rotation only makes sense on a 2D
+            # [out_features, in_features] weight; plain tensor-wise INT8 has
+            # no such restriction (single scalar scale over the whole tensor).
+            return quantize_int8_tensorwise(data, key)
+
+        try:
+            return quantize_int8_convrot(data, key)
+        except ValueError:
+            # in_features not a multiple of CONVROT_GROUP_SIZE (256) — fall
+            # back to plain (unrotated) tensor-wise INT8 for this one tensor.
+            return quantize_int8_tensorwise(data, key)
 
     raise ValueError(f"Unknown target_key: {target_key!r}")

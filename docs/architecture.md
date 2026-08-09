@@ -163,40 +163,56 @@ convert_to_safetensors() in convert_safetensors.py
     │
     ▼
 quantize_tensor_st() in safetensors_quant.py       (per tensor)
-    │  - target_key one of F16 / F16_MIXED / FP8 / FP8_MIXED / NVFP4 / NVFP4_MIXED
+    │  - target_key one of F16 / F16_MIXED / INT8 / INT8_MIXED (GUI-selectable;
+    │      FP8/FP8_MIXED/NVFP4/NVFP4_MIXED still exist and are still correct,
+    │      but are no longer offered — see "Why INT8, not FP8/NVFP4" below)
     │  - *_MIXED: keys_hiprec / 1D / ≤1024-elem tensors stay F32 — mirrors
     │      convert.py's _quant_type_for exactly, one mixed-precision rule
     │      shared by both output pipelines, not reinvented per format
-    │  - FP8/NVFP4 (both mixed and non-mixed): 1D tensors (biases, norm
-    │      weights) always stay F32 regardless of the mixed flag — a
-    │      per-layer weight_scale/nvfp4 scale on a 1D tensor has no consumer
-    │      in ComfyUI's scaled-quant loader and would silently load back
-    │      wrong by up to ~448x
-    │  - FP8 → safetensors_quant_fp8.quantize_fp8_scaled(): float8_e4m3fn +
-    │      per-layer float32 weight_scale (ComfyUI scaled_fp8 convention)
-    │  - NVFP4 → safetensors_quant_nvfp4.quantize_nvfp4(): uint8-packed
-    │      16-elem-block E2M1 + per-block float8_e4m3fn weight_scale +
-    │      global float32 weight_scale_2 (ComfyUI nvfp4 convention);
-    │      tensors whose last dim isn't a multiple of 16 (e.g. 3x3 conv
-    │      kernels) can't be block-packed — quantize_tensor_st catches that
-    │      ValueError and falls back to a plain F16 write for that tensor
-    │      instead of aborting the whole conversion
+    │  - INT8 (both mixed and non-mixed): 1D tensors (biases, norm weights)
+    │      always stay F32 regardless of the mixed flag — a per-layer
+    │      weight_scale on a 1D tensor has no consumer in ComfyUI's
+    │      scaled-quant loader and would silently load back wrong
+    │  - INT8 → safetensors_quant_int8.quantize_int8_convrot() when the
+    │      tensor is 2D and in_features % 256 == 0: Hadamard-rotates the
+    │      weight in 256-wide blocks, then quantizes row-wise (int8 +
+    │      per-row float32 weight_scale); otherwise
+    │      quantize_int8_tensorwise(): plain int8 + a single scalar
+    │      weight_scale (ComfyUI int8_tensorwise convention)
     │
     ▼
 save_file() with _quantization_metadata
-    │  - Per-layer {"format": "float8_e4m3fn" | "nvfp4"} JSON, written only
-    │      for layers that actually produced scale-tensor siblings
+    │  - Per-layer {"format": "int8_tensorwise", "convrot": true,
+    │      "convrot_groupsize": 256} JSON (convrot fields only present when
+    │      that tensor actually took the ConvRot path — detected from
+    │      weight_scale's shape: scalar = plain, per-row = convrot), written
+    │      only for layers that actually produced scale-tensor siblings
     │
     ▼
 Output file (.safetensors)
 ```
 
-Format references (verified during planning against `city96/ComfyUI-GGUF`'s
-`comfy/quant_ops.py` `QUANT_ALGOS` registry, so ComfyUI can actually load the
-output): scaled FP8 uses a plain per-layer `weight_scale` float32 scalar;
-NVFP4 uses the TensorRT-Model-Optimizer-style 16-element block scale plus a
-global scale, matching ComfyUI's native `nvfp4` loader. There is intentionally
-no plain/generic FP4 mode — ComfyUI has no loader for it.
+Format reference (verified against `Comfy-Org/ComfyUI`'s `comfy/quant_ops.py`
+`QUANT_ALGOS` registry and `Comfy-Org/comfy-kitchen`'s
+`tensor/int8.py`/`tensor/int8_utils.py` source, so ComfyUI can actually load
+the output): `int8_tensorwise` uses a plain per-layer `weight_scale` float32
+scalar (or, with ConvRot, a per-row scale plus the block-Hadamard weight
+rotation `comfy_kitchen`'s kernel un-rotates on load), matching ComfyUI's
+native `TensorWiseINT8Layout` loader.
+
+**Why INT8, not FP8/NVFP4:** `safetensors_quant_fp8.py`/`safetensors_quant_nvfp4.py`
+implement ComfyUI's scaled-FP8/NVFP4 conventions correctly (byte-verified
+against ComfyUI's own kernels, `docs/issues_analysis.md` #10-#13) but are no
+longer offered in `SAFETENSORS_DTYPE_CHOICES`: ComfyUI's `QUANT_ALGOS["float8_e4m3fn"]`/
+`["nvfp4"]` leave `"quantize_input"` at its `True` default, so ComfyUI
+dynamically quantizes *activations* too at inference time — a runtime path
+with a confirmed architecture-dependent bug (Comfy-Org/ComfyUI#14595) that
+produced visibly wrong output (black bars, mirrored/wrong poses, wrong
+identities, full-image noise) on Lumina2/Z-Image checkpoints even after this
+tool's on-disk weight data was verified byte-correct. `int8_tensorwise` is one
+of only two `QUANT_ALGOS` entries marked `"quantize_input": False` — weight-only
+quantization, avoiding that path entirely (much closer to GGUF's
+dequantize-then-standard-matmul robustness). See `docs/issues_analysis.md` #15.
 
 ## Text-Encoder Conversion Pipeline
 

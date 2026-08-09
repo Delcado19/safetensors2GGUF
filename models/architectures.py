@@ -50,6 +50,17 @@ class ModelFlux(ModelTemplate):
         ("double_blocks.0.img_attn.proj.weight",),
     ]
     keys_banned = ["transformer_blocks.0.attn.norm_added_k.weight"]
+    # Matches tritant/ComfyUI_Kitchen_nvfp4_Converter's published Flux.1/Flux.2
+    # blacklist verbatim (a community comfy_kitchen-based converter, shared
+    # across their Flux.1-dev/Flux.1-Fill/Flux.2-dev/Flux.2-Klein-9b/Chroma
+    # profiles) — embedders, guidance/vector/time conditioning, the AdaLN
+    # modulation MLPs, and final_layer stay unquantized in *_MIXED modes.
+    # docs/issues_analysis.md #15.
+    keys_hiprec = [
+        "txt_attn", "img_in", "txt_in", "time_in", "vector_in", "guidance_in",
+        "final_layer", "class_embedding", "single_stream_modulation",
+        "double_stream_modulation_img", "double_stream_modulation_txt",
+    ]
     # ComfyUI's model_detection.py infers in_channels from img_in.weight.shape[1]
     keys_shape_critical = ["img_in.weight"]
 
@@ -98,7 +109,17 @@ class CosmosPredict2(ModelTemplate):
             "blocks.0.adaln_modulation_cross_attn.1.weight",
         )
     ]
-    keys_hiprec = ["pos_embedder"]
+    # pos_embedder was already protected; llm_adapter/final_layer/proj_out/
+    # x_embedder/t_embedder/context_embedder match tritant/
+    # ComfyUI_Kitchen_nvfp4_Converter's published "Anima" blacklist (Anima is
+    # a cosmos_predict2-family checkpoint, same tensor naming convention —
+    # also confirmed by Comfy-Org/comfy-quants' anima.md, which keeps the
+    # entire first transformer block plus embedders/final_layer/llm_adapter
+    # unquantized). docs/issues_analysis.md #15.
+    keys_hiprec = [
+        "pos_embedder", "llm_adapter", "final_layer", "proj_out",
+        "x_embedder", "t_embedder", "context_embedder",
+    ]
     keys_ignore = ["_extra_state", "accum_"]
     # ComfyUI's model_detection.py infers in_channels/model_channels from
     # x_embedder.proj.1.weight.shape[1]/.shape[0] (a genuine nn.Linear inside the
@@ -127,6 +148,11 @@ class ModelQwenImage(ModelTemplate):
             "transformer_blocks.0.img_mlp.net.0.proj.weight",
         )
     ]
+    # Union of tritant/ComfyUI_Kitchen_nvfp4_Converter's published Qwen-Image-
+    # Edit-2511 and Qwen-Image-2512 blacklists — embedders, time-text
+    # conditioning, the output norm/projection and the image AdaLN modulation
+    # stay unquantized in *_MIXED modes. docs/issues_analysis.md #15.
+    keys_hiprec = ["img_in", "txt_in", "time_text_embed", "norm_out", "proj_out", "img_mod.1"]
     # ComfyUI's model_detection.py infers in_channels from img_in.weight.shape[1]
     # (a Linear layer, same convention as Flux's img_in.weight)
     keys_shape_critical = ["img_in.weight"]
@@ -172,8 +198,10 @@ class ModelWan(ModelHyVid):
             "head.modulation",
         )
     ]
-    # nn.Parameter — cannot load from BF16 source
-    keys_hiprec = [".modulation"]
+    # nn.Parameter — cannot load from BF16 source. text_embedding/time_embedding/
+    # time_projection/head match tritant/ComfyUI_Kitchen_nvfp4_Converter's
+    # published Wan2.2 blacklist. docs/issues_analysis.md #15.
+    keys_hiprec = [".modulation", "text_embedding", "time_embedding", "time_projection", "head"]
     # ComfyUI's model_detection.py infers dim from head.modulation.shape[-1] — a 3D
     # nn.Parameter (1, 2, dim), NOT 1D, so the unconditional 1D-skip doesn't cover it.
     keys_shape_critical = ["head.modulation"]
@@ -238,8 +266,28 @@ class ModelLumina2(ModelTemplate):
     keys_detect = [
         ("cap_embedder.1.weight", "context_refiner.0.attention.qkv.weight")
     ]
-    # nn.Parameter pads — BF16 causes size-doubling on load (Issue #419)
-    keys_hiprec = ["x_pad_token", "cap_pad_token"]
+    # nn.Parameter pads — BF16 causes size-doubling on load (Issue #419).
+    # The rest of this list matches tritant/ComfyUI_Kitchen_nvfp4_Converter's
+    # published "Z-Image-Base" per-architecture blacklist verbatim (a
+    # community tool built directly on comfy_kitchen for this exact model),
+    # cross-checked against real tensor names in a live checkpoint: attention
+    # (all sublayers, not just qkv/out — also q_norm/k_norm etc.),
+    # adaLN_modulation (the per-block scale/shift MLPs — confirmed by this
+    # project's own per-tensor error audit as among the highest-error layers),
+    # final_layer, and — the gap that was still open after #15's attention+
+    # modulation fix stopped short of matching this list — the embedder/
+    # refiner submodules that build the initial noise/caption representation
+    # before the main transformer blocks even run: cap_embedder, x_embedder,
+    # t_embedder, noise_refiner, context_refiner. "norm" isn't listed
+    # separately here since norm weights are 1D and already covered
+    # unconditionally by is_hiprec_st's n_dims==1 rule above.
+    # docs/issues_analysis.md #15.
+    keys_hiprec = [
+        "x_pad_token", "cap_pad_token",
+        "attention", "adaLN_modulation", "final_layer",
+        "cap_embedder", "x_embedder", "t_embedder",
+        "noise_refiner", "context_refiner",
+    ]
     # ComfyUI NextDiT expects shape [1, D]; older checkpoints store them as [D]
     keys_unsqueeze = ["x_pad_token", "cap_pad_token"]
     # ComfyUI's model_detection.py infers cap_feat_dim from cap_embedder.1.weight.shape[1].

@@ -17,6 +17,7 @@ from safetensors.torch import save_file
 from convert import load_state_dict
 from models.architectures import detect_arch
 from safetensors_quant import layer_key, quantize_tensor_st
+from safetensors_quant_int8 import CONVROT_GROUP_SIZE
 
 # Float8 dtypes — resolved once at import time; empty tuple on older PyTorch builds.
 _FLOAT8_DTYPES: tuple = tuple(
@@ -30,6 +31,7 @@ _FLOAT8_DTYPES: tuple = tuple(
 _TARGET_TO_QUANT_FORMAT = {
     "FP8": "float8_e4m3fn", "FP8_MIXED": "float8_e4m3fn",
     "NVFP4": "nvfp4", "NVFP4_MIXED": "nvfp4",
+    "INT8": "int8_tensorwise", "INT8_MIXED": "int8_tensorwise",
 }
 
 # int8/uint8 only — NOT float8: an isolated float8 weight (no .comfy_quant
@@ -163,7 +165,20 @@ def convert_to_safetensors(
             # trailing "weight") — must match the scale-tensor naming in
             # safetensors_quant.layer_key(), or the sidecar never lines up
             # with the tensor ComfyUI's loader is inspecting.
-            layer_formats[layer_key(key)] = {"format": quant_format}
+            layer_conf: dict = {"format": quant_format}
+            if quant_format == "int8_tensorwise":
+                # quantize_tensor_st silently falls back per-tensor between
+                # ConvRot (per-row weight_scale, ndim>1) and plain tensor-wise
+                # (scalar weight_scale) depending on in_features divisibility
+                # — the scale tensor's own shape is the single source of
+                # truth for which one actually happened for this layer, so
+                # read it back rather than threading a second return value
+                # through quantize_tensor_st just for this.
+                scale_t = quantized.get(f"{layer_key(key)}.weight_scale")
+                if scale_t is not None and scale_t.numel() > 1:
+                    layer_conf["convrot"] = True
+                    layer_conf["convrot_groupsize"] = CONVROT_GROUP_SIZE
+            layer_formats[layer_key(key)] = layer_conf
 
     metadata = {"comfy.gguf_source_arch": model_arch.arch}
     if layer_formats:

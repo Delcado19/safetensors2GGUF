@@ -13,6 +13,71 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - `convert_text_encoder_any()` is the new single dispatcher `gui.py`'s `run_te_convert()` calls, branching on the selected format.
 
 ### Fix
+- **FP8_MIXED/NVFP4_MIXED diffusion-model output remained visibly wrong (black bars,
+  mirrored composition, wrong poses/identities on FP8; full-image noise on NVFP4) even
+  after fixing every on-disk data bug in this tool (see the four entries below and
+  `docs/issues_analysis.md` #10-#14)** — root cause traced to ComfyUI itself, not the
+  file this tool writes. A full weight audit proved the FP8_MIXED file's data 100%
+  correct; forcing `full_precision_matrix_mult: true` removed the black bar but not the
+  pose/identity drift; protecting `attention.qkv`/`attention.out` via
+  `ModelLumina2.keys_hiprec` (confirmed to cover a large fraction of the model's
+  parameters, by output file size) changed nothing either. Reading ComfyUI's own
+  `comfy/quant_ops.py` `QUANT_ALGOS` registry showed `float8_e4m3fn`/`nvfp4` dynamically
+  quantize *activations* at inference time (unlike GGUF, which always dequantizes
+  weights to full precision before a standard matmul) through a path with a confirmed
+  architecture-dependent bug (Comfy-Org/ComfyUI#14595, filed against a similarly
+  new/custom DiT architecture). `int8_tensorwise`/`convrot_w4a4` are the only formats
+  ComfyUI marks `"quantize_input": False` — weight-only quantization, sidestepping that
+  runtime path entirely. Added `safetensors_quant_int8.py` implementing
+  `int8_tensorwise` (single tensor-wise scale, or — where `in_features % 256 == 0` — an
+  offline block-Hadamard rotation (ConvRot) plus per-row scale, both algorithms and the
+  `.comfy_quant` metadata schema matched against `Comfy-Org/comfy-kitchen`'s and
+  `Comfy-Org/ComfyUI`'s published source). Replaced `FP8`/`FP8_MIXED`/`NVFP4`/`NVFP4_MIXED`
+  with `INT8`/`INT8_MIXED` in `SAFETENSORS_DTYPE_CHOICES` (the diffusion-model Convert →
+  Safetensors GUI tab) — the FP8/NVFP4 implementations stay in the codebase (still
+  correct for what they claim to do) but are no longer GUI-selectable given ComfyUI's
+  known-buggy consumption path for this architecture family. Text-encoder FP8/NVFP4
+  output (a separate registry, `text_encoder_convert.py`) is unaffected/unchanged. See
+  `docs/issues_analysis.md` #15.
+- **`*_MIXED` safetensors output could end up *larger* than the unquantized bf16 source**:
+  `quantize_tensor_st()`'s mixed-hiprec branch force-upcast every protected tensor to
+  `torch.float32` regardless of source dtype — harmless while `keys_hiprec` covered only a
+  few small tensors, but once extended for Lumina2 (attention + `adaLN_modulation` +
+  `final_layer`, see above) this doubled the on-disk size of a large fraction of the model's
+  bf16-sourced weights for zero precision benefit (ComfyUI casts every loaded weight to its
+  own `compute_dtype` regardless of on-disk dtype). Concretely: `INT8_MIXED` output for a
+  12.31 GB source came out at 12.57 GB. Fixed by casting hiprec tensors to their original
+  dtype (`data.to(old_dtype)`) instead of a forced F32 — same checkpoint now produces an
+  8.30 GB file. Added `test_mixed_hiprec_tensor_keeps_original_dtype_not_forced_f32`. See
+  `docs/issues_analysis.md` #15.
+- **`ModelLumina2.keys_hiprec` was still narrower than the established community
+  consensus for this exact model**: even after protecting attention/modulation/final_layer,
+  end-to-end testing (same prompt/seed vs. the unconverted original) showed a
+  checkpoint-independent identity/pose difference on both a fine-tune and the official
+  `zImageBase_base` checkpoint. `tritant/ComfyUI_Kitchen_nvfp4_Converter`'s published
+  `"Z-Image-Base"` blacklist additionally protects `cap_embedder`/`x_embedder`/`t_embedder`/
+  `noise_refiner`/`context_refiner` — the submodules that build the initial noise/caption
+  representation before the main transformer runs. Added all five (verified against real
+  tensor names in a live checkpoint first) and broadened the attention match from
+  `"attention.qkv"`/`"attention.out"` to plain `"attention"`. Output size grew from 8.30 GB
+  to 8.77 GB (still ~29% smaller than the 12.31 GB source). End-to-end verification (same
+  prompt/seed, both a fine-tune and the official checkpoint) confirmed pose/composition/
+  identity now closely match the unconverted original. See `docs/issues_analysis.md` #15.
+- **Extended `keys_hiprec` for every other architecture this project supports that
+  tritant/ComfyUI_Kitchen_nvfp4_Converter also has a published per-architecture blacklist
+  for**, since `ModelFlux` and `ModelQwenImage` had *no* `*_MIXED` protection at all and
+  `ModelWan`/`CosmosPredict2` had only one tensor each protected — the same class of risk
+  Lumina2 turned out to have, just not yet reported for these. `ModelFlux` gains
+  `img_in`/`txt_in`/`time_in`/`vector_in`/`guidance_in`/`final_layer`/`class_embedding`/
+  modulation tensors; `ModelQwenImage` gains `img_in`/`txt_in`/`time_text_embed`/
+  `norm_out`/`proj_out`/`img_mod.1`; `ModelWan` adds `text_embedding`/`time_embedding`/
+  `time_projection`/`head`; `CosmosPredict2` (the architecture Anima checkpoints use) adds
+  `llm_adapter`/`final_layer`/`proj_out`/`x_embedder`/`t_embedder`/`context_embedder`
+  (cross-checked against `Comfy-Org/comfy-quants`' own `anima.md`, which independently
+  protects the same set). Not end-to-end image-tested for these four (no checkpoints
+  available this session) — adopted on the strength of an established community tool's
+  configuration, unlike the Lumina2 fix which was verified against real renders. See
+  `docs/issues_analysis.md` #15.
 - **Non-mixed NVFP4 crashed on Lumina2's pad-token parameters**: `ModelLumina2.keys_hiprec = ["x_pad_token", "cap_pad_token"]` only protects those tensors under `*_MIXED` targets (`quantize_tensor_st()` only consults `keys_hiprec` when `mixed` is `True`). Under plain `NVFP4`, they got packed like any other 2D tensor, halving their last dimension — and since ComfyUI's `NextDiT.__init__` hardcodes these `nn.Parameter`s to a fixed shape from the detected architecture (unlike `cap_embedder.1.weight`, which corrupts an *inferred* config), the mismatch is a hard crash (`size mismatch for x_pad_token: … [1, 1920] … [1, 3840]`) rather than silently-wrong values. Fixed by adding `"x_pad_token"`/`"cap_pad_token"` to `ModelLumina2.keys_shape_critical`, which — unlike `keys_hiprec` — is checked unconditionally. Added `test_nvfp4_pad_token_falls_back_to_f16_unconditionally`. See `docs/issues_analysis.md` #14.
 - **NVFP4 output was nibble-swapped for the real ComfyUI inference kernel, even with every value/scale/layout check passing**: `comfy_kitchen`'s standalone `dequantize_nvfp4()` helper exposes a `hi_first` nibble-order parameter, but the function ComfyUI's real inference path actually calls — `scaled_mm_nvfp4()`, the fused GEMM kernel — has **no such parameter**; its convention is hardcoded to `hi_first=True` (even-indexed element in the high nibble). `safetensors_quant_nvfp4.py`'s `quantize_nvfp4()` packed the opposite way. This was invisible to every dequantize-based check in this investigation — including auditing all 413 weight tensors in a real converted file against the original checkpoint, all found byte/value-correct — because those checks all went through `dequantize_nvfp4()` (either this tool's own, self-consistent by construction, or `comfy_kitchen`'s with `hi_first` set to match). Found only by noticing `ck.scaled_mm_nvfp4`'s signature has no `hi_first` argument at all. Fixed by swapping the packing order; verified directly against `scaled_mm_nvfp4` (not `dequantize_nvfp4`): a weight quantized by this tool now matches a full `comfy_kitchen`-native ground truth matmul to within normal 4-bit×4-bit quantization noise (13.22% vs. 13.01% relative mean error). Added `test_packs_even_index_in_high_nibble_hi_first_true`, which checks a hand-computed packed byte value rather than a round trip. See `docs/issues_analysis.md` #13.
 - **Re-quantizing an already-quantized source checkpoint silently corrupted it**: some published checkpoints (e.g. ComfyUI-native `int8_tensorwise`+ConvRot releases) are already partially quantized, storing raw integer weights alongside their own pre-existing `.weight_scale`/`.comfy_quant` sidecar tensors right in the state dict. This tool had no concept of that — it iterated every tensor and re-quantized each one as an ordinary weight, including the pre-existing scale/metadata sidecars themselves (a `[rows,1]` float32 `.weight_scale` tensor looks just like a small 2D weight matrix), producing corrupted output with mis-named `_quantization_metadata` layer keys (an extra `.weight_scale` suffix, since `layer_key()` only strips a trailing `.weight`). Found by tracing a user's FP8_MIXED noise-image report: 170 of 378 layers in the output had corrupted metadata keys, all tracing back to a source checkpoint (`juggernautZ_v10ByRundiffusion.safetensors`) that turned out to already be `int8_tensorwise`-quantized — confirmed by its own embedded `_quantization_metadata`. Fixed by adding `_check_not_already_quantized()` (`convert_safetensors.py`), which raises before conversion starts if any `.comfy_quant` sidecar key is present anywhere in the state dict, or any `.weight` tensor is stored as int8/uint8 (bare float8 weights are still allowed through — an existing, deliberately-supported case, coerced to float16). Verified against both the corrupted source (raises) and a genuinely unquantized sibling file in the same directory (does not raise). See `docs/issues_analysis.md` #12.

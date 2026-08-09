@@ -30,8 +30,12 @@ class TestRegistry:
             assert isinstance(key, str) and key
 
     def test_expected_keys_present(self):
+        # FP8/NVFP4 are intentionally not offered in the GUI dropdown anymore
+        # (docs/issues_analysis.md #15) — quantize_tensor_st still supports
+        # them internally (TestQuantizeTensorFp8/TestQuantizeTensorNvfp4 below
+        # exercise that dispatch directly), they're just not user-selectable.
         keys = {k for _, k in SAFETENSORS_DTYPE_CHOICES}
-        assert keys == {"F16", "F16_MIXED", "FP8", "FP8_MIXED", "NVFP4", "NVFP4_MIXED"}
+        assert keys == {"F16", "F16_MIXED", "INT8", "INT8_MIXED"}
 
     def test_no_duplicate_keys(self):
         keys = [k for _, k in SAFETENSORS_DTYPE_CHOICES]
@@ -67,6 +71,18 @@ class TestQuantizeTensorF16:
         data = torch.randn(4, 4, dtype=torch.float32)
         out = quantize_tensor_st(data, "block.bias", ModelFlux(), "F16_MIXED")
         assert out["block.bias"].dtype == torch.float32
+
+    def test_mixed_hiprec_tensor_keeps_original_dtype_not_forced_f32(self):
+        # Regression: hiprec protection must preserve the SOURCE dtype, not
+        # force-upcast to F32. A bfloat16 source doubled in size for zero
+        # precision benefit (ComfyUI casts every loaded weight to its own
+        # compute_dtype regardless of on-disk dtype) — invisible while
+        # keys_hiprec covered only a few small tensors per model, but once it
+        # grew to cover a large fraction of a model this made *_MIXED output
+        # larger than the unquantized bf16 source (docs/issues_analysis.md #15).
+        data = torch.randn(4, 4, dtype=torch.bfloat16)
+        out = quantize_tensor_st(data, "block.bias", ModelFlux(), "F16_MIXED")
+        assert out["block.bias"].dtype == torch.bfloat16
 
     def test_f16_mixed_casts_large_tensor_f16(self):
         data = torch.randn(64, 64, dtype=torch.float32)
@@ -199,3 +215,61 @@ class TestQuantizeTensor1dNeverScaled:
         out = quantize_tensor_st(data, "block.bias", ModelFlux(), "FP8")
         assert set(out.keys()) == {"block.bias"}
         assert "block.bias.weight_scale" not in out
+
+
+class TestQuantizeTensorInt8:
+    def test_int8_convrot_applied_when_divisible(self):
+        # 512 % 256 == 0 -> ConvRot path, per-row (out_features, 1) scale.
+        data = torch.randn(8, 512, dtype=torch.float32)
+        out = quantize_tensor_st(data, "block.weight", ModelFlux(), "INT8")
+        assert set(out.keys()) == {"block.weight", "block.weight_scale"}
+        assert out["block.weight"].dtype == torch.int8
+        assert out["block.weight"].shape == (8, 512)
+        assert out["block.weight_scale"].shape == (8, 1)
+
+    def test_int8_falls_back_to_plain_tensorwise_when_not_divisible(self):
+        # 100 is not a multiple of CONVROT_GROUP_SIZE (256) -> plain path,
+        # scalar scale.
+        data = torch.randn(8, 100, dtype=torch.float32)
+        out = quantize_tensor_st(data, "block.weight", ModelFlux(), "INT8")
+        assert out["block.weight"].dtype == torch.int8
+        assert out["block.weight_scale"].numel() == 1
+
+    def test_int8_non_2d_tensor_uses_plain_tensorwise(self):
+        # ConvRot's block-Hadamard only applies to 2D [out, in] weights.
+        data = torch.randn(4, 4, 4, dtype=torch.float32)
+        out = quantize_tensor_st(data, "conv.weight", ModelFlux(), "INT8")
+        assert out["conv.weight"].dtype == torch.int8
+        assert out["conv.weight_scale"].numel() == 1
+
+    def test_int8_mixed_keeps_hiprec_tensor_f32_unscaled(self):
+        data = torch.randn(4, 4, dtype=torch.float32)
+        out = quantize_tensor_st(data, "block.bias", ModelFlux(), "INT8_MIXED")
+        assert set(out.keys()) == {"block.bias"}
+        assert out["block.bias"].dtype == torch.float32
+
+    def test_int8_1d_tensor_stays_plain_f32(self):
+        data = torch.randn(64, dtype=torch.float32)
+        out = quantize_tensor_st(data, "block.bias", ModelFlux(), "INT8")
+        assert set(out.keys()) == {"block.bias"}
+        assert out["block.bias"].dtype == torch.float32
+
+    def test_int8_shape_critical_tensor_falls_back_to_f16_unconditionally(self):
+        data = torch.randn(32, 32, dtype=torch.float32)
+        out = quantize_tensor_st(data, "cap_embedder.1.weight", ModelLumina2(), "INT8")
+        assert out["cap_embedder.1.weight"].dtype == torch.float16
+        assert out["cap_embedder.1.weight"].shape == data.shape
+
+    def test_int8_convrot_round_trips_close(self):
+        # End-to-end sanity: dequantize (unrotate + rescale) recovers the
+        # original weight within INT8-rotation-induced error.
+        from safetensors_quant_int8 import CONVROT_GROUP_SIZE, _build_hadamard, _rotate_weight
+
+        torch.manual_seed(0)
+        data = torch.randn(16, 512, dtype=torch.float32)
+        out = quantize_tensor_st(data, "block.weight", ModelFlux(), "INT8")
+        q, scale = out["block.weight"], out["block.weight_scale"]
+
+        h = _build_hadamard(CONVROT_GROUP_SIZE, device=q.device, dtype=torch.float32)
+        recon = _rotate_weight(q.float() * scale, h, CONVROT_GROUP_SIZE)
+        assert torch.allclose(recon, data, atol=0.05)
