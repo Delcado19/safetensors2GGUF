@@ -390,3 +390,33 @@ packed byte value directly rather than relying on a self-consistent round trip.
 `hi_first`) on one code path but not another, verify against the path with *no*
 parameter — that's the one whose convention is actually load-bearing, and the
 configurable path can silently mask a mismatch by being told what answer to give.
+
+## 14. Non-mixed NVFP4 crashed on Lumina2's pad-token parameters — keys_hiprec doesn't protect outside *_MIXED mode
+
+**Error message:**
+```
+RuntimeError: Error(s) in loading state_dict for NextDiT:
+    size mismatch for x_pad_token: copying a param with shape torch.Size([1, 1920])
+    from checkpoint, the shape in current model is torch.Size([1, 3840]).
+    size mismatch for cap_pad_token: copying a param with shape torch.Size([1, 1920])
+    from checkpoint, the shape in current model is torch.Size([1, 3840]).
+```
+
+**Affected models:** Lumina2/Z-Image checkpoints converted with the plain (non-`_MIXED`)
+`NVFP4` safetensors target.
+
+**Cause:** `ModelLumina2.keys_hiprec = ["x_pad_token", "cap_pad_token"]` already existed
+(for an unrelated bf16 size-doubling issue, #2 above) and does keep these tensors
+unquantized — but only under `*_MIXED` targets, since `quantize_tensor_st()` only
+consults `keys_hiprec` when `mixed` is `True`. Under plain `NVFP4`, these tensors were
+packed like any other 2D weight, halving their last dimension (2 values/byte). Unlike
+`cap_embedder.1.weight` (#9), which corrupts ComfyUI's *inferred* architecture config,
+`x_pad_token`/`cap_pad_token` are `nn.Parameter`s that ComfyUI's `NextDiT.__init__`
+allocates with a shape hardcoded to the (correctly-detected) `dim` — so the mismatch
+surfaces as `load_state_dict`'s own strict shape check failing outright, a hard crash
+rather than silently-wrong values.
+
+**Fix:** Added `"x_pad_token"` and `"cap_pad_token"` to `ModelLumina2.keys_shape_critical`
+alongside `cap_embedder.1.weight` — that list is checked unconditionally (not gated by
+`*_MIXED`), which is exactly the protection these two tensors were missing. Added
+`test_nvfp4_pad_token_falls_back_to_f16_unconditionally`.

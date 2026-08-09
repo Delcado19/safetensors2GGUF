@@ -242,8 +242,14 @@ class ModelLumina2(ModelTemplate):
     keys_hiprec = ["x_pad_token", "cap_pad_token"]
     # ComfyUI NextDiT expects shape [1, D]; older checkpoints store them as [D]
     keys_unsqueeze = ["x_pad_token", "cap_pad_token"]
-    # ComfyUI's model_detection.py infers cap_feat_dim from cap_embedder.1.weight.shape[1]
-    keys_shape_critical = ["cap_embedder.1.weight"]
+    # ComfyUI's model_detection.py infers cap_feat_dim from cap_embedder.1.weight.shape[1].
+    # x_pad_token/cap_pad_token are also here (not just keys_hiprec): keys_hiprec only
+    # protects tensors in *_MIXED mode, but NextDiT's __init__ hardcodes these
+    # nn.Parameters to a fixed [1, dim] shape from the detected architecture — NVFP4
+    # halving their last dim (2 values/byte) makes load_state_dict's strict shape check
+    # fail outright even in non-mixed NVFP4 mode (confirmed: RuntimeError size mismatch
+    # [1, 1920] vs [1, 3840], see docs/issues_analysis.md #14).
+    keys_shape_critical = ["cap_embedder.1.weight", "x_pad_token", "cap_pad_token"]
 
 
 arch_list = [

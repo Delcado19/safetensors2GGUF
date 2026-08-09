@@ -127,6 +127,19 @@ class TestQuantizeTensorNvfp4:
         assert out["cap_embedder.1.weight"].dtype == torch.float16
         assert out["cap_embedder.1.weight"].shape == data.shape
 
+    def test_nvfp4_pad_token_falls_back_to_f16_unconditionally(self):
+        # Regression: x_pad_token/cap_pad_token are nn.Parameters NextDiT's
+        # __init__ hardcodes to a fixed [1, dim] shape from the detected
+        # architecture. keys_hiprec only protects them in *_MIXED mode; in
+        # plain non-mixed NVFP4 they were packed like any other 2D tensor,
+        # halving the last dim and making load_state_dict's strict shape
+        # check fail outright (docs/issues_analysis.md #14).
+        data = torch.randn(1, 3840, dtype=torch.float32)
+        out = quantize_tensor_st(data, "x_pad_token", ModelLumina2(), "NVFP4")
+        assert set(out.keys()) == {"x_pad_token"}
+        assert out["x_pad_token"].dtype == torch.float16
+        assert out["x_pad_token"].shape == data.shape
+
     def test_nvfp4_non_shape_critical_tensor_still_packs(self):
         # Sanity: keys_shape_critical must not blanket-disable NVFP4 for an
         # architecture — only the specific flagged tensor(s).
