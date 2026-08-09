@@ -71,12 +71,16 @@ def _swizzle_block_scale(scale: torch.Tensor) -> torch.Tensor:
     Z-Image's final_layer.linear.weight) or, when the shape happens to match,
     silently loads wrong scale values (garbage output, no crash).
     """
+    # Fancy-indexing a float8_e4m3fn tensor isn't implemented on CPU
+    # ("index_cpu not implemented for 'Float8_e4m3fn'") — gather/scatter via
+    # a uint8 view instead, which is bit-identical for a pure permutation.
     m, k = scale.shape
     m_padded, k_padded = _round_up(m, 128), _round_up(k, 4)
-    padded = torch.zeros(m_padded * k_padded, dtype=scale.dtype, device=scale.device)
-    padded.view(m_padded, k_padded)[:m, :k] = scale
+    padded = torch.zeros(m_padded * k_padded, dtype=torch.uint8, device=scale.device)
+    padded.view(m_padded, k_padded)[:m, :k] = scale.view(torch.uint8)
     idx_map = _swizzle_index_map(m_padded, k_padded, scale.device)
-    return padded[idx_map.reshape(-1)].reshape(m_padded, k_padded)
+    swizzled = padded[idx_map.reshape(-1)].reshape(m_padded, k_padded)
+    return swizzled.view(scale.dtype)
 
 
 def _unswizzle_block_scale(swizzled: torch.Tensor, m: int, k: int) -> torch.Tensor:
@@ -86,9 +90,9 @@ def _unswizzle_block_scale(swizzled: torch.Tensor, m: int, k: int) -> torch.Tens
     independently-wrong "inverse")."""
     m_padded, k_padded = swizzled.shape
     idx_map = _swizzle_index_map(m_padded, k_padded, swizzled.device)
-    flat = torch.empty(m_padded * k_padded, dtype=swizzled.dtype, device=swizzled.device)
-    flat[idx_map.reshape(-1)] = swizzled.reshape(-1)
-    return flat.reshape(m_padded, k_padded)[:m, :k]
+    flat = torch.empty(m_padded * k_padded, dtype=torch.uint8, device=swizzled.device)
+    flat[idx_map.reshape(-1)] = swizzled.reshape(-1).view(torch.uint8)
+    return flat.reshape(m_padded, k_padded)[:m, :k].view(swizzled.dtype)
 
 
 def quantize_nvfp4(data: torch.Tensor, key: str) -> dict[str, torch.Tensor]:

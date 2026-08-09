@@ -283,3 +283,58 @@ Verified against `comfy_kitchen`'s own reference quantize/dequantize on a random
 256x128 tensor: mean reconstruction error 0.2857 (ours) vs. 0.2856 (ComfyUI's own),
 effectively identical. Added `test_kvalues_are_standard_undoubled_e2m1_magnitudes` and
 `test_block_of_exact_table_values_round_trips_exactly` regression tests.
+
+**Note on #9/#10/#11 vs. the user's actual reported symptoms:** the shape-crash,
+swizzle-layout, and table-doubling bugs above are all real and independently verified
+against `comfy_kitchen`'s own reference implementation on clean synthetic tensors — that
+evidence stands regardless of the checkpoint used to discover them. But the *specific*
+noise-image reports that prompted #10 and #11 turned out to come from a checkpoint that
+was **also** independently corrupted by #12 below (its source file was already
+quantized). Both bug classes were real and both needed fixing; #12 doesn't retract #9-11
+— only that the specific noise images reported can't be attributed to #10/#11 in
+isolation, since #12 was also acting on that same checkpoint. Whether a genuinely clean
+checkpoint would have shown visible noise from #10/#11 alone wasn't separately tested.
+
+## 12. Re-quantizing an already-quantized source checkpoint silently corrupted it
+
+**Symptom:** FP8_MIXED output produced a black/white QR-code-like noise pattern in
+ComfyUI. Investigation of the output file's `_quantization_metadata` showed 170 of 378
+"layers" with a corrupted name — an extra `.weight_scale` suffix (e.g.
+`context_refiner.0.attention.out.weight_scale` instead of
+`context_refiner.0.attention.out`) — while the other 208 layers had correct names.
+
+**Cause:** The source checkpoint (`juggernautZ_v10ByRundiffusion.safetensors`, believed
+by the user to be an unquantized "Original") turned out to be **itself already
+quantized**: 170 of its layers use ComfyUI's native `int8_tensorwise` format with
+ConvRot rotation (`convrot_groupsize: 64`), stored as raw `I8` weight tensors alongside
+their own pre-existing `.weight_scale` (float32) and `.comfy_quant` (uint8 JSON blob)
+sidecar tensors — confirmed by inspecting the source file directly (its own
+`_quantization_metadata` names the same 170 layers with `format: int8_tensorwise`).
+
+This tool has no concept of a partially-quantized source. `convert_to_safetensors()`
+iterates every tensor in the state dict and re-quantizes each one as if it were an
+ordinary weight — including the pre-existing `.weight_scale` tensors themselves (a
+`[rows, 1]` float32 tensor easily mistaken for a small 2D weight matrix). Since
+`layer_key()` only strips a trailing `.weight` and these sidecar keys end in
+`.weight_scale`, not `.weight`, they pass through unchanged and get used directly as a
+"layer" name when building the new `_quantization_metadata` — producing exactly the
+corrupted `<layer>.weight_scale` layer-name pattern observed. The real INT8 weight data
+also gets nonsensically re-quantized a second time (INT8 codes treated as raw magnitudes
+and re-scaled to FP8/NVFP4), and the pre-existing `.comfy_quant` metadata tensor gets
+silently corrupted by the `nan_to_num` dtype coercion applied to every tensor.
+
+**Fix:** Added `_check_not_already_quantized()` in `convert_safetensors.py`, called
+before the conversion loop. Two signals: any `.comfy_quant`-suffixed key present
+anywhere in the state dict (primary — unambiguous, what real ComfyUI-native quantized
+checkpoints always have), or any `.weight` tensor stored as `int8`/`uint8` (secondary,
+catches a checkpoint with stripped metadata but still-integer weights). Deliberately
+excludes bare `float8` weights from the second check — an isolated float8 tensor with no
+sidecar is an existing, deliberately-supported case (coerced to float16, not rejected;
+see `test_float8_input_coerced_to_float16`). Verified against both real files in this
+report's directory: raises immediately on `juggernautZ_v10ByRundiffusion.safetensors`
+(170 `.comfy_quant` sidecars found) and does not raise on `zImageBase_base.safetensors`
+(genuinely plain BF16, no metadata) — same directory, so the false-positive risk of an
+overly broad guard was checked directly, not just assumed.
+
+**Workaround:** Use a genuinely unquantized source checkpoint (e.g. `zImageBase_base`,
+not `juggernautZ_v10ByRundiffusion`, in the case that surfaced this).

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 import torch
 from safetensors.torch import load_file, save_file
 
@@ -103,3 +104,40 @@ class TestConvertToSafetensors:
         dst, _ = convert_to_safetensors(str(src), target_key="F16", overwrite=True)
         out = load_file(dst)
         assert out["double_blocks.0.img_attn.proj.weight"].dtype == torch.float16
+
+
+class TestAlreadyQuantizedGuard:
+    """docs/issues_analysis.md #12: refuse to re-quantize a checkpoint that's
+    already quantized (e.g. ComfyUI-native int8_tensorwise+ConvRot releases),
+    rather than silently corrupting its pre-existing weight_scale/comfy_quant
+    sidecar tensors by treating them as ordinary weights."""
+
+    def test_raises_on_comfy_quant_sidecar_present(self, tmp_path):
+        src = tmp_path / "model.safetensors"
+        sd = {
+            "double_blocks.0.img_attn.proj.weight": torch.randint(
+                -128, 127, (64, 64), dtype=torch.int8
+            ),
+            "double_blocks.0.img_attn.proj.weight_scale": torch.randn(64, 1, dtype=torch.float32),
+            "double_blocks.0.img_attn.proj.comfy_quant": torch.zeros(8, dtype=torch.uint8),
+        }
+        save_file(sd, str(src))
+        with pytest.raises(ValueError, match="already quantized"):
+            convert_to_safetensors(str(src), target_key="FP8", overwrite=True)
+
+    def test_raises_on_int8_weight_without_sidecar(self, tmp_path):
+        src = tmp_path / "model.safetensors"
+        sd = {
+            "double_blocks.0.img_attn.proj.weight": torch.randint(
+                -128, 127, (64, 64), dtype=torch.int8
+            ),
+            "double_blocks.0.img_attn.proj.bias": torch.randn(64, dtype=torch.float32),
+        }
+        save_file(sd, str(src))
+        with pytest.raises(ValueError, match="already quantized"):
+            convert_to_safetensors(str(src), target_key="FP8", overwrite=True)
+
+    def test_does_not_raise_on_plain_unquantized_checkpoint(self, tmp_path):
+        src = _write_minimal_flux(tmp_path)
+        # Should not raise
+        convert_to_safetensors(str(src), target_key="FP8", overwrite=True)
