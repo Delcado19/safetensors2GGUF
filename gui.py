@@ -51,7 +51,7 @@ _active_cancel: threading.Event | None = None
 # conversion and a running safetensors conversion don't share (and stomp on)
 # the same cancel_event.
 _active_cancel_st: threading.Event | None = None
-# Separate cancel slot for the Convert Text Encoder -> GGUF tab, distinct from
+# Separate cancel slot for the Convert Text Encoder tab, distinct from
 # both _active_cancel and _active_cancel_st, so all three conversion tabs can
 # run (and be cancelled) independently without stomping on each other.
 _active_cancel_te: threading.Event | None = None
@@ -75,7 +75,7 @@ def request_cancel_st() -> str:
 
 
 def request_cancel_te() -> str:
-    """Signal the active Convert Text Encoder -> GGUF conversion to stop."""
+    """Signal the active Convert Text Encoder conversion to stop."""
     if _active_cancel_te is not None:
         _active_cancel_te.set()
         return "Cancelling…"
@@ -1152,8 +1152,8 @@ def build_app() -> gr.Blocks:
                 )
                 st_cancel_btn.click(fn=request_cancel_st, outputs=[st_status], cancels=[st_convert_event])
 
-            # ── Convert Text Encoder → GGUF ─────────────────────────────────
-            with gr.Tab("Convert Text Encoder → GGUF"):
+            # ── Convert Text Encoder ─────────────────────────────────────────
+            with gr.Tab("Convert Text Encoder"):
                 gr.Markdown(
                     "Convert a **bare single-file text-encoder checkpoint** (Qwen3, "
                     "Mistral, T5/UMT5, …) to GGUF or quantized safetensors.\n\n"

@@ -252,7 +252,7 @@ nothing can load — only the explicitly scaled variants are included.
 
 ## Text-Encoder Conversion
 
-The **Convert Text Encoder → GGUF** tab converts
+The **Convert Text Encoder** tab converts
 bare HF/Transformers text-encoder checkpoints (Qwen, T5, CLIP, Mistral variants) to
 GGUF **or** quantized safetensors. This is separate from SDXL CLIP-L/CLIP-G
 extraction and runs entirely in this tool's own Python environment — no

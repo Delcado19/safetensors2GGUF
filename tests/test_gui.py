@@ -143,7 +143,7 @@ def test_convert_safetensors_tab_present():
 
 
 def test_text_encoder_tab_present():
-    """The 'Convert Text Encoder -> GGUF' tab (Task 10) must exist."""
+    """The 'Convert Text Encoder' tab (Task 10) must exist."""
     from gui import build_app
     app = build_app()
     label_texts = [getattr(b, "label", None) for b in app.blocks.values()]

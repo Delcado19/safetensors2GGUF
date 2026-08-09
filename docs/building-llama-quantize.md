@@ -23,7 +23,7 @@ release for those.
 ## Text-encoder K-quants build automatically — you don't need this guide for them
 
 If you only want K-quants (`Q6_K`…`Q2_K`) for **text-encoder** conversion (the
-**Convert Text Encoder → GGUF** tab), you don't need to follow this guide at
+**Convert Text Encoder** tab), you don't need to follow this guide at
 all: `text_encoder_convert.ensure_plain_llama_quantize()` builds a **plain,
 unpatched** `llama-quantize` automatically the first time it's needed —
 from the same `llama.cpp` checkout already auto-cloned for
