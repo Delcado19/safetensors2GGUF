@@ -108,6 +108,27 @@ class TestQuantizeNvfp4:
         # this test guards against was off by exactly 2x, not a few percent.
         assert torch.allclose(recon, data, atol=data.abs().max().item() * 0.05)
 
+    def test_packs_even_index_in_high_nibble_hi_first_true(self):
+        # Regression guard for the "nibble-swapped" bug (docs/issues_analysis.md
+        # #13): comfy_kitchen's real inference-path matmul kernel
+        # (scaled_mm_nvfp4) has no nibble-order parameter at all — it's
+        # hardcoded to hi_first=True (even-indexed element in the HIGH
+        # nibble). A self-consistent round-trip test can't catch the wrong
+        # convention since encode/decode agreeing with each other proves
+        # nothing about matching the kernel's fixed convention — this test
+        # checks the packed byte value directly against a hand-computed
+        # expectation instead.
+        data = torch.zeros(1, 16, dtype=torch.float32)
+        data[0, 0] = 6.0   # table index 7 (max positive)
+        data[0, 1] = 0.5   # table index 1
+        # block_scale calibrates to amax=6.0 -> block_scale*scale_2 == 1.0,
+        # so values map directly to table indices without rescaling noise.
+        out = quantize_nvfp4(data, "block.weight")
+        packed_byte = out["block.weight"][0, 0].item()
+        # index 0 (value 6.0 -> table idx 7) in HIGH nibble, index 1 (value
+        # 0.5 -> table idx 1) in LOW nibble: (7 << 4) | 1 == 0x71 == 113.
+        assert packed_byte == 0x71, f"expected 0x71 (hi_first=True), got {hex(packed_byte)}"
+
     def test_scale_2_is_global_float32_scalar(self):
         data = torch.randn(4, 32, dtype=torch.float32)
         out = quantize_nvfp4(data, "block.weight")

@@ -294,6 +294,8 @@ quantized). Both bug classes were real and both needed fixing; #12 doesn't retra
 — only that the specific noise images reported can't be attributed to #10/#11 in
 isolation, since #12 was also acting on that same checkpoint. Whether a genuinely clean
 checkpoint would have shown visible noise from #10/#11 alone wasn't separately tested.
+Once #12 was fixed, a re-test from a genuinely clean checkpoint still produced noise —
+that noise is explained by #13 below (nibble order), not by #10/#11.
 
 ## 12. Re-quantizing an already-quantized source checkpoint silently corrupted it
 
@@ -338,3 +340,53 @@ overly broad guard was checked directly, not just assumed.
 
 **Workaround:** Use a genuinely unquantized source checkpoint (e.g. `zImageBase_base`,
 not `juggernautZ_v10ByRundiffusion`, in the case that surfaced this).
+
+## 13. NVFP4 output produced uniform noise even with every value/scale/layout check passing — packed nibbles were swapped for the real inference kernel
+
+**Symptom:** NVFP4_MIXED output produced full-image colored-speckle noise even after
+fixes #10-12 above, from a source checkpoint independently confirmed clean (no
+pre-existing quantization) with all 413 weight tensors verified correct in value and
+scale layout against the original and against `comfy_kitchen`'s own reference decode —
+that verification held under this tool's own (as it turned out, wrong) nibble
+convention, which is exactly why it didn't catch this bug; see Cause below.
+
+**Cause:** `comfy_kitchen`'s `dequantize_nvfp4()` (a standalone helper) accepts a
+`hi_first: bool = True` parameter controlling which half of each packed byte holds the
+even-indexed element. But the function actually used during real ComfyUI inference,
+`ck.scaled_mm_nvfp4()` (the fused GEMM kernel behind `_handle_nvfp4_linear`), **has no
+such parameter at all** — its signature is fixed, with the nibble convention hardcoded
+internally to match `hi_first=True`. This tool's `quantize_nvfp4()` packed nibbles in
+the *opposite* order (`idx[..., 0]` — the even-indexed element — in the low nibble,
+`idx[..., 1]` in the high nibble), i.e. `hi_first=False`.
+
+This bug was invisible to every prior verification in this investigation: this tool's
+own `dequantize_nvfp4()` test helper correctly decodes its own packing regardless of
+convention (self-consistent by construction), and even the direct comparison against
+`ck.dequantize_nvfp4()` "passed" because that standalone helper's `hi_first` argument
+was explicitly set to match this tool's (wrong) convention — a discriminator only
+insofar as someone thinks to test the *other* value. `scaled_mm_nvfp4`, the function
+ComfyUI actually calls, doesn't expose that knob at all, so every weight was
+nibble-swapped in real inference despite passing every dequantize-based check.
+
+**Found by:** Realizing `ck.scaled_mm_nvfp4`'s signature has no `hi_first` parameter
+(`inspect.signature(ck.scaled_mm_nvfp4)` — only `a, b, tensor_scale_a, tensor_scale_b,
+block_scale_a, block_scale_b, bias, out_dtype, alpha`) after auditing all 413 weight
+tensors in a real converted file and finding zero anomalies — ruling out every
+data-correctness explanation forced looking at the *consumption* path instead of the
+*data* itself.
+
+**Fix:** Swapped `quantize_nvfp4()`'s packing to `(idx[..., 1] | (idx[..., 0] << 4))`
+(even index in the high nibble) and `dequantize_nvfp4()`'s unpacking to match. Verified
+directly against the real `scaled_mm_nvfp4` kernel (not just `dequantize_nvfp4`): a
+weight quantized by this tool and multiplied via `scaled_mm_nvfp4` against a
+`comfy_kitchen`-natively-quantized input now matches a full `comfy_kitchen`-native
+ground truth (both operands quantized by `comfy_kitchen` itself) almost exactly —
+13.22% relative mean error (ours) vs. 13.01% (ground truth), the expected error for a
+4-bit × 4-bit matmul, not a bug signature. Added
+`test_packs_even_index_in_high_nibble_hi_first_true`, which checks a hand-computed
+packed byte value directly rather than relying on a self-consistent round trip.
+
+**Lesson:** when a format exposes an explicit configuration parameter (like
+`hi_first`) on one code path but not another, verify against the path with *no*
+parameter — that's the one whose convention is actually load-bearing, and the
+configurable path can silently mask a mismatch by being told what answer to give.

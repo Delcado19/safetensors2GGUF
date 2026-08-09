@@ -128,7 +128,16 @@ def quantize_nvfp4(data: torch.Tensor, key: str) -> dict[str, torch.Tensor]:
     idx = _nearest_e2m1_index(normalized)  # (*lead, n_blocks, 16) -> index per elem
 
     idx = idx.reshape(*lead, n_blocks_per_row, GROUP_SIZE // 2, 2)
-    packed = (idx[..., 0] | (idx[..., 1] << 4)).to(torch.uint8)
+    # hi_first=True convention (even-indexed element in the HIGH nibble) —
+    # required because comfy_kitchen's real matmul kernel (scaled_mm_nvfp4,
+    # used by ComfyUI's actual NVFP4 inference path) has no nibble-order
+    # parameter at all; it's hardcoded to this convention. ck.dequantize_nvfp4
+    # (a separate, standalone helper) does expose a hi_first argument, which
+    # made the opposite (wrong) packing look correct in isolated round-trip
+    # tests using that helper explicitly — but the real inference path never
+    # goes through it with a non-default argument, so every weight was
+    # nibble-swapped in actual ComfyUI generation despite passing that test.
+    packed = (idx[..., 1] | (idx[..., 0] << 4)).to(torch.uint8)
     packed = packed.reshape(*lead, last // 2)
 
     weight_scale = block_scale_fp8.squeeze(-1)
@@ -159,7 +168,9 @@ def dequantize_nvfp4(tensors: dict[str, torch.Tensor], key: str) -> torch.Tensor
     lo = (packed & 0x0F).to(torch.int64)
     hi = ((packed >> 4) & 0x0F).to(torch.int64)
     *lead, half = packed.shape
-    idx = torch.stack([lo, hi], dim=-1).reshape(*lead, half * 2)
+    # hi_first=True: the even-indexed (first of each pair) element is in the
+    # high nibble — must match quantize_nvfp4's packing above.
+    idx = torch.stack([hi, lo], dim=-1).reshape(*lead, half * 2)
     idx = idx.reshape(*lead, half * 2 // GROUP_SIZE, GROUP_SIZE)
 
     if len(lead) == 1:
