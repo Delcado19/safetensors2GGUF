@@ -3,9 +3,17 @@
 Format reference: city96/ComfyUI-GGUF comfy/quant_ops.py QUANT_ALGOS["nvfp4"]
 (group_size=16, storage_t=uint8, params={weight_scale, weight_scale_2}) — the
 same TensorRT-Model-Optimizer convention ComfyUI's native NVFP4 loader expects.
-The E2M1 decode table is the same one gguf.quants.NVFP4 uses internally, kept
-in sync by using the exact same kvalues tuple (avoids two independent, and
-possibly diverging, 4-bit float codebooks in this repo).
+The E2M1 decode table below is the standard (undoubled) OCP magnitudes — NOT
+gguf.quants.NVFP4.kvalues, whose values are doubled to compensate for that
+module's own custom "ue4m3" block-scale encoding (a *0.5 factor baked into
+its ue4m3_to_fp32 decode, see gguf/quants.py). ComfyUI's comfy_kitchen reads
+block scales as plain torch.float8_e4m3fn (no such compensation), so pairing
+gguf's doubled table with a plain-e4m3fn scale silently decoded every weight
+at half its intended magnitude — confirmed by comparing against
+comfy_kitchen.tensor.nvfp4.TensorCoreNVFP4Layout's own quantize/dequantize on
+a live ComfyUI install (see docs/issues_analysis.md #11). Our own round-trip
+tests couldn't catch this: quantizing and dequantizing with the same (wrong)
+table cancels the error out, so it only surfaces against ComfyUI's decoder.
 """
 
 from __future__ import annotations
@@ -15,9 +23,10 @@ import torch
 from safetensors_quant import layer_key
 
 GROUP_SIZE = 16
-# e2m1 values doubled — identical table to gguf.quants.NVFP4.kvalues
+# Standard E2M1 magnitudes (OCP MX/NVFP4 spec): 0, 0.5, 1, 1.5, 2, 3, 4, 6 and
+# their negatives — NOT doubled (see module docstring for why).
 _KVALUES = torch.tensor(
-    [0, 1, 2, 3, 4, 6, 8, 12, 0, -1, -2, -3, -4, -6, -8, -12], dtype=torch.float32
+    [0, 0.5, 1, 1.5, 2, 3, 4, 6, 0, -0.5, -1, -1.5, -2, -3, -4, -6], dtype=torch.float32
 )
 _FP8_MAX = 448.0
 

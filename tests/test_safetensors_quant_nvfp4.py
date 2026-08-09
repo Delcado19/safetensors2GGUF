@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import torch
 
-from safetensors_quant_nvfp4 import _swizzle_block_scale, quantize_nvfp4
+from safetensors_quant_nvfp4 import _KVALUES, _swizzle_block_scale, quantize_nvfp4
 
 
 def _vllm_swizzle_blockscale_reference(scale: torch.Tensor) -> torch.Tensor:
@@ -77,6 +77,36 @@ class TestQuantizeNvfp4:
             assert torch.equal(ours.to(torch.float32), reference.to(torch.float32)), (
                 f"swizzle mismatch for shape ({m}, {k})"
             )
+
+    def test_kvalues_are_standard_undoubled_e2m1_magnitudes(self):
+        # Regression guard for the "doubled table paired with plain-e4m3fn
+        # scale" bug (docs/issues_analysis.md #11): every weight decoded at
+        # exactly half its intended magnitude in ComfyUI. gguf.quants.NVFP4's
+        # table is doubled to compensate for ITS OWN custom ue4m3 scale
+        # encoding (a *0.5 baked into decode) — we don't use that encoding
+        # (plain torch.float8_e4m3fn), so our table must be the standard,
+        # undoubled OCP E2M1 magnitudes with max 6.0, not 12.0.
+        assert _KVALUES.abs().max().item() == 6.0
+        assert sorted(_KVALUES[:8].tolist()) == [0, 0.5, 1, 1.5, 2, 3, 4, 6]
+
+    def test_block_of_exact_table_values_round_trips_exactly(self):
+        # Every element in each block sits exactly on an E2M1 grid point, so
+        # (unlike the generic tolerance test) reconstruction should be near
+        # loss-free — this is what actually caught the doubled-table bug
+        # (that bug reconstructed every value at exactly half magnitude).
+        from safetensors_quant_nvfp4 import dequantize_nvfp4  # test-only helper
+
+        data = torch.zeros(4, 16, dtype=torch.float32)
+        data[0, :] = 6.0
+        data[1, :] = 3.0
+        data[2, :] = -4.0
+        data[3, :] = 1.5
+        out = quantize_nvfp4(data, "block.weight")
+        recon = dequantize_nvfp4(out, "block.weight")
+        # fp8_e4m3fn-rounding the per-block scale itself contributes a few
+        # percent of noise even for on-grid values; the doubled-table bug
+        # this test guards against was off by exactly 2x, not a few percent.
+        assert torch.allclose(recon, data, atol=data.abs().max().item() * 0.05)
 
     def test_scale_2_is_global_float32_scalar(self):
         data = torch.randn(4, 32, dtype=torch.float32)

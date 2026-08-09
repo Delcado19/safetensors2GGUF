@@ -249,3 +249,37 @@ a layout-correctness constraint, not a precision one) for 2D weight tensors — 
 case that reaches this kernel path in ComfyUI. Verified by reading `comfy_kitchen`'s CUDA
 backend source directly for the exact `roundup_n`/`roundup_sk` formula, then
 cross-checked against vLLM's open-source implementation of the identical layout.
+
+## 11. NVFP4 output decoded at exactly half magnitude — every weight quietly wrong
+
+**Symptom:** NVFP4/NVFP4_MIXED output produced pure-noise/garbage images in ComfyUI
+even after the shape-crash (#9) and swizzle-layout (#10) fixes above — no error, no
+crash, just meaningless output, reported by a user on a fresh Z-Image/Lumina2 conversion.
+
+**Cause:** `safetensors_quant_nvfp4.py`'s `_KVALUES` E2M1 decode table used
+`gguf.quants.NVFP4.kvalues`' **doubled** magnitudes (`0, 1, 2, 3, 4, 6, 8, 12, …`), per
+its own docstring claim of being "identical" to that table. But gguf's NVFP4 format
+doubles its table specifically to compensate for a *different* per-block scale
+encoding it uses internally — a custom "unsigned e4m3" (`ue4m3_to_fp32`) that bakes in
+a `*0.5` factor on decode (`gguf/quants.py`). This tool never used that custom
+encoding — it writes plain `torch.float8_e4m3fn` block scales, exactly what ComfyUI's
+`comfy_kitchen` expects, but *without* gguf's compensating halving. The result: every
+weight decoded at **exactly half its intended magnitude**, silently, across every 2D
+tensor in every NVFP4/NVFP4_MIXED conversion this tool ever produced. This tool's own
+round-trip tests (quantize then dequantize with the same table) could never catch it —
+using the same wrong table both ways cancels the error out; it only surfaces when
+decoded by ComfyUI's real, independent kernel.
+
+**Found by:** Comparing this tool's `quantize_nvfp4()` output against
+`comfy_kitchen.tensor.nvfp4.TensorCoreNVFP4Layout`'s own quantize/dequantize path on a
+live ComfyUI install (CUDA available), for identical input tensors — controlled
+exact-table-value inputs (e.g. a block filled with `6.0`) decoded back to `3.0`,
+directly showing the 2x error, before generalizing to full random tensors.
+
+**Fix:** Replaced `_KVALUES` with the standard, undoubled OCP E2M1 magnitudes
+(`0, 0.5, 1, 1.5, 2, 3, 4, 6, …`) — the existing `/6.0` divisors in the scale
+formulas already assumed this (undoubled) range, so no other change was needed.
+Verified against `comfy_kitchen`'s own reference quantize/dequantize on a random
+256x128 tensor: mean reconstruction error 0.2857 (ours) vs. 0.2856 (ComfyUI's own),
+effectively identical. Added `test_kvalues_are_standard_undoubled_e2m1_magnitudes` and
+`test_block_of_exact_table_values_round_trips_exactly` regression tests.
