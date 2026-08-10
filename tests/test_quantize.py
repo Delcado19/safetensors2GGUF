@@ -29,6 +29,22 @@ from quantize import (
 # Type registry
 # ---------------------------------------------------------------------------
 
+class TestAllQuantChoicesLabels:
+    def test_every_lq_and_python_choice_states_size_savings_except_baseline(self):
+        from quantize import ALL_QUANT_CHOICES
+        for label, key in ALL_QUANT_CHOICES:
+            if key in ("F16", "BF16"):
+                continue  # baseline / same size as baseline — no % figure
+            assert "smaller than F16" in label or "F16 size" in label, (
+                f"{key!r} label missing a size-savings figure: {label!r}"
+            )
+
+    def test_q4_k_m_still_marked_recommended(self):
+        from quantize import ALL_QUANT_CHOICES
+        label = next(l for l, k in ALL_QUANT_CHOICES if k == "Q4_K_M")
+        assert "recommended" in label
+
+
 class TestRegistry:
     def test_all_quant_choices_is_list_of_tuples(self):
         assert isinstance(ALL_QUANT_CHOICES, list)
