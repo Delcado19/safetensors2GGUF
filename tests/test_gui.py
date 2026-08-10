@@ -170,3 +170,34 @@ def test_support_table_cell_html_uses_the_right_symbol():
     from model_support import SUPPORT_CAUTION, SUPPORT_VERIFIED
     assert "✓" in gui._support_table_cell_html(SUPPORT_VERIFIED)
     assert "⚠" in gui._support_table_cell_html(SUPPORT_CAUTION)
+
+
+def test_apply_support_table_selection_gguf_column():
+    from unittest.mock import MagicMock
+    evt = MagicMock()
+    evt.index = (0, 1)  # row 0, first format column after Model = "GGUF"
+    tabs_update, quant_update, st_format_update = gui.apply_support_table_selection(evt)
+    assert tabs_update.get("selected") == 0
+    assert quant_update.get("value") == "Q4_K_M"
+
+
+def test_apply_support_table_selection_safetensors_column():
+    from unittest.mock import MagicMock
+    from model_support import TABLE_FORMATS
+
+    # Find the column index for "INT8_MIXED" (Model column is index 0, so
+    # +1 for TABLE_FORMATS' own 0-based position).
+    col = 1 + next(i for i, (_, key) in enumerate(TABLE_FORMATS) if key == "INT8_MIXED")
+    evt = MagicMock()
+    evt.index = (0, col)
+    tabs_update, quant_update, st_format_update = gui.apply_support_table_selection(evt)
+    assert tabs_update.get("selected") == 1
+    assert st_format_update.get("value") == "INT8_MIXED"
+
+
+def test_apply_support_table_selection_model_column_is_a_noop():
+    from unittest.mock import MagicMock
+    evt = MagicMock()
+    evt.index = (0, 0)  # the Model name column itself
+    tabs_update, quant_update, st_format_update = gui.apply_support_table_selection(evt)
+    assert "selected" not in tabs_update

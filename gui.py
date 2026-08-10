@@ -340,6 +340,25 @@ def _support_table_rows_for_dataframe() -> list[list[str]]:
     return rows
 
 
+def apply_support_table_selection(evt: gr.SelectData):
+    """Handle a click on the Model Support table: switch to the matching
+    Convert tab and pre-select that format, or no-op for the Model column.
+
+    The GGUF column collapses every K-quant level into one cell (see
+    model_support.TABLE_FORMATS's comment) — clicking it can't pick a
+    specific quant level, so it defaults to Q4_K_M, this tool's own
+    "recommended ★" choice, same as GGUF's own dropdown default.
+    """
+    row, col = evt.index
+    if col == 0:
+        return gr.update(), gr.update(), gr.update()
+
+    format_key = TABLE_FORMATS[col - 1][1]
+    if format_key == "GGUF":
+        return gr.update(selected=0), gr.update(value="Q4_K_M"), gr.update()
+    return gr.update(selected=1), gr.update(), gr.update(value=format_key)
+
+
 _SUPPORT_TABLE_LEGEND_HTML = """
 <div style="font-size: var(--type-small); color: var(--s2g-muted); margin-top: 8px;">
   <strong style="color:var(--s2g-accent);">✓ Verified</strong> — actually converted, loaded, and rendered correctly in ComfyUI with this tool's own output.
@@ -1605,6 +1624,10 @@ def build_app() -> gr.Blocks:
                 gr.HTML(_SUPPORT_TABLE_LEGEND_HTML)
 
         # ── Events ─────────────────────────────────────────────────────────
+        support_table.select(
+            apply_support_table_selection,
+            outputs=[main_tabs, quant_dropdown, st_format_dropdown],
+        )
         browse_conv_btn.click(browse_model, outputs=src_path)
         browse_dst_btn.click(browse_and_set_dst, inputs=[src_path, quant_dropdown], outputs=dst_path)
         browse_fix_pad_btn.click(browse_gguf, outputs=fix_pad_src)

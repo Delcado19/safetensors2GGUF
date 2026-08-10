@@ -95,7 +95,10 @@ The UI provides:
 - **llama-quantize picker** — the path is auto-detected or selected with a
   native file dialog; manual path typing is disabled
 - **Model Support tab** — a colored table of every detectable architecture x
-  quantization format, marked verified / caution / unknown, with a legend
+  quantization format, marked verified / caution / unknown, with a legend.
+  Click a cell to jump to the matching Convert tab with that format
+  pre-selected (the GGUF column pre-selects `Q4_K_M`, since it stands for
+  every K-quant level collapsed into one cell)
 
 ## Quantization Levels
 
