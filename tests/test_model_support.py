@@ -79,3 +79,32 @@ class TestSupportLevel:
 
     def test_unknown_format_key_returns_unknown(self):
         assert support_level("sdxl", False, "BOGUS") == SUPPORT_UNKNOWN
+
+
+class TestBuildSupportTable:
+    def test_one_row_per_arch_list_entry(self):
+        from model_support import build_support_table
+        rows = build_support_table()
+        assert len(rows) == len(arch_list)
+
+    def test_row_has_display_name_and_every_format_column(self):
+        from model_support import build_support_table
+        rows = build_support_table()
+        lumina2_row = next(r for r in rows if r["arch"] == "lumina2")
+        assert lumina2_row["display_name"] == MODEL_DISPLAY_NAMES["lumina2"]
+        for _, format_key in TABLE_FORMATS:
+            assert format_key in lumina2_row
+
+    def test_lumina2_row_matches_support_level_directly(self):
+        from model_support import build_support_table
+        rows = build_support_table()
+        lumina2_row = next(r for r in rows if r["arch"] == "lumina2")
+        assert lumina2_row["INT8"] == support_level("lumina2", True, "INT8")
+        assert lumina2_row["INT8_MIXED"] == support_level("lumina2", True, "INT8_MIXED")
+
+    def test_sdxl_row_has_no_hiprec_sensitive_int8_caution(self):
+        from model_support import build_support_table
+        rows = build_support_table()
+        sdxl_row = next(r for r in rows if r["arch"] == "sdxl")
+        assert sdxl_row["INT8"] == SUPPORT_VERIFIED
+        assert sdxl_row["INT8_MIXED"] == SUPPORT_VERIFIED

@@ -136,3 +136,22 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
     if format_key in ("NVFP4", "NVFP4_MIXED"):
         return SUPPORT_CAUTION
     return SUPPORT_UNKNOWN
+
+
+def build_support_table() -> list[dict]:
+    """Return one row per models.architectures.arch_list entry: display
+    name plus a support_level() result for every TABLE_FORMATS column."""
+    from models.architectures import arch_list
+
+    rows = []
+    for cls in arch_list:
+        instance = cls()
+        sensitive = bool(instance.keys_hiprec)
+        row = {
+            "arch": instance.arch,
+            "display_name": MODEL_DISPLAY_NAMES[instance.arch],
+        }
+        for _, format_key in TABLE_FORMATS:
+            row[format_key] = support_level(instance.arch, sensitive, format_key)
+        rows.append(row)
+    return rows
