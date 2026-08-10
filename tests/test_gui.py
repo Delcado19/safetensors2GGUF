@@ -112,6 +112,16 @@ class TestRunTeConvertCancel:
         assert status == "Cancelled"
         assert "Error" not in status
 
+    def test_other_runtime_error_still_reports_error(self, tmp_path):
+        src = tmp_path / "model.safetensors"
+        src.touch()
+
+        with patch("gui.convert_text_encoder_any", side_effect=RuntimeError("boom")):
+            *_, (log, status) = gui.run_te_convert(str(src), "org/repo", "", "F16")
+
+        assert status == "Error"
+        assert "boom" in log
+
 
 class TestDynamicDropdownAnnotation:
     def test_annotate_safetensors_choices_marks_caution_entries(self, tmp_path):
@@ -142,16 +152,6 @@ class TestDynamicDropdownAnnotation:
         update = gui.annotate_gguf_choices("")
         from quantize import ALL_QUANT_CHOICES
         assert update["choices"] == [tuple(c) for c in ALL_QUANT_CHOICES]
-
-    def test_other_runtime_error_still_reports_error(self, tmp_path):
-        src = tmp_path / "model.safetensors"
-        src.touch()
-
-        with patch("gui.convert_text_encoder_any", side_effect=RuntimeError("boom")):
-            *_, (log, status) = gui.run_te_convert(str(src), "org/repo", "", "F16")
-
-        assert status == "Error"
-        assert "boom" in log
 
 
 def test_convert_safetensors_tab_present():
