@@ -99,6 +99,7 @@ def convert_to_safetensors(
     cancel_event=None,
     model_arch=None,
     log_tensor_every=1,
+    full_precision_fp8=True,
 ):
     """Convert a model checkpoint to a quantized .safetensors file.
 
@@ -118,6 +119,22 @@ def convert_to_safetensors(
             ``models.architectures.ModelTemplate()`` for text-encoder checkpoints,
             which aren't in ``arch_list`` and would otherwise fail ``detect_arch``).
             When None (default), auto-detected via ``detect_arch`` as before.
+        full_precision_fp8: When target_key resolves to float8_e4m3fn (FP8/
+            FP8_MIXED), write "full_precision_matrix_mult": true into every
+            layer's .comfy_quant config (default True). This makes ComfyUI's
+            MixedPrecisionOps.Linear.forward() skip the quantized-compute
+            branch entirely for that layer — weight is dequantized to the
+            model's compute_dtype and a plain full-precision matmul runs,
+            matching the safety profile of the "scaled_fp8" checkpoints
+            ComfyUI's own convert_old_quants() derives this flag from for
+            legacy community checkpoints (comfy/utils.py). This is what
+            makes FP8 output architecture-independently safe: unlike INT8's
+            keys_hiprec (a per-architecture, per-layer bet on which tensors
+            need protection), this flag disables the risky dynamic-
+            activation-quantization code path for every layer, unconditionally.
+            The tradeoff is no FP8 tensor-core compute speedup — this format
+            is storage/VRAM savings only unless a user explicitly opts out.
+            See docs/issues_analysis.md #16.
 
     Returns:
         (dst_path, model_arch)
@@ -211,6 +228,8 @@ def convert_to_safetensors(
                 if scale_t is not None and scale_t.numel() > 1:
                     layer_conf["convrot"] = True
                     layer_conf["convrot_groupsize"] = CONVROT_GROUP_SIZE
+            elif quant_format == "float8_e4m3fn" and full_precision_fp8:
+                layer_conf["full_precision_matrix_mult"] = True
             layer_formats[layer_key(key)] = layer_conf
 
     metadata = {"comfy.gguf_source_arch": model_arch.arch}

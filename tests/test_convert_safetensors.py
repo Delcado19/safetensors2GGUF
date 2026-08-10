@@ -206,3 +206,41 @@ class TestAlreadyQuantizedGuard:
         src = _write_minimal_flux(tmp_path)
         # Should not raise
         convert_to_safetensors(str(src), target_key="FP8", overwrite=True)
+
+
+class TestFp8FullPrecisionFlag:
+    def test_fp8_layer_config_defaults_full_precision_matrix_mult_true(self, tmp_path):
+        import json
+        from safetensors import safe_open
+
+        src = _write_minimal_flux(tmp_path)
+        dst, _ = convert_to_safetensors(str(src), target_key="FP8", overwrite=True)
+        with safe_open(dst, framework="pt", device="cpu") as f:
+            meta = json.loads(f.metadata()["_quantization_metadata"])
+        layer_conf = next(iter(meta["layers"].values()))
+        assert layer_conf["format"] == "float8_e4m3fn"
+        assert layer_conf["full_precision_matrix_mult"] is True
+
+    def test_fp8_full_precision_flag_can_be_disabled(self, tmp_path):
+        import json
+        from safetensors import safe_open
+
+        src = _write_minimal_flux(tmp_path)
+        dst, _ = convert_to_safetensors(
+            str(src), target_key="FP8", overwrite=True, full_precision_fp8=False,
+        )
+        with safe_open(dst, framework="pt", device="cpu") as f:
+            meta = json.loads(f.metadata()["_quantization_metadata"])
+        layer_conf = next(iter(meta["layers"].values()))
+        assert "full_precision_matrix_mult" not in layer_conf
+
+    def test_full_precision_flag_absent_for_non_fp8_formats(self, tmp_path):
+        import json
+        from safetensors import safe_open
+
+        src = _write_minimal_flux(tmp_path)
+        dst, _ = convert_to_safetensors(str(src), target_key="INT8", overwrite=True)
+        with safe_open(dst, framework="pt", device="cpu") as f:
+            meta = json.loads(f.metadata()["_quantization_metadata"])
+        layer_conf = next(iter(meta["layers"].values()))
+        assert "full_precision_matrix_mult" not in layer_conf
