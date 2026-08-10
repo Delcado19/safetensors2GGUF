@@ -94,6 +94,8 @@ The UI provides:
   `llama-quantize` and keep GUI tensor logging throttled during conversion
 - **llama-quantize picker** — the path is auto-detected or selected with a
   native file dialog; manual path typing is disabled
+- **Model Support tab** — a colored table of every detectable architecture x
+  quantization format, marked verified / caution / unknown, with a legend
 
 ## Quantization Levels
 

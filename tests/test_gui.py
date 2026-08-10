@@ -148,3 +148,25 @@ def test_text_encoder_tab_present():
     app = build_app()
     label_texts = [getattr(b, "label", None) for b in app.blocks.values()]
     assert any("Base model HF repo ID" == t for t in label_texts)
+
+
+def test_model_support_tab_present():
+    app = gui.build_app()
+    label_texts = [
+        getattr(b, "label", None)
+        for b in app.blocks.values()
+        if isinstance(b, gr.Dataframe)
+    ]
+    assert "Model Support" in label_texts
+
+
+def test_support_table_rows_cover_every_architecture():
+    from models.architectures import arch_list
+    rows = gui._support_table_rows_for_dataframe()
+    assert len(rows) == len(arch_list)
+
+
+def test_support_table_cell_html_uses_the_right_symbol():
+    from model_support import SUPPORT_CAUTION, SUPPORT_VERIFIED
+    assert "✓" in gui._support_table_cell_html(SUPPORT_VERIFIED)
+    assert "⚠" in gui._support_table_cell_html(SUPPORT_CAUTION)

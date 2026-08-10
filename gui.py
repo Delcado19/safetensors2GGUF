@@ -308,6 +308,49 @@ def update_format_recommendation(src: str, target_key: str):
     return gr.update(value=f"{icon} {message}", elem_classes=["fmt-hint", f"fmt-hint-{level}"])
 
 
+from model_support import SUPPORT_SYMBOL, TABLE_FORMATS, build_support_table
+
+_SUPPORT_CELL_COLOR = {
+    "verified": "var(--s2g-accent)",
+    "caution": "var(--s2g-warn)",
+    "unknown": "var(--s2g-muted)",
+}
+
+
+def _support_table_cell_html(level: str) -> str:
+    """Return the colored-symbol HTML for one Model Support table cell."""
+    symbol = SUPPORT_SYMBOL[level]
+    color = _SUPPORT_CELL_COLOR[level]
+    return f'<span style="color:{color};font-weight:700;font-size:1.1em;">{symbol}</span>'
+
+
+def _support_table_rows_for_dataframe() -> list[list[str]]:
+    """Build the gr.Dataframe row data: [display_name_html, *format_cells]."""
+    rows = []
+    for row in build_support_table():
+        display_html = (
+            f'<span>{row["display_name"].split(" (")[0]}</span> '
+            f'<span style="color:var(--s2g-muted);font-size:0.85em;">'
+            f'({row["arch"]})</span>'
+        )
+        cells = [display_html]
+        for _, format_key in TABLE_FORMATS:
+            cells.append(_support_table_cell_html(row[format_key]))
+        rows.append(cells)
+    return rows
+
+
+_SUPPORT_TABLE_LEGEND_HTML = """
+<div style="font-size: var(--type-small); color: var(--s2g-muted); margin-top: 8px;">
+  <strong style="color:var(--s2g-accent);">✓ Verified</strong> — actually converted, loaded, and rendered correctly in ComfyUI with this tool's own output.
+  &nbsp;·&nbsp;
+  <strong style="color:var(--s2g-warn);">⚠ Caution</strong> — technically supported by this tool, but not render-tested for this architecture, or a known correctness/quality issue.
+  &nbsp;·&nbsp;
+  <strong style="color:var(--s2g-muted);">? Unknown</strong> — this combination has never been attempted.
+</div>
+"""
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # CSS
 # ──────────────────────────────────────────────────────────────────────────────
@@ -1176,10 +1219,10 @@ def build_app() -> gr.Blocks:
     with gr.Blocks(title="safetensors → GGUF") as app:
         gr.HTML(_HEADER_HTML)
 
-        with gr.Tabs():
+        with gr.Tabs() as main_tabs:
 
             # ── Convert → GGUF ─────────────────────────────────────────────
-            with gr.Tab("⬡  Convert → GGUF"):
+            with gr.Tab("⬡  Convert → GGUF", id=0):
                 gr.Markdown(
                     "Convert a **Safetensors / CKPT** model checkpoint to **GGUF**.  "
                     "Python-native precisions write directly; K-quants run a 2-step "
@@ -1260,7 +1303,7 @@ def build_app() -> gr.Blocks:
                 )
 
             # ── Convert → Safetensors ──────────────────────────────────────
-            with gr.Tab("⬢  Convert → Safetensors"):
+            with gr.Tab("⬢  Convert → Safetensors", id=1):
                 gr.Markdown(
                     "Convert a **Safetensors / CKPT** model checkpoint to a quantized "
                     "**Safetensors** file — no GGUF, no llama-quantize. INT8 uses "
@@ -1345,7 +1388,7 @@ def build_app() -> gr.Blocks:
                 st_cancel_btn.click(fn=request_cancel_st, outputs=[st_status], cancels=[st_convert_event])
 
             # ── Convert Text Encoder ─────────────────────────────────────────
-            with gr.Tab("✎  Convert Text Encoder"):
+            with gr.Tab("✎  Convert Text Encoder", id=2):
                 gr.Markdown(
                     "Convert a **bare single-file text-encoder checkpoint** (Qwen3, "
                     "Mistral, T5/UMT5, …) to GGUF or quantized safetensors.\n\n"
@@ -1416,7 +1459,7 @@ def build_app() -> gr.Blocks:
                 te_cancel_btn.click(fn=request_cancel_te, outputs=[te_status], cancels=[te_convert_event])
 
             # ── Fix Pad Tokens ─────────────────────────────────────────────
-            with gr.Tab("⚒  Fix Pad Tokens"):
+            with gr.Tab("⚒  Fix Pad Tokens", id=3):
                 gr.Markdown(
                     "Correct `x_pad_token` / `cap_pad_token` shape `[D]` → `[1, D]` in an "
                     "existing **Lumina 2** GGUF.  Required when ComfyUI raises "
@@ -1452,7 +1495,7 @@ def build_app() -> gr.Blocks:
                 )
 
             # ── Fix 5D Tensors ─────────────────────────────────────────────
-            with gr.Tab("⚙  Fix 5D Tensors"):
+            with gr.Tab("⚙  Fix 5D Tensors", id=4):
                 gr.Markdown(
                     "Re-insert 5D tensors into a quantized GGUF.  "
                     "**Required for HunyuanVideo / Wan** when using llama-quantize outside "
@@ -1493,7 +1536,7 @@ def build_app() -> gr.Blocks:
                 )
 
             # ── Extract Components ─────────────────────────────────────────
-            with gr.Tab("▤  Extract Components"):
+            with gr.Tab("▤  Extract Components", id=5):
                 gr.Markdown(
                     "Analyze an **SDXL** checkpoint for embedded VAE, CLIP-L, and CLIP-G "
                     "components, compare them with local standard files when present, "
@@ -1542,6 +1585,24 @@ def build_app() -> gr.Blocks:
                     label="Analysis / Log", lines=10, max_lines=12,
                     interactive=False, autoscroll=False, elem_id="extract-log",
                 )
+
+            # ── Model Support ──────────────────────────────────────────────
+            with gr.Tab("⊞  Model Support", id=6):
+                gr.Markdown(
+                    "Which quantization formats this tool supports for each "
+                    "detectable architecture. Click a cell to jump to the "
+                    "matching Convert tab with that format pre-selected.",
+                    elem_classes=["intro"],
+                )
+                support_table = gr.Dataframe(
+                    label="Model Support",
+                    headers=["Model", *[label for label, _ in TABLE_FORMATS]],
+                    datatype="html",
+                    value=_support_table_rows_for_dataframe(),
+                    interactive=False,
+                    wrap=True,
+                )
+                gr.HTML(_SUPPORT_TABLE_LEGEND_HTML)
 
         # ── Events ─────────────────────────────────────────────────────────
         browse_conv_btn.click(browse_model, outputs=src_path)
