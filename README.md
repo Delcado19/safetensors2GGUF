@@ -9,9 +9,13 @@ single-file **text-encoder** checkpoints (Qwen3, T5/UMT5, Mistral, …) to GGUF.
 - **GGUF output** — direct Python quantization (F32 / F16 / BF16 / Q8_0) and
   K-quant quantization via a bundled `llama-quantize` binary (Q6_K, Q5_K_M,
   Q4_K_M, Q4_K_S, Q3_K_M, Q2_K).
-- **Safetensors output** — F16 and ComfyUI-compatible tensor-wise INT8
-  (ConvRot-rotated where possible), each with a "mixed" variant that keeps
-  critical layers at F32.
+- **Safetensors output** — F16, scaled FP8, and ComfyUI-compatible tensor-wise
+  INT8 (ConvRot-rotated where possible), each with a "mixed" variant that
+  keeps critical layers at F32.
+- **Model Support tab** — a read-only table showing which quantization
+  formats are verified/caution/unknown for each detectable architecture;
+  click a cell to jump to the matching Convert tab with that format
+  pre-selected.
 - **Text-encoder → GGUF** — converts bare text-encoder checkpoints that lack
   `config.json`/tokenizer files, using a base model's HuggingFace repo ID; runs
   fully standalone, auto-cloning `llama.cpp` on first use.
@@ -245,6 +249,8 @@ when you want ComfyUI-compatible weights without the GGUF container format.
 |---|---|---|---|
 | `F16` | Half precision | Python | Standard default, smallest non-quantized size |
 | `F16_MIXED` | Half precision, high-precision tensors stay F32 | Python | Matches GGUF K-quant behavior for critical layers |
+| `FP8` | Scaled float8_e4m3fn (ComfyUI convention) | Python | Full-precision compute by default (`full_precision_matrix_mult`) — see below |
+| `FP8_MIXED` | FP8, high-precision tensors stay F32 | Python | Same full-precision-compute default as `FP8` |
 | `INT8` | int8_tensorwise, ConvRot-rotated where possible (ComfyUI convention) | Python | Per-layer `weight_scale`; weight-only quantization, no runtime activation quant |
 | `INT8_MIXED` | INT8/ConvRot, high-precision tensors stay F32 | Python | Aggressive 8-bit quantization with protection |
 
@@ -266,22 +272,41 @@ matched against a community reference, not yet render-verified.
 (2026-06-16). Older ComfyUI versions either won't have the `int8_tensorwise`
 loader at all or will use an unoptimized/pre-ConvRot version of it.
 
-**Why INT8 and not FP8/NVFP4/MXFP8:** ComfyUI's native FP8/NVFP4/MXFP8 formats
-dynamically quantize *activations* too at inference time
-(`QUANT_ALGOS["quantize_input"]` defaults `True`), which produced visibly wrong
-output (black bars, wrong poses/identities, full-image noise) on Lumina2/Z-Image
-checkpoints even after this tool's own on-disk data was verified byte-correct —
-activation quantization is inherently lossy in a way no weight-side protection
-list can compensate for. `int8_tensorwise` is one of only two `QUANT_ALGOS`
-entries ComfyUI marks `"quantize_input": False` — weight-only quantization,
-activations always stay full precision, avoiding that lossy path entirely. See
-[docs/issues_analysis.md](docs/issues_analysis.md) #15 (including its
-Correction note — an earlier draft of this investigation misattributed the
-corruption to a specific ComfyUI GitHub issue that turned out to be a
-performance-only bug; that citation has been retracted). The FP8/NVFP4
-implementations (`safetensors_quant_fp8.py`/`safetensors_quant_nvfp4.py`)
-remain in the codebase and are still used by the separate text-encoder
-conversion path below, which hasn't shown this issue.
+**Why FP8 is safe now, and why NVFP4/MXFP8 still aren't offered:** ComfyUI's
+native FP8/NVFP4/MXFP8 formats dynamically quantize *activations* too at
+inference time (`QUANT_ALGOS["quantize_input"]` defaults `True`), which
+produced visibly wrong output (black bars, wrong poses/identities, full-image
+noise) on Lumina2/Z-Image checkpoints even after this tool's own on-disk data
+was verified byte-correct — activation quantization is inherently lossy in a
+way no weight-side protection list can compensate for. `int8_tensorwise` is
+one of only two `QUANT_ALGOS` entries ComfyUI marks `"quantize_input": False`
+— weight-only quantization, activations always stay full precision, avoiding
+that lossy path entirely. See [docs/issues_analysis.md](docs/issues_analysis.md)
+#15 (including its Correction note — an earlier draft of this investigation
+misattributed the corruption to a specific ComfyUI GitHub issue that turned
+out to be a performance-only bug; that citation has been retracted).
+
+FP8 turned out not to need this exclusion: `comfy/utils.py`'s
+`convert_old_quants()` — the function ComfyUI uses to load the scaled-FP8
+checkpoints already common on Civitai/HuggingFace — sets
+`"full_precision_matrix_mult": true` for those legacy checkpoints, which makes
+`comfy/ops.py`'s `MixedPrecisionOps.Linear.forward()` skip the risky
+quantized-compute branch entirely and run a plain full-precision matmul
+instead, architecture-independently. `convert_to_safetensors()` now writes
+that same flag by default for every FP8/FP8_MIXED layer it produces
+(`full_precision_fp8=True`), so this tool's own FP8 output is as safe as the
+checkpoints already circulating in the wild — no per-architecture bet the way
+INT8's `keys_hiprec` is. The tradeoff is no FP8 tensor-core compute speedup;
+FP8 output is a storage/VRAM-savings format only unless a user explicitly
+opts out (`full_precision_fp8=False`). See
+[docs/issues_analysis.md](docs/issues_analysis.md) #16 for the full
+investigation. NVFP4/MXFP8 have no known equivalent safe-mode flag — that
+investigation is explicitly **not done** (open follow-up, see #16 and
+`model_support.py`'s `support_level()` docstring), so they remain unoffered
+here. The FP8/NVFP4 implementations (`safetensors_quant_fp8.py`/
+`safetensors_quant_nvfp4.py`) remain in the codebase and are still used by
+the separate text-encoder conversion path below, which hasn't shown this
+issue.
 
 **Already-quantized sources:** if you point Convert → Safetensors at a
 checkpoint that's already quantized (e.g. a published ComfyUI-native
@@ -290,6 +315,26 @@ dequantized first and then cleanly re-quantized to your chosen target format
 — see `dequantize.py`. The one case that still fails is an int8/uint8 weight
 with no recognizable `weight_scale`/`comfy_quant` sidecar at all, since
 there's no way to reconstruct the original magnitude without a scale.
+
+## Model Support Tab
+
+The **Model Support** tab shows, for every architecture this tool detects, a
+color-coded support level for each output format (GGUF, F16/F16_MIXED,
+FP8/FP8_MIXED, INT8/INT8_MIXED, NVFP4/NVFP4_MIXED): **✓ Verified** (actually
+converted, loaded, and rendered correctly in ComfyUI with this tool's own
+output), **⚠ Caution** (technically supported but not render-tested for this
+architecture, or a known correctness/quality issue), or **? Unknown** (never
+attempted). Click a format cell to switch to the matching Convert tab with
+that format pre-selected — the GGUF column collapses every K-quant level into
+one cell, since a working F16 GGUF conversion carries over to all of them
+uniformly, so clicking it defaults to `Q4_K_M`. Once a source checkpoint is
+selected on either Convert tab, its format dropdown also gets a ⚠ prefix on
+any entry that's Caution for the detected architecture (`gui.py`'s
+`annotate_safetensors_choices()`/`annotate_gguf_choices()`) — informational
+only, every entry stays selectable. The underlying support data (which model
+names map to which internal architecture key, and the tri-state logic itself)
+lives in `model_support.py` and is documented there as an explicit editorial
+judgment call, open to correction.
 
 ## Text-Encoder Conversion
 

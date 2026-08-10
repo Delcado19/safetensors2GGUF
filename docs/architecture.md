@@ -172,9 +172,10 @@ convert_to_safetensors() in convert_safetensors.py
     │
     ▼
 quantize_tensor_st() in safetensors_quant.py       (per tensor)
-    │  - target_key one of F16 / F16_MIXED / INT8 / INT8_MIXED (GUI-selectable;
-    │      FP8/FP8_MIXED/NVFP4/NVFP4_MIXED still exist and are still correct,
-    │      but are no longer offered — see "Why INT8, not FP8/NVFP4" below)
+    │  - target_key one of F16 / F16_MIXED / FP8 / FP8_MIXED / INT8 / INT8_MIXED
+    │      (GUI-selectable; NVFP4/NVFP4_MIXED still exist and are still
+    │      correct, but are not offered — see "Why INT8/FP8, not NVFP4/MXFP8"
+    │      below)
     │  - *_MIXED: keys_hiprec / 1D / ≤1024-elem tensors stay F32 — mirrors
     │      convert.py's _quant_type_for exactly, one mixed-precision rule
     │      shared by both output pipelines, not reinvented per format
@@ -196,6 +197,13 @@ save_file() with _quantization_metadata
     │      that tensor actually took the ConvRot path — detected from
     │      weight_scale's shape: scalar = plain, per-row = convrot), written
     │      only for layers that actually produced scale-tensor siblings
+    │  - FP8/FP8_MIXED layers additionally get "full_precision_matrix_mult":
+    │      true by default (full_precision_fp8=True param on
+    │      convert_to_safetensors()) — makes ComfyUI's
+    │      MixedPrecisionOps.Linear.forward() (comfy/ops.py) dequantize and
+    │      run a plain full-precision matmul instead of the FP8
+    │      quantized-compute path, for every layer unconditionally. See
+    │      "Why INT8/FP8, not NVFP4/MXFP8" below and docs/issues_analysis.md #16
     │
     ▼
 Output file (.safetensors)
@@ -209,24 +217,87 @@ scalar (or, with ConvRot, a per-row scale plus the block-Hadamard weight
 rotation `comfy_kitchen`'s kernel un-rotates on load), matching ComfyUI's
 native `TensorWiseINT8Layout` loader.
 
-**Why INT8, not FP8/NVFP4/MXFP8:** `safetensors_quant_fp8.py`/`safetensors_quant_nvfp4.py`
+**Why INT8/FP8, not NVFP4/MXFP8:** `safetensors_quant_fp8.py`/`safetensors_quant_nvfp4.py`
 implement ComfyUI's scaled-FP8/NVFP4 conventions correctly (byte-verified
-against ComfyUI's own kernels, `docs/issues_analysis.md` #10-#13) but are no
-longer offered in `SAFETENSORS_DTYPE_CHOICES`: ComfyUI's `QUANT_ALGOS["float8_e4m3fn"]`/
-`["nvfp4"]`/`["mxfp8"]` leave `"quantize_input"` at its `True` default, so
-ComfyUI dynamically quantizes *activations* too at inference time — which
-produced visibly wrong output (black bars, mirrored/wrong poses, wrong
-identities, full-image noise) on Lumina2/Z-Image checkpoints even after this
-tool's on-disk weight data was verified byte-correct. Activation quantization
-is inherently lossy in a way no weight-side protection list can compensate
-for. `int8_tensorwise` is one of only two `QUANT_ALGOS` entries marked
-`"quantize_input": False` — weight-only quantization, avoiding that path
-entirely (much closer to GGUF's dequantize-then-standard-matmul robustness).
-See `docs/issues_analysis.md` #15, including its Correction note — an earlier
+against ComfyUI's own kernels, `docs/issues_analysis.md` #10-#13). ComfyUI's
+`QUANT_ALGOS["float8_e4m3fn"]`/`["nvfp4"]`/`["mxfp8"]` all leave
+`"quantize_input"` at its `True` default, so ComfyUI dynamically quantizes
+*activations* too at inference time — which produced visibly wrong output
+(black bars, mirrored/wrong poses, wrong identities, full-image noise) on
+Lumina2/Z-Image checkpoints even after this tool's on-disk weight data was
+verified byte-correct. Activation quantization is inherently lossy in a way
+no weight-side protection list can compensate for. `int8_tensorwise` is one
+of only two `QUANT_ALGOS` entries marked `"quantize_input": False` —
+weight-only quantization, avoiding that path entirely (much closer to
+GGUF's dequantize-then-standard-matmul robustness). See
+`docs/issues_analysis.md` #15, including its Correction note — an earlier
 draft misattributed the corruption to a specific ComfyUI GitHub issue
 (Comfy-Org/ComfyUI#14595) that turned out to be a performance-only bug (silent
 bf16 fallback for some GEMM shapes, mathematically correct just slower); that
 citation has been retracted, the INT8 decision itself is unaffected.
+
+FP8 is no longer excluded alongside NVFP4/MXFP8, though: `comfy/utils.py`'s
+`convert_old_quants()` — how ComfyUI loads the scaled-FP8 checkpoints already
+common on Civitai/HuggingFace — sets `"full_precision_matrix_mult": true` for
+those legacy checkpoints, which makes `MixedPrecisionOps.Linear.forward()`
+skip the quantized-compute branch and run a plain full-precision matmul
+instead, architecture-independently. `convert_to_safetensors()` now writes
+that same flag by default (see the pipeline diagram above), making this
+tool's own FP8 output as safe as the checkpoints already circulating in the
+wild — no per-architecture `keys_hiprec` bet the way INT8 needs. NVFP4/MXFP8
+have no known equivalent safe-mode flag; that investigation is explicitly
+**not done** — tracked as an open follow-up in `docs/issues_analysis.md` #16
+and `model_support.py`'s `support_level()` docstring — so they stay excluded
+until it is. Full FP8 discovery/fix writeup: `docs/issues_analysis.md` #16.
+
+## Model Support Tab
+
+`model_support.py` and `gui.py` split the "Model Support" GUI tab the same
+way the rest of this codebase splits data from presentation: `model_support.py`
+is the data model, `gui.py` is rendering + interaction.
+
+`model_support.py` owns:
+- `MODEL_DISPLAY_NAMES`: public model name per internal `models.architectures.*.arch`
+  key (e.g. `"lumina2" → "Z-Image / Lumina-Image 2.0 Family (lumina2)"`) — an
+  editorial mapping, documented inline as such, not something ComfyUI or any
+  upstream project defines.
+- `TABLE_FORMATS`: the ordered (label, format-key) columns the table renders —
+  GGUF first (collapses every K-quant level into one column, since K-quants
+  are a uniform post-processing step on top of a working F16 GGUF conversion,
+  not an architecture-dependent choice), then every GUI-selectable
+  safetensors format, then NVFP4 (implemented but not GUI-offered).
+- `support_level(arch_key, keys_hiprec_nonempty, format_key)`: the pure
+  function computing one of `SUPPORT_VERIFIED`/`SUPPORT_CAUTION`/`SUPPORT_UNKNOWN`
+  for one (architecture, format) pair, from facts already in
+  `models/architectures.py` (`keys_hiprec` presence) plus this project's own
+  render-testing history (`_RENDER_VERIFIED_ARCHES`, currently just `lumina2`).
+  Its docstring is the canonical explanation of every branch's reasoning —
+  see the module itself rather than duplicating it here.
+- `build_support_table()`: one row per `models.architectures.arch_list` entry,
+  ready for the GUI to render directly without re-deriving per-architecture
+  sensitivity itself.
+
+`gui.py` owns everything about turning that data into an interactive table
+and reusing it elsewhere in the UI:
+- Renders `build_support_table()` as a read-only `gr.Dataframe(datatype="html")`
+  (`_support_table_rows_for_dataframe()`/`_support_table_cell_html()`), with
+  colored ✓/⚠/? cells reusing the app's own `--s2g-accent`/`--s2g-warn`/
+  `--s2g-muted` CSS tokens, plus a legend (`_SUPPORT_TABLE_LEGEND_HTML`)
+  explaining the tri-state scheme.
+- `apply_support_table_selection(evt)`: the table's `.select()` handler —
+  switches `main_tabs` to the matching Convert tab and pre-selects that
+  format in its dropdown. Uses `gr.update(selected=...)` rather than the
+  `gr.Tabs(selected=...)` constructor call the original plan for this task
+  specified, due to a Gradio version mismatch in this project's pinned
+  dependency — functionally equivalent, just the update-object form instead
+  of a fresh component. The GGUF column always resolves to `Q4_K_M` (this
+  tool's own "recommended ★" default), since a single cell can't express a
+  specific K-quant level; clicking the Model-name column is a no-op.
+- `annotate_safetensors_choices()`/`annotate_gguf_choices()`: reuse
+  `support_level()` to prefix a ⚠ onto any dropdown entry that's
+  `SUPPORT_CAUTION` for the detected source checkpoint's architecture, wired
+  as `.change()` handlers on the source-path inputs. Purely informational —
+  every entry stays selectable.
 
 ## Text-Encoder Conversion Pipeline
 

@@ -583,3 +583,60 @@ model is low quality by the format author's own admission, and that a good INT4
 conversion needs a per-layer mix of bit-widths this project's binary
 protected/not-protected `keys_hiprec` model cannot express — a relevant constraint if
 INT4 ConvRot is ever considered as a future format.
+
+## 16. FP8 checkpoints work fine everywhere else on Civitai/HuggingFace — this
+tool's own FP8 output didn't need to be excluded, it needed `full_precision_matrix_mult`
+
+**Symptom:** #15 removed `FP8`/`FP8_MIXED` from `SAFETENSORS_DTYPE_CHOICES` alongside
+NVFP4, reasoning that ComfyUI's `QUANT_ALGOS["quantize_input"]` registry marks both
+formats as dynamic-activation-quantizing and therefore equally risky. The user pointed
+out this doesn't match observed reality: scaled-FP8 checkpoints are extremely common on
+Civitai/HuggingFace and load/render correctly in ComfyUI all the time — if FP8's runtime
+path were unconditionally as risky as NVFP4's, that shouldn't be true.
+
+**Investigation:** Reading `comfy/utils.py`'s `convert_old_quants()` (the function
+ComfyUI uses to load legacy community "scaled_fp8" checkpoints — the format most
+Civitai/HuggingFace FP8 releases actually use) shows it sets
+`"full_precision_matrix_mult": true` in the layer config it synthesizes for those
+checkpoints. `comfy/ops.py`'s `MixedPrecisionOps.Linear.forward()` checks this flag
+before dispatching to the quantized-compute branch: when present, it dequantizes the
+weight to the model's `compute_dtype` and runs a plain full-precision matmul instead of
+FP8 tensor-core GEMM — the same dynamic-activation-quantization code path #15 identified
+as the root cause of the Lumina2/Z-Image corruption is skipped entirely for that layer,
+regardless of architecture. This explains the discrepancy: circulating community FP8
+checkpoints are safe not because FP8 itself is safe, but because the *loader* already
+opts them out of the risky path by default. This tool's own FP8 writer
+(`safetensors_quant_fp8.py` via `convert_safetensors.py`) never set this flag, so its
+output took the same risky path NVFP4 does — the corruption #15 diagnosed for
+FP8_MIXED/NVFP4_MIXED was real for both formats, but only NVFP4 lacks a known opt-out.
+
+**Conclusion:** FP8's dynamic-activation-quantization risk is avoidable by construction
+(`full_precision_matrix_mult`), architecture-independently — unlike INT8's `keys_hiprec`
+bet (a per-architecture, per-layer guess at which tensors need protection) or NVFP4,
+which has no equivalent documented safe mode. FP8 does not need to stay excluded; it
+needs to default to the same safety mechanism ComfyUI's own loader already relies on for
+legacy checkpoints. The tradeoff is losing FP8 tensor-core compute speedup — this makes
+FP8 output a storage/VRAM-savings format only, same practical performance profile as
+INT8 or GGUF, unless a user explicitly opts out via the new `full_precision_fp8=False`
+parameter.
+
+**Fix:** `convert_to_safetensors()` (`convert_safetensors.py`) gained a
+`full_precision_fp8: bool = True` parameter; when the target format resolves to
+`float8_e4m3fn` (`FP8`/`FP8_MIXED`) and the flag is True (default), every FP8 layer's
+`.comfy_quant` config now includes `"full_precision_matrix_mult": true`. Re-added
+`FP8`/`FP8_MIXED` to `SAFETENSORS_DTYPE_CHOICES` (`safetensors_quant.py`) and updated
+`format_recommendation()` to return an unconditional `"ok"` for FP8, unlike INT8's
+per-architecture caution logic — the safety mechanism itself doesn't depend on
+`keys_hiprec` or architecture at all. `model_support.py`'s `support_level()` (the data
+model behind the "Model Support" GUI tab, see below) marks FP8/FP8_MIXED
+`SUPPORT_VERIFIED` for every architecture on the same reasoning.
+
+**Open follow-up — NOT done in this fix:** NVFP4 was not re-investigated here. It has no
+known equivalent to `full_precision_matrix_mult` — `comfy/utils.py`'s
+`convert_old_quants()` only synthesizes that flag for legacy `scaled_fp8` checkpoints,
+not for NVFP4 ones, and nothing in `comfy/quant_ops.py`'s `QUANT_ALGOS["nvfp4"]` entry
+suggests an equivalent safe-mode toggle exists. `model_support.py`'s `support_level()`
+deliberately keeps NVFP4/NVFP4_MIXED at `SUPPORT_CAUTION` for every architecture pending
+that investigation, tracked as a future, separate plan — see its docstring for the full
+reasoning. Until then, NVFP4 stays out of `SAFETENSORS_DTYPE_CHOICES` for diffusion-model
+output for the same reason #15 removed it.
