@@ -32,12 +32,18 @@ class TestRegistry:
             assert isinstance(key, str) and key
 
     def test_expected_keys_present(self):
-        # FP8/NVFP4 are intentionally not offered in the GUI dropdown anymore
-        # (docs/issues_analysis.md #15) — quantize_tensor_st still supports
-        # them internally (TestQuantizeTensorFp8/TestQuantizeTensorNvfp4 below
-        # exercise that dispatch directly), they're just not user-selectable.
+        # FP8 is now re-offered (re-enabled with full_precision_matrix_mult=true
+        # default in convert_safetensors.py). NVFP4 is still not offered in the
+        # GUI dropdown (docs/issues_analysis.md #15) — quantize_tensor_st still
+        # supports it internally (TestQuantizeTensorNvfp4 exercises that dispatch
+        # directly), it's just not user-selectable.
         keys = {k for _, k in SAFETENSORS_DTYPE_CHOICES}
-        assert keys == {"F16", "F16_MIXED", "INT8", "INT8_MIXED"}
+        assert keys == {"F16", "F16_MIXED", "FP8", "FP8_MIXED", "INT8", "INT8_MIXED"}
+
+    def test_fp8_is_offered_again(self):
+        keys = {key for _, key in SAFETENSORS_DTYPE_CHOICES}
+        assert "FP8" in keys
+        assert "FP8_MIXED" in keys
 
     def test_no_duplicate_keys(self):
         keys = [k for _, k in SAFETENSORS_DTYPE_CHOICES]
@@ -306,6 +312,15 @@ class TestFormatRecommendation:
         level, msg = format_recommendation(ModelSDXL(), "INT8")
         assert level == "ok"
         assert "sdxl" in msg
+
+    def test_fp8_is_always_ok_regardless_of_architecture(self):
+        for arch in (ModelLumina2(), ModelFlux(), ModelSDXL()):
+            level, msg = format_recommendation(arch, "FP8")
+            assert level == "ok"
+            assert msg
+            level, msg = format_recommendation(arch, "FP8_MIXED")
+            assert level == "ok"
+            assert msg
 
     def test_render_verified_architecture_warn_claims_shown_in_testing(self):
         # lumina2 was actually rendered end-to-end -- the strong claim is

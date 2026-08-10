@@ -16,21 +16,20 @@ from models.architectures import QUANTIZATION_THRESHOLD
 
 # Ordered choices for the GUI dropdown: (display label, key)
 #
-# FP8/NVFP4 (scaled float8_e4m3fn, NVFP4 blockscaled) are deliberately not
-# offered here even though safetensors_quant_fp8.py/safetensors_quant_nvfp4.py
-# still implement them correctly (verified byte-exact against ComfyUI's own
-# kernels, docs/issues_analysis.md #10-#13). The remaining image corruption on
-# Lumina2/Z-Image traces to QUANT_ALGOS["float8_e4m3fn"/"nvfp4"]["quantize_input"]
-# defaulting True in ComfyUI itself — both formats dynamically quantize
-# *activations* at inference time, and activation quantization is inherently
-# lossy in a way no weight-side keys_hiprec list can compensate for (see
-# docs/issues_analysis.md #15, including its Correction note: this is NOT
-# attributable to Comfy-Org/ComfyUI#14595, which is a performance-only bug).
-# int8_tensorwise sets quantize_input=False (weight-only quantization,
-# activations always full precision), sidestepping that path entirely.
+# FP8 was removed for a session, then re-added once this project's own
+# writer started defaulting to full_precision_matrix_mult=true
+# (convert_safetensors.py) -- that flag makes ComfyUI skip the risky
+# dynamic-activation-quantization compute path entirely for every FP8
+# layer, matching the safety profile of the "scaled_fp8" checkpoints
+# already circulating on Civitai/HuggingFace (see docs/issues_analysis.md
+# #16). NVFP4 has no equivalent verified safe mode yet (see
+# safetensors_quant_nvfp4.py and docs/issues_analysis.md #15) and stays
+# unoffered here; its writer/tests remain in the codebase.
 SAFETENSORS_DTYPE_CHOICES: list[tuple[str, str]] = [
     ("F16       — Half precision",                                       "F16"),
     ("F16 mixed — Half precision, hiprec tensors stay F32",               "F16_MIXED"),
+    ("FP8       — Scaled float8_e4m3fn, full-precision compute (safe)",   "FP8"),
+    ("FP8 mixed — FP8, hiprec tensors stay F32",                          "FP8_MIXED"),
     ("INT8      — Tensor-wise INT8, ConvRot-rotated where possible",      "INT8"),
     ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32 · recommended ★", "INT8_MIXED"),
 ]
@@ -75,6 +74,14 @@ def format_recommendation(model_arch, target_key: str) -> tuple[str, str]:
 
     if base == "F16":
         return "ok", "F16 preserves full precision — safe for any architecture."
+
+    if base == "FP8":
+        return "ok", (
+            "FP8 defaults to full-precision compute (`full_precision_matrix_mult`) "
+            "— safe on any architecture, same mechanism as most circulating "
+            "Civitai/HuggingFace FP8 checkpoints. No FP8 tensor-core speedup "
+            "without an explicit opt-out (docs/issues_analysis.md #16)."
+        )
 
     if base != "INT8":
         return "ok", ""
