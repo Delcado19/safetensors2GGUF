@@ -22,11 +22,12 @@ from models.architectures import QUANTIZATION_THRESHOLD
 # kernels, docs/issues_analysis.md #10-#13). The remaining image corruption on
 # Lumina2/Z-Image traces to QUANT_ALGOS["float8_e4m3fn"/"nvfp4"]["quantize_input"]
 # defaulting True in ComfyUI itself — both formats dynamically quantize
-# *activations* at inference time through a path with a confirmed
-# architecture-dependent shape bug (Comfy-Org/ComfyUI#14595), not to anything
-# our conversion controls. int8_tensorwise sets quantize_input=False (weight-only
-# quantization, activations always full precision), sidestepping that path
-# entirely — see docs/issues_analysis.md #15.
+# *activations* at inference time, and activation quantization is inherently
+# lossy in a way no weight-side keys_hiprec list can compensate for (see
+# docs/issues_analysis.md #15, including its Correction note: this is NOT
+# attributable to Comfy-Org/ComfyUI#14595, which is a performance-only bug).
+# int8_tensorwise sets quantize_input=False (weight-only quantization,
+# activations always full precision), sidestepping that path entirely.
 SAFETENSORS_DTYPE_CHOICES: list[tuple[str, str]] = [
     ("F16       — Half precision",                                       "F16"),
     ("F16 mixed — Half precision, hiprec tensors stay F32",               "F16_MIXED"),

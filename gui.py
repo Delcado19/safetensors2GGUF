@@ -1212,11 +1212,11 @@ def build_app() -> gr.Blocks:
                     "ComfyUI's `int8_tensorwise` convention (per-layer `weight_scale`), "
                     "rotating each weight with a block-Hadamard transform (ConvRot) "
                     "before quantizing where the input dimension allows it — loads "
-                    "natively in ComfyUI without the GGUF loader node. FP8/NVFP4 are "
-                    "not offered here: ComfyUI dynamically quantizes *activations* too "
-                    "for those formats, through a path with a confirmed "
-                    "architecture-dependent bug (Comfy-Org/ComfyUI#14595) — INT8 only "
-                    "quantizes weights, sidestepping it (docs/issues_analysis.md #15).",
+                    "natively in ComfyUI without the GGUF loader node. FP8/NVFP4/MXFP8 "
+                    "are not offered here: ComfyUI dynamically quantizes *activations* "
+                    "too for those formats, which produced visibly wrong output on "
+                    "Lumina2/Z-Image in our testing — INT8 only quantizes weights, "
+                    "avoiding that entirely (docs/issues_analysis.md #15).",
                     elem_classes=["intro"],
                 )
                 with gr.Column(elem_classes=["card"]):

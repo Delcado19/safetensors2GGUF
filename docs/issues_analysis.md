@@ -546,3 +546,40 @@ image-tested (no checkpoints for these architectures were available in this sess
 unlike Lumina2) — the substrings are adopted on the strength of matching an established,
 comfy_kitchen-based community tool's per-architecture configuration, not verified against
 a live conversion+load+render cycle the way the Lumina2 fix was.
+
+**Correction (later session) — the Comfy-Org/ComfyUI#14595 citation above was wrong.**
+The Investigation and Conclusion sections above (and CHANGELOG.md, README.md,
+docs/architecture.md, gui.py's Convert → Safetensors tab, safetensors_quant.py, and
+safetensors_quant_int8.py at the time) cited issue #14595 as "a confirmed
+architecture-dependent shape bug" causing the observed corruption. Reading the issue's
+own text (fetched directly via `gh api repos/Comfy-Org/ComfyUI/issues/14595`) shows this
+is wrong: the issue reports that some MLP GEMMs silently dispatch as bf16 instead of FP8,
+costing ~15% of the expected speedup — the author's own words are that "the bf16 fallback
+is silent... [but] no relevant logs" beyond a performance trace, i.e. a *performance*
+regression, not a correctness one. Silently falling back to bf16 for some shapes is
+mathematically still correct, just slower; it cannot produce black bars, mirrored
+composition, wrong poses/identities, or full-image noise.
+
+This does **not** reopen the INT8-only decision — the corruption itself was directly
+observed (user-confirmed renders across two checkpoints), and three other pieces of
+evidence independent of any specific issue number still support the same conclusion:
+(1) the `QUANT_ALGOS["quantize_input"]` registry distinction itself — FP8/NVFP4/MXFP8
+dynamically quantize *activations*, `int8_tensorwise`/`convrot_w4a4` don't, and activation
+quantization is inherently lossy in a way no weight-side `keys_hiprec` list can touch,
+which independently explains why broadening the protection list never fixed the
+pose/identity drift; (2) the `full_precision_matrix_mult: true` experiment earlier in this
+investigation, which removed the black bar and pointed at the quantized-compute path, not
+on-disk data; (3) `marcorez8/Z-image-aka-Base-nvfp4`'s own published tiered quality
+ratings (a completely independent third-party NVFP4 conversion of the same base model),
+which show real, user-rated quality degradation on Z-Image at every attention-protection
+level up to and including roughly this project's own `keys_hiprec` scope — external,
+real-world corroboration that has nothing to do with #14595. The precise ComfyUI-side
+mechanism producing the corruption remains formally unidentified; the decision to ship
+INT8-only rests on the above three points, not on a specific bug citation.
+
+Also worth noting for future reference: a maintainer comment on ComfyUI PR #14859 (the
+INT4 ConvRot / `convrot_w4a4` addition) states that naive full-int4 quantization of a
+model is low quality by the format author's own admission, and that a good INT4
+conversion needs a per-layer mix of bit-widths this project's binary
+protected/not-protected `keys_hiprec` model cannot express — a relevant constraint if
+INT4 ConvRot is ever considered as a future format.

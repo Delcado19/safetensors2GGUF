@@ -139,25 +139,34 @@ class TestConvertToSafetensors:
 
 
 class TestAlreadyQuantizedGuard:
-    """docs/issues_analysis.md #12: refuse to re-quantize a checkpoint that's
-    already quantized (e.g. ComfyUI-native int8_tensorwise+ConvRot releases),
-    rather than silently corrupting its pre-existing weight_scale/comfy_quant
-    sidecar tensors by treating them as ordinary weights."""
+    """docs/issues_analysis.md #12/dequantize.py: an already-quantized source
+    checkpoint (e.g. ComfyUI-native int8_tensorwise+ConvRot releases) is
+    automatically dequantized and cleanly re-quantized, instead of refusing
+    outright — except when there's no recognizable scale to reconstruct the
+    original magnitude from, which stays a hard refusal (genuinely
+    unrecoverable, not just unhandled)."""
 
-    def test_raises_on_comfy_quant_sidecar_present(self, tmp_path):
+    def test_dequantizes_plain_int8_checkpoint_instead_of_refusing(self, tmp_path):
         src = tmp_path / "model.safetensors"
+        original = torch.randn(64, 64, dtype=torch.float32)
+        amax = original.abs().max()
+        scale = amax / 127.0
+        q = (original / scale).round().clamp(-128, 127).to(torch.int8)
         sd = {
-            "double_blocks.0.img_attn.proj.weight": torch.randint(
-                -128, 127, (64, 64), dtype=torch.int8
-            ),
-            "double_blocks.0.img_attn.proj.weight_scale": torch.randn(64, 1, dtype=torch.float32),
+            "double_blocks.0.img_attn.proj.weight": q,
+            "double_blocks.0.img_attn.proj.weight_scale": scale.reshape(1),
+            # Garbage sidecar (not valid JSON) — must fall back to the
+            # dtype/scale heuristic instead of raising or crashing.
             "double_blocks.0.img_attn.proj.comfy_quant": torch.zeros(8, dtype=torch.uint8),
         }
         save_file(sd, str(src))
-        with pytest.raises(ValueError, match="already quantized"):
-            convert_to_safetensors(str(src), target_key="FP8", overwrite=True)
+        # Should not raise; should reconstruct values close to `original`.
+        dst, _ = convert_to_safetensors(str(src), target_key="F16", overwrite=True)
+        out = load_file(dst)
+        restored = out["double_blocks.0.img_attn.proj.weight"].to(torch.float32)
+        assert torch.allclose(restored, original, atol=scale.item() * 1.5)
 
-    def test_raises_on_int8_weight_without_sidecar(self, tmp_path):
+    def test_raises_on_int8_weight_without_recognizable_scale(self, tmp_path):
         src = tmp_path / "model.safetensors"
         sd = {
             "double_blocks.0.img_attn.proj.weight": torch.randint(
@@ -166,8 +175,32 @@ class TestAlreadyQuantizedGuard:
             "double_blocks.0.img_attn.proj.bias": torch.randn(64, dtype=torch.float32),
         }
         save_file(sd, str(src))
-        with pytest.raises(ValueError, match="already quantized"):
+        with pytest.raises(ValueError, match="no recognizable"):
             convert_to_safetensors(str(src), target_key="FP8", overwrite=True)
+
+    def test_round_trips_this_tools_own_int8_mixed_convrot_output(self, tmp_path):
+        """The file-level _quantization_metadata this tool's own
+        convert_to_safetensors() writes (not a per-layer .comfy_quant sidecar
+        tensor, unlike real ComfyUI-native releases) must still be read back
+        so re-feeding this tool's own ConvRot output uses the actual
+        convrot_groupsize instead of silently assuming CONVROT_GROUP_SIZE."""
+        src = tmp_path / "model.safetensors"
+        original = torch.randn(64, 256, dtype=torch.float32)  # 256: triggers ConvRot
+        save_file(
+            {
+                "double_blocks.0.img_attn.proj.weight": original,
+                "double_blocks.0.img_attn.proj.bias": torch.randn(64, dtype=torch.float32),
+            },
+            str(src),
+        )
+        int8_path, _ = convert_to_safetensors(str(src), target_key="INT8_MIXED", overwrite=True)
+        # weight_scale must be per-row (ConvRot actually took effect) or this
+        # test isn't exercising the code path it claims to.
+        assert load_file(int8_path)["double_blocks.0.img_attn.proj.weight_scale"].numel() > 1
+
+        roundtrip_path, _ = convert_to_safetensors(int8_path, target_key="F16", overwrite=True)
+        restored = load_file(roundtrip_path)["double_blocks.0.img_attn.proj.weight"].to(torch.float32)
+        assert torch.allclose(restored, original, atol=0.05)
 
     def test_does_not_raise_on_plain_unquantized_checkpoint(self, tmp_path):
         src = _write_minimal_flux(tmp_path)

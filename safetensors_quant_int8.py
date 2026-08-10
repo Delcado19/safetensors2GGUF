@@ -3,15 +3,14 @@ convention, with an optional offline Hadamard rotation (ConvRot).
 
 Format reference: Comfy-Org/ComfyUI comfy/quant_ops.py QUANT_ALGOS["int8_tensorwise"]
 (comfy_kitchen.tensor.int8.TensorWiseINT8Layout) and comfy/ops.py
-_load_quantized_weight_body. Unlike FP8/NVFP4 (QUANT_ALGOS["quantize_input"] left
-at its True default), int8_tensorwise sets "quantize_input": False — ComfyUI never
-dynamically quantizes *activations* for this format, only weights, so inference
-always runs through the same shape-handling code path as an unquantized model.
-That sidesteps a confirmed ComfyUI bug (Comfy-Org/ComfyUI#14595) where the
-generic dynamic-activation-quantization path silently mishandles tensors on
-newer/custom DiT architectures depending on whether they get reshaped to 2D or
-3D before a Linear call — the likely root cause of the FP8/NVFP4 pose/identity
-corruption this format was added to avoid (see docs/issues_analysis.md #15).
+_load_quantized_weight_body. Unlike FP8/NVFP4/MXFP8 (QUANT_ALGOS["quantize_input"]
+left at its True default), int8_tensorwise sets "quantize_input": False — ComfyUI
+never dynamically quantizes *activations* for this format, only weights.
+Activation quantization is inherently lossy in a way no weight-side keys_hiprec
+list can compensate for — the likely root cause of the FP8/NVFP4 pose/identity
+corruption this format was added to avoid (see docs/issues_analysis.md #15,
+including its Correction note: this is NOT attributable to a specific ComfyUI
+shape-handling bug — that citation was wrong and has been retracted).
 
 Plain (no rotation): single absmax scalar scale per whole tensor.
 ConvRot: weight is rotated with a block-diagonal Hadamard matrix (each

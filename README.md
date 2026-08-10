@@ -243,19 +243,36 @@ when you want ComfyUI-compatible weights without the GGUF container format.
 | `INT8` | int8_tensorwise, ConvRot-rotated where possible (ComfyUI convention) | Python | Per-layer `weight_scale`; weight-only quantization, no runtime activation quant |
 | `INT8_MIXED` | INT8/ConvRot, high-precision tensors stay F32 | Python | Aggressive 8-bit quantization with protection |
 
-**Why INT8 and not FP8/NVFP4:** ComfyUI's native FP8/NVFP4 formats dynamically
-quantize *activations* too at inference time (`QUANT_ALGOS["quantize_input"]`
-defaults `True`), through a runtime path with a confirmed architecture-dependent
-bug (Comfy-Org/ComfyUI#14595) that produced visibly wrong output (black bars,
-wrong poses/identities, full-image noise) on Lumina2/Z-Image checkpoints even
-after this tool's own on-disk data was verified byte-correct. `int8_tensorwise`
-is one of only two `QUANT_ALGOS` entries ComfyUI marks `"quantize_input": False`
-— weight-only quantization, activations always stay full precision, avoiding
-that runtime path entirely. See
-[docs/issues_analysis.md](docs/issues_analysis.md) #15. The FP8/NVFP4
+**ComfyUI version requirement:** loading `INT8`/`INT8_MIXED` output needs
+**ComfyUI v0.25.0+** — `comfy-kitchen`'s int8/ConvRot optimizations landed in
+`comfy-kitchen` 0.2.9 (commit `ade4dfd`), first bundled in ComfyUI v0.25.0
+(2026-06-16). Older ComfyUI versions either won't have the `int8_tensorwise`
+loader at all or will use an unoptimized/pre-ConvRot version of it.
+
+**Why INT8 and not FP8/NVFP4/MXFP8:** ComfyUI's native FP8/NVFP4/MXFP8 formats
+dynamically quantize *activations* too at inference time
+(`QUANT_ALGOS["quantize_input"]` defaults `True`), which produced visibly wrong
+output (black bars, wrong poses/identities, full-image noise) on Lumina2/Z-Image
+checkpoints even after this tool's own on-disk data was verified byte-correct —
+activation quantization is inherently lossy in a way no weight-side protection
+list can compensate for. `int8_tensorwise` is one of only two `QUANT_ALGOS`
+entries ComfyUI marks `"quantize_input": False` — weight-only quantization,
+activations always stay full precision, avoiding that lossy path entirely. See
+[docs/issues_analysis.md](docs/issues_analysis.md) #15 (including its
+Correction note — an earlier draft of this investigation misattributed the
+corruption to a specific ComfyUI GitHub issue that turned out to be a
+performance-only bug; that citation has been retracted). The FP8/NVFP4
 implementations (`safetensors_quant_fp8.py`/`safetensors_quant_nvfp4.py`)
 remain in the codebase and are still used by the separate text-encoder
 conversion path below, which hasn't shown this issue.
+
+**Already-quantized sources:** if you point Convert → Safetensors at a
+checkpoint that's already quantized (e.g. a published ComfyUI-native
+`int8_tensorwise`/ConvRot or scaled-FP8 release), it's automatically
+dequantized first and then cleanly re-quantized to your chosen target format
+— see `dequantize.py`. The one case that still fails is an int8/uint8 weight
+with no recognizable `weight_scale`/`comfy_quant` sidecar at all, since
+there's no way to reconstruct the original magnitude without a scale.
 
 ## Text-Encoder Conversion
 

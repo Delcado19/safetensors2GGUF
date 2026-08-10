@@ -149,6 +149,15 @@ load_state_dict() + detect_arch()      (shared with the GGUF pipeline above)
     │
     ▼
 convert_to_safetensors() in convert_safetensors.py
+    │  - _scan_quantized_layers(): pre-scan for already-quantized .weight
+    │      tensors (dequantize.py's detect_quantized_weight(), preferring the
+    │      per-layer .comfy_quant JSON sidecar, falling back to a
+    │      dtype+weight_scale heuristic) — Automatic Dequantization, mirrors
+    │      Starnodes ComfyUI Model Converter. Each detected layer is
+    │      reconstructed to float32 (dequantize_weight()) before the normal
+    │      pipeline below runs, instead of refusing outright. Only an
+    │      int8/uint8 weight with NO recognizable scale sidecar still raises
+    │      (unrecoverable — no scale to reconstruct magnitude from)
     │  - Iterates state_dict.items() directly (never list()s it) so the
     │      _LazyStateDict streaming from the GGUF pipeline still bounds peak
     │      RAM to ~1 tensor; list()-ing here previously reintroduced the
@@ -200,19 +209,24 @@ scalar (or, with ConvRot, a per-row scale plus the block-Hadamard weight
 rotation `comfy_kitchen`'s kernel un-rotates on load), matching ComfyUI's
 native `TensorWiseINT8Layout` loader.
 
-**Why INT8, not FP8/NVFP4:** `safetensors_quant_fp8.py`/`safetensors_quant_nvfp4.py`
+**Why INT8, not FP8/NVFP4/MXFP8:** `safetensors_quant_fp8.py`/`safetensors_quant_nvfp4.py`
 implement ComfyUI's scaled-FP8/NVFP4 conventions correctly (byte-verified
 against ComfyUI's own kernels, `docs/issues_analysis.md` #10-#13) but are no
 longer offered in `SAFETENSORS_DTYPE_CHOICES`: ComfyUI's `QUANT_ALGOS["float8_e4m3fn"]`/
-`["nvfp4"]` leave `"quantize_input"` at its `True` default, so ComfyUI
-dynamically quantizes *activations* too at inference time — a runtime path
-with a confirmed architecture-dependent bug (Comfy-Org/ComfyUI#14595) that
+`["nvfp4"]`/`["mxfp8"]` leave `"quantize_input"` at its `True` default, so
+ComfyUI dynamically quantizes *activations* too at inference time — which
 produced visibly wrong output (black bars, mirrored/wrong poses, wrong
 identities, full-image noise) on Lumina2/Z-Image checkpoints even after this
-tool's on-disk weight data was verified byte-correct. `int8_tensorwise` is one
-of only two `QUANT_ALGOS` entries marked `"quantize_input": False` — weight-only
-quantization, avoiding that path entirely (much closer to GGUF's
-dequantize-then-standard-matmul robustness). See `docs/issues_analysis.md` #15.
+tool's on-disk weight data was verified byte-correct. Activation quantization
+is inherently lossy in a way no weight-side protection list can compensate
+for. `int8_tensorwise` is one of only two `QUANT_ALGOS` entries marked
+`"quantize_input": False` — weight-only quantization, avoiding that path
+entirely (much closer to GGUF's dequantize-then-standard-matmul robustness).
+See `docs/issues_analysis.md` #15, including its Correction note — an earlier
+draft misattributed the corruption to a specific ComfyUI GitHub issue
+(Comfy-Org/ComfyUI#14595) that turned out to be a performance-only bug (silent
+bf16 fallback for some GEMM shapes, mathematically correct just slower); that
+citation has been retracted, the INT8 decision itself is unaffected.
 
 ## Text-Encoder Conversion Pipeline
 

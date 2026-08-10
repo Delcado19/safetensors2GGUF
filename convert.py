@@ -151,6 +151,11 @@ class _LazyStateDict:
         st_dtype = self._header[self._key_map[key]]["dtype"]
         return _ST_DTYPE_MAP.get(st_dtype)
 
+    def file_metadata(self) -> dict:
+        """Return the safetensors file-level ``__metadata__`` dict (e.g. this
+        tool's own ``_quantization_metadata``), or {} if none was written."""
+        return self._header.get("__metadata__") or {}
+
 
 def load_state_dict(path):
     """Load a model checkpoint from disk and return a (possibly lazy) state-dict.

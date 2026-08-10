@@ -15,6 +15,7 @@ import torch
 from safetensors.torch import save_file
 
 from convert import load_state_dict
+from dequantize import detect_quantized_weight, dequantize_weight
 from models.architectures import detect_arch
 from safetensors_quant import layer_key, quantize_tensor_st
 from safetensors_quant_int8 import CONVROT_GROUP_SIZE
@@ -47,43 +48,45 @@ _ALREADY_QUANTIZED_DTYPES: tuple = tuple(
 )
 
 
-def _check_not_already_quantized(state_dict):
-    """Raise if state_dict is itself an already-quantized checkpoint.
+def _scan_quantized_layers(state_dict) -> tuple[dict[str, str], set[str]]:
+    """Pre-scan for already-quantized ".weight" tensors so they can be
+    automatically dequantized and cleanly re-quantized to a different target
+    format, instead of refusing outright (mirrors Starnodes ComfyUI Model
+    Converter's "Automatic Dequantization" feature; see dequantize.py and
+    docs/issues_analysis.md #12 for why a hard refusal was the original
+    behavior here).
 
-    This tool assumes its source is a plain full-precision checkpoint. Some
-    published checkpoints (e.g. ComfyUI-native int8_tensorwise+ConvRot
-    releases) are already partially quantized, with their own per-layer
-    ``.weight_scale``/``.comfy_quant`` sidecar tensors sitting right in the
-    state dict. Nothing in this tool recognizes those as sidecars rather
-    than ordinary weights — it would quantize the already-quantized integer
-    codes a second time, AND quantize the pre-existing scale/comfy_quant
-    tensors themselves as if they were regular weight matrices (producing
-    corrupted, wrongly-named output; see docs/issues_analysis.md #12).
-    Detecting and refusing beats silently producing a worse checkpoint.
+    Returns (formats, skip): ``formats`` maps each detected quantized
+    ".weight" key to its on-disk format string; ``skip`` is the set of
+    scale/comfy_quant sidecar keys that must not be treated as ordinary
+    weights during the main conversion loop below.
+
+    Still raises if an int8/uint8 ".weight" is found with no recognizable
+    scale sidecar — that case is genuinely unrecoverable (no scale to
+    reconstruct the original magnitude from), not just unhandled.
     """
-    quant_sidecar_keys = [k for k in state_dict.keys() if k.endswith(".comfy_quant")]
-    if quant_sidecar_keys:
-        n = len(quant_sidecar_keys)
-        example = quant_sidecar_keys[0][: -len(".comfy_quant")]
-        raise ValueError(
-            f"Source checkpoint is already quantized ({n} layer(s) have a "
-            f".comfy_quant sidecar, e.g. '{example}') — re-quantizing it "
-            "would corrupt those layers a second time. Convert from the "
-            "original unquantized checkpoint instead."
-        )
-
+    skip = {
+        key for key in state_dict.keys()
+        if key.endswith((".weight_scale", ".weight_scale_2", ".comfy_quant"))
+    }
+    formats: dict[str, str] = {}
     dtype_of = getattr(state_dict, "dtype_of", None)
     for key in state_dict.keys():
-        if not key.endswith(".weight"):
+        if key in skip or not key.endswith(".weight"):
+            continue
+        fmt = detect_quantized_weight(state_dict, key)
+        if fmt is not None:
+            formats[key] = fmt
             continue
         dtype = dtype_of(key) if dtype_of is not None else state_dict[key].dtype
         if dtype in _ALREADY_QUANTIZED_DTYPES:
             raise ValueError(
-                f"Source checkpoint is already quantized ('{key}' is stored "
-                f"as {dtype}, not a float type) — re-quantizing it would "
-                "corrupt that layer. Convert from the original unquantized "
-                "checkpoint instead."
+                f"'{key}' is stored as {dtype} but has no recognizable "
+                "weight_scale/comfy_quant sidecar to reconstruct it from — "
+                "cannot safely dequantize. Convert from the original "
+                "unquantized checkpoint instead."
             )
+    return formats, skip
 
 
 def convert_to_safetensors(
@@ -126,7 +129,13 @@ def convert_to_safetensors(
             print(msg)
 
     state_dict = load_state_dict(path)
-    _check_not_already_quantized(state_dict)
+    quant_formats, quant_skip_keys = _scan_quantized_layers(state_dict)
+    if quant_formats:
+        _log(
+            f"INFO:  Dequantizing {len(quant_formats)} already-quantized "
+            f"layer(s) before re-quantizing (formats: "
+            f"{sorted(set(quant_formats.values()))})"
+        )
     if model_arch is None:
         model_arch = detect_arch(state_dict)
     _log(f"INFO:  Architecture: {model_arch.arch}")
@@ -154,8 +163,17 @@ def convert_to_safetensors(
             raise RuntimeError("cancelled")
         if on_progress:
             on_progress(idx + 1, total, key)
+        if key in quant_skip_keys:
+            continue
         if any(x in key for x in model_arch.keys_ignore):
             continue
+
+        if key in quant_formats:
+            # Reconstruct the approximate float original before feeding this
+            # layer through the normal quantization path below — `data` here
+            # is still the raw on-disk quantized tensor (int8/float8/nvfp4
+            # packed uint8), never treated as a plain weight matrix.
+            data = dequantize_weight(state_dict, key, quant_formats[key], data)
 
         old_dtype = data.dtype
 
