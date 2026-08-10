@@ -105,6 +105,38 @@ class TestConvertToSafetensors:
         out = load_file(dst)
         assert out["double_blocks.0.img_attn.proj.weight"].dtype == torch.float16
 
+    def test_on_log_emits_a_line_per_tensor(self, tmp_path):
+        """GUI regression: the Convert -> Safetensors tab's log box only showed
+        the arch/writing/done lines, never which tensor was being processed
+        (unlike the GGUF tab's handle_tensors, which logs per-tensor).
+        on_log must fire once per non-ignored tensor by default."""
+        src = _write_minimal_flux(tmp_path)
+        logged: list[str] = []
+        convert_to_safetensors(str(src), target_key="F16", overwrite=True, on_log=logged.append)
+        tensor_lines = [
+            line for line in logged
+            if "double_blocks.0.img_attn.proj.weight" in line and "img_attn.proj.weight_scale" not in line
+        ]
+        assert len(tensor_lines) == 1
+
+    def test_log_tensor_every_throttles_but_keeps_first_and_last(self, tmp_path):
+        src = tmp_path / "model.safetensors"
+        sd = {
+            f"double_blocks.{i}.img_attn.proj.weight": torch.randn(64, 64, dtype=torch.float32)
+            for i in range(5)
+        }
+        save_file(sd, str(src))
+        logged: list[str] = []
+        convert_to_safetensors(
+            str(src), target_key="F16", overwrite=True,
+            on_log=logged.append, log_tensor_every=3,
+        )
+        tensor_lines = [line for line in logged if "double_blocks." in line]
+        # 5 tensors, every-3rd + first + last -> idx 0, 2, 4
+        assert len(tensor_lines) == 3
+        assert "double_blocks.0." in tensor_lines[0]
+        assert "double_blocks.4." in tensor_lines[-1]
+
 
 class TestAlreadyQuantizedGuard:
     """docs/issues_analysis.md #12: refuse to re-quantize a checkpoint that's

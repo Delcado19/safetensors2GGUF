@@ -95,6 +95,7 @@ def convert_to_safetensors(
     on_log=None,
     cancel_event=None,
     model_arch=None,
+    log_tensor_every=1,
 ):
     """Convert a model checkpoint to a quantized .safetensors file.
 
@@ -105,6 +106,10 @@ def convert_to_safetensors(
         overwrite: Skip existence check when True.
         on_progress: Optional callback(idx, total, key).
         on_log: Optional callback(msg); prints when None.
+        log_tensor_every: Emit a per-tensor log line every Nth tensor (plus the
+            first/last), mirroring convert.py's handle_tensors so the GUI log
+            box shows which tensor is being processed, not just the arch/done
+            lines. Values below 1 are treated as 1 (log every tensor).
         cancel_event: Optional threading.Event; raises RuntimeError("cancelled") when set.
         model_arch: Pre-resolved architecture instance (e.g. a bare
             ``models.architectures.ModelTemplate()`` for text-encoder checkpoints,
@@ -143,6 +148,7 @@ def convert_to_safetensors(
     # finding #3). len() is cheap — _LazyStateDict.__len__ reads the key map,
     # not tensor data.
     total = len(state_dict)
+    log_tensor_every = max(1, int(log_tensor_every or 1))
     for idx, (key, data) in enumerate(state_dict.items()):
         if cancel_event is not None and cancel_event.is_set():
             raise RuntimeError("cancelled")
@@ -151,6 +157,8 @@ def convert_to_safetensors(
         if any(x in key for x in model_arch.keys_ignore):
             continue
 
+        old_dtype = data.dtype
+
         # Coerce dtypes that nan_to_num cannot handle:
         #   float8   → float16  (nan_to_num rejects float8)
         if _FLOAT8_DTYPES and data.dtype in _FLOAT8_DTYPES:
@@ -158,6 +166,13 @@ def convert_to_safetensors(
 
         data = torch.nan_to_num(data, nan=0.0, posinf=65504.0, neginf=-65504.0)
         quantized = quantize_tensor_st(data, key, model_arch, target_key)
+        if (
+            log_tensor_every == 1
+            or idx == 0
+            or idx + 1 == total
+            or (idx + 1) % log_tensor_every == 0
+        ):
+            _log(f"  {key}  {old_dtype} -> {target_key}")
         out_tensors.update(quantized)
         if quant_format and len(quantized) > 1:
             # ComfyUI's convert_old_quants() writes the comfy_quant sidecar as

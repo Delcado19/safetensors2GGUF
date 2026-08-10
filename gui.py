@@ -284,31 +284,140 @@ def update_size_estimate(src: str, quant_key: str) -> str:
 # ──────────────────────────────────────────────────────────────────────────────
 
 CSS = """
-/* ── Override Gradio block background to match page — removes all bands ─── */
-/* Every block container (tabs, rows, columns, HTML, Group…) now inherits    */
-/* the same dark background as the page. Inputs keep input-background-fill.  */
-:root { --block-background-fill: var(--background-fill-primary); }
+/* ── Design tokens ─────────────────────────────────────────────────────────
+   Named palette (not Gradio's stock hue presets) + a real type scale.
+   Light values live on :root; dark values re-declare the same names under
+   Gradio's own dark-mode selector (":root.dark, :root .dark" — Gradio toggles
+   a class, not prefers-color-scheme, so that's the selector that must match
+   to stay in sync with the rest of the UI, incl. a manual ?__theme override).
+*/
+:root {
+    color-scheme: light dark;
+
+    --s2g-bg: #f7f8fa;
+    --s2g-surface: #ffffff;
+    --s2g-line: #d9e0e7;
+
+    --s2g-text: #111827;
+    --s2g-muted: #5f6b7a;
+
+    --s2g-accent: #0891b2;
+    --s2g-accent-2: #0f766e;
+    --s2g-accent-soft: rgba(8, 145, 178, 0.12);
+    --s2g-danger: #dc2626;
+
+    --s2g-shadow: 0 16px 42px -28px rgba(15, 23, 42, 0.45);
+
+    --font-ui: "Segoe UI Variable", "Aptos", "Segoe UI", system-ui, sans-serif;
+    --font-mono: "Cascadia Mono", "JetBrains Mono", Consolas, ui-monospace, monospace;
+
+    --type-display: 1.625rem;  /* app title */
+    --type-body: 0.925rem;     /* intro / description text */
+    --type-small: 0.8125rem;   /* subtitle, size-info, status */
+
+    /* Every Gradio block container (tabs, rows, columns, HTML, Group…) now
+       inherits the page background — removes the "floating panel" look
+       everywhere except .card, which gets its own explicit surface below. */
+    --block-background-fill: var(--background-fill-primary);
+}
+:root.dark, :root .dark {
+    --s2g-bg: #0b0f14;
+    --s2g-surface: #111820;
+    --s2g-line: #26323f;
+
+    --s2g-text: #edf3f8;
+    --s2g-muted: #a7b3bf;
+
+    --s2g-accent: #22d3ee;
+    --s2g-accent-2: #2dd4bf;
+    --s2g-accent-soft: rgba(34, 211, 238, 0.14);
+    --s2g-danger: #f87171;
+
+    --s2g-shadow: 0 20px 52px -30px rgba(0, 0, 0, 0.75);
+}
+:root {
+    --background-fill-primary: var(--s2g-bg);
+    --border-color-primary: var(--s2g-line);
+    --body-text-color: var(--s2g-text);
+    --body-text-color-subdued: var(--s2g-muted);
+}
 
 /* ── Scroll prevention ──────────────────────────────────────────────────── */
 html, body { overflow-anchor: none !important; scroll-behavior: auto !important; }
 
-/* ── Page width ─────────────────────────────────────────────────────────── */
-.gradio-container { max-width: 1100px !important; margin: 0 auto !important; padding-top: 8px !important; }
+/* ── Page width / base type ─────────────────────────────────────────────── */
+.gradio-container {
+    max-width: 1100px !important; margin: 0 auto !important; padding-top: 8px !important;
+    font-family: var(--font-ui);
+}
 
-/* ── App header ─────────────────────────────────────────────────────────── */
+/* ── App header / banner ─────────────────────────────────────────────────
+   A technical "compiler console" surface, not a marketing gradient: subtle
+   blueprint grid + a hex-cell motif (matching the ⬡ tab icons), CSS-only
+   (no images/SVG files), tinted with the accent tokens above so it tracks
+   light/dark automatically. */
 #app-header {
-    background: linear-gradient(120deg, #4f46e5 0%, #0284c7 100%);
-    border-radius: 12px;
-    padding: 18px 24px;
-    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    margin: 0 0 14px;
+    padding: 22px 26px 20px;
+    border: 1px solid var(--s2g-line);
+    border-radius: 14px;
+    background:
+        radial-gradient(circle at 85% 15%, var(--s2g-accent-soft), transparent 32%),
+        linear-gradient(135deg, var(--s2g-accent-soft), transparent 45%),
+        var(--s2g-surface);
+    box-shadow: var(--s2g-shadow);
     line-height: 1.4;
 }
-#app-title {
-    font-size: 1.35em; font-weight: 700; color: #fff; margin: 0 0 4px 0;
-    letter-spacing: -0.01em;
+/* Blueprint grid, faded out toward the right where the hex motif sits */
+#app-header::before {
+    content: "";
+    position: absolute; inset: 0; z-index: -2;
+    opacity: 0.55;
+    background-image:
+        linear-gradient(to right, var(--s2g-line) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--s2g-line) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: linear-gradient(90deg, black, transparent 75%);
+    -webkit-mask-image: linear-gradient(90deg, black, transparent 75%);
 }
-#app-sub { font-size: 0.87em; color: rgba(255,255,255,0.82); margin: 0; }
-#app-sub strong { color: rgba(255,255,255,0.97); }
+/* Decorative hex-cell cluster echoing the tab icons' ⬡ motif — sized to fit
+   inside the header's own content height (it clips at overflow:hidden, so it
+   must not be taller than the banner itself). */
+#app-header::after {
+    content: "";
+    position: absolute; right: 24px; top: 50%; transform: translateY(-50%); z-index: -1;
+    width: 130px; height: 62px;
+    opacity: 0.85;
+    background:
+        repeating-linear-gradient(30deg, var(--s2g-accent) 0 3px, transparent 3px 22px),
+        repeating-linear-gradient(150deg, var(--s2g-accent-2) 0 3px, transparent 3px 22px);
+    clip-path: polygon(8% 25%, 50% 0, 92% 25%, 92% 75%, 50% 100%, 8% 75%);
+}
+#app-title {
+    max-width: 760px; margin: 0 0 6px 0;
+    color: var(--s2g-text);
+    font-size: var(--type-display); font-weight: 700; line-height: 1.15;
+    letter-spacing: -0.018em;
+}
+#app-sub {
+    max-width: 780px; margin: 0;
+    color: var(--s2g-muted);
+    font-size: var(--type-small); line-height: 1.55;
+}
+#app-sub strong { color: var(--s2g-text); font-weight: 650; }
+
+/* ── Tab intro text: set off from the settings card below it ─────────────── */
+.intro {
+    background: var(--s2g-accent-soft);
+    border-left: 3px solid var(--s2g-accent);
+    border-radius: 8px;
+    padding: 10px 14px !important;
+    margin-bottom: 12px !important;
+}
+.intro p { margin: 0 !important; font-size: var(--type-body); color: var(--s2g-muted); }
 
 /* ── Strip outer wrappers: tab-container, any block ancestor of .card ────── */
 .tabitem, .tab-content, .tabs > .tabitem,
@@ -322,13 +431,15 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
 
 /* ── Input card ──────────────────────────────────────────────────────────── */
 .card {
-    border: 1.5px solid var(--border-color-primary, #e2e8f0) !important;
-    border-radius: 24px !important;
+    border: 1.5px solid var(--s2g-line) !important;
+    border-radius: 14px !important;
     padding: 18px 18px 14px !important;
     background: transparent !important;
     box-shadow: none !important;
     margin-bottom: 10px !important;
+    transition: border-color 150ms ease;
 }
+.card:focus-within { border-color: var(--s2g-accent) !important; }
 .card > .form, .card .form {
     background: transparent !important;
     border: none !important;
@@ -368,7 +479,7 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
 .path-input textarea { border-radius: 6px !important; }
 
 /* ── Size estimate ──────────────────────────────────────────────────────── */
-#size-info { font-size: 0.85em; color: var(--body-text-color-subdued); padding-top: 8px; }
+#size-info { font-size: var(--type-small); color: var(--s2g-muted); padding-top: 8px; }
 
 /* ── Status textbox: Gradio default styling, no custom border colour ─────── */
 #conv-status, #pad-status, #fix-status, #extract-status, #st-status {
@@ -378,8 +489,8 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
     z-index: 200 !important;
 }
 #conv-status textarea, #pad-status textarea, #fix-status textarea, #extract-status textarea, #st-status textarea {
-    font-family: ui-monospace, monospace !important;
-    font-size: 0.85em !important;
+    font-family: var(--font-mono) !important;
+    font-size: var(--type-small) !important;
     font-weight: 600 !important;
     resize: none !important;
 }
@@ -387,26 +498,33 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
 /* ── Action buttons ─────────────────────────────────────────────────────── */
 #convert-btn, #fix-pad-btn, #fix-5d-btn, #extract-btn, #st-convert-btn {
     min-height: 44px !important; font-size: 1em !important; font-weight: 600 !important;
+    transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1) !important;
+}
+#convert-btn:active, #fix-pad-btn:active, #fix-5d-btn:active, #extract-btn:active, #st-convert-btn:active {
+    transform: scale(0.98);
 }
 #cancel-btn, #st-cancel-btn { min-height: 44px !important; }
 #cancel-btn button, #cancel-btn, #st-cancel-btn button, #st-cancel-btn {
-    background: #ef4444 !important; border-color: #dc2626 !important; color: #fff !important;
+    background: var(--s2g-danger) !important; border-color: var(--s2g-danger) !important; color: #fff !important;
     border-radius: 8px !important;
 }
-#cancel-btn button:hover, #cancel-btn:hover, #st-cancel-btn button:hover, #st-cancel-btn:hover { background: #dc2626 !important; }
+#cancel-btn button:hover, #cancel-btn:hover, #st-cancel-btn button:hover, #st-cancel-btn:hover { filter: brightness(0.9); }
 
 /* ── Log areas ──────────────────────────────────────────────────────────── */
 #conv-log textarea, #pad-log textarea, #fix-log textarea, #extract-log textarea, #st-log textarea {
-    font-family: ui-monospace, monospace; font-size: 0.8em; line-height: 1.45;
+    font-family: var(--font-mono); font-size: 0.8em; line-height: 1.45;
 }
 """
 
 _THEME = gr.themes.Default(
-    primary_hue="indigo",
-    secondary_hue="sky",
-    neutral_hue="slate",
-    font=["Inter", "ui-sans-serif", "sans-serif"],
-    font_mono=["JetBrains Mono", "ui-monospace", "monospace"],
+    primary_hue="cyan",
+    secondary_hue="teal",
+    neutral_hue="zinc",
+    # Segoe UI Variable / Aptos are Windows-native (no CDN fetch needed, matches
+    # the app's telemetry-off / no-outbound-requests-at-startup policy above);
+    # both fall back to Inter-equivalent system stacks where unavailable.
+    font=["Segoe UI Variable", "Aptos", "Segoe UI", "system-ui", "sans-serif"],
+    font_mono=["Cascadia Mono", "JetBrains Mono", "Consolas", "ui-monospace", "monospace"],
 )
 
 _HEADER_HTML = """
@@ -799,6 +917,7 @@ def run_st_convert(
                 on_progress=lambda idx, total, key: q.put(("progress", idx, total, key)),
                 on_log=lambda msg: q.put(("log", msg)),
                 cancel_event=cancel_event,
+                log_tensor_every=GUI_TENSOR_LOG_EVERY,
             )
             result["out"] = out_path
         except RuntimeError as exc:
@@ -1005,12 +1124,13 @@ def build_app() -> gr.Blocks:
         with gr.Tabs():
 
             # ── Convert → GGUF ─────────────────────────────────────────────
-            with gr.Tab("Convert → GGUF"):
+            with gr.Tab("⬡  Convert → GGUF"):
                 gr.Markdown(
                     "Convert a **Safetensors / CKPT** model checkpoint to **GGUF**.  "
                     "Python-native precisions write directly; K-quants run a 2-step "
                     "pipeline via the bundled `llama-quantize` binary.  5D-tensor and "
-                    "pad-token fixes are chained automatically when needed."
+                    "pad-token fixes are chained automatically when needed.",
+                    elem_classes=["intro"],
                 )
                 with gr.Column(elem_classes=["card"]):
                     with gr.Row(equal_height=False):
@@ -1085,7 +1205,7 @@ def build_app() -> gr.Blocks:
                 )
 
             # ── Convert → Safetensors ──────────────────────────────────────
-            with gr.Tab("Convert → Safetensors"):
+            with gr.Tab("⬢  Convert → Safetensors"):
                 gr.Markdown(
                     "Convert a **Safetensors / CKPT** model checkpoint to a quantized "
                     "**Safetensors** file — no GGUF, no llama-quantize. INT8 uses "
@@ -1096,7 +1216,8 @@ def build_app() -> gr.Blocks:
                     "not offered here: ComfyUI dynamically quantizes *activations* too "
                     "for those formats, through a path with a confirmed "
                     "architecture-dependent bug (Comfy-Org/ComfyUI#14595) — INT8 only "
-                    "quantizes weights, sidestepping it (docs/issues_analysis.md #15)."
+                    "quantizes weights, sidestepping it (docs/issues_analysis.md #15).",
+                    elem_classes=["intro"],
                 )
                 with gr.Column(elem_classes=["card"]):
                     with gr.Row(equal_height=False):
@@ -1158,7 +1279,7 @@ def build_app() -> gr.Blocks:
                 st_cancel_btn.click(fn=request_cancel_st, outputs=[st_status], cancels=[st_convert_event])
 
             # ── Convert Text Encoder ─────────────────────────────────────────
-            with gr.Tab("Convert Text Encoder"):
+            with gr.Tab("✎  Convert Text Encoder"):
                 gr.Markdown(
                     "Convert a **bare single-file text-encoder checkpoint** (Qwen3, "
                     "Mistral, T5/UMT5, …) to GGUF or quantized safetensors.\n\n"
@@ -1175,7 +1296,8 @@ def build_app() -> gr.Blocks:
                     "docs/building-llama-quantize.md) — that patch isn't safe for LLM/text GGUFs.\n\n"
                     "**FP8/NVFP4 formats** write a quantized `.safetensors` file "
                     "instead — no base repo ID, no HuggingFace download, no llama.cpp "
-                    "involved at all."
+                    "involved at all.",
+                    elem_classes=["intro"],
                 )
                 with gr.Column(elem_classes=["card"]):
                     with gr.Row(equal_height=False):
@@ -1228,11 +1350,12 @@ def build_app() -> gr.Blocks:
                 te_cancel_btn.click(fn=request_cancel_te, outputs=[te_status], cancels=[te_convert_event])
 
             # ── Fix Pad Tokens ─────────────────────────────────────────────
-            with gr.Tab("Fix Pad Tokens"):
+            with gr.Tab("⚒  Fix Pad Tokens"):
                 gr.Markdown(
                     "Correct `x_pad_token` / `cap_pad_token` shape `[D]` → `[1, D]` in an "
                     "existing **Lumina 2** GGUF.  Required when ComfyUI raises "
-                    "*size mismatch for x_pad_token*.  New conversions are not affected."
+                    "*size mismatch for x_pad_token*.  New conversions are not affected.",
+                    elem_classes=["intro"],
                 )
                 with gr.Column(elem_classes=["card"]):
                     with gr.Row(equal_height=False):
@@ -1263,11 +1386,12 @@ def build_app() -> gr.Blocks:
                 )
 
             # ── Fix 5D Tensors ─────────────────────────────────────────────
-            with gr.Tab("Fix 5D Tensors"):
+            with gr.Tab("⚙  Fix 5D Tensors"):
                 gr.Markdown(
                     "Re-insert 5D tensors into a quantized GGUF.  "
                     "**Required for HunyuanVideo / Wan** when using llama-quantize outside "
-                    "the Convert tab — the Convert tab chains this step automatically."
+                    "the Convert tab — the Convert tab chains this step automatically.",
+                    elem_classes=["intro"],
                 )
                 with gr.Column(elem_classes=["card"]):
                     with gr.Row(equal_height=False):
@@ -1303,11 +1427,12 @@ def build_app() -> gr.Blocks:
                 )
 
             # ── Extract Components ─────────────────────────────────────────
-            with gr.Tab("Extract Components"):
+            with gr.Tab("▤  Extract Components"):
                 gr.Markdown(
                     "Analyze an **SDXL** checkpoint for embedded VAE, CLIP-L, and CLIP-G "
                     "components, compare them with local standard files when present, "
-                    "then export selected components to the ComfyUI models folder."
+                    "then export selected components to the ComfyUI models folder.",
+                    elem_classes=["intro"],
                 )
                 with gr.Column(elem_classes=["card"]):
                     with gr.Row(equal_height=False):
