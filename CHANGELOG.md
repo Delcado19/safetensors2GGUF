@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fix
+- **`format_recommendation()`'s plain-INT8 warning overclaimed for unverified architectures**: it asserted "plain INT8 has shown visible pose/identity corruption in testing" uniformly for every architecture with a non-empty `keys_hiprec`, but only `lumina2` has actually been render-tested this way. Now mirrors the `ok` branch's existing honesty split: `lumina2` keeps the strong claim, every other sensitive architecture gets a claim scoped to what's actually known (the same class of risk caused corruption on `lumina2`, not confirmed by a render test on this architecture).
+
 ### Change
 - **Header mark replaced**: the CSS-only hex-lattice pattern in the app header is now a custom icon (`assets/header_logo.png`, files → quantized-block motif) instead. Embedded as a base64 `data:` URI at import time (`gui.py`'s `_load_header_logo_data_uri()`) so it stays self-contained — no external request, no Gradio static-file route to configure — consistent with the app's no-outbound-requests-at-startup policy. Source PNG cropped/downscaled from a 1254×1254 original to a 240×234 tile to keep the embedded size small (~55 KB).
 

@@ -56,11 +56,22 @@ def format_recommendation(model_arch, target_key: str) -> tuple[str, str]:
     attention-sensitive DiT architectures that need keys_hiprec protection,
     while costing nothing to recommend on architectures that don't
     (docs/issues_analysis.md #15).
+
+    Only `lumina2` has actually been render-tested this way — every other
+    architecture's keys_hiprec scope was adopted from cross-referencing
+    community tools (tritant/Starnodes), never confirmed by converting +
+    loading + rendering with THIS tool's output. That distinction must
+    survive into both the warn and the ok message: claiming plain INT8
+    "has shown visible corruption in testing" for an architecture nobody
+    has actually rendered would overstate what we know, not just for the
+    positive (INT8_MIXED-is-fine) case but symmetrically for the negative
+    (plain-INT8-is-risky) case too.
     """
     mixed = target_key.endswith("_MIXED")
     base = target_key[: -len("_MIXED")] if mixed else target_key
     arch = model_arch.arch
     sensitive = bool(model_arch.keys_hiprec)
+    verified = arch in _RENDER_VERIFIED_ARCHES
 
     if base == "F16":
         return "ok", "F16 preserves full precision — safe for any architecture."
@@ -69,15 +80,23 @@ def format_recommendation(model_arch, target_key: str) -> tuple[str, str]:
         return "ok", ""
 
     if sensitive and not mixed:
+        if verified:
+            evidence = "plain INT8 has shown visible pose/identity corruption in testing"
+        else:
+            evidence = (
+                "the same risk caused visible pose/identity corruption on `lumina2` "
+                "with plain INT8 — this hasn't been render-tested on this specific "
+                "architecture, but weight-only vs. full precision isn't an "
+                "architecture-specific distinction either"
+            )
         return "warn", (
             f"**Plain INT8 is not recommended for `{arch}`** — this architecture "
-            "has attention/embedder layers known to be quantization-sensitive; "
-            "plain INT8 has shown visible pose/identity corruption in testing. "
+            f"has layers known to be quantization-sensitive; {evidence}. "
             "Use **INT8 mixed** instead."
         )
     if sensitive and mixed:
         caveat = (
-            "" if arch in _RENDER_VERIFIED_ARCHES
+            "" if verified
             else " (protection list matched against a community reference, "
                  "not yet confirmed by a render test on this architecture)"
         )

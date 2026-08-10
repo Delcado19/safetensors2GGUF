@@ -306,3 +306,19 @@ class TestFormatRecommendation:
         level, msg = format_recommendation(ModelSDXL(), "INT8")
         assert level == "ok"
         assert "sdxl" in msg
+
+    def test_render_verified_architecture_warn_claims_shown_in_testing(self):
+        # lumina2 was actually rendered end-to-end -- the strong claim is
+        # accurate here and should say so plainly.
+        _, msg = format_recommendation(ModelLumina2(), "INT8")
+        assert "has shown visible pose/identity corruption in testing" in msg
+
+    def test_unverified_architecture_warn_does_not_overclaim(self):
+        # flux's keys_hiprec was never render-tested by this project (only
+        # cross-referenced against a community blacklist) -- the warning
+        # must not assert corruption "shown in testing" for an architecture
+        # nobody has actually rendered with this tool's output.
+        _, msg = format_recommendation(ModelFlux(), "INT8")
+        assert "has shown visible pose/identity corruption in testing" not in msg
+        assert "lumina2" in msg  # still cites the actual evidence source
+        assert "hasn't been render-tested on this specific architecture" in msg
