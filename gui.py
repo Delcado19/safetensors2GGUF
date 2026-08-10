@@ -308,6 +308,64 @@ def update_format_recommendation(src: str, target_key: str):
     return gr.update(value=f"{icon} {message}", elem_classes=["fmt-hint", f"fmt-hint-{level}"])
 
 
+def _detected_arch_or_none(src: str):
+    """Best-effort architecture detection shared by the dropdown-annotation
+    helpers below. Returns None on any failure (missing file, unrecognized
+    architecture) so callers can fall back to unmodified choices."""
+    src = (src or "").strip()
+    if not src or not os.path.isfile(src):
+        return None
+    try:
+        return detect_arch(load_state_dict(src))
+    except Exception:
+        return None
+
+
+def annotate_safetensors_choices(src: str):
+    """Return a gr.update(choices=...) for the safetensors format dropdown,
+    prefixing a ⚠ to any format that's SUPPORT_CAUTION for the detected
+    source's architecture. No-op (original choices, unmodified) when no
+    architecture can be detected."""
+    from model_support import SUPPORT_CAUTION, support_level
+    from safetensors_quant import SAFETENSORS_DTYPE_CHOICES
+
+    model_arch = _detected_arch_or_none(src)
+    if model_arch is None:
+        return gr.update(choices=[tuple(c) for c in SAFETENSORS_DTYPE_CHOICES])
+
+    sensitive = bool(model_arch.keys_hiprec)
+    choices = []
+    for label, key in SAFETENSORS_DTYPE_CHOICES:
+        if support_level(model_arch.arch, sensitive, key) == SUPPORT_CAUTION:
+            label = f"⚠ {label}"
+        choices.append((label, key))
+    return gr.update(choices=choices)
+
+
+def annotate_gguf_choices(src: str):
+    """Same as annotate_safetensors_choices() for the GGUF quant dropdown.
+    Every ALL_QUANT_CHOICES key maps to the table's single "GGUF" column
+    (model_support.support_level always returns SUPPORT_VERIFIED for it
+    today), so this currently never marks anything -- implemented as a real
+    call through the shared support_level() function rather than skipped
+    entirely, so a future architecture-specific GGUF caveat has one place
+    to add it without touching the dropdown-wiring code again."""
+    from model_support import SUPPORT_CAUTION, support_level
+    from quantize import ALL_QUANT_CHOICES
+
+    model_arch = _detected_arch_or_none(src)
+    if model_arch is None:
+        return gr.update(choices=[tuple(c) for c in ALL_QUANT_CHOICES])
+
+    sensitive = bool(model_arch.keys_hiprec)
+    caution = support_level(model_arch.arch, sensitive, "GGUF") == SUPPORT_CAUTION
+    choices = [
+        (f"⚠ {label}" if caution else label, key)
+        for label, key in ALL_QUANT_CHOICES
+    ]
+    return gr.update(choices=choices)
+
+
 from model_support import SUPPORT_SYMBOL, TABLE_FORMATS, build_support_table
 
 _SUPPORT_CELL_COLOR = {
@@ -1398,6 +1456,7 @@ def build_app() -> gr.Blocks:
                     inputs=[st_src_path, st_format_dropdown],
                     outputs=st_format_info,
                 )
+                st_src_path.change(annotate_safetensors_choices, inputs=st_src_path, outputs=st_format_dropdown)
                 st_convert_event = st_convert_btn.click(
                     fn=run_st_convert,
                     inputs=[st_src_path, st_dst_path, st_format_dropdown, overwrite_st],
@@ -1637,6 +1696,7 @@ def build_app() -> gr.Blocks:
 
         src_path.change(_auto_dst, inputs=src_path, outputs=dst_path)
         src_path.change(update_size_estimate, inputs=[src_path, quant_dropdown], outputs=size_info)
+        src_path.change(annotate_gguf_choices, inputs=src_path, outputs=quant_dropdown)
         quant_dropdown.change(update_size_estimate, inputs=[src_path, quant_dropdown], outputs=size_info)
         extract_src.change(
             lambda src: str(default_output_root(src)) if src and str(src).strip() else "",

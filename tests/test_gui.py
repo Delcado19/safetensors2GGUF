@@ -112,6 +112,37 @@ class TestRunTeConvertCancel:
         assert status == "Cancelled"
         assert "Error" not in status
 
+
+class TestDynamicDropdownAnnotation:
+    def test_annotate_safetensors_choices_marks_caution_entries(self, tmp_path):
+        import torch
+        from safetensors.torch import save_file
+
+        src = tmp_path / "model.safetensors"
+        save_file(
+            {
+                "double_blocks.0.img_attn.proj.weight": torch.randn(8, 8),
+                "img_in.weight": torch.randn(8, 8),
+            },
+            str(src),
+        )
+        update = gui.annotate_safetensors_choices(str(src))
+        labels_by_key = {key: label for label, key in update["choices"]}
+        assert labels_by_key["INT8"].startswith("⚠")
+        assert labels_by_key["INT8_MIXED"].startswith("⚠")
+        assert not labels_by_key["F16"].startswith("⚠")
+        assert not labels_by_key["FP8"].startswith("⚠")
+
+    def test_annotate_safetensors_choices_no_source_returns_unmodified(self):
+        update = gui.annotate_safetensors_choices("")
+        from safetensors_quant import SAFETENSORS_DTYPE_CHOICES
+        assert update["choices"] == [tuple(c) for c in SAFETENSORS_DTYPE_CHOICES]
+
+    def test_annotate_gguf_choices_no_source_returns_unmodified(self):
+        update = gui.annotate_gguf_choices("")
+        from quantize import ALL_QUANT_CHOICES
+        assert update["choices"] == [tuple(c) for c in ALL_QUANT_CHOICES]
+
     def test_other_runtime_error_still_reports_error(self, tmp_path):
         src = tmp_path / "model.safetensors"
         src.touch()
