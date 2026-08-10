@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import os
 import queue
 import threading
@@ -415,18 +416,15 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
     mask-image: linear-gradient(90deg, black, transparent 75%);
     -webkit-mask-image: linear-gradient(90deg, black, transparent 75%);
 }
-/* Decorative hex-cell cluster echoing the tab icons' ⬡ motif — sized to fit
-   inside the header's own content height (it clips at overflow:hidden, so it
-   must not be taller than the banner itself). */
+/* Header mark: files -> quantized block icon (assets/header_logo.png),
+   embedded as a data: URI so the app never fetches an external asset —
+   consistent with the no-outbound-requests-at-startup policy above. Sized to
+   fit inside the header's own content height (clips at overflow:hidden). */
 #app-header::after {
     content: "";
     position: absolute; right: 24px; top: 50%; transform: translateY(-50%); z-index: -1;
-    width: 130px; height: 62px;
-    opacity: 0.85;
-    background:
-        repeating-linear-gradient(30deg, var(--s2g-accent) 0 3px, transparent 3px 22px),
-        repeating-linear-gradient(150deg, var(--s2g-accent-2) 0 3px, transparent 3px 22px);
-    clip-path: polygon(8% 25%, 50% 0, 92% 25%, 92% 75%, 50% 100%, 8% 75%);
+    width: 62px; height: 62px;
+    background: url("__HEADER_LOGO_DATA_URI__") no-repeat center / contain;
 }
 #app-title {
     max-width: 760px; margin: 0 0 6px 0;
@@ -556,6 +554,22 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
     font-family: var(--font-mono); font-size: 0.8em; line-height: 1.45;
 }
 """
+
+
+def _load_header_logo_data_uri() -> str:
+    """Base64-embed assets/header_logo.png as a data: URI — keeps the header
+    mark self-contained (no external request, no Gradio static-file route to
+    configure) and gui.py itself small (the encoded bytes live in the binary
+    asset file, not as a literal string in source). Falls back to no image
+    (background stays transparent) if the asset is ever missing."""
+    path = Path(__file__).parent / "assets" / "header_logo.png"
+    try:
+        return "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode("ascii")
+    except OSError:
+        return ""
+
+
+CSS = CSS.replace("__HEADER_LOGO_DATA_URI__", _load_header_logo_data_uri())
 
 _THEME = gr.themes.Default(
     primary_hue="cyan",
