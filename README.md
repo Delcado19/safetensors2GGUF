@@ -243,6 +243,18 @@ when you want ComfyUI-compatible weights without the GGUF container format.
 | `INT8` | int8_tensorwise, ConvRot-rotated where possible (ComfyUI convention) | Python | Per-layer `weight_scale`; weight-only quantization, no runtime activation quant |
 | `INT8_MIXED` | INT8/ConvRot, high-precision tensors stay F32 | Python | Aggressive 8-bit quantization with protection |
 
+**Per-architecture recommendation badge:** once a source model is selected,
+the tab shows a colored hint under the format dropdown — analogous to the
+GGUF tab's static "recommended ★" label on `Q4_K_M`, but per-architecture.
+Unlike GGUF K-quants (a uniform quality/size tradeoff regardless of
+architecture), plain `INT8` has measurably corrupted output (wrong
+poses/identities) on attention-sensitive DiT architectures in this project's
+own testing, while being fine on architectures with no protected layers at
+all. The badge discloses confidence honestly: only Lumina2/Z-Image's
+protection scope has been confirmed by an actual convert+load+render cycle;
+other protected architectures show the same recommendation but note it's
+matched against a community reference, not yet render-verified.
+
 **ComfyUI version requirement:** loading `INT8`/`INT8_MIXED` output needs
 **ComfyUI v0.25.0+** — `comfy-kitchen`'s int8/ConvRot optimizations landed in
 `comfy-kitchen` 0.2.9 (commit `ade4dfd`), first bundled in ComfyUI v0.25.0

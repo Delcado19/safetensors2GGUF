@@ -21,10 +21,11 @@ from component_extract import (
     extract_components,
     format_component_analysis,
 )
-from convert import ConversionCancelled, convert_file
+from convert import ConversionCancelled, convert_file, load_state_dict
 from convert_safetensors import convert_to_safetensors
 from fix_5d_tensors import fix_5d_tensors as _fix_5d
 from fix_pad_tokens import fix_pad_tokens as _fix_pad
+from models.architectures import detect_arch
 from quantize import (
     ALL_QUANT_CHOICES,
     DEFAULT_EXE,
@@ -35,7 +36,7 @@ from quantize import (
     find_exe,
     run_quantize,
 )
-from safetensors_quant import SAFETENSORS_DTYPE_CHOICES
+from safetensors_quant import SAFETENSORS_DTYPE_CHOICES, format_recommendation
 from text_encoder_convert import (
     TEXT_ENCODER_FORMAT_CHOICES,
     TEXT_ENCODER_SAFETENSORS_FORMATS,
@@ -279,6 +280,33 @@ def update_size_estimate(src: str, quant_key: str) -> str:
     return line
 
 
+def update_format_recommendation(src: str, target_key: str):
+    """Return a gr.update() for the format-recommendation Markdown, advising
+    whether ``target_key`` suits the detected architecture of ``src`` — the
+    Convert -> Safetensors equivalent of the GGUF tab's static
+    "recommended ★" label, but per-architecture (see
+    safetensors_quant.format_recommendation).
+
+    Detection only reads the safetensors header (via the same lazy
+    load_state_dict() the conversion itself uses) — no tensor data loaded.
+    Silently shows nothing on any failure (missing file, unrecognized
+    architecture, non-safetensors source too large to eagerly load) rather
+    than surfacing an error for what is a non-essential hint.
+    """
+    src = (src or "").strip()
+    if not src or not os.path.isfile(src):
+        return gr.update(value="", elem_classes=["fmt-hint"])
+    try:
+        model_arch = detect_arch(load_state_dict(src))
+        level, message = format_recommendation(model_arch, target_key)
+    except Exception:
+        return gr.update(value="", elem_classes=["fmt-hint"])
+    if not message:
+        return gr.update(value="", elem_classes=["fmt-hint"])
+    icon = "✓" if level == "ok" else "⚠"
+    return gr.update(value=f"{icon} {message}", elem_classes=["fmt-hint", f"fmt-hint-{level}"])
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # CSS
 # ──────────────────────────────────────────────────────────────────────────────
@@ -305,6 +333,8 @@ CSS = """
     --s2g-accent-2: #0f766e;
     --s2g-accent-soft: rgba(8, 145, 178, 0.12);
     --s2g-danger: #dc2626;
+    --s2g-warn: #b7791f;
+    --s2g-warn-soft: rgba(183, 121, 31, 0.12);
 
     --s2g-shadow: 0 16px 42px -28px rgba(15, 23, 42, 0.45);
 
@@ -332,6 +362,8 @@ CSS = """
     --s2g-accent-2: #2dd4bf;
     --s2g-accent-soft: rgba(34, 211, 238, 0.14);
     --s2g-danger: #f87171;
+    --s2g-warn: #f5b84b;
+    --s2g-warn-soft: rgba(245, 184, 75, 0.14);
 
     --s2g-shadow: 0 20px 52px -30px rgba(0, 0, 0, 0.75);
 }
@@ -418,6 +450,15 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
     margin-bottom: 12px !important;
 }
 .intro p { margin: 0 !important; font-size: var(--type-body); color: var(--s2g-muted); }
+
+/* ── Per-architecture format recommendation badge (Convert -> Safetensors) ─ */
+.fmt-hint { min-height: 0 !important; }
+.fmt-hint p {
+    margin: 6px 0 0 !important; font-size: var(--type-small); font-weight: 600;
+    padding: 6px 10px; border-radius: 6px; display: inline-block;
+}
+.fmt-hint-ok p   { background: var(--s2g-accent-soft); color: var(--s2g-accent); }
+.fmt-hint-warn p { background: var(--s2g-warn-soft);   color: var(--s2g-warn); }
 
 /* ── Strip outer wrappers: tab-container, any block ancestor of .card ────── */
 .tabitem, .tab-content, .tabs > .tabitem,
@@ -1247,6 +1288,7 @@ def build_app() -> gr.Blocks:
                         label="Output format",
                     )
                     overwrite_st = gr.Checkbox(label="Overwrite existing output", value=False)
+                st_format_info = gr.Markdown("", elem_id="st-format-info", elem_classes=["fmt-hint"])
 
                 with gr.Row():
                     st_convert_btn = gr.Button("▶  Convert", variant="primary", scale=5, elem_id="st-convert-btn")
@@ -1269,6 +1311,16 @@ def build_app() -> gr.Blocks:
                     browse_and_set_dst_st,
                     inputs=[st_src_path],
                     outputs=st_dst_path,
+                )
+                st_src_path.change(
+                    update_format_recommendation,
+                    inputs=[st_src_path, st_format_dropdown],
+                    outputs=st_format_info,
+                )
+                st_format_dropdown.change(
+                    update_format_recommendation,
+                    inputs=[st_src_path, st_format_dropdown],
+                    outputs=st_format_info,
                 )
                 st_convert_event = st_convert_btn.click(
                     fn=run_st_convert,

@@ -32,8 +32,61 @@ SAFETENSORS_DTYPE_CHOICES: list[tuple[str, str]] = [
     ("F16       — Half precision",                                       "F16"),
     ("F16 mixed — Half precision, hiprec tensors stay F32",               "F16_MIXED"),
     ("INT8      — Tensor-wise INT8, ConvRot-rotated where possible",      "INT8"),
-    ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32",                "INT8_MIXED"),
+    ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32 · recommended ★", "INT8_MIXED"),
 ]
+
+# Architectures whose keys_hiprec protection scope has been confirmed by an
+# actual convert+load+render cycle in ComfyUI (not just by matching a
+# community tool's published blacklist) — see docs/issues_analysis.md #15.
+# Everything else with a non-empty keys_hiprec is protected on the strength
+# of that cross-reference alone, which format_recommendation() below
+# discloses rather than implying the same level of confidence for every
+# architecture.
+_RENDER_VERIFIED_ARCHES = {"lumina2"}
+
+
+def format_recommendation(model_arch, target_key: str) -> tuple[str, str]:
+    """Return (level, message) GUI guidance for one architecture + target
+    format pair. ``level`` is "ok" or "warn" (drives badge styling).
+
+    Mirrors quantize.py's static GGUF "recommended ★" label on Q4_K_M, but
+    per-architecture: unlike GGUF K-quants (a uniform quality/size tradeoff
+    regardless of architecture), this project's own testing found plain INT8
+    measurably corrupts output (wrong poses/identities) on the
+    attention-sensitive DiT architectures that need keys_hiprec protection,
+    while costing nothing to recommend on architectures that don't
+    (docs/issues_analysis.md #15).
+    """
+    mixed = target_key.endswith("_MIXED")
+    base = target_key[: -len("_MIXED")] if mixed else target_key
+    arch = model_arch.arch
+    sensitive = bool(model_arch.keys_hiprec)
+
+    if base == "F16":
+        return "ok", "F16 preserves full precision — safe for any architecture."
+
+    if base != "INT8":
+        return "ok", ""
+
+    if sensitive and not mixed:
+        return "warn", (
+            f"**Plain INT8 is not recommended for `{arch}`** — this architecture "
+            "has attention/embedder layers known to be quantization-sensitive; "
+            "plain INT8 has shown visible pose/identity corruption in testing. "
+            "Use **INT8 mixed** instead."
+        )
+    if sensitive and mixed:
+        caveat = (
+            "" if arch in _RENDER_VERIFIED_ARCHES
+            else " (protection list matched against a community reference, "
+                 "not yet confirmed by a render test on this architecture)"
+        )
+        return "ok", f"**INT8 mixed is recommended for `{arch}`**{caveat}."
+    return "ok", (
+        f"No quantization-sensitive layers identified for `{arch}` — plain "
+        "**INT8** should work well; INT8 mixed costs extra output size for "
+        "no measured benefit here."
+    )
 
 def layer_key(key: str) -> str:
     """Return the module-prefix ComfyUI's quantized-op loader expects scale/

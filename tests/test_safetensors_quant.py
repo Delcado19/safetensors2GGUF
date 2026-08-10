@@ -6,6 +6,7 @@ import torch
 
 from safetensors_quant import (
     SAFETENSORS_DTYPE_CHOICES,
+    format_recommendation,
     is_hiprec_st,
     quantize_tensor_st,
 )
@@ -17,6 +18,7 @@ from models.architectures import (
     ModelLumina2,
     ModelQwenImage,
     ModelSD3,
+    ModelSDXL,
     ModelWan,
     CosmosPredict2,
 )
@@ -273,3 +275,34 @@ class TestQuantizeTensorInt8:
         h = _build_hadamard(CONVROT_GROUP_SIZE, device=q.device, dtype=torch.float32)
         recon = _rotate_weight(q.float() * scale, h, CONVROT_GROUP_SIZE)
         assert torch.allclose(recon, data, atol=0.05)
+
+
+class TestFormatRecommendation:
+    def test_f16_always_ok(self):
+        level, msg = format_recommendation(ModelLumina2(), "F16")
+        assert level == "ok"
+        assert msg
+
+    def test_plain_int8_warns_on_sensitive_architecture(self):
+        level, msg = format_recommendation(ModelLumina2(), "INT8")
+        assert level == "warn"
+        assert "lumina2" in msg
+
+    def test_int8_mixed_ok_on_sensitive_architecture(self):
+        level, msg = format_recommendation(ModelLumina2(), "INT8_MIXED")
+        assert level == "ok"
+        assert "lumina2" in msg
+
+    def test_render_verified_architecture_has_no_caveat(self):
+        _, msg = format_recommendation(ModelLumina2(), "INT8_MIXED")
+        assert "not yet confirmed" not in msg
+
+    def test_unverified_sensitive_architecture_discloses_caveat(self):
+        _, msg = format_recommendation(ModelFlux(), "INT8_MIXED")
+        assert "not yet confirmed" in msg
+
+    def test_plain_int8_ok_on_architecture_without_hiprec(self):
+        assert ModelSDXL().keys_hiprec == []
+        level, msg = format_recommendation(ModelSDXL(), "INT8")
+        assert level == "ok"
+        assert "sdxl" in msg
