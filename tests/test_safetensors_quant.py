@@ -335,6 +335,22 @@ class TestFormatRecommendation:
         assert level == "ok"
         assert msg
 
+    def test_fp8_mixed_on_lumina2_discloses_caveat_despite_int8_being_verified(self):
+        # lumina2 is in _RENDER_VERIFIED_ARCHES for INT8_MIXED, but no FP8
+        # output from this tool has ever been render-tested on any
+        # architecture (model_support.support_level() keeps FP8/FP8_MIXED at
+        # SUPPORT_CAUTION everywhere) -- FP8_MIXED must still disclose the
+        # caveat here, not silently inherit INT8's verified status.
+        _, msg = format_recommendation(ModelLumina2(), "FP8_MIXED")
+        assert "not yet confirmed" in msg
+
+    def test_plain_fp8_warn_does_not_overclaim_fp8_specific_testing(self):
+        # The stronger "has shown visible ... corruption in testing" claim is
+        # backed by an actual plain-INT8 render test on lumina2, not FP8 --
+        # the FP8 warning must not imply FP8 itself was tested that way.
+        _, msg = format_recommendation(ModelLumina2(), "FP8")
+        assert "plain FP8 has shown visible pose/identity corruption in testing" not in msg
+
     def test_render_verified_architecture_warn_claims_shown_in_testing(self):
         # lumina2 was actually rendered end-to-end -- the strong claim is
         # accurate here and should say so plainly.

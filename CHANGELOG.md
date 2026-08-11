@@ -7,6 +7,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Fix
+- **FP8 wrongly inherited INT8's lumina2 render-verified status**: the previous review fix's shared FP8/INT8 branch in `format_recommendation()` reused `_RENDER_VERIFIED_ARCHES` unconditionally, so `lumina2` + FP8/FP8_MIXED silently inherited INT8_MIXED's actual render-test evidence — plain FP8 claimed "has shown visible pose/identity corruption in testing" (an INT8-only finding) and FP8_MIXED dropped its unverified caveat, both contradicting `model_support.py`'s FP8/FP8_MIXED=`SUPPORT_CAUTION` (no FP8 output from this tool has ever been render-tested). `verified` is now INT8-only. Found by an independent codex-mcp review pass.
+
 - **Final whole-branch review findings for the Model Support tab** (see `docs/superpowers/plans/2026-08-10-model-support-tab.md`):
   - `gui.py` had a mid-file `from model_support import ...` violating the project's `ruff` E402 CI gate — moved to the top-level imports.
   - The Model Support table's NVFP4/NVFP4_MIXED cells were clickable and, via `apply_support_table_selection()`, set the Safetensors format dropdown to a value outside its own `SAFETENSORS_DTYPE_CHOICES` — silently letting a user reach NVFP4 output through the GUI despite it being deliberately unoffered (no verified safe mode, `docs/issues_analysis.md` #16). Those cells are now a no-op, like the Model-name column.

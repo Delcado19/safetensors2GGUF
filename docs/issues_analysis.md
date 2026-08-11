@@ -624,12 +624,18 @@ parameter.
 `full_precision_fp8: bool = True` parameter; when the target format resolves to
 `float8_e4m3fn` (`FP8`/`FP8_MIXED`) and the flag is True (default), every FP8 layer's
 `.comfy_quant` config now includes `"full_precision_matrix_mult": true`. Re-added
-`FP8`/`FP8_MIXED` to `SAFETENSORS_DTYPE_CHOICES` (`safetensors_quant.py`) and updated
-`format_recommendation()` to return an unconditional `"ok"` for FP8, unlike INT8's
-per-architecture caution logic — the safety mechanism itself doesn't depend on
-`keys_hiprec` or architecture at all. `model_support.py`'s `support_level()` (the data
-model behind the "Model Support" GUI tab, see below) marks FP8/FP8_MIXED
-`SUPPORT_VERIFIED` for every architecture on the same reasoning.
+`FP8`/`FP8_MIXED` to `SAFETENSORS_DTYPE_CHOICES` (`safetensors_quant.py`).
+
+**Correction (final whole-branch review):** the safety mechanism above only fixes
+ComfyUI's *runtime compute* path — it does nothing for precision already lost when a
+`keys_hiprec`-sensitive tensor is quantized to e4m3 *on disk*, which plain (non-mixed)
+FP8 still does exactly like plain INT8. `format_recommendation()` therefore does **not**
+return an unconditional `"ok"` for FP8: it now shares INT8's sensitive-architecture
+warn/ok logic, warning on plain FP8 for sensitive architectures and recommending FP8
+mixed instead. And because the `full_precision_matrix_mult` conclusion itself comes from
+reading ComfyUI's source, not from an actual convert+load+render test with this tool's
+own output on any architecture, `model_support.py`'s `support_level()` marks FP8/FP8_MIXED
+`SUPPORT_CAUTION` (not `SUPPORT_VERIFIED`) everywhere, pending that render test.
 
 **Open follow-up — NOT done in this fix:** NVFP4 was not re-investigated here. It has no
 known equivalent to `full_precision_matrix_mult` — `comfy/utils.py`'s

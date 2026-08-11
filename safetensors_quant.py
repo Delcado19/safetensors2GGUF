@@ -70,7 +70,12 @@ def format_recommendation(model_arch, target_key: str) -> tuple[str, str]:
     base = target_key[: -len("_MIXED")] if mixed else target_key
     arch = model_arch.arch
     sensitive = bool(model_arch.keys_hiprec)
-    verified = arch in _RENDER_VERIFIED_ARCHES
+    # _RENDER_VERIFIED_ARCHES only covers INT8_MIXED's keys_hiprec protection
+    # scope (docs/issues_analysis.md #15) -- no FP8 output from this tool has
+    # ever been render-verified on any architecture (model_support.py's
+    # support_level() keeps FP8/FP8_MIXED at SUPPORT_CAUTION everywhere), so
+    # FP8 must never take the "verified" branch below even for lumina2.
+    verified = base == "INT8" and arch in _RENDER_VERIFIED_ARCHES
 
     if base == "F16":
         return "ok", "F16 preserves full precision — safe for any architecture."
