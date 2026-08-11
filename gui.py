@@ -422,8 +422,17 @@ def _support_table_rows_for_dataframe() -> list[list[str]]:
 
 def _text_encoder_support_rows_for_dataframe() -> list[list[str]]:
     """Single-row gr.Dataframe data for the text-encoder support table --
-    one generic row, not per-architecture (see model_support.TEXT_ENCODER_SUPPORT)."""
-    cells = ["Text encoders (Qwen3, T5/UMT5, CLIP, Mistral, …)"]
+    one generic row, not per-architecture (see model_support.TEXT_ENCODER_SUPPORT).
+
+    The label deliberately does NOT read as one model family: Qwen3/Mistral
+    (decoder-only LLMs), T5/UMT5 (encoder-decoder), and CLIP (a contrastive
+    vision-language model) are unrelated architectures that happen to all be
+    usable as a diffusion model's text encoder. They share this one row only
+    because text_encoder_convert.py treats every one of them the same
+    generic way (no per-architecture handling the way diffusion models get),
+    not because they're structurally related to each other.
+    """
+    cells = ["Any text encoder — generic, not architecture-specific (e.g. Qwen3, T5/UMT5, CLIP, Mistral)"]
     for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
         cells.append(_support_table_cell_html(TEXT_ENCODER_SUPPORT[format_key]))
     return [cells]
