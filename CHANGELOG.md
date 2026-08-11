@@ -7,6 +7,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Fix
+- **The 7th tab ("Model Support") got hidden behind Gradio's "..." tab overflow menu** on real-world renders (Windows/Brave font-fallback rendering measures noticeably wider than in-CI Chromium) — `.gradio-container` widened from 1100px to 1600px and the double-space after each tab's leading icon trimmed to single-space, giving the tab-nav enough room that Gradio's own width measurement keeps every tab on one row instead of auto-collapsing the last two.
+
 - **FP8 wrongly inherited INT8's lumina2 render-verified status**: the previous review fix's shared FP8/INT8 branch in `format_recommendation()` reused `_RENDER_VERIFIED_ARCHES` unconditionally, so `lumina2` + FP8/FP8_MIXED silently inherited INT8_MIXED's actual render-test evidence — plain FP8 claimed "has shown visible pose/identity corruption in testing" (an INT8-only finding) and FP8_MIXED dropped its unverified caveat, both contradicting `model_support.py`'s FP8/FP8_MIXED=`SUPPORT_CAUTION` (no FP8 output from this tool has ever been render-tested). `verified` is now INT8-only. Found by an independent codex-mcp review pass.
 
 - **Final whole-branch review findings for the Model Support tab** (see `docs/superpowers/plans/2026-08-10-model-support-tab.md`):

@@ -526,7 +526,15 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
 
 /* ── Page width / base type ─────────────────────────────────────────────── */
 .gradio-container {
-    max-width: 1100px !important; margin: 0 auto !important; padding-top: 8px !important;
+    /* 1100px fit 6 tabs at this font stack's intended metrics; the 7th
+       ("Model Support") pushed Gradio's tab-nav into its auto-collapse "..."
+       overflow menu, which hid "Extract Components"/"Model Support" behind
+       it entirely on a real Windows/Brave render (font-fallback rendering
+       runs noticeably wider than in-CI Chromium) -- Gradio measures actual
+       rendered tab widths via JS, not a CSS wrap, so the only fix is more
+       room. Widened well past the minimum needed at default metrics to
+       leave headroom for wider font-fallback renders too. */
+    max-width: 1600px !important; margin: 0 auto !important; padding-top: 8px !important;
     font-family: var(--font-ui);
 }
 
@@ -1325,7 +1333,7 @@ def build_app() -> gr.Blocks:
         with gr.Tabs() as main_tabs:
 
             # ── Convert → GGUF ─────────────────────────────────────────────
-            with gr.Tab("⬡  Convert → GGUF", id=0):
+            with gr.Tab("⬡ Convert → GGUF", id=0):
                 gr.Markdown(
                     "Convert a **Safetensors / CKPT** model checkpoint to **GGUF**.  "
                     "Python-native precisions write directly; K-quants run a 2-step "
@@ -1406,7 +1414,7 @@ def build_app() -> gr.Blocks:
                 )
 
             # ── Convert → Safetensors ──────────────────────────────────────
-            with gr.Tab("⬢  Convert → Safetensors", id=1):
+            with gr.Tab("⬢ Convert → Safetensors", id=1):
                 gr.Markdown(
                     "Convert a **Safetensors / CKPT** model checkpoint to a quantized "
                     "**Safetensors** file — no GGUF, no llama-quantize. INT8 uses "
@@ -1495,7 +1503,7 @@ def build_app() -> gr.Blocks:
                 st_cancel_btn.click(fn=request_cancel_st, outputs=[st_status], cancels=[st_convert_event])
 
             # ── Convert Text Encoder ─────────────────────────────────────────
-            with gr.Tab("✎  Convert Text Encoder", id=2):
+            with gr.Tab("✎ Convert Text Encoder", id=2):
                 gr.Markdown(
                     "Convert a **bare single-file text-encoder checkpoint** (Qwen3, "
                     "Mistral, T5/UMT5, …) to GGUF or quantized safetensors.\n\n"
@@ -1566,7 +1574,7 @@ def build_app() -> gr.Blocks:
                 te_cancel_btn.click(fn=request_cancel_te, outputs=[te_status], cancels=[te_convert_event])
 
             # ── Fix Pad Tokens ─────────────────────────────────────────────
-            with gr.Tab("⚒  Fix Pad Tokens", id=3):
+            with gr.Tab("⚒ Fix Pad Tokens", id=3):
                 gr.Markdown(
                     "Correct `x_pad_token` / `cap_pad_token` shape `[D]` → `[1, D]` in an "
                     "existing **Lumina 2** GGUF.  Required when ComfyUI raises "
@@ -1602,7 +1610,7 @@ def build_app() -> gr.Blocks:
                 )
 
             # ── Fix 5D Tensors ─────────────────────────────────────────────
-            with gr.Tab("⚙  Fix 5D Tensors", id=4):
+            with gr.Tab("⚙ Fix 5D Tensors", id=4):
                 gr.Markdown(
                     "Re-insert 5D tensors into a quantized GGUF.  "
                     "**Required for HunyuanVideo / Wan** when using llama-quantize outside "
@@ -1643,7 +1651,7 @@ def build_app() -> gr.Blocks:
                 )
 
             # ── Extract Components ─────────────────────────────────────────
-            with gr.Tab("▤  Extract Components", id=5):
+            with gr.Tab("▤ Extract Components", id=5):
                 gr.Markdown(
                     "Analyze an **SDXL** checkpoint for embedded VAE, CLIP-L, and CLIP-G "
                     "components, compare them with local standard files when present, "
@@ -1694,7 +1702,7 @@ def build_app() -> gr.Blocks:
                 )
 
             # ── Model Support ──────────────────────────────────────────────
-            with gr.Tab("⊞  Model Support", id=6):
+            with gr.Tab("⊞ Model Support", id=6):
                 gr.Markdown(
                     "Which quantization formats this tool supports for each "
                     "detectable architecture. Click a cell to jump to the "
