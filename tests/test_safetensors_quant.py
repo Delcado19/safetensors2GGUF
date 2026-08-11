@@ -344,11 +344,18 @@ class TestFormatRecommendation:
         _, msg = format_recommendation(ModelLumina2(), "FP8_MIXED")
         assert "not yet confirmed" in msg
 
-    def test_plain_fp8_warn_does_not_overclaim_fp8_specific_testing(self):
-        # The stronger "has shown visible ... corruption in testing" claim is
-        # backed by an actual plain-INT8 render test on lumina2, not FP8 --
-        # the FP8 warning must not imply FP8 itself was tested that way.
+    def test_plain_fp8_on_lumina2_claims_shown_in_testing(self):
+        # Plain FP8 on lumina2 is now directly render-confirmed corrupted
+        # (same-seed/prompt user comparison, 2026-08-11: outfit/background
+        # drift) -- the strong claim is accurate here and should say so.
         _, msg = format_recommendation(ModelLumina2(), "FP8")
+        assert "plain FP8 has shown visible pose/identity corruption in testing" in msg
+
+    def test_plain_fp8_on_unconfirmed_architecture_does_not_overclaim(self):
+        # flux has neither INT8 nor FP8 directly render-tested -- the FP8
+        # warning must not imply FP8 itself was tested there, the way it
+        # would be wrong to claim for lumina2 before the confirmation above.
+        _, msg = format_recommendation(ModelFlux(), "FP8")
         assert "plain FP8 has shown visible pose/identity corruption in testing" not in msg
 
     def test_render_verified_architecture_warn_claims_shown_in_testing(self):

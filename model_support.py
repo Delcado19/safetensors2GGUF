@@ -76,6 +76,17 @@ _RENDER_CONFIRMED_BAD: set[tuple[str, str]] = {
     # that motivated adding INT8_MIXED's protection list in the first place
     # (docs/issues_analysis.md #15).
     ("lumina2", "INT8"),
+    # Plain FP8 on lumina2: same-seed/prompt comparison (user-provided,
+    # 2026-08-11) showed the standing figure's outfit and the entire room
+    # background/set dressing changed between the unquantized and plain-FP8
+    # renders, with only the two figures' poses staying recognizable --
+    # the same "wrong identity/composition, pose skeleton survives" pattern
+    # #15 documented for pre-fix FP8_MIXED/plain INT8. Confirms what
+    # format_recommendation() already predicted by analogy from INT8's
+    # confirmed corruption (full_precision_matrix_mult only fixes the
+    # runtime compute path, not on-disk keys_hiprec precision loss) --
+    # now with direct evidence instead of just the shared mechanism.
+    ("lumina2", "FP8"),
     # NVFP4_MIXED on lumina2: full-image noise, tested end-to-end against
     # both a fine-tune and the official zImageBase checkpoint
     # (docs/issues_analysis.md #15). Plain NVFP4 shares the same root cause
@@ -113,18 +124,20 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
       it never touches ComfyUI's quantized-compute code path
       (MixedPrecisionOps) at all, so it carries none of the
       architecture-dependent risk INT8/FP8/NVFP4 do.
-    - FP8 / FP8_MIXED: CAUTION everywhere (never BAD). FP8 now defaults to
+    - FP8 / FP8_MIXED: BAD for plain FP8 on lumina2 (direct render evidence —
+      same-seed/prompt comparison showed the standing figure's outfit and
+      the room background changed between the unquantized and plain-FP8
+      renders, only the pose skeleton surviving; see _RENDER_CONFIRMED_BAD).
+      CAUTION everywhere else. FP8_MIXED defaults to
       full_precision_matrix_mult=true, which by code reading of ComfyUI's
       comfy/utils.py and comfy/ops.py should make it skip the risky
       quantized-compute branch entirely — but that's a code-reading
       conclusion, not an actual convert+load+render confirmation with this
-      tool's own output on any architecture, so it doesn't meet the VERIFIED
-      bar. The pre-fix corruption docs/issues_analysis.md #15 directly
-      observed on FP8_MIXED/lumina2 predates this flag and isn't proof
-      today's default still fails, so it's unverified (CAUTION), not
-      confirmed-bad. Plain FP8 additionally carries the same keys_hiprec
-      on-disk precision-loss risk plain INT8 does on sensitive architectures
-      (format_recommendation() in safetensors_quant.py warns identically).
+      tool's own output on any architecture, so it stays CAUTION, not
+      VERIFIED. Plain FP8 additionally carries the same keys_hiprec on-disk
+      precision-loss risk plain INT8 does on sensitive architectures
+      (format_recommendation() in safetensors_quant.py warns identically) —
+      now confirmed rather than just predicted by analogy, for lumina2.
     - INT8 / INT8_MIXED: depends on keys_hiprec. If the architecture has no
       keys_hiprec at all, plain INT8 and INT8_MIXED produce byte-identical
       output (nothing to protect either way) — both VERIFIED. If it does:
@@ -150,6 +163,8 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
     if format_key in ("F16", "F16_MIXED"):
         return SUPPORT_VERIFIED
     if format_key in ("FP8", "FP8_MIXED"):
+        if (arch_key, format_key) in _RENDER_CONFIRMED_BAD:
+            return SUPPORT_BAD
         return SUPPORT_CAUTION
     if format_key in ("INT8", "INT8_MIXED"):
         if not keys_hiprec_nonempty:

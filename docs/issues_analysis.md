@@ -637,6 +637,22 @@ reading ComfyUI's source, not from an actual convert+load+render test with this 
 own output on any architecture, `model_support.py`'s `support_level()` marks FP8/FP8_MIXED
 `SUPPORT_CAUTION` (not `SUPPORT_VERIFIED`) everywhere, pending that render test.
 
+**Second correction (render-test evidence, 2026-08-11):** the prediction in the first
+correction above is now directly confirmed, not just theoretical. A same-seed/same-prompt
+comparison of Z-Image Base output — full precision vs. this tool's plain `FP8` — showed
+the standing figure's outfit (structured leather blazer/skirt vs. a latex catsuit with a
+belt) and the entire room background/set dressing (portrait painting + brick wall vs. a
+tufted couch + shelving + candles) changed between the two renders, with only the two
+figures' poses staying recognizable — the same "wrong identity/composition, pose skeleton
+survives" pattern this section's original Symptom described for pre-fix FP8_MIXED and
+`#15`'s plain-INT8 corruption. `model_support.py`'s `_RENDER_CONFIRMED_BAD` and
+`safetensors_quant.py`'s `_RENDER_CONFIRMED_BAD_PLAIN` now include `("lumina2", "FP8")`:
+`support_level()` returns `SUPPORT_BAD` (not `SUPPORT_CAUTION`) for plain FP8 on lumina2,
+and `format_recommendation()`'s warn message states the corruption as confirmed rather
+than predicted by analogy from INT8. FP8_MIXED's status is unchanged by this — the
+comparison only exercised plain FP8, and FP8_MIXED's own `keys_hiprec` protection (mixed
+mode) is a different, still-unverified question.
+
 **Open follow-up — NOT done in this fix:** NVFP4 was not re-investigated here. It has no
 known equivalent to `full_precision_matrix_mult` — `comfy/utils.py`'s
 `convert_old_quants()` only synthesizes that flag for legacy `scaled_fp8` checkpoints,

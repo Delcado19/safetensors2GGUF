@@ -43,6 +43,19 @@ SAFETENSORS_DTYPE_CHOICES: list[tuple[str, str]] = [
 # architecture.
 _RENDER_VERIFIED_ARCHES = {"lumina2"}
 
+# (base_format -> {arch_key}) pairs where the PLAIN (non-mixed) output has
+# been directly render-tested and confirmed wrong -- not just predicted by
+# analogy from another format's corruption. INT8: docs/issues_analysis.md
+# #15. FP8: same-seed/prompt user comparison (2026-08-11) showing the
+# standing figure's outfit and the room background changed between the
+# unquantized and plain-FP8 renders, only the pose skeleton surviving --
+# the same "wrong identity/composition" pattern #15 documented, now
+# confirmed for FP8 too rather than just predicted from INT8's mechanism.
+_RENDER_CONFIRMED_BAD_PLAIN: dict[str, set[str]] = {
+    "INT8": {"lumina2"},
+    "FP8": {"lumina2"},
+}
+
 
 def format_recommendation(model_arch, target_key: str) -> tuple[str, str]:
     """Return (level, message) GUI guidance for one architecture + target
@@ -71,11 +84,15 @@ def format_recommendation(model_arch, target_key: str) -> tuple[str, str]:
     arch = model_arch.arch
     sensitive = bool(model_arch.keys_hiprec)
     # _RENDER_VERIFIED_ARCHES only covers INT8_MIXED's keys_hiprec protection
-    # scope (docs/issues_analysis.md #15) -- no FP8 output from this tool has
-    # ever been render-verified on any architecture (model_support.py's
-    # support_level() keeps FP8/FP8_MIXED at SUPPORT_CAUTION everywhere), so
-    # FP8 must never take the "verified" branch below even for lumina2.
-    verified = base == "INT8" and arch in _RENDER_VERIFIED_ARCHES
+    # scope (docs/issues_analysis.md #15) -- no FP8_MIXED output from this
+    # tool has ever been render-verified on any architecture (model_support.py's
+    # support_level() keeps FP8_MIXED at SUPPORT_CAUTION everywhere), so FP8
+    # must never take the "mixed_verified" branch below even for lumina2.
+    mixed_verified = base == "INT8" and arch in _RENDER_VERIFIED_ARCHES
+    # Separate from the above: whether PLAIN (non-mixed) output for this
+    # exact base format has itself been directly render-tested and confirmed
+    # wrong, vs. only predicted by analogy from another format's corruption.
+    plain_confirmed_bad = arch in _RENDER_CONFIRMED_BAD_PLAIN.get(base, set())
 
     if base == "F16":
         return "ok", "F16 preserves full precision — safe for any architecture."
@@ -93,7 +110,7 @@ def format_recommendation(model_arch, target_key: str) -> tuple[str, str]:
     mixed_label = "FP8 mixed" if base == "FP8" else "INT8 mixed"
 
     if sensitive and not mixed:
-        if verified:
+        if plain_confirmed_bad:
             evidence = f"plain {fmt_label} has shown visible pose/identity corruption in testing"
         else:
             evidence = (
@@ -109,7 +126,7 @@ def format_recommendation(model_arch, target_key: str) -> tuple[str, str]:
         )
     if sensitive and mixed:
         caveat = (
-            "" if verified
+            "" if mixed_verified
             else " (protection list matched against a community reference, "
                  "not yet confirmed by a render test on this architecture)"
         )
