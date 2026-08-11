@@ -146,6 +146,27 @@ class TestDynamicDropdownAnnotation:
         assert labels_by_key["FP8"].startswith("⚠")
         assert labels_by_key["FP8_MIXED"].startswith("⚠")
 
+    def test_annotate_safetensors_choices_marks_bad_entries_with_cross(self, tmp_path):
+        import torch
+        from safetensors.torch import save_file
+
+        # lumina2's own keys_detect signature (models/architectures.py).
+        src = tmp_path / "lumina2.safetensors"
+        save_file(
+            {
+                "cap_embedder.1.weight": torch.randn(8, 8),
+                "context_refiner.0.attention.qkv.weight": torch.randn(8, 8),
+            },
+            str(src),
+        )
+        update = gui.annotate_safetensors_choices(str(src))
+        labels_by_key = {key: label for label, key in update["choices"]}
+        # Plain INT8 is a confirmed-bad combination on lumina2
+        # (docs/issues_analysis.md #15) -- ✗, not the merely-unverified ⚠.
+        assert labels_by_key["INT8"].startswith("✗")
+        # INT8_MIXED is lumina2's one actually render-verified combination.
+        assert not labels_by_key["INT8_MIXED"].startswith(("⚠", "✗"))
+
     def test_annotate_safetensors_choices_no_source_returns_unmodified(self):
         update = gui.annotate_safetensors_choices("")
         from safetensors_quant import SAFETENSORS_DTYPE_CHOICES

@@ -329,25 +329,30 @@ there's no way to reconstruct the original magnitude without a scale.
 
 The **Model Support** tab shows, for every architecture this tool detects, a
 color-coded support level for each output format (GGUF, F16/F16_MIXED,
-FP8/FP8_MIXED, INT8/INT8_MIXED, NVFP4/NVFP4_MIXED): **✓ Verified** (actually
-converted, loaded, and rendered correctly in ComfyUI with this tool's own
-output), **⚠ Caution** (technically supported but not render-tested for this
-architecture, or a known correctness/quality issue), or **? Unknown** (never
-attempted). Click a format cell to switch to the matching Convert tab with
-that format pre-selected — the GGUF column collapses every K-quant level into
-one cell, since a working F16 GGUF conversion carries over to all of them
-uniformly, so clicking it defaults to `Q4_K_M`. NVFP4/NVFP4_MIXED cells are a
-no-op: they're shown in the table for completeness, but NVFP4 has no verified
-safe mode and stays deliberately absent from the Convert → Safetensors
-dropdown (`gui.py`'s `apply_support_table_selection()`), so clicking them
-can't select it. Once a source checkpoint is
-selected on either Convert tab, its format dropdown also gets a ⚠ prefix on
-any entry that's Caution for the detected architecture (`gui.py`'s
+FP8/FP8_MIXED, INT8/INT8_MIXED, NVFP4/NVFP4_MIXED), using four states:
+**✓ Verified** (actually converted, loaded, and rendered correctly in
+ComfyUI with this tool's own output), **⚠ Caution** (technically supported,
+but not render-tested for this architecture — no evidence either way),
+**✗ Known issue** (actually render-tested and confirmed to produce wrong
+output — e.g. plain INT8 on `lumina2`, or NVFP4/NVFP4_MIXED on `lumina2`,
+see `docs/issues_analysis.md` #15), or **? Unknown** (never attempted).
+Caution and Known-issue are deliberately separate symbols: "never tried" and
+"tried and broke" call for different reactions from a user picking a format.
+Click a format cell to switch to the matching Convert tab with that format
+pre-selected — the GGUF column collapses every K-quant level into one cell,
+since a working F16 GGUF conversion carries over to all of them uniformly,
+so clicking it defaults to `Q4_K_M`. NVFP4/NVFP4_MIXED cells are a no-op:
+they're shown in the table for completeness, but NVFP4 has no verified safe
+mode and stays deliberately absent from the Convert → Safetensors dropdown
+(`gui.py`'s `apply_support_table_selection()`), so clicking them can't
+select it. Once a source checkpoint is selected on either Convert tab, its
+format dropdown also gets a ⚠ or ✗ prefix on any entry that's Caution or
+Known-issue for the detected architecture (`gui.py`'s
 `annotate_safetensors_choices()`/`annotate_gguf_choices()`) — informational
 only, every entry stays selectable. The underlying support data (which model
-names map to which internal architecture key, and the tri-state logic itself)
-lives in `model_support.py` and is documented there as an explicit editorial
-judgment call, open to correction.
+names map to which internal architecture key, and the four-state logic
+itself) lives in `model_support.py` and is documented there as an explicit
+editorial judgment call, open to correction.
 
 ## Text-Encoder Conversion
 

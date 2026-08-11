@@ -56,28 +56,51 @@ TABLE_FORMATS: list[tuple[str, str]] = [
 
 SUPPORT_VERIFIED = "verified"
 SUPPORT_CAUTION = "caution"
+SUPPORT_BAD = "bad"
 SUPPORT_UNKNOWN = "unknown"
 
 SUPPORT_SYMBOL: dict[str, str] = {
     SUPPORT_VERIFIED: "✓",
     SUPPORT_CAUTION: "⚠",
+    SUPPORT_BAD: "✗",
     SUPPORT_UNKNOWN: "?",
 }
 
+# (arch_key, format_key) pairs with DIRECT negative render-test evidence —
+# actually converted+loaded+rendered and visibly wrong (wrong pose/identity,
+# black bars, full-image noise), not just "never tried" or "risky by
+# analogy". Kept separate from CAUTION (see support_level()'s docstring) so
+# the table distinguishes "confirmed broken" from "merely unverified".
+_RENDER_CONFIRMED_BAD: set[tuple[str, str]] = {
+    # Plain INT8 on lumina2's keys_hiprec-sensitive tensors: the corruption
+    # that motivated adding INT8_MIXED's protection list in the first place
+    # (docs/issues_analysis.md #15).
+    ("lumina2", "INT8"),
+    # NVFP4_MIXED on lumina2: full-image noise, tested end-to-end against
+    # both a fine-tune and the official zImageBase checkpoint
+    # (docs/issues_analysis.md #15). Plain NVFP4 shares the same root cause
+    # (ComfyUI dynamically quantizes activations for every NVFP4 layer
+    # regardless of which weights keys_hiprec protects, per #15's
+    # Investigation) so it's marked bad too, though only the _MIXED variant
+    # was directly rendered.
+    ("lumina2", "NVFP4"),
+    ("lumina2", "NVFP4_MIXED"),
+}
 
 
 def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) -> str:
-    """Return SUPPORT_VERIFIED / SUPPORT_CAUTION / SUPPORT_UNKNOWN for one
-    (architecture, format) pair.
+    """Return SUPPORT_VERIFIED / SUPPORT_CAUTION / SUPPORT_BAD / SUPPORT_UNKNOWN
+    for one (architecture, format) pair.
 
-    The three-state scheme (agreed with the user): VERIFIED means actually
-    converted+loaded+rendered correctly in ComfyUI; CAUTION means either
-    "technically supported but not render-tested for this architecture" or
-    "known to have a correctness/quality issue"; UNKNOWN means this
-    combination has never even been attempted. CAUTION deliberately folds
-    together "unverified" and "known-bad" into one symbol rather than adding
-    a fourth state — see docs/superpowers/plans/2026-08-10-model-support-tab.md
-    for why, and the per-branch comments below for which case applies where.
+    The four-state scheme: VERIFIED means actually converted+loaded+rendered
+    correctly in ComfyUI; CAUTION means "technically supported but not
+    render-tested for this architecture" (no evidence either way); BAD means
+    actually render-tested and confirmed wrong (_RENDER_CONFIRMED_BAD);
+    UNKNOWN means this combination has never even been attempted. An earlier
+    version of this scheme folded CAUTION and BAD into one symbol — split
+    apart because "never tried" and "tried and broke" need different user
+    reactions (the former is a request for a test report, the latter a
+    warning not to use it).
 
     - GGUF: always VERIFIED. Every models.architectures.arch_list entry is an
       architecture this tool's GGUF pipeline explicitly detects and handles
@@ -90,14 +113,17 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
       it never touches ComfyUI's quantized-compute code path
       (MixedPrecisionOps) at all, so it carries none of the
       architecture-dependent risk INT8/FP8/NVFP4 do.
-    - FP8 / FP8_MIXED: CAUTION everywhere, same as NVFP4. FP8 now defaults to
+    - FP8 / FP8_MIXED: CAUTION everywhere (never BAD). FP8 now defaults to
       full_precision_matrix_mult=true, which by code reading of ComfyUI's
       comfy/utils.py and comfy/ops.py should make it skip the risky
       quantized-compute branch entirely — but that's a code-reading
       conclusion, not an actual convert+load+render confirmation with this
       tool's own output on any architecture, so it doesn't meet the VERIFIED
-      bar. Plain FP8 additionally carries the same keys_hiprec on-disk
-      precision-loss risk plain INT8 does on sensitive architectures
+      bar. The pre-fix corruption docs/issues_analysis.md #15 directly
+      observed on FP8_MIXED/lumina2 predates this flag and isn't proof
+      today's default still fails, so it's unverified (CAUTION), not
+      confirmed-bad. Plain FP8 additionally carries the same keys_hiprec
+      on-disk precision-loss risk plain INT8 does on sensitive architectures
       (format_recommendation() in safetensors_quant.py warns identically).
     - INT8 / INT8_MIXED: depends on keys_hiprec. If the architecture has no
       keys_hiprec at all, plain INT8 and INT8_MIXED produce byte-identical
@@ -106,19 +132,18 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
       render-tested end-to-end); every other sensitive architecture's
       INT8_MIXED is CAUTION (protection list cross-referenced against
       community tools, never confirmed with this tool's own output). Plain
-      INT8 on a sensitive architecture is CAUTION everywhere, including
-      lumina2 — that's the one *confirmed-bad* case (docs/issues_analysis.md
-      #15's plain-INT8 screenshot), still using the same CAUTION symbol as
-      the merely-unverified cases per the agreed three-state scheme.
-    - NVFP4 / NVFP4_MIXED: always CAUTION, on every architecture, not just
-      lumina2. The mechanism is the same class of dynamic-activation-
-      quantization risk as pre-fix FP8 (docs/issues_analysis.md #15), and
-      unlike FP8 there is no verified full_precision_matrix_mult-equivalent
-      safe mode for NVFP4 yet — direct negative evidence exists only for
-      lumina2 (marcorez8's tiered quality ratings), but the structural risk
-      generalizes, so CAUTION (not UNKNOWN) is the honest default everywhere
-      until that's specifically investigated (tracked as a future plan, see
-      docs/issues_analysis.md #16).
+      INT8 on a sensitive architecture is BAD for lumina2 specifically — the
+      one *confirmed-bad* case (docs/issues_analysis.md #15's plain-INT8
+      corruption) — and CAUTION (unverified, not confirmed) for every other
+      sensitive architecture, since the same class of risk hasn't actually
+      been rendered there.
+    - NVFP4 / NVFP4_MIXED: BAD for lumina2 (direct render evidence, #15);
+      CAUTION everywhere else. The mechanism is the same class of dynamic-
+      activation-quantization risk as pre-fix FP8, and unlike FP8 there is
+      no verified full_precision_matrix_mult-equivalent safe mode for NVFP4
+      yet, so the structural risk generalizes to CAUTION (not UNKNOWN) on
+      every other architecture until that's specifically investigated
+      (tracked as a future plan, see docs/issues_analysis.md #16).
     """
     if format_key == "GGUF":
         return SUPPORT_VERIFIED
@@ -131,8 +156,12 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
             return SUPPORT_VERIFIED
         if arch_key in _RENDER_VERIFIED_ARCHES and format_key == "INT8_MIXED":
             return SUPPORT_VERIFIED
+        if (arch_key, format_key) in _RENDER_CONFIRMED_BAD:
+            return SUPPORT_BAD
         return SUPPORT_CAUTION
     if format_key in ("NVFP4", "NVFP4_MIXED"):
+        if (arch_key, format_key) in _RENDER_CONFIRMED_BAD:
+            return SUPPORT_BAD
         return SUPPORT_CAUTION
     return SUPPORT_UNKNOWN
 

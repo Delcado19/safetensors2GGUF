@@ -281,9 +281,11 @@ is the data model, `gui.py` is rendering + interaction.
 and reusing it elsewhere in the UI:
 - Renders `build_support_table()` as a read-only `gr.Dataframe(datatype="html")`
   (`_support_table_rows_for_dataframe()`/`_support_table_cell_html()`), with
-  colored ✓/⚠/? cells reusing the app's own `--s2g-accent`/`--s2g-warn`/
-  `--s2g-muted` CSS tokens, plus a legend (`_SUPPORT_TABLE_LEGEND_HTML`)
-  explaining the tri-state scheme.
+  colored ✓/⚠/✗/? cells reusing the app's own `--s2g-accent`/`--s2g-warn`/
+  `--s2g-danger`/`--s2g-muted` CSS tokens, plus a legend
+  (`_SUPPORT_TABLE_LEGEND_HTML`) explaining the four-state scheme (✗ "Known
+  issue" split out from ⚠ "Caution" so "never tested" and "tested and
+  confirmed wrong" read as distinct signals).
 - `apply_support_table_selection(evt)`: the table's `.select()` handler —
   switches `main_tabs` to the matching Convert tab and pre-selects that
   format in its dropdown. Uses `gr.update(selected=...)` rather than the

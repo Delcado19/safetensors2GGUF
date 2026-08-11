@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Change
+- **Model Support table split its "Caution" symbol into two states**: `⚠ Caution` (technically supported, not render-tested for this architecture — no evidence either way) previously also covered actually-confirmed-wrong combinations, making the table unable to distinguish "never tried" from "tried and broke". Added `SUPPORT_BAD`/`✗ Known issue` for combinations with direct render-test evidence of wrong output (`model_support._RENDER_CONFIRMED_BAD`): plain `INT8` on `lumina2`, and `NVFP4`/`NVFP4_MIXED` on `lumina2` (docs/issues_analysis.md #15). The format-dropdown ⚠ annotation (`gui.py`'s `_annotate_choices_for_arch()`) now prefixes ✗ for these same combinations instead of silently losing its warning marker.
+
 ### Fix
 - **The 7th tab ("Model Support") got hidden behind Gradio's "..." tab overflow menu** on real-world renders (Windows/Brave font-fallback rendering measures noticeably wider than in-CI Chromium) — `.gradio-container` widened from 1100px to 1600px and the double-space after each tab's leading icon trimmed to single-space, giving the tab-nav enough room that Gradio's own width measurement keeps every tab on one row instead of auto-collapsing the last two.
 

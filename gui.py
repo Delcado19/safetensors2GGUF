@@ -28,6 +28,7 @@ from fix_5d_tensors import fix_5d_tensors as _fix_5d
 from fix_pad_tokens import fix_pad_tokens as _fix_pad
 from models.architectures import detect_arch
 from model_support import (
+    SUPPORT_BAD,
     SUPPORT_CAUTION,
     SUPPORT_SYMBOL,
     TABLE_FORMATS,
@@ -332,8 +333,9 @@ def update_format_recommendation(src: str, target_key: str):
 
 
 def _annotate_choices_for_arch(model_arch, choices, column_key: str | None = None):
-    """Return a gr.update(choices=...) prefixing a ⚠ to any choice that's
-    SUPPORT_CAUTION for ``model_arch`` (or unmodified choices if None).
+    """Return a gr.update(choices=...) prefixing a ⚠ (SUPPORT_CAUTION,
+    unverified) or ✗ (SUPPORT_BAD, actually confirmed wrong) to any matching
+    choice for ``model_arch`` (or unmodified choices if None).
 
     ``column_key``, when given, is the fixed TABLE_FORMATS format key every
     choice maps to (the GGUF quant dropdown: every K-quant level collapses
@@ -347,7 +349,10 @@ def _annotate_choices_for_arch(model_arch, choices, column_key: str | None = Non
     out = []
     for label, key in choices:
         fmt_key = column_key if column_key is not None else key
-        if support_level(model_arch.arch, sensitive, fmt_key) == SUPPORT_CAUTION:
+        level = support_level(model_arch.arch, sensitive, fmt_key)
+        if level == SUPPORT_BAD:
+            label = f"✗ {label}"
+        elif level == SUPPORT_CAUTION:
             label = f"⚠ {label}"
         out.append((label, key))
     return gr.update(choices=out)
@@ -385,6 +390,7 @@ def update_format_recommendation_and_choices(src: str, target_key: str):
 _SUPPORT_CELL_COLOR = {
     "verified": "var(--s2g-accent)",
     "caution": "var(--s2g-warn)",
+    "bad": "var(--s2g-danger)",
     "unknown": "var(--s2g-muted)",
 }
 
@@ -447,7 +453,9 @@ _SUPPORT_TABLE_LEGEND_HTML = """
 <div style="font-size: var(--type-small); color: var(--s2g-muted); margin-top: 8px;">
   <strong style="color:var(--s2g-accent);">✓ Verified</strong> — actually converted, loaded, and rendered correctly in ComfyUI with this tool's own output.
   &nbsp;·&nbsp;
-  <strong style="color:var(--s2g-warn);">⚠ Caution</strong> — technically supported by this tool, but not render-tested for this architecture, or a known correctness/quality issue.
+  <strong style="color:var(--s2g-warn);">⚠ Caution</strong> — technically supported by this tool, but not render-tested for this architecture: no evidence either way.
+  &nbsp;·&nbsp;
+  <strong style="color:var(--s2g-danger);">✗ Known issue</strong> — actually render-tested and confirmed to produce wrong output.
   &nbsp;·&nbsp;
   <strong style="color:var(--s2g-muted);">? Unknown</strong> — this combination has never been attempted.
 </div>

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from model_support import (
     MODEL_DISPLAY_NAMES,
+    SUPPORT_BAD,
     SUPPORT_CAUTION,
     SUPPORT_UNKNOWN,
     SUPPORT_VERIFIED,
@@ -67,19 +68,23 @@ class TestSupportLevel:
         assert support_level("lumina2", True, "INT8_MIXED") == SUPPORT_VERIFIED
         assert support_level("flux", True, "INT8_MIXED") == SUPPORT_CAUTION
 
-    def test_plain_int8_caution_for_every_sensitive_architecture(self):
-        # Includes lumina2 itself -- plain INT8 is the confirmed-bad case there.
-        assert support_level("lumina2", True, "INT8") == SUPPORT_CAUTION
+    def test_plain_int8_bad_on_lumina2_caution_elsewhere(self):
+        # lumina2 has direct render-test evidence of corruption with plain
+        # INT8 (docs/issues_analysis.md #15) -- BAD, not merely CAUTION.
+        # Every other sensitive architecture shares the same risk class but
+        # has never actually been rendered, so it stays CAUTION.
+        assert support_level("lumina2", True, "INT8") == SUPPORT_BAD
         assert support_level("flux", True, "INT8") == SUPPORT_CAUTION
 
-    def test_nvfp4_always_caution(self):
-        # Same class of dynamic-activation-quantization risk as FP8, but with
-        # no verified safe mode (no equivalent full_precision_matrix_mult
-        # confirmed for NVFP4 yet) -- caution everywhere, not just lumina2,
-        # since the mechanism is architecture-independent even though direct
-        # evidence (marcorez8's tiered ratings) only exists for lumina2.
-        assert support_level("lumina2", True, "NVFP4") == SUPPORT_CAUTION
+    def test_nvfp4_bad_on_lumina2_caution_elsewhere(self):
+        # Direct render evidence (full-image noise, #15) exists only for
+        # lumina2 -- BAD there, CAUTION everywhere else on the strength of
+        # the shared dynamic-activation-quantization mechanism alone (no
+        # verified safe mode, unlike FP8's full_precision_matrix_mult).
+        assert support_level("lumina2", True, "NVFP4") == SUPPORT_BAD
+        assert support_level("lumina2", True, "NVFP4_MIXED") == SUPPORT_BAD
         assert support_level("sdxl", False, "NVFP4_MIXED") == SUPPORT_CAUTION
+        assert support_level("flux", True, "NVFP4") == SUPPORT_CAUTION
 
     def test_unknown_format_key_returns_unknown(self):
         assert support_level("sdxl", False, "BOGUS") == SUPPORT_UNKNOWN
@@ -112,3 +117,11 @@ class TestBuildSupportTable:
         sdxl_row = next(r for r in rows if r["arch"] == "sdxl")
         assert sdxl_row["INT8"] == SUPPORT_VERIFIED
         assert sdxl_row["INT8_MIXED"] == SUPPORT_VERIFIED
+
+    def test_lumina2_row_flags_confirmed_bad_combinations(self):
+        from model_support import build_support_table
+        rows = build_support_table()
+        lumina2_row = next(r for r in rows if r["arch"] == "lumina2")
+        assert lumina2_row["INT8"] == SUPPORT_BAD
+        assert lumina2_row["NVFP4"] == SUPPORT_BAD
+        assert lumina2_row["NVFP4_MIXED"] == SUPPORT_BAD
