@@ -48,17 +48,23 @@ class TestSupportLevel:
         assert support_level("lumina2", True, "F16") == SUPPORT_VERIFIED
         assert support_level("lumina2", True, "F16_MIXED") == SUPPORT_VERIFIED
 
-    def test_fp8_caution_except_confirmed_bad_lumina2_plain(self):
+    def test_fp8_caution_except_lumina2(self):
         # full_precision_matrix_mult=true fixes ComfyUI's compute path by
         # code reading (comfy/utils.py, comfy/ops.py), but no FP8_MIXED
         # output from this tool has ever been convert+load+render confirmed
-        # in ComfyUI on any architecture -- that's CAUTION, not VERIFIED,
-        # under the same bar INT8_MIXED is held to. Plain FP8 on lumina2 is
-        # the exception: a same-seed/prompt user comparison directly
-        # confirmed corrupted output (outfit/background drift), so it's BAD.
-        assert support_level("lumina2", True, "FP8") == SUPPORT_BAD
+        # in ComfyUI on architectures other than lumina2 -- CAUTION, not
+        # VERIFIED, under the same bar INT8_MIXED is held to.
         assert support_level("flux", True, "FP8_MIXED") == SUPPORT_CAUTION
         assert support_level("sdxl", False, "FP8") == SUPPORT_CAUTION
+
+    def test_fp8_lumina2_split_bad_plain_verified_mixed(self):
+        # lumina2 has been directly render-tested for both FP8 variants:
+        # plain FP8 confirmed corrupted (outfit/background drift, same-seed
+        # comparison) -- BAD. FP8_MIXED confirmed correct (composition/
+        # identity/outfit preserved, only a tolerable single-prop deviation,
+        # second same-seed comparison) -- VERIFIED, same bar INT8_MIXED met.
+        assert support_level("lumina2", True, "FP8") == SUPPORT_BAD
+        assert support_level("lumina2", True, "FP8_MIXED") == SUPPORT_VERIFIED
 
     def test_int8_verified_when_no_hiprec_layers(self):
         # No keys_hiprec means plain INT8 and INT8_MIXED produce identical
@@ -149,3 +155,10 @@ class TestSupportLevelLumina2Table:
         assert lumina2_row["FP8"] == SUPPORT_BAD
         assert lumina2_row["NVFP4"] == SUPPORT_BAD
         assert lumina2_row["NVFP4_MIXED"] == SUPPORT_BAD
+
+    def test_lumina2_row_flags_render_verified_mixed_combinations(self):
+        from model_support import build_support_table
+        rows = build_support_table()
+        lumina2_row = next(r for r in rows if r["arch"] == "lumina2")
+        assert lumina2_row["INT8_MIXED"] == SUPPORT_VERIFIED
+        assert lumina2_row["FP8_MIXED"] == SUPPORT_VERIFIED

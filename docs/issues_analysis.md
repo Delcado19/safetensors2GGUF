@@ -653,6 +653,21 @@ than predicted by analogy from INT8. FP8_MIXED's status is unchanged by this —
 comparison only exercised plain FP8, and FP8_MIXED's own `keys_hiprec` protection (mixed
 mode) is a different, still-unverified question.
 
+**Third correction (FP8_MIXED render-test evidence, 2026-08-11):** that remaining
+question is now answered too. A second same-seed/same-prompt comparison (a different
+Z-Image Base prompt/checkpoint pairing) of full precision vs. this tool's `FP8_MIXED`
+output showed composition, pose, face, makeup, jewelry, hair, and outfit all preserved —
+the only deviation was the color/shape of a single secondary prop (a small creature held
+in a jar), judged tolerable render-to-render quantization variance rather than a
+correctness failure. This meets the same bar INT8_MIXED was already held to
+(`_RENDER_VERIFIED_ARCHES` in the first correction above). `safetensors_quant.py`'s
+`_RENDER_VERIFIED_ARCHES` (arch-only) was generalized to `_RENDER_VERIFIED_MIXED`
+(`(arch_key, format_key)` pairs, mirroring `_RENDER_CONFIRMED_BAD`'s shape) and now
+includes both `("lumina2", "INT8_MIXED")` and `("lumina2", "FP8_MIXED")`.
+`support_level()` returns `SUPPORT_VERIFIED` for FP8_MIXED on lumina2;
+`format_recommendation()` no longer discloses the "not yet confirmed by a render test"
+caveat for that combination.
+
 **Open follow-up — NOT done in this fix:** NVFP4 was not re-investigated here. It has no
 known equivalent to `full_precision_matrix_mult` — `comfy/utils.py`'s
 `convert_old_quants()` only synthesizes that flag for legacy `scaled_fp8` checkpoints,

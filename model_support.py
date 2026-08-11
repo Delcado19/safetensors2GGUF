@@ -10,7 +10,7 @@ level for each (architecture, format) combination (support_level()).
 
 from __future__ import annotations
 
-from safetensors_quant import _RENDER_VERIFIED_ARCHES
+from safetensors_quant import _RENDER_VERIFIED_MIXED
 
 # Public display name per models.architectures.*.arch key. Format:
 # "<public name(s)> (<arch key>)" -- the arch key always appears verbatim in
@@ -128,28 +128,33 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
       same-seed/prompt comparison showed the standing figure's outfit and
       the room background changed between the unquantized and plain-FP8
       renders, only the pose skeleton surviving; see _RENDER_CONFIRMED_BAD).
-      CAUTION everywhere else. FP8_MIXED defaults to
-      full_precision_matrix_mult=true, which by code reading of ComfyUI's
-      comfy/utils.py and comfy/ops.py should make it skip the risky
-      quantized-compute branch entirely — but that's a code-reading
-      conclusion, not an actual convert+load+render confirmation with this
-      tool's own output on any architecture, so it stays CAUTION, not
-      VERIFIED. Plain FP8 additionally carries the same keys_hiprec on-disk
-      precision-loss risk plain INT8 does on sensitive architectures
-      (format_recommendation() in safetensors_quant.py warns identically) —
-      now confirmed rather than just predicted by analogy, for lumina2.
+      FP8_MIXED is VERIFIED for lumina2: a second same-seed/prompt
+      comparison (2026-08-11) showed composition/identity/outfit preserved,
+      the only deviation being a single secondary prop judged tolerable
+      quantization variance, not a correctness failure — the same bar
+      INT8_MIXED was held to (_RENDER_VERIFIED_MIXED,
+      safetensors_quant.py). Everywhere else, FP8/FP8_MIXED stay CAUTION:
+      full_precision_matrix_mult=true should, by code reading of ComfyUI's
+      comfy/utils.py and comfy/ops.py, make FP8_MIXED skip the risky
+      quantized-compute branch entirely on any architecture, but that's a
+      code-reading conclusion, not an actual convert+load+render
+      confirmation for architectures other than lumina2. Plain FP8
+      additionally carries the same keys_hiprec on-disk precision-loss risk
+      plain INT8 does on sensitive architectures (format_recommendation() in
+      safetensors_quant.py warns identically) — confirmed rather than just
+      predicted by analogy, for lumina2.
     - INT8 / INT8_MIXED: depends on keys_hiprec. If the architecture has no
       keys_hiprec at all, plain INT8 and INT8_MIXED produce byte-identical
       output (nothing to protect either way) — both VERIFIED. If it does:
-      INT8_MIXED is VERIFIED only for lumina2 (the one architecture actually
-      render-tested end-to-end); every other sensitive architecture's
-      INT8_MIXED is CAUTION (protection list cross-referenced against
-      community tools, never confirmed with this tool's own output). Plain
-      INT8 on a sensitive architecture is BAD for lumina2 specifically — the
-      one *confirmed-bad* case (docs/issues_analysis.md #15's plain-INT8
-      corruption) — and CAUTION (unverified, not confirmed) for every other
-      sensitive architecture, since the same class of risk hasn't actually
-      been rendered there.
+      INT8_MIXED is VERIFIED only for lumina2 (_RENDER_VERIFIED_MIXED, the
+      one architecture actually render-tested end-to-end); every other
+      sensitive architecture's INT8_MIXED is CAUTION (protection list
+      cross-referenced against community tools, never confirmed with this
+      tool's own output). Plain INT8 on a sensitive architecture is BAD for
+      lumina2 specifically — the one *confirmed-bad* case
+      (docs/issues_analysis.md #15's plain-INT8 corruption) — and CAUTION
+      (unverified, not confirmed) for every other sensitive architecture,
+      since the same class of risk hasn't actually been rendered there.
     - NVFP4 / NVFP4_MIXED: BAD for lumina2 (direct render evidence, #15);
       CAUTION everywhere else. The mechanism is the same class of dynamic-
       activation-quantization risk as pre-fix FP8, and unlike FP8 there is
@@ -163,13 +168,15 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
     if format_key in ("F16", "F16_MIXED"):
         return SUPPORT_VERIFIED
     if format_key in ("FP8", "FP8_MIXED"):
+        if (arch_key, format_key) in _RENDER_VERIFIED_MIXED:
+            return SUPPORT_VERIFIED
         if (arch_key, format_key) in _RENDER_CONFIRMED_BAD:
             return SUPPORT_BAD
         return SUPPORT_CAUTION
     if format_key in ("INT8", "INT8_MIXED"):
         if not keys_hiprec_nonempty:
             return SUPPORT_VERIFIED
-        if arch_key in _RENDER_VERIFIED_ARCHES and format_key == "INT8_MIXED":
+        if (arch_key, format_key) in _RENDER_VERIFIED_MIXED:
             return SUPPORT_VERIFIED
         if (arch_key, format_key) in _RENDER_CONFIRMED_BAD:
             return SUPPORT_BAD

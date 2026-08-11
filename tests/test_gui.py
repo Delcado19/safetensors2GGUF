@@ -169,6 +169,9 @@ class TestDynamicDropdownAnnotation:
         # Plain FP8 on lumina2 is also confirmed-bad (same-seed/prompt user
         # comparison, 2026-08-11).
         assert labels_by_key["FP8"].startswith("✗")
+        # FP8_MIXED on lumina2 is now render-verified too (second
+        # comparison, 2026-08-11) -- same as INT8_MIXED, no prefix.
+        assert not labels_by_key["FP8_MIXED"].startswith(("⚠", "✗"))
 
     def test_annotate_safetensors_choices_no_source_returns_unmodified(self):
         update = gui.annotate_safetensors_choices("")

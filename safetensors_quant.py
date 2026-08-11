@@ -34,14 +34,21 @@ SAFETENSORS_DTYPE_CHOICES: list[tuple[str, str]] = [
     ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32 · recommended ★", "INT8_MIXED"),
 ]
 
-# Architectures whose keys_hiprec protection scope has been confirmed by an
-# actual convert+load+render cycle in ComfyUI (not just by matching a
-# community tool's published blacklist) — see docs/issues_analysis.md #15.
+# (arch_key, format_key) pairs whose *_MIXED keys_hiprec protection has been
+# confirmed by an actual convert+load+render cycle in ComfyUI (not just by
+# matching a community tool's published blacklist) -- see
+# docs/issues_analysis.md #15 (INT8_MIXED) and #16's second correction
+# (FP8_MIXED: same-seed/prompt comparison, 2026-08-11, showed identity/
+# composition/outfit preserved -- the only deviation was a single secondary
+# prop, judged tolerable quantization variance, not a correctness failure).
 # Everything else with a non-empty keys_hiprec is protected on the strength
-# of that cross-reference alone, which format_recommendation() below
-# discloses rather than implying the same level of confidence for every
-# architecture.
-_RENDER_VERIFIED_ARCHES = {"lumina2"}
+# of a community-tool cross-reference alone, which format_recommendation()
+# below discloses rather than implying the same level of confidence for
+# every architecture.
+_RENDER_VERIFIED_MIXED: set[tuple[str, str]] = {
+    ("lumina2", "INT8_MIXED"),
+    ("lumina2", "FP8_MIXED"),
+}
 
 # (base_format -> {arch_key}) pairs where the PLAIN (non-mixed) output has
 # been directly render-tested and confirmed wrong -- not just predicted by
@@ -83,12 +90,7 @@ def format_recommendation(model_arch, target_key: str) -> tuple[str, str]:
     base = target_key[: -len("_MIXED")] if mixed else target_key
     arch = model_arch.arch
     sensitive = bool(model_arch.keys_hiprec)
-    # _RENDER_VERIFIED_ARCHES only covers INT8_MIXED's keys_hiprec protection
-    # scope (docs/issues_analysis.md #15) -- no FP8_MIXED output from this
-    # tool has ever been render-verified on any architecture (model_support.py's
-    # support_level() keeps FP8_MIXED at SUPPORT_CAUTION everywhere), so FP8
-    # must never take the "mixed_verified" branch below even for lumina2.
-    mixed_verified = base == "INT8" and arch in _RENDER_VERIFIED_ARCHES
+    mixed_verified = (arch, target_key) in _RENDER_VERIFIED_MIXED
     # Separate from the above: whether PLAIN (non-mixed) output for this
     # exact base format has itself been directly render-tested and confirmed
     # wrong, vs. only predicted by analogy from another format's corruption.

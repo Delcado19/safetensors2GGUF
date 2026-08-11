@@ -298,19 +298,23 @@ that same flag by default for every FP8/FP8_MIXED layer it produces
 safe as the checkpoints already circulating in the wild — no per-architecture
 bet the way INT8's `keys_hiprec` is, for the runtime compute path. That
 conclusion comes from reading ComfyUI's source, though, not from an actual
-convert+load+render test with this tool's own output on any architecture —
-so the Model Support tab still shows FP8_MIXED as **⚠ Caution**, not
-**✓ Verified**, until that test happens. `full_precision_matrix_mult` also
-only fixes the *runtime* compute path — it does nothing for precision
-already lost when a tensor is quantized to e4m3 *on disk*, so plain
-(non-mixed) FP8 carries the same keys_hiprec sensitive-architecture risk
-plain INT8 does, and the format-recommendation badge on Convert → Safetensors
-warns for it identically. That risk is no longer just theoretical for
-`lumina2`: a same-seed/prompt comparison showed plain FP8 output there with
-a different outfit and background than the unquantized render (only the
-pose skeleton matching) — the Model Support tab shows plain FP8 on `lumina2`
-as **✗ Known issue**, not Caution (see `docs/issues_analysis.md` #16's
-second correction). The tradeoff on top of all that is no FP8
+convert+load+render test with this tool's own output — so the Model Support
+tab still shows FP8_MIXED as **⚠ Caution** on every architecture except
+`lumina2`, where a same-seed/prompt comparison confirmed composition,
+identity, and outfit preserved (only a single secondary prop's color/shape
+deviated, judged tolerable variance) — the same bar INT8_MIXED already met,
+so `lumina2` + FP8_MIXED shows **✓ Verified** (see `docs/issues_analysis.md`
+#16's third correction). `full_precision_matrix_mult` also only fixes the
+*runtime* compute path — it does nothing for precision already lost when a
+tensor is quantized to e4m3 *on disk*, so plain (non-mixed) FP8 carries the
+same keys_hiprec sensitive-architecture risk plain INT8 does, and the
+format-recommendation badge on Convert → Safetensors warns for it
+identically. That risk is no longer just theoretical for `lumina2`: a
+separate same-seed/prompt comparison showed plain FP8 output there with a
+different outfit and background than the unquantized render (only the pose
+skeleton matching) — the Model Support tab shows plain FP8 on `lumina2` as
+**✗ Known issue**, not Caution (see #16's second correction). The tradeoff
+on top of all that is no FP8
 tensor-core compute speedup; FP8 output is a storage/VRAM-savings format
 only unless a user explicitly opts out (`full_precision_fp8=False`). See
 [docs/issues_analysis.md](docs/issues_analysis.md) #16 for the full

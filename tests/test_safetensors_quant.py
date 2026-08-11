@@ -335,13 +335,17 @@ class TestFormatRecommendation:
         assert level == "ok"
         assert msg
 
-    def test_fp8_mixed_on_lumina2_discloses_caveat_despite_int8_being_verified(self):
-        # lumina2 is in _RENDER_VERIFIED_ARCHES for INT8_MIXED, but no FP8
-        # output from this tool has ever been render-tested on any
-        # architecture (model_support.support_level() keeps FP8/FP8_MIXED at
-        # SUPPORT_CAUTION everywhere) -- FP8_MIXED must still disclose the
-        # caveat here, not silently inherit INT8's verified status.
+    def test_fp8_mixed_on_lumina2_is_now_render_verified(self):
+        # A second same-seed/prompt user comparison (2026-08-11) confirmed
+        # FP8_MIXED on lumina2 end-to-end: composition/identity/outfit
+        # preserved, only a single secondary prop deviated (judged tolerable
+        # quantization variance). No caveat now -- same bar INT8_MIXED
+        # already met.
         _, msg = format_recommendation(ModelLumina2(), "FP8_MIXED")
+        assert "not yet confirmed" not in msg
+
+    def test_fp8_mixed_on_unverified_architecture_discloses_caveat(self):
+        _, msg = format_recommendation(ModelFlux(), "FP8_MIXED")
         assert "not yet confirmed" in msg
 
     def test_plain_fp8_on_lumina2_claims_shown_in_testing(self):
