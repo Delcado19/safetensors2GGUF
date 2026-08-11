@@ -379,6 +379,35 @@ class TestConvertTextEncoderToSafetensors:
         # 1D bias always stays plain/unscaled
         assert "model.layers.0.self_attn.q_proj.bias_scale" not in result
 
+    def test_embedding_table_protected_from_nvfp4_packing(self, tmp_path):
+        # NVFP4 halves a tensor's on-disk last dimension (2 values/byte) --
+        # fine for weights ComfyUI dequantizes through its MixedPrecisionOps
+        # Linear wrapper, but an nn.Embedding is loaded via a plain
+        # load_state_dict with no such unpacking. Confirmed against a live
+        # ComfyUI install: Qwen3-4B's NVFP4 output raised "size mismatch for
+        # model.embed_tokens.weight: ... torch.Size([151936, 1280]) ... the
+        # shape in current model is torch.Size([151936, 2560])".
+        import torch
+        from safetensors.torch import save_file, load_file
+        from text_encoder_convert import convert_text_encoder_to_safetensors
+
+        src = tmp_path / "model.safetensors"
+        save_file(
+            {"model.embed_tokens.weight": torch.randn(32, 64, dtype=torch.float32)},
+            str(src),
+        )
+
+        with patch("text_encoder_convert.hf_hub_download") as mock_download:
+            out = convert_text_encoder_to_safetensors(str(src), target_key="NVFP4")
+            mock_download.assert_not_called()
+
+        result = load_file(out)
+        # Shape-critical fallback: stays F16, on-disk shape untouched -- no
+        # NVFP4 packing, no .weight_scale sidecar.
+        assert result["model.embed_tokens.weight"].dtype == torch.float16
+        assert result["model.embed_tokens.weight"].shape == (32, 64)
+        assert "model.embed_tokens.weight_scale" not in result
+
 
 class TestConvertTextEncoderAny:
     def test_dispatches_safetensors_formats_without_repo_id(self, tmp_path):

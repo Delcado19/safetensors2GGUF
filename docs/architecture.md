@@ -333,15 +333,23 @@ backends:
 - **K-quants** (Q6_K…Q2_K): `convert_text_encoder_kquant()` runs the F16 GGUF
   pipeline to a temp intermediate, then a second llama-quantize pass (see below).
 - **Safetensors** (FP8/FP8_MIXED/NVFP4/NVFP4_MIXED): `convert_text_encoder_to_safetensors()`
-  reuses `convert_safetensors.convert_to_safetensors()` with a bare
-  `models.architectures.ModelTemplate()` instance (text encoders aren't in
-  `arch_list`) — the only place this module imports `models.architectures` or
-  `convert.py`. Also passes `strip_prefixes=False`: `load_state_dict()`'s
-  default prefix-stripping rule assumes a leading "model." wraps a diffusion
-  UNet inside a larger checkpoint, but a standalone text encoder's "model."
-  is its own genuine HF module path (e.g. Qwen3's `model.layers.0....`) —
-  stripping it broke ComfyUI's own text-encoder architecture detection
-  (`comfy/sd.py`'s `detect_te_model()`) on the output file.
+  reuses `convert_safetensors.convert_to_safetensors()` with
+  `_TEXT_ENCODER_MODEL_ARCH`, a `models.architectures.ModelTemplate()`
+  instance (text encoders aren't in `arch_list`) — the only place this
+  module imports `models.architectures` or `convert.py`. Also passes
+  `strip_prefixes=False`: `load_state_dict()`'s default prefix-stripping
+  rule assumes a leading "model." wraps a diffusion UNet inside a larger
+  checkpoint, but a standalone text encoder's "model." is its own genuine
+  HF module path (e.g. Qwen3's `model.layers.0....`) — stripping it broke
+  ComfyUI's own text-encoder architecture detection (`comfy/sd.py`'s
+  `detect_te_model()`) on the output file. `_TEXT_ENCODER_MODEL_ARCH` also
+  sets `keys_shape_critical = ["embed_tokens", "shared", "token_embedding",
+  "wte", "lm_head"]` — NVFP4 halves a tensor's on-disk last dimension,
+  which corrupts an `nn.Embedding` table loaded via a plain (non-dequant)
+  `load_state_dict` the same way it corrupts a diffusion model's raw
+  hyperparameter-inference tensors (`safetensors_quant.py`'s existing
+  `keys_shape_critical` guard, previously only ever populated for
+  diffusion-model architectures).
 
 ```
 Source weights (.safetensors, bare file — no config.json/tokenizer)

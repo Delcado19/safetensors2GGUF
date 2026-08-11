@@ -412,6 +412,27 @@ def convert_text_encoder_kquant(
     return dst_path
 
 
+# Generic (non-architecture-specific) model_arch used for the safetensors
+# quant path below, since text encoders aren't in models.architectures.arch_list.
+# keys_shape_critical protects embedding-lookup tables from NVFP4 packing:
+# NVFP4 halves a tensor's on-disk last dimension (2 values/byte), which is
+# fine for weights consumed through a dequant-aware quantized-Linear wrapper
+# (what ComfyUI's MixedPrecisionOps provides for the transformer's own
+# Linear layers) but breaks a plain nn.Embedding, loaded via a vanilla
+# `load_state_dict` with no such unpacking -- confirmed against a live
+# ComfyUI install: Qwen3-4B's NVFP4 output raised "size mismatch for
+# model.embed_tokens.weight: ... torch.Size([151936, 1280]) ... the shape
+# in current model is torch.Size([151936, 2560])" (1280 == 2560 // 2).
+# Substrings are the common tied/untied embedding-table key names across
+# this project's documented text-encoder families (Qwen3/Mistral, T5/UMT5,
+# CLIP) -- matched the same way keys_hiprec/keys_ignore are elsewhere,
+# open to extending if another architecture's embed key isn't covered yet.
+_TEXT_ENCODER_MODEL_ARCH = ModelTemplate()
+_TEXT_ENCODER_MODEL_ARCH.keys_shape_critical = [
+    "embed_tokens", "shared", "token_embedding", "wte", "lm_head",
+]
+
+
 def convert_text_encoder_to_safetensors(
     weights_path: str,
     dst_path: str | None = None,
@@ -425,9 +446,10 @@ def convert_text_encoder_to_safetensors(
     No HuggingFace download or llama.cpp involved — ComfyUI's text-encoder
     loaders build models from fixed config presets rather than inferring
     hyperparameters from checkpoint tensor shapes (unlike the diffusion-model
-    DiT architectures), so the generic ModelTemplate() safety rules (1D-skip,
-    16-multiple fallback) are sufficient; no per-architecture keys_hiprec/
-    keys_shape_critical list is needed here.
+    DiT architectures), so no per-architecture keys_hiprec list is needed
+    here. keys_shape_critical IS needed, though (see _TEXT_ENCODER_MODEL_ARCH
+    below) — an earlier version of this docstring claimed otherwise; a live
+    ComfyUI test with NVFP4 on a real Qwen3-4B checkpoint proved that wrong.
 
     strip_prefixes=False: convert_to_safetensors()'s default "model."-prefix
     stripping assumes that prefix wraps a diffusion UNet inside a larger
@@ -440,7 +462,7 @@ def convert_text_encoder_to_safetensors(
     """
     dst, _ = convert_to_safetensors(
         weights_path, dst_path=dst_path, target_key=target_key, overwrite=True,
-        on_log=on_log, cancel_event=cancel_event, model_arch=ModelTemplate(),
+        on_log=on_log, cancel_event=cancel_event, model_arch=_TEXT_ENCODER_MODEL_ARCH,
         strip_prefixes=False,
     )
     return dst
