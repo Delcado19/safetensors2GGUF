@@ -428,10 +428,20 @@ def convert_text_encoder_to_safetensors(
     DiT architectures), so the generic ModelTemplate() safety rules (1D-skip,
     16-multiple fallback) are sufficient; no per-architecture keys_hiprec/
     keys_shape_critical list is needed here.
+
+    strip_prefixes=False: convert_to_safetensors()'s default "model."-prefix
+    stripping assumes that prefix wraps a diffusion UNet inside a larger
+    checkpoint. A standalone text-encoder file has no such wrapper -- "model."
+    is its own genuine module path (e.g. Qwen3's "model.layers.0..."), and
+    stripping it breaks ComfyUI's own text-encoder architecture detection
+    (comfy/sd.py's detect_te_model looks for literal "model.layers.0...."
+    keys) on the output file, silently falling back to the wrong text-encoder
+    class at load time.
     """
     dst, _ = convert_to_safetensors(
         weights_path, dst_path=dst_path, target_key=target_key, overwrite=True,
         on_log=on_log, cancel_event=cancel_event, model_arch=ModelTemplate(),
+        strip_prefixes=False,
     )
     return dst
 

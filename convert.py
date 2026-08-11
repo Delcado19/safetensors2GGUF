@@ -68,13 +68,26 @@ def _read_safetensors_header(path: str) -> dict:
         return json.loads(f.read(hdr_len))
 
 
-def _build_key_map(keys) -> dict:
+def _build_key_map(keys, strip_prefixes: bool = True) -> dict:
     """Return a {logical_key: on_disk_key} mapping after applying prefix rules.
 
     Mirrors strip_prefix's behaviour but on key lists, so the same prefix logic
     can drive both the eager (dict) and lazy (safetensors-streaming) paths.
+
+    ``strip_prefixes=False`` bypasses all of this (identity map): the "model."
+    stripping rule below assumes "model." is a wrapper artifact around a
+    diffusion UNet (e.g. a full checkpoint's "model.diffusion_model.*"), but
+    a bare HF Transformers text-encoder state dict also genuinely uses
+    "model." for its own real module path (e.g. Qwen3's
+    "model.layers.0.self_attn.q_proj.weight") — stripping it there destroys
+    the key structure ComfyUI's own text-encoder architecture detection
+    (comfy/sd.py's detect_te_model) depends on. Callers that know their
+    source is already a standalone text-encoder checkpoint, not a
+    diffusion-model-shaped one, must pass False.
     """
     keys = [k for k in keys if k != "__metadata__"]
+    if not strip_prefixes:
+        return {k: k for k in keys}
 
     # Mixed state dicts (VAE + UNet merged) — keep only keys carrying the prefix.
     for pfx in ["model.diffusion_model.", "model."]:
@@ -91,14 +104,14 @@ def _build_key_map(keys) -> dict:
     return {k: k for k in keys}
 
 
-def strip_prefix(state_dict):
+def strip_prefix(state_dict, strip_prefixes: bool = True):
     """Remove known state-dict prefixes used by various checkpoint formats.
 
     Eager path: returns a new dict containing the renamed tensors.  Kept for
     non-safetensors sources and existing tests; safetensors sources go through
     _LazyStateDict which applies the same prefix rules via _build_key_map.
     """
-    key_map = _build_key_map(state_dict.keys())
+    key_map = _build_key_map(state_dict.keys(), strip_prefixes=strip_prefixes)
     return {logical: state_dict[on_disk] for logical, on_disk in key_map.items()}
 
 
@@ -157,7 +170,7 @@ class _LazyStateDict:
         return self._header.get("__metadata__") or {}
 
 
-def load_state_dict(path):
+def load_state_dict(path, strip_prefixes: bool = True):
     """Load a model checkpoint from disk and return a (possibly lazy) state-dict.
 
     For ``.safetensors`` sources, returns a ``_LazyStateDict`` that streams
@@ -165,6 +178,10 @@ def load_state_dict(path):
     physical memory.  For ``.ckpt``/``.pt``/``.bin``/``.pth`` sources, returns
     a normal eager dict (torch.load has no streaming API, and these formats
     are rarely >RAM in practice).
+
+    ``strip_prefixes=False`` for standalone text-encoder checkpoints — see
+    ``_build_key_map``'s docstring for why the default "model." stripping
+    rule is wrong for those.
     """
     if any(path.endswith(ext) for ext in (".ckpt", ".pt", ".bin", ".pth")):
         sd = torch.load(path, map_location="cpu", weights_only=True)
@@ -174,11 +191,11 @@ def load_state_dict(path):
                 break
         if len(sd) < 20:
             raise RuntimeError(f"Unexpected checkpoint structure (keys: {list(sd.keys())})")
-        return strip_prefix(sd)
+        return strip_prefix(sd, strip_prefixes=strip_prefixes)
 
     # safetensors: lazy streaming (avoids OOM on >RAM checkpoints)
     header = _read_safetensors_header(path)
-    key_map = _build_key_map(header.keys())
+    key_map = _build_key_map(header.keys(), strip_prefixes=strip_prefixes)
     return _LazyStateDict(path, key_map, header)
 
 

@@ -100,6 +100,7 @@ def convert_to_safetensors(
     model_arch=None,
     log_tensor_every=1,
     full_precision_fp8=True,
+    strip_prefixes=True,
 ):
     """Convert a model checkpoint to a quantized .safetensors file.
 
@@ -135,6 +136,14 @@ def convert_to_safetensors(
             The tradeoff is no FP8 tensor-core compute speedup — this format
             is storage/VRAM savings only unless a user explicitly opts out.
             See docs/issues_analysis.md #16.
+        strip_prefixes: Passed through to ``load_state_dict()``. Diffusion
+            checkpoints often wrap the UNet in a "model."/"model.diffusion_model."
+            prefix that must be stripped for architecture detection and clean
+            output keys (default True). Standalone text-encoder checkpoints
+            genuinely use "model." as their own real module path (e.g. Qwen3's
+            "model.layers.0...") — stripping it there breaks ComfyUI's own
+            text-encoder architecture detection on the output file. Callers
+            for text-encoder sources must pass False.
 
     Returns:
         (dst_path, model_arch)
@@ -145,7 +154,7 @@ def convert_to_safetensors(
         else:
             print(msg)
 
-    state_dict = load_state_dict(path)
+    state_dict = load_state_dict(path, strip_prefixes=strip_prefixes)
     quant_formats, quant_skip_keys = _scan_quantized_layers(state_dict)
     if quant_formats:
         _log(

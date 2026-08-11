@@ -336,7 +336,12 @@ backends:
   reuses `convert_safetensors.convert_to_safetensors()` with a bare
   `models.architectures.ModelTemplate()` instance (text encoders aren't in
   `arch_list`) — the only place this module imports `models.architectures` or
-  `convert.py`.
+  `convert.py`. Also passes `strip_prefixes=False`: `load_state_dict()`'s
+  default prefix-stripping rule assumes a leading "model." wraps a diffusion
+  UNet inside a larger checkpoint, but a standalone text encoder's "model."
+  is its own genuine HF module path (e.g. Qwen3's `model.layers.0....`) —
+  stripping it broke ComfyUI's own text-encoder architecture detection
+  (`comfy/sd.py`'s `detect_te_model()`) on the output file.
 
 ```
 Source weights (.safetensors, bare file — no config.json/tokenizer)

@@ -281,6 +281,19 @@ class TestStripPrefix:
         result = strip_prefix(sd)
         assert set(result.keys()) == {"blocks.0.weight", "blocks.1.weight"}
 
+    def test_strip_prefixes_false_keeps_model_prefix_intact(self):
+        # A standalone text-encoder state dict's "model." is its own genuine
+        # HF module path (e.g. Qwen3's "model.layers.0...."), not a
+        # diffusion-checkpoint wrapper -- callers that know the source is a
+        # text encoder must be able to opt out of the default stripping, or
+        # ComfyUI's own text-encoder architecture detection (comfy/sd.py's
+        # detect_te_model, which looks for literal "model.layers.0...."
+        # keys) breaks on the output file.
+        sd = {"model.layers.0.self_attn.q_proj.weight": torch.zeros(1)}
+        result = strip_prefix(sd, strip_prefixes=False)
+        assert "model.layers.0.self_attn.q_proj.weight" in result
+        assert "layers.0.self_attn.q_proj.weight" not in result
+
 
 # ---------------------------------------------------------------------------
 # 5D tensor handling: multiple 5D tensors must not crash (Issue #291)

@@ -365,13 +365,19 @@ class TestConvertTextEncoderToSafetensors:
             mock_download.assert_not_called()
 
         result = load_file(out)
-        # load_state_dict() strips a shared "model." prefix (existing, generic
-        # mixed-checkpoint behavior — also matches real HF LLM state dicts).
-        assert "layers.0.self_attn.q_proj.weight" in result
-        assert result["layers.0.self_attn.q_proj.weight"].dtype == torch.float8_e4m3fn
-        assert "layers.0.self_attn.q_proj.weight_scale" in result
+        # The "model." prefix must survive intact -- it's the tensor's own
+        # genuine HF module path here (e.g. Qwen3's "model.layers.0...."),
+        # not a diffusion-checkpoint wrapper artifact. Stripping it breaks
+        # ComfyUI's own text-encoder architecture detection (comfy/sd.py's
+        # detect_te_model looks for literal "model.layers.0...." keys) on
+        # the output file, silently falling back to the wrong text-encoder
+        # class at load time -- a real bug found via a live ComfyUI test.
+        assert "model.layers.0.self_attn.q_proj.weight" in result
+        assert "layers.0.self_attn.q_proj.weight" not in result
+        assert result["model.layers.0.self_attn.q_proj.weight"].dtype == torch.float8_e4m3fn
+        assert "model.layers.0.self_attn.q_proj.weight_scale" in result
         # 1D bias always stays plain/unscaled
-        assert "layers.0.self_attn.q_proj.bias_scale" not in result
+        assert "model.layers.0.self_attn.q_proj.bias_scale" not in result
 
 
 class TestConvertTextEncoderAny:
