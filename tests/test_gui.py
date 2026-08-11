@@ -256,3 +256,34 @@ def test_apply_support_table_selection_model_column_is_a_noop():
     evt.index = (0, 0)  # the Model name column itself
     tabs_update, quant_update, st_format_update = gui.apply_support_table_selection(evt)
     assert "selected" not in tabs_update
+
+
+def test_apply_text_encoder_support_table_selection_gguf_column():
+    from unittest.mock import MagicMock
+    evt = MagicMock()
+    evt.index = (0, 1)  # row 0, first format column after the label = "GGUF"
+    tabs_update, format_update = gui.apply_text_encoder_support_table_selection(evt)
+    assert tabs_update.get("selected") == 2
+    assert format_update.get("value") == "Q4_K_M"
+
+
+def test_apply_text_encoder_support_table_selection_nvfp4_column():
+    from unittest.mock import MagicMock
+    from model_support import TEXT_ENCODER_TABLE_FORMATS
+
+    # Unlike the diffusion-model table, NVFP4 IS a real TEXT_ENCODER_FORMAT_CHOICES
+    # entry, so it must select normally rather than no-op.
+    col = 1 + next(i for i, (_, key) in enumerate(TEXT_ENCODER_TABLE_FORMATS) if key == "NVFP4")
+    evt = MagicMock()
+    evt.index = (0, col)
+    tabs_update, format_update = gui.apply_text_encoder_support_table_selection(evt)
+    assert tabs_update.get("selected") == 2
+    assert format_update.get("value") == "NVFP4"
+
+
+def test_apply_text_encoder_support_table_selection_label_column_is_a_noop():
+    from unittest.mock import MagicMock
+    evt = MagicMock()
+    evt.index = (0, 0)
+    tabs_update, format_update = gui.apply_text_encoder_support_table_selection(evt)
+    assert "selected" not in tabs_update

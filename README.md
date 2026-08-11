@@ -354,6 +354,23 @@ names map to which internal architecture key, and the four-state logic
 itself) lives in `model_support.py` and is documented there as an explicit
 editorial judgment call, open to correction.
 
+Below the per-architecture table is a second, smaller **Text Encoder
+Support** table covering the formats the [Text-Encoder
+Conversion](#text-encoder-conversion) tab offers (GGUF — collapsing every
+direct outtype and K-quant — plus FP8/FP8_MIXED/NVFP4/NVFP4_MIXED). Text
+encoders aren't in `models.architectures.arch_list` and have no
+`keys_hiprec`-style per-architecture risk model (ComfyUI's text-encoder
+loaders build models from fixed config presets, not inferred hyperparameters
+— see [Text-Encoder Conversion](#text-encoder-conversion) below), so this is
+one generic row rather than per-architecture columns. Every format currently
+shows **⚠ Caution**: none has a documented ComfyUI load+render confirmation
+by this project, even though the underlying GGUF path reuses llama.cpp's own
+well-established converter and the FP8/NVFP4 safetensors path reuses the
+same backends the diffusion-model table covers. Clicking a cell jumps to the
+Convert Text Encoder tab with that format pre-selected — unlike the
+diffusion-model table, NVFP4 isn't excluded here since it's a real,
+selectable format for text encoders.
+
 ## Text-Encoder Conversion
 
 The **Convert Text Encoder** tab converts

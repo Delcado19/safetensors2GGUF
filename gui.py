@@ -32,6 +32,8 @@ from model_support import (
     SUPPORT_CAUTION,
     SUPPORT_SYMBOL,
     TABLE_FORMATS,
+    TEXT_ENCODER_SUPPORT,
+    TEXT_ENCODER_TABLE_FORMATS,
     build_support_table,
     support_level,
 )
@@ -416,6 +418,29 @@ def _support_table_rows_for_dataframe() -> list[list[str]]:
             cells.append(_support_table_cell_html(row[format_key]))
         rows.append(cells)
     return rows
+
+
+def _text_encoder_support_rows_for_dataframe() -> list[list[str]]:
+    """Single-row gr.Dataframe data for the text-encoder support table --
+    one generic row, not per-architecture (see model_support.TEXT_ENCODER_SUPPORT)."""
+    cells = ["Text encoders (Qwen3, T5/UMT5, CLIP, Mistral, …)"]
+    for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
+        cells.append(_support_table_cell_html(TEXT_ENCODER_SUPPORT[format_key]))
+    return [cells]
+
+
+def apply_text_encoder_support_table_selection(evt: gr.SelectData):
+    """Handle a click on the text-encoder support table: switch to the
+    Convert Text Encoder tab and pre-select that format. Unlike the main
+    Model Support table, every TEXT_ENCODER_TABLE_FORMATS key is a real
+    TEXT_ENCODER_FORMAT_CHOICES entry (NVFP4 isn't excluded here the way it
+    is for diffusion models), so no no-op guard is needed."""
+    _row, col = evt.index
+    if col == 0:
+        return gr.update(), gr.update()
+    format_key = TEXT_ENCODER_TABLE_FORMATS[col - 1][1]
+    value = "Q4_K_M" if format_key == "GGUF" else format_key
+    return gr.update(selected=2), gr.update(value=value)
 
 
 _SAFETENSORS_DTYPE_KEYS = {key for _, key in SAFETENSORS_DTYPE_CHOICES}
@@ -1726,11 +1751,29 @@ def build_app() -> gr.Blocks:
                     wrap=True,
                 )
                 gr.HTML(_SUPPORT_TABLE_LEGEND_HTML)
+                gr.Markdown(
+                    "**Text encoders** (Convert Text Encoder tab) aren't "
+                    "architecture-detected the way diffusion models are — "
+                    "one generic row covers every format that tab offers.",
+                    elem_classes=["intro"],
+                )
+                te_support_table = gr.Dataframe(
+                    label="Text Encoder Support",
+                    headers=["", *[label for label, _ in TEXT_ENCODER_TABLE_FORMATS]],
+                    datatype="html",
+                    value=_text_encoder_support_rows_for_dataframe(),
+                    interactive=False,
+                    wrap=True,
+                )
 
         # ── Events ─────────────────────────────────────────────────────────
         support_table.select(
             apply_support_table_selection,
             outputs=[main_tabs, quant_dropdown, st_format_dropdown],
+        )
+        te_support_table.select(
+            apply_text_encoder_support_table_selection,
+            outputs=[main_tabs, te_format],
         )
         browse_conv_btn.click(browse_model, outputs=src_path)
         browse_dst_btn.click(browse_and_set_dst, inputs=[src_path, quant_dropdown], outputs=dst_path)

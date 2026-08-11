@@ -9,6 +9,8 @@ from model_support import (
     SUPPORT_UNKNOWN,
     SUPPORT_VERIFIED,
     TABLE_FORMATS,
+    TEXT_ENCODER_SUPPORT,
+    TEXT_ENCODER_TABLE_FORMATS,
     support_level,
 )
 from models.architectures import arch_list
@@ -118,6 +120,25 @@ class TestBuildSupportTable:
         assert sdxl_row["INT8"] == SUPPORT_VERIFIED
         assert sdxl_row["INT8_MIXED"] == SUPPORT_VERIFIED
 
+class TestTextEncoderSupport:
+    def test_covers_gguf_and_safetensors_formats(self):
+        keys = {key for _, key in TEXT_ENCODER_TABLE_FORMATS}
+        assert keys == {"GGUF", "FP8", "FP8_MIXED", "NVFP4", "NVFP4_MIXED"}
+
+    def test_every_format_has_a_support_level(self):
+        for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
+            assert TEXT_ENCODER_SUPPORT[format_key] in (
+                SUPPORT_VERIFIED, SUPPORT_CAUTION, SUPPORT_BAD, SUPPORT_UNKNOWN,
+            )
+
+    def test_no_format_claims_unverified_render_confirmation(self):
+        # No format here has a documented ComfyUI load+render confirmation
+        # by this project -- none should claim SUPPORT_VERIFIED.
+        for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
+            assert TEXT_ENCODER_SUPPORT[format_key] == SUPPORT_CAUTION
+
+
+class TestSupportLevelLumina2Table:
     def test_lumina2_row_flags_confirmed_bad_combinations(self):
         from model_support import build_support_table
         rows = build_support_table()

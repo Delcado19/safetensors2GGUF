@@ -296,10 +296,29 @@ and reusing it elsewhere in the UI:
   tool's own "recommended ★" default), since a single cell can't express a
   specific K-quant level; clicking the Model-name column is a no-op.
 - `annotate_safetensors_choices()`/`annotate_gguf_choices()`: reuse
-  `support_level()` to prefix a ⚠ onto any dropdown entry that's
-  `SUPPORT_CAUTION` for the detected source checkpoint's architecture, wired
-  as `.change()` handlers on the source-path inputs. Purely informational —
-  every entry stays selectable.
+  `support_level()` (via the shared `_annotate_choices_for_arch()`) to prefix
+  a ⚠ or ✗ onto any dropdown entry that's `SUPPORT_CAUTION`/`SUPPORT_BAD` for
+  the detected source checkpoint's architecture, wired as `.change()`
+  handlers on the source-path inputs. Purely informational — every entry
+  stays selectable.
+
+**Text Encoder Support table:** a second, generic (not per-architecture)
+support table below the main one, for the formats `text_encoder_convert.py`
+offers. Text encoders aren't in `models.architectures.arch_list` and have no
+`keys_hiprec`-style risk model (see the Text-Encoder Conversion Pipeline
+section below), so `model_support.py` defines `TEXT_ENCODER_TABLE_FORMATS`
+(GGUF — collapsing every direct outtype/K-quant — plus
+FP8/FP8_MIXED/NVFP4/NVFP4_MIXED) and `TEXT_ENCODER_SUPPORT` (a flat
+`{format_key: level}` dict, currently `SUPPORT_CAUTION` everywhere: no format
+has a documented ComfyUI load+render confirmation by this project) instead
+of a `build_support_table()`-style per-architecture function.
+`gui._text_encoder_support_rows_for_dataframe()` renders it as a
+single-row `gr.Dataframe`, reusing `_support_table_cell_html()`.
+`apply_text_encoder_support_table_selection(evt)` mirrors
+`apply_support_table_selection()` but switches to the Convert Text Encoder
+tab (`main_tabs` id 2) and, unlike the diffusion-model table, never no-ops
+on NVFP4 — it's a real `TEXT_ENCODER_FORMAT_CHOICES` entry, not excluded the
+way it is for diffusion-model output.
 
 ## Text-Encoder Conversion Pipeline
 

@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Add
+- **Text Encoder Support table** on the Model Support tab: a second, compact `gr.Dataframe` below the per-architecture table, covering the formats `Convert Text Encoder` offers (GGUF collapsed from F32/F16/BF16/Q8_0 + K-quants, plus FP8/FP8_MIXED/NVFP4/NVFP4_MIXED). Text encoders aren't in `models.architectures.arch_list` and have no `keys_hiprec`-style per-architecture risk model, so this is one generic row rather than per-architecture columns (`model_support.TEXT_ENCODER_TABLE_FORMATS`/`TEXT_ENCODER_SUPPORT`). Every format is currently `⚠ Caution`: none has a documented ComfyUI load+render confirmation by this project. Clicking a cell jumps to the Convert Text Encoder tab with that format pre-selected (`gui.apply_text_encoder_support_table_selection()`) — unlike the diffusion-model table, NVFP4 isn't excluded here since it's a real `TEXT_ENCODER_FORMAT_CHOICES` entry.
+
 ### Change
 - **Model Support table split its "Caution" symbol into two states**: `⚠ Caution` (technically supported, not render-tested for this architecture — no evidence either way) previously also covered actually-confirmed-wrong combinations, making the table unable to distinguish "never tried" from "tried and broke". Added `SUPPORT_BAD`/`✗ Known issue` for combinations with direct render-test evidence of wrong output (`model_support._RENDER_CONFIRMED_BAD`): plain `INT8` on `lumina2`, and `NVFP4`/`NVFP4_MIXED` on `lumina2` (docs/issues_analysis.md #15). The format-dropdown ⚠ annotation (`gui.py`'s `_annotate_choices_for_arch()`) now prefixes ✗ for these same combinations instead of silently losing its warning marker.
 

@@ -166,6 +166,33 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
     return SUPPORT_UNKNOWN
 
 
+# Text encoders (text_encoder_convert.py) have no per-architecture risk model
+# the way diffusion models do: they aren't in models.architectures.arch_list,
+# and ComfyUI's text-encoder loaders build models from fixed config presets
+# rather than inferring hyperparameters from checkpoint tensor shapes, so
+# there's no keys_hiprec-style architecture-dependent caution to compute
+# (docs/architecture.md's Text-Encoder Conversion Pipeline section). GGUF
+# output goes through llama.cpp's own upstream convert_hf_to_gguf.py rather
+# than this project's own writer; FP8/FP8_MIXED/NVFP4/NVFP4_MIXED reuse the
+# same safetensors_quant*.py backends the diffusion-model table covers. What
+# stays true either way: none of these have a documented ComfyUI load+render
+# confirmation by this project (the same bar TABLE_FORMATS holds FP8 to
+# above), so every format is CAUTION until one is actually verified that way.
+# GGUF collapses every direct outtype (F32/F16/BF16/Q8_0) and K-quant
+# (Q6_K..Q2_K) into one column, mirroring TABLE_FORMATS' own GGUF column.
+TEXT_ENCODER_TABLE_FORMATS: list[tuple[str, str]] = [
+    ("GGUF", "GGUF"),
+    ("FP8", "FP8"),
+    ("FP8 mixed", "FP8_MIXED"),
+    ("NVFP4", "NVFP4"),
+    ("NVFP4 mixed", "NVFP4_MIXED"),
+]
+
+TEXT_ENCODER_SUPPORT: dict[str, str] = {
+    format_key: SUPPORT_CAUTION for _, format_key in TEXT_ENCODER_TABLE_FORMATS
+}
+
+
 def build_support_table() -> list[dict]:
     """Return one row per models.architectures.arch_list entry: display
     name plus a support_level() result for every TABLE_FORMATS column."""
