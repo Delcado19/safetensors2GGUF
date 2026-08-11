@@ -155,7 +155,12 @@ def convert_to_safetensors(
         )
     if model_arch is None:
         model_arch = detect_arch(state_dict)
-    _log(f"INFO:  Architecture: {model_arch.arch}")
+    # ModelTemplate's own base-class default ("invalid") is the deliberate
+    # sentinel text_encoder_convert.py passes for text encoders (no
+    # per-architecture detection applies to them, see models/architectures.py) --
+    # not a real failure, so don't log a confusing "Architecture: invalid" line.
+    if model_arch.arch != "invalid":
+        _log(f"INFO:  Architecture: {model_arch.arch}")
 
     if dst_path is None:
         dst_path = f"{os.path.splitext(path)[0]}-{target_key}.safetensors"
@@ -232,7 +237,10 @@ def convert_to_safetensors(
                 layer_conf["full_precision_matrix_mult"] = True
             layer_formats[layer_key(key)] = layer_conf
 
-    metadata = {"comfy.gguf_source_arch": model_arch.arch}
+    # Same sentinel as the log-line guard above: omit rather than write the
+    # misleading literal string "invalid" into the output file's metadata
+    # for text encoders (no architecture detection applies to them).
+    metadata = {} if model_arch.arch == "invalid" else {"comfy.gguf_source_arch": model_arch.arch}
     if layer_formats:
         metadata["_quantization_metadata"] = json.dumps(
             {"format_version": "1.0", "layers": layer_formats}

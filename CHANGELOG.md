@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fix
+- **Text-encoder FP8/NVFP4 safetensors conversion logged "INFO: Architecture: invalid"**: `convert_text_encoder_to_safetensors()` passes a bare `ModelTemplate()` into `convert_to_safetensors()` (text encoders aren't architecture-detected — see the Text-Encoder Conversion Pipeline docs), and `ModelTemplate.arch` defaults to the literal string `"invalid"`. `convert_safetensors.py` logged that value unconditionally, producing a confusing "architecture invalid" message even though the conversion completes correctly — `arch == "invalid"` is a deliberate sentinel, not a failure. The log line is now skipped for that sentinel, and the output file's `comfy.gguf_source_arch` metadata (same source, same misleading value) is omitted rather than written as `"invalid"`.
+
 ### Add
 - **Text Encoder Support table** on the Model Support tab: a second, compact `gr.Dataframe` below the per-architecture table, covering the formats `Convert Text Encoder` offers (GGUF collapsed from F32/F16/BF16/Q8_0 + K-quants, plus FP8/FP8_MIXED/NVFP4/NVFP4_MIXED). Text encoders aren't in `models.architectures.arch_list` and have no `keys_hiprec`-style per-architecture risk model, so this is one generic row rather than per-architecture columns (`model_support.TEXT_ENCODER_TABLE_FORMATS`/`TEXT_ENCODER_SUPPORT`). Every format is currently `⚠ Caution`: none has a documented ComfyUI load+render confirmation by this project. Clicking a cell jumps to the Convert Text Encoder tab with that format pre-selected (`gui.apply_text_encoder_support_table_selection()`) — unlike the diffusion-model table, NVFP4 isn't excluded here since it's a real `TEXT_ENCODER_FORMAT_CHOICES` entry.
 
