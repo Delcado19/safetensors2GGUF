@@ -10,6 +10,8 @@ level for each (architecture, format) combination (support_level()).
 
 from __future__ import annotations
 
+from safetensors_quant import _RENDER_VERIFIED_ARCHES
+
 # Public display name per models.architectures.*.arch key. Format:
 # "<public name(s)> (<arch key>)" -- the arch key always appears verbatim in
 # parentheses so the table stays traceable to models/architectures.py without
@@ -62,12 +64,6 @@ SUPPORT_SYMBOL: dict[str, str] = {
     SUPPORT_UNKNOWN: "?",
 }
 
-# Architectures whose *_MIXED keys_hiprec protection scope has actually been
-# confirmed by a full convert+load+render cycle in ComfyUI with this tool's
-# own output, not just cross-referenced against a community tool's published
-# blacklist. See docs/issues_analysis.md #15. Mirrors
-# safetensors_quant._RENDER_VERIFIED_ARCHES.
-_RENDER_VERIFIED_ARCHES = {"lumina2"}
 
 
 def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) -> str:
@@ -94,12 +90,15 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
       it never touches ComfyUI's quantized-compute code path
       (MixedPrecisionOps) at all, so it carries none of the
       architecture-dependent risk INT8/FP8/NVFP4 do.
-    - FP8 / FP8_MIXED: always VERIFIED. Defaults to
-      full_precision_matrix_mult=true (Task 1 of the plan this function was
-      introduced in), which makes ComfyUI skip the quantized-compute branch
-      entirely for every layer regardless of architecture — the safety
-      mechanism itself is architecture-independent, unlike INT8's
-      per-architecture keys_hiprec bet.
+    - FP8 / FP8_MIXED: CAUTION everywhere, same as NVFP4. FP8 now defaults to
+      full_precision_matrix_mult=true, which by code reading of ComfyUI's
+      comfy/utils.py and comfy/ops.py should make it skip the risky
+      quantized-compute branch entirely — but that's a code-reading
+      conclusion, not an actual convert+load+render confirmation with this
+      tool's own output on any architecture, so it doesn't meet the VERIFIED
+      bar. Plain FP8 additionally carries the same keys_hiprec on-disk
+      precision-loss risk plain INT8 does on sensitive architectures
+      (format_recommendation() in safetensors_quant.py warns identically).
     - INT8 / INT8_MIXED: depends on keys_hiprec. If the architecture has no
       keys_hiprec at all, plain INT8 and INT8_MIXED produce byte-identical
       output (nothing to protect either way) — both VERIFIED. If it does:
@@ -126,7 +125,7 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
     if format_key in ("F16", "F16_MIXED"):
         return SUPPORT_VERIFIED
     if format_key in ("FP8", "FP8_MIXED"):
-        return SUPPORT_VERIFIED
+        return SUPPORT_CAUTION
     if format_key in ("INT8", "INT8_MIXED"):
         if not keys_hiprec_nonempty:
             return SUPPORT_VERIFIED
@@ -147,9 +146,13 @@ def build_support_table() -> list[dict]:
     for cls in arch_list:
         instance = cls()
         sensitive = bool(instance.keys_hiprec)
+        # .get() with a fallback, not a bare index: this runs eagerly at
+        # gui.build_app() time, so a newly added arch_list entry without a
+        # matching MODEL_DISPLAY_NAMES entry must not crash the whole GUI at
+        # startup -- just show the raw arch key until someone adds the name.
         row = {
             "arch": instance.arch,
-            "display_name": MODEL_DISPLAY_NAMES[instance.arch],
+            "display_name": MODEL_DISPLAY_NAMES.get(instance.arch, instance.arch),
         }
         for _, format_key in TABLE_FORMATS:
             row[format_key] = support_level(instance.arch, sensitive, format_key)

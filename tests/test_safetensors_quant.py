@@ -313,14 +313,27 @@ class TestFormatRecommendation:
         assert level == "ok"
         assert "sdxl" in msg
 
-    def test_fp8_is_always_ok_regardless_of_architecture(self):
-        for arch in (ModelLumina2(), ModelFlux(), ModelSDXL()):
-            level, msg = format_recommendation(arch, "FP8")
-            assert level == "ok"
-            assert msg
-            level, msg = format_recommendation(arch, "FP8_MIXED")
-            assert level == "ok"
-            assert msg
+    def test_plain_fp8_warns_on_sensitive_architecture(self):
+        # full_precision_matrix_mult only fixes ComfyUI's compute path, not
+        # precision already lost when a keys_hiprec tensor is written as FP8
+        # on disk -- plain FP8 must warn like plain INT8 does.
+        level, msg = format_recommendation(ModelLumina2(), "FP8")
+        assert level == "warn"
+        assert "lumina2" in msg
+
+    def test_fp8_mixed_ok_on_sensitive_architecture(self):
+        level, msg = format_recommendation(ModelFlux(), "FP8_MIXED")
+        assert level == "ok"
+        assert msg
+
+    def test_fp8_ok_on_architecture_without_hiprec(self):
+        assert ModelSDXL().keys_hiprec == []
+        level, msg = format_recommendation(ModelSDXL(), "FP8")
+        assert level == "ok"
+        assert "full_precision_matrix_mult" in msg
+        level, msg = format_recommendation(ModelSDXL(), "FP8_MIXED")
+        assert level == "ok"
+        assert msg
 
     def test_render_verified_architecture_warn_claims_shown_in_testing(self):
         # lumina2 was actually rendered end-to-end -- the strong claim is

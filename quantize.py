@@ -44,8 +44,10 @@ LLAMA_QUANT_KEYS: frozenset[str] = frozenset({
 
 # Ordered choices for the UI dropdown: (display label, key)
 # Covers the types that are practical for ComfyUI-GGUF diffusion models.
-# Size-savings percentages are derived from SIZE_RATIOS just above (1 -
-# ratio, rounded to the nearest percent) so the two never drift apart.
+# Size-savings percentages are hand-computed from SIZE_RATIOS below (1 -
+# ratio, rounded to the nearest percent) as string literals, not derived at
+# runtime -- tests.test_quantize.TestAllQuantChoicesLabels checks they stay
+# in sync if SIZE_RATIOS is ever recalibrated.
 ALL_QUANT_CHOICES: list[tuple[str, str]] = [
     ("F32  — Full precision · 2× F16 size",                                  "F32"),
     ("F16  — Half precision · standard",                                     "F16"),

@@ -294,11 +294,20 @@ checkpoints already common on Civitai/HuggingFace — sets
 quantized-compute branch entirely and run a plain full-precision matmul
 instead, architecture-independently. `convert_to_safetensors()` now writes
 that same flag by default for every FP8/FP8_MIXED layer it produces
-(`full_precision_fp8=True`), so this tool's own FP8 output is as safe as the
-checkpoints already circulating in the wild — no per-architecture bet the way
-INT8's `keys_hiprec` is. The tradeoff is no FP8 tensor-core compute speedup;
-FP8 output is a storage/VRAM-savings format only unless a user explicitly
-opts out (`full_precision_fp8=False`). See
+(`full_precision_fp8=True`), so this tool's own FP8 output *should* be as
+safe as the checkpoints already circulating in the wild — no per-architecture
+bet the way INT8's `keys_hiprec` is, for the runtime compute path. That
+conclusion comes from reading ComfyUI's source, though, not from an actual
+convert+load+render test with this tool's own output on any architecture —
+so the Model Support tab still shows FP8/FP8_MIXED as **⚠ Caution**, not
+**✓ Verified**, until that test happens. `full_precision_matrix_mult` also
+only fixes the *runtime* compute path — it does nothing for precision
+already lost when a tensor is quantized to e4m3 *on disk*, so plain
+(non-mixed) FP8 carries the same keys_hiprec sensitive-architecture risk
+plain INT8 does, and the format-recommendation badge on Convert → Safetensors
+warns for it identically. The tradeoff on top of all that is no FP8
+tensor-core compute speedup; FP8 output is a storage/VRAM-savings format
+only unless a user explicitly opts out (`full_precision_fp8=False`). See
 [docs/issues_analysis.md](docs/issues_analysis.md) #16 for the full
 investigation. NVFP4/MXFP8 have no known equivalent safe-mode flag — that
 investigation is explicitly **not done** (open follow-up, see #16 and
@@ -327,7 +336,11 @@ architecture, or a known correctness/quality issue), or **? Unknown** (never
 attempted). Click a format cell to switch to the matching Convert tab with
 that format pre-selected — the GGUF column collapses every K-quant level into
 one cell, since a working F16 GGUF conversion carries over to all of them
-uniformly, so clicking it defaults to `Q4_K_M`. Once a source checkpoint is
+uniformly, so clicking it defaults to `Q4_K_M`. NVFP4/NVFP4_MIXED cells are a
+no-op: they're shown in the table for completeness, but NVFP4 has no verified
+safe mode and stays deliberately absent from the Convert → Safetensors
+dropdown (`gui.py`'s `apply_support_table_selection()`), so clicking them
+can't select it. Once a source checkpoint is
 selected on either Convert tab, its format dropdown also gets a ⚠ prefix on
 any entry that's Caution for the detected architecture (`gui.py`'s
 `annotate_safetensors_choices()`/`annotate_gguf_choices()`) — informational

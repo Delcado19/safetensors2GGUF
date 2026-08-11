@@ -75,20 +75,21 @@ def format_recommendation(model_arch, target_key: str) -> tuple[str, str]:
     if base == "F16":
         return "ok", "F16 preserves full precision — safe for any architecture."
 
-    if base == "FP8":
-        return "ok", (
-            "FP8 defaults to full-precision compute (`full_precision_matrix_mult`) "
-            "— safe on any architecture, same mechanism as most circulating "
-            "Civitai/HuggingFace FP8 checkpoints. No FP8 tensor-core speedup "
-            "without an explicit opt-out (docs/issues_analysis.md #16)."
-        )
-
-    if base != "INT8":
+    if base not in ("FP8", "INT8"):
         return "ok", ""
+
+    # full_precision_matrix_mult only changes ComfyUI's runtime matmul path —
+    # it does nothing for precision already lost when a tensor was quantized
+    # to e4m3 on disk. quantize_tensor_st() only skips quantizing
+    # keys_hiprec-sensitive tensors when `mixed` is True (is_hiprec_st gate),
+    # identically for FP8 and INT8, so plain FP8 carries the same
+    # sensitive-architecture risk plain INT8 does and needs the same warning.
+    fmt_label = "FP8" if base == "FP8" else "INT8"
+    mixed_label = "FP8 mixed" if base == "FP8" else "INT8 mixed"
 
     if sensitive and not mixed:
         if verified:
-            evidence = "plain INT8 has shown visible pose/identity corruption in testing"
+            evidence = f"plain {fmt_label} has shown visible pose/identity corruption in testing"
         else:
             evidence = (
                 "the same risk caused visible pose/identity corruption on `lumina2` "
@@ -97,9 +98,9 @@ def format_recommendation(model_arch, target_key: str) -> tuple[str, str]:
                 "architecture-specific distinction either"
             )
         return "warn", (
-            f"**Plain INT8 is not recommended for `{arch}`** — this architecture "
+            f"**Plain {fmt_label} is not recommended for `{arch}`** — this architecture "
             f"has layers known to be quantization-sensitive; {evidence}. "
-            "Use **INT8 mixed** instead."
+            f"Use **{mixed_label}** instead."
         )
     if sensitive and mixed:
         caveat = (
@@ -107,7 +108,14 @@ def format_recommendation(model_arch, target_key: str) -> tuple[str, str]:
             else " (protection list matched against a community reference, "
                  "not yet confirmed by a render test on this architecture)"
         )
-        return "ok", f"**INT8 mixed is recommended for `{arch}`**{caveat}."
+        return "ok", f"**{mixed_label} is recommended for `{arch}`**{caveat}."
+    if base == "FP8":
+        return "ok", (
+            "FP8 defaults to full-precision compute (`full_precision_matrix_mult`) "
+            "— safe on any architecture, same mechanism as most circulating "
+            "Civitai/HuggingFace FP8 checkpoints. No FP8 tensor-core speedup "
+            "without an explicit opt-out (docs/issues_analysis.md #16)."
+        )
     return "ok", (
         f"No quantization-sensitive layers identified for `{arch}` — plain "
         "**INT8** should work well; INT8 mixed costs extra output size for "

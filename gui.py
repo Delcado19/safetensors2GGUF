@@ -27,6 +27,13 @@ from convert_safetensors import convert_to_safetensors
 from fix_5d_tensors import fix_5d_tensors as _fix_5d
 from fix_pad_tokens import fix_pad_tokens as _fix_pad
 from models.architectures import detect_arch
+from model_support import (
+    SUPPORT_CAUTION,
+    SUPPORT_SYMBOL,
+    TABLE_FORMATS,
+    build_support_table,
+    support_level,
+)
 from quantize import (
     ALL_QUANT_CHOICES,
     DEFAULT_EXE,
@@ -281,37 +288,12 @@ def update_size_estimate(src: str, quant_key: str) -> str:
     return line
 
 
-def update_format_recommendation(src: str, target_key: str):
-    """Return a gr.update() for the format-recommendation Markdown, advising
-    whether ``target_key`` suits the detected architecture of ``src`` — the
-    Convert -> Safetensors equivalent of the GGUF tab's static
-    "recommended ★" label, but per-architecture (see
-    safetensors_quant.format_recommendation).
-
-    Detection only reads the safetensors header (via the same lazy
-    load_state_dict() the conversion itself uses) — no tensor data loaded.
-    Silently shows nothing on any failure (missing file, unrecognized
-    architecture, non-safetensors source too large to eagerly load) rather
-    than surfacing an error for what is a non-essential hint.
-    """
-    src = (src or "").strip()
-    if not src or not os.path.isfile(src):
-        return gr.update(value="", elem_classes=["fmt-hint"])
-    try:
-        model_arch = detect_arch(load_state_dict(src))
-        level, message = format_recommendation(model_arch, target_key)
-    except Exception:
-        return gr.update(value="", elem_classes=["fmt-hint"])
-    if not message:
-        return gr.update(value="", elem_classes=["fmt-hint"])
-    icon = "✓" if level == "ok" else "⚠"
-    return gr.update(value=f"{icon} {message}", elem_classes=["fmt-hint", f"fmt-hint-{level}"])
-
-
 def _detected_arch_or_none(src: str):
-    """Best-effort architecture detection shared by the dropdown-annotation
-    helpers below. Returns None on any failure (missing file, unrecognized
-    architecture) so callers can fall back to unmodified choices."""
+    """Best-effort architecture detection shared by the format-hint and
+    dropdown-annotation helpers below. Reads only the safetensors header (via
+    the same lazy load_state_dict() the conversion itself uses) — no tensor
+    data loaded. Returns None on any failure (missing file, unrecognized
+    architecture) so callers can fall back to unmodified/empty output."""
     src = (src or "").strip()
     if not src or not os.path.isfile(src):
         return None
@@ -321,52 +303,84 @@ def _detected_arch_or_none(src: str):
         return None
 
 
-def annotate_safetensors_choices(src: str):
-    """Return a gr.update(choices=...) for the safetensors format dropdown,
-    prefixing a ⚠ to any format that's SUPPORT_CAUTION for the detected
-    source's architecture. No-op (original choices, unmodified) when no
-    architecture can be detected."""
-    from model_support import SUPPORT_CAUTION, support_level
-    from safetensors_quant import SAFETENSORS_DTYPE_CHOICES
-
-    model_arch = _detected_arch_or_none(src)
+def _format_recommendation_update(model_arch, target_key: str):
+    """Build the format-recommendation Markdown gr.update() from an
+    already-detected architecture (or None)."""
     if model_arch is None:
-        return gr.update(choices=[tuple(c) for c in SAFETENSORS_DTYPE_CHOICES])
+        return gr.update(value="", elem_classes=["fmt-hint"])
+    try:
+        level, message = format_recommendation(model_arch, target_key)
+    except Exception:
+        return gr.update(value="", elem_classes=["fmt-hint"])
+    if not message:
+        return gr.update(value="", elem_classes=["fmt-hint"])
+    icon = "✓" if level == "ok" else "⚠"
+    return gr.update(value=f"{icon} {message}", elem_classes=["fmt-hint", f"fmt-hint-{level}"])
+
+
+def update_format_recommendation(src: str, target_key: str):
+    """Return a gr.update() for the format-recommendation Markdown, advising
+    whether ``target_key`` suits the detected architecture of ``src`` — the
+    Convert -> Safetensors equivalent of the GGUF tab's static
+    "recommended ★" label, but per-architecture (see
+    safetensors_quant.format_recommendation). Wired to st_format_dropdown's
+    own .change() (target_key changed, src unchanged) — st_src_path's
+    .change() uses the combined update_format_recommendation_and_choices()
+    below instead, to avoid detecting the architecture twice on every
+    source-path edit."""
+    return _format_recommendation_update(_detected_arch_or_none(src), target_key)
+
+
+def _annotate_choices_for_arch(model_arch, choices, column_key: str | None = None):
+    """Return a gr.update(choices=...) prefixing a ⚠ to any choice that's
+    SUPPORT_CAUTION for ``model_arch`` (or unmodified choices if None).
+
+    ``column_key``, when given, is the fixed TABLE_FORMATS format key every
+    choice maps to (the GGUF quant dropdown: every K-quant level collapses
+    onto the table's single "GGUF" column). When omitted, each choice's own
+    key is used directly (the safetensors dtype dropdown, one key per
+    TABLE_FORMATS column)."""
+    if model_arch is None:
+        return gr.update(choices=[tuple(c) for c in choices])
 
     sensitive = bool(model_arch.keys_hiprec)
-    choices = []
-    for label, key in SAFETENSORS_DTYPE_CHOICES:
-        if support_level(model_arch.arch, sensitive, key) == SUPPORT_CAUTION:
+    out = []
+    for label, key in choices:
+        fmt_key = column_key if column_key is not None else key
+        if support_level(model_arch.arch, sensitive, fmt_key) == SUPPORT_CAUTION:
             label = f"⚠ {label}"
-        choices.append((label, key))
-    return gr.update(choices=choices)
+        out.append((label, key))
+    return gr.update(choices=out)
+
+
+def annotate_safetensors_choices(src: str):
+    """Dropdown-annotation for the Convert -> Safetensors format dropdown."""
+    return _annotate_choices_for_arch(_detected_arch_or_none(src), SAFETENSORS_DTYPE_CHOICES)
 
 
 def annotate_gguf_choices(src: str):
-    """Same as annotate_safetensors_choices() for the GGUF quant dropdown.
-    Every ALL_QUANT_CHOICES key maps to the table's single "GGUF" column
-    (model_support.support_level always returns SUPPORT_VERIFIED for it
-    today), so this currently never marks anything -- implemented as a real
-    call through the shared support_level() function rather than skipped
-    entirely, so a future architecture-specific GGUF caveat has one place
-    to add it without touching the dropdown-wiring code again."""
-    from model_support import SUPPORT_CAUTION, support_level
-    from quantize import ALL_QUANT_CHOICES
+    """Dropdown-annotation for the Convert -> GGUF quant dropdown. Every
+    ALL_QUANT_CHOICES key maps to the table's single "GGUF" column, and
+    model_support.support_level() always returns SUPPORT_VERIFIED for it
+    unconditionally (no per-architecture GGUF branch exists) — so this is
+    guaranteed to never mark anything today. Skips architecture detection
+    entirely rather than paying a full checkpoint load (torch.load() for
+    .ckpt/.pt/.bin/.pth sources) for a result that can't change; revisit if
+    support_level() ever grows an architecture-specific GGUF case."""
+    return gr.update(choices=[tuple(c) for c in ALL_QUANT_CHOICES])
 
+
+def update_format_recommendation_and_choices(src: str, target_key: str):
+    """Combined st_src_path.change() handler: detects the architecture once
+    and drives both the format-recommendation hint and the format-dropdown
+    ⚠ annotations, instead of two separate handlers each independently
+    re-detecting (each a full torch.load() for non-safetensors sources)."""
     model_arch = _detected_arch_or_none(src)
-    if model_arch is None:
-        return gr.update(choices=[tuple(c) for c in ALL_QUANT_CHOICES])
+    return (
+        _format_recommendation_update(model_arch, target_key),
+        _annotate_choices_for_arch(model_arch, SAFETENSORS_DTYPE_CHOICES),
+    )
 
-    sensitive = bool(model_arch.keys_hiprec)
-    caution = support_level(model_arch.arch, sensitive, "GGUF") == SUPPORT_CAUTION
-    choices = [
-        (f"⚠ {label}" if caution else label, key)
-        for label, key in ALL_QUANT_CHOICES
-    ]
-    return gr.update(choices=choices)
-
-
-from model_support import SUPPORT_SYMBOL, TABLE_FORMATS, build_support_table
 
 _SUPPORT_CELL_COLOR = {
     "verified": "var(--s2g-accent)",
@@ -398,6 +412,9 @@ def _support_table_rows_for_dataframe() -> list[list[str]]:
     return rows
 
 
+_SAFETENSORS_DTYPE_KEYS = {key for _, key in SAFETENSORS_DTYPE_CHOICES}
+
+
 def apply_support_table_selection(evt: gr.SelectData):
     """Handle a click on the Model Support table: switch to the matching
     Convert tab and pre-select that format, or no-op for the Model column.
@@ -406,6 +423,13 @@ def apply_support_table_selection(evt: gr.SelectData):
     model_support.TABLE_FORMATS's comment) — clicking it can't pick a
     specific quant level, so it defaults to Q4_K_M, this tool's own
     "recommended ★" choice, same as GGUF's own dropdown default.
+
+    NVFP4/NVFP4_MIXED appear in the table (TABLE_FORMATS) but are
+    deliberately absent from SAFETENSORS_DTYPE_CHOICES — no verified safe
+    mode exists for them yet (safetensors_quant.py, docs/issues_analysis.md
+    #15). Clicking those cells must stay a no-op like the Model column, or
+    it would set the Safetensors dropdown to a value outside its own
+    choices and let a NVFP4 conversion run through the GUI despite that.
     """
     row, col = evt.index
     if col == 0:
@@ -414,6 +438,8 @@ def apply_support_table_selection(evt: gr.SelectData):
     format_key = TABLE_FORMATS[col - 1][1]
     if format_key == "GGUF":
         return gr.update(selected=0), gr.update(value="Q4_K_M"), gr.update()
+    if format_key not in _SAFETENSORS_DTYPE_KEYS:
+        return gr.update(), gr.update(), gr.update()
     return gr.update(selected=1), gr.update(), gr.update(value=format_key)
 
 
@@ -1451,16 +1477,15 @@ def build_app() -> gr.Blocks:
                     outputs=st_dst_path,
                 )
                 st_src_path.change(
-                    update_format_recommendation,
+                    update_format_recommendation_and_choices,
                     inputs=[st_src_path, st_format_dropdown],
-                    outputs=st_format_info,
+                    outputs=[st_format_info, st_format_dropdown],
                 )
                 st_format_dropdown.change(
                     update_format_recommendation,
                     inputs=[st_src_path, st_format_dropdown],
                     outputs=st_format_info,
                 )
-                st_src_path.change(annotate_safetensors_choices, inputs=st_src_path, outputs=st_format_dropdown)
                 st_convert_event = st_convert_btn.click(
                     fn=run_st_convert,
                     inputs=[st_src_path, st_dst_path, st_format_dropdown, overwrite_st],

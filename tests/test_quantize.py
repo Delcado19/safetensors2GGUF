@@ -41,8 +41,25 @@ class TestAllQuantChoicesLabels:
 
     def test_q4_k_m_still_marked_recommended(self):
         from quantize import ALL_QUANT_CHOICES
-        label = next(l for l, k in ALL_QUANT_CHOICES if k == "Q4_K_M")
+        label = next(text for text, key in ALL_QUANT_CHOICES if key == "Q4_K_M")
         assert "recommended" in label
+
+    def test_size_savings_percentages_match_size_ratios(self):
+        # ALL_QUANT_CHOICES' percentages are hand-written literals, not
+        # computed from SIZE_RATIOS -- this is the only thing keeping the two
+        # from silently drifting apart if SIZE_RATIOS is ever recalibrated.
+        import re
+
+        from quantize import ALL_QUANT_CHOICES, SIZE_RATIOS
+
+        for label, key in ALL_QUANT_CHOICES:
+            match = re.search(r"(\d+)% smaller than F16", label)
+            if not match:
+                continue
+            expected = round((1 - SIZE_RATIOS[key]) * 100)
+            assert int(match.group(1)) == expected, (
+                f"{key!r} label says {match.group(1)}% but SIZE_RATIOS gives {expected}%"
+            )
 
 
 class TestRegistry:

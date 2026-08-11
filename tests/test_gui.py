@@ -141,7 +141,10 @@ class TestDynamicDropdownAnnotation:
         assert labels_by_key["INT8"].startswith("⚠")
         assert labels_by_key["INT8_MIXED"].startswith("⚠")
         assert not labels_by_key["F16"].startswith("⚠")
-        assert not labels_by_key["FP8"].startswith("⚠")
+        # FP8/FP8_MIXED are CAUTION unconditionally (never render-verified by
+        # this tool), independent of this architecture's keys_hiprec.
+        assert labels_by_key["FP8"].startswith("⚠")
+        assert labels_by_key["FP8_MIXED"].startswith("⚠")
 
     def test_annotate_safetensors_choices_no_source_returns_unmodified(self):
         update = gui.annotate_safetensors_choices("")

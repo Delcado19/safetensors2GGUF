@@ -45,11 +45,15 @@ class TestSupportLevel:
         assert support_level("lumina2", True, "F16") == SUPPORT_VERIFIED
         assert support_level("lumina2", True, "F16_MIXED") == SUPPORT_VERIFIED
 
-    def test_fp8_always_verified(self):
-        # Safe unconditionally once full_precision_matrix_mult defaults true
-        # (Task 1) -- architecture-independent, unlike INT8.
-        assert support_level("lumina2", True, "FP8") == SUPPORT_VERIFIED
-        assert support_level("flux", True, "FP8_MIXED") == SUPPORT_VERIFIED
+    def test_fp8_always_caution(self):
+        # full_precision_matrix_mult=true fixes ComfyUI's compute path by
+        # code reading (comfy/utils.py, comfy/ops.py), but no FP8 output from
+        # this tool has ever been convert+load+render confirmed in ComfyUI on
+        # any architecture -- that's CAUTION, not VERIFIED, under the same
+        # bar INT8_MIXED is held to.
+        assert support_level("lumina2", True, "FP8") == SUPPORT_CAUTION
+        assert support_level("flux", True, "FP8_MIXED") == SUPPORT_CAUTION
+        assert support_level("sdxl", False, "FP8") == SUPPORT_CAUTION
 
     def test_int8_verified_when_no_hiprec_layers(self):
         # No keys_hiprec means plain INT8 and INT8_MIXED produce identical
