@@ -52,8 +52,22 @@ _GGUF_DIRECT_OUTTYPES: dict[str, str] = {
 }
 
 # Safetensors-quant formats — see safetensors_quant.SAFETENSORS_DTYPE_CHOICES.
-# No llama.cpp / HuggingFace download involved for these at all.
-TEXT_ENCODER_SAFETENSORS_FORMATS: frozenset[str] = frozenset({"FP8", "FP8_MIXED", "NVFP4", "NVFP4_MIXED"})
+# No llama.cpp / HuggingFace download involved for these at all. INT8/
+# INT8_MIXED added 2026-08-13: convert_text_encoder_to_safetensors() already
+# delegates to the same quantize_tensor_st() machinery that implements
+# int8_tensorwise/ConvRot for diffusion models (_TARGET_TO_QUANT_FORMAT in
+# convert_safetensors.py already mapped these keys) -- this dropdown simply
+# never listed them. ConvRot's block-Hadamard rotation only depends on a
+# tensor's in_features being divisible by CONVROT_GROUP_SIZE, not on
+# architecture, and text encoders carry no keys_hiprec (only
+# keys_shape_critical), so INT8 and INT8_MIXED produce identical output --
+# same rule already established for keys_hiprec-less diffusion architectures
+# in model_support.support_level(). Not yet render-tested in ComfyUI though
+# (see TEXT_ENCODER_TABLE_FORMATS in model_support.py, which still omits
+# INT8/INT8_MIXED columns pending that evidence).
+TEXT_ENCODER_SAFETENSORS_FORMATS: frozenset[str] = frozenset(
+    {"FP8", "FP8_MIXED", "INT8", "INT8_MIXED", "NVFP4", "NVFP4_MIXED"}
+)
 
 TEXT_ENCODER_OUTTYPES: list[tuple[str, str]] = [
     ("F32", "f32"),
@@ -64,7 +78,7 @@ TEXT_ENCODER_OUTTYPES: list[tuple[str, str]] = [
 
 # Full format dropdown for the GUI: GGUF direct outtypes, GGUF K-quants (via a
 # plain llama-quantize second pass — see ensure_plain_llama_quantize), and
-# safetensors-quant formats (FP8/NVFP4, no HF download needed).
+# safetensors-quant formats (FP8/INT8/NVFP4, no HF download needed).
 TEXT_ENCODER_FORMAT_CHOICES: list[tuple[str, str]] = [
     ("F32  — Full precision",                   "F32"),
     ("F16  — Half precision · standard",        "F16"),
@@ -78,6 +92,8 @@ TEXT_ENCODER_FORMAT_CHOICES: list[tuple[str, str]] = [
     ("Q2_K  — 2-bit · smallest  [lq]",         "Q2_K"),
     ("FP8 — float8_e4m3fn scaled (safetensors)",             "FP8"),
     ("FP8 mixed — FP8 scaled, hiprec tensors stay F32",       "FP8_MIXED"),
+    ("INT8 — Tensor-wise INT8, ConvRot-rotated (safetensors)", "INT8"),
+    ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32",    "INT8_MIXED"),
     ("NVFP4 — Nvidia 4-bit blockscaled (safetensors)",        "NVFP4"),
     ("NVFP4 mixed — NVFP4, hiprec tensors stay F32",          "NVFP4_MIXED"),
 ]
@@ -558,7 +574,7 @@ def convert_text_encoder_to_safetensors(
     cancel_event=None,
 ) -> str:
     """Convert a text-encoder checkpoint to a quantized .safetensors file
-    (FP8/FP8_MIXED/NVFP4/NVFP4_MIXED).
+    (FP8/FP8_MIXED/INT8/INT8_MIXED/NVFP4/NVFP4_MIXED).
 
     No HuggingFace download or llama.cpp involved — ComfyUI's text-encoder
     loaders build models from fixed config presets rather than inferring
@@ -597,8 +613,8 @@ def convert_text_encoder_any(
 
     format_key is one of TEXT_ENCODER_FORMAT_CHOICES' keys: a GGUF direct
     outtype (F32/F16/BF16/Q8_0), a GGUF K-quant (Q6_K..Q2_K, LLAMA_QUANT_KEYS),
-    or a safetensors-quant format (FP8/FP8_MIXED/NVFP4/NVFP4_MIXED — base_repo_id
-    is ignored for these, no HF download needed).
+    or a safetensors-quant format (TEXT_ENCODER_SAFETENSORS_FORMATS —
+    base_repo_id is ignored for these, no HF download needed).
     """
     if format_key in TEXT_ENCODER_SAFETENSORS_FORMATS:
         return convert_text_encoder_to_safetensors(

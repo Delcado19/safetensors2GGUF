@@ -330,8 +330,9 @@ def update_text_encoder_size_estimate(src: str, format_key: str) -> str:
     """Text-encoder-tab equivalent of update_size_estimate()/
     update_safetensors_size_estimate().
 
-    FP8/FP8_MIXED/NVFP4/NVFP4_MIXED go through estimate_safetensors_output_size()
-    with this tool's fixed text-encoder ModelTemplate (_TEXT_ENCODER_MODEL_ARCH)
+    TEXT_ENCODER_SAFETENSORS_FORMATS keys (FP8/FP8_MIXED/INT8/INT8_MIXED/
+    NVFP4/NVFP4_MIXED) go through estimate_safetensors_output_size() with
+    this tool's fixed text-encoder ModelTemplate (_TEXT_ENCODER_MODEL_ARCH)
     — there's no per-checkpoint architecture detection for text encoders the
     way there is for diffusion models, just one fixed keys_shape_critical set.
 

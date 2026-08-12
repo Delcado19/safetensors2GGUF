@@ -379,10 +379,13 @@ Mistral-Small-3.2-24B, ERNIE-Image's Ministral3 prompt-enhancer, T5-XXL,
 CLIP-L, CLIP-bigG — the same families `detect_text_encoder_family()` matches,
 see [Text-Encoder Conversion](#text-encoder-conversion) below), covering the
 formats that tab offers (GGUF — collapsing every direct outtype and K-quant —
-plus FP8/FP8_MIXED/NVFP4/NVFP4_MIXED). As of 2026-08-12, **Qwen3-4B** shows
-**✓ Verified** across every column (convert+load+render-tested in ComfyUI,
-4 seeds each, no format-specific defect found); every other family still
-shows **⚠ Caution** (untested). Both this table and the main one share one
+plus FP8/FP8_MIXED/INT8/INT8_MIXED/NVFP4/NVFP4_MIXED). As of 2026-08-12,
+**Qwen3-4B** shows **✓ Verified** for GGUF/FP8/FP8_MIXED/NVFP4/NVFP4_MIXED
+(convert+load+render-tested in ComfyUI, 4 seeds each, no format-specific
+defect found); INT8/INT8_MIXED were only added to the dropdown 2026-08-13
+(the underlying quantizer already supported them, the option just wasn't
+offered) and aren't render-tested yet, so they — like every other family's
+every column — still show **⚠ Caution** (untested). Both this table and the main one share one
 color legend — literal red/yellow/green, not reused from the app's teal
 accent color. Clicking a cell jumps to the Convert Text Encoder tab with that
 format pre-selected — unlike the diffusion-model table, NVFP4 isn't excluded
@@ -402,7 +405,7 @@ The format dropdown covers three backends:
 |---|---|---|---|
 | `F32`/`F16`/`BF16`/`Q8_0` | `convert_hf_to_gguf.py` (llama.cpp, auto-cloned) | Yes | `git` |
 | `Q6_K`…`Q2_K` (K-quants) | Same, then a **plain** `llama-quantize` second pass | Yes | `git`, plus `cmake` + a C++ compiler ([install instructions](docs/building-llama-quantize.md#text-encoder-k-quants-build-automatically--you-dont-need-this-guide-for-them) — the build itself is automatic) |
-| `FP8`/`FP8_MIXED`/`NVFP4`/`NVFP4_MIXED` | This tool's own safetensors quantizer (`safetensors_quant*.py`) | **No** | None — no llama.cpp, no download |
+| `FP8`/`FP8_MIXED`/`INT8`/`INT8_MIXED`/`NVFP4`/`NVFP4_MIXED` | This tool's own safetensors quantizer (`safetensors_quant*.py`) | **No** | None — no llama.cpp, no download |
 
 The K-quant path deliberately builds its **own** plain llama-quantize from the
 auto-cloned llama.cpp checkout via `cmake` (cached under `.llama.cpp/build-quantize/`,
@@ -437,8 +440,9 @@ For **GGUF formats** (direct outtypes and K-quants), text-encoder conversion req
 
 3. **Output path and format**: Choose an output filename and one of the formats above.
 
-For **FP8/FP8_MIXED/NVFP4/NVFP4_MIXED**, only the source weights file and an
-output path are needed — the base repo ID field is ignored.
+For **FP8/FP8_MIXED/INT8/INT8_MIXED/NVFP4/NVFP4_MIXED**, only the source
+weights file and an output path are needed — the base repo ID field is
+ignored.
 
 Like the GGUF and Safetensors tabs, this tab shows an "Estimated output"
 size under the format dropdown once a source file is selected.

@@ -477,6 +477,35 @@ class TestConvertTextEncoderToSafetensors:
         # 1D bias always stays plain/unscaled
         assert "model.layers.0.self_attn.q_proj.bias_scale" not in result
 
+    def test_int8_quantizes_without_hf_download(self, tmp_path):
+        # INT8/INT8_MIXED were added to TEXT_ENCODER_FORMAT_CHOICES
+        # 2026-08-13 -- convert_text_encoder_to_safetensors() already
+        # supported them via the shared convert_to_safetensors() pipeline,
+        # the dropdown just never offered them. Same "model." prefix
+        # preservation and int8_tensorwise dtype as the FP8_MIXED test above.
+        import torch
+        from safetensors.torch import save_file, load_file
+        from text_encoder_convert import convert_text_encoder_to_safetensors
+
+        src = tmp_path / "model.safetensors"
+        save_file(
+            {
+                "model.layers.0.self_attn.q_proj.weight": torch.randn(64, 64, dtype=torch.float32),
+                "model.layers.0.self_attn.q_proj.bias": torch.randn(64, dtype=torch.float32),
+            },
+            str(src),
+        )
+
+        with patch("text_encoder_convert.hf_hub_download") as mock_download:
+            out = convert_text_encoder_to_safetensors(str(src), target_key="INT8_MIXED")
+            mock_download.assert_not_called()
+
+        result = load_file(out)
+        assert "model.layers.0.self_attn.q_proj.weight" in result
+        assert "layers.0.self_attn.q_proj.weight" not in result
+        assert result["model.layers.0.self_attn.q_proj.weight"].dtype == torch.int8
+        assert "model.layers.0.self_attn.q_proj.weight_scale" in result
+
     def test_embedding_table_protected_from_nvfp4_packing(self, tmp_path):
         # NVFP4 halves a tensor's on-disk last dimension (2 values/byte) --
         # fine for weights ComfyUI dequantizes through its MixedPrecisionOps

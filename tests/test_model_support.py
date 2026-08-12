@@ -162,7 +162,9 @@ class TestBuildSupportTable:
 class TestTextEncoderSupport:
     def test_covers_gguf_and_safetensors_formats(self):
         keys = {key for _, key in TEXT_ENCODER_TABLE_FORMATS}
-        assert keys == {"GGUF", "FP8", "FP8_MIXED", "NVFP4", "NVFP4_MIXED"}
+        assert keys == {
+            "GGUF", "FP8", "FP8_MIXED", "INT8", "INT8_MIXED", "NVFP4", "NVFP4_MIXED",
+        }
 
     def test_every_family_format_pair_has_a_support_level(self):
         for family in TEXT_ENCODER_FAMILY_DISPLAY_NAMES:
@@ -176,12 +178,20 @@ class TestTextEncoderSupport:
         for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
             assert text_encoder_support_level("clip-l", format_key) == SUPPORT_CAUTION
 
-    def test_qwen3_4b_verified_on_every_format(self):
+    def test_qwen3_4b_verified_on_every_render_tested_format(self):
         # 2026-08-12: convert+load+render-tested in ComfyUI across GGUF
-        # (F16/Q8_0/Q6_K) and all 4 safetensors formats, no format-specific
-        # defect found (see model_support.py's _TE_RENDER_VERIFIED comment).
+        # (F16/Q8_0/Q6_K) and the FP8/NVFP4 safetensors formats, no
+        # format-specific defect found (see model_support.py's
+        # _TE_RENDER_VERIFIED comment). INT8/INT8_MIXED were added to the
+        # table 2026-08-13 (safetensors_quant already supported them for
+        # text encoders, the dropdown just never offered them) but haven't
+        # been render-tested yet -- CAUTION, not VERIFIED, same evidence bar
+        # as everything else.
         for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
-            assert text_encoder_support_level("qwen3-4b", format_key) == SUPPORT_VERIFIED
+            if format_key in ("INT8", "INT8_MIXED"):
+                assert text_encoder_support_level("qwen3-4b", format_key) == SUPPORT_CAUTION
+            else:
+                assert text_encoder_support_level("qwen3-4b", format_key) == SUPPORT_VERIFIED
 
     def test_build_text_encoder_support_table_covers_every_family(self):
         rows = build_text_encoder_support_table()

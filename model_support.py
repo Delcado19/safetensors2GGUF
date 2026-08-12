@@ -202,6 +202,8 @@ TEXT_ENCODER_TABLE_FORMATS: list[tuple[str, str]] = [
     ("GGUF", "GGUF"),
     ("FP8", "FP8"),
     ("FP8 mixed", "FP8_MIXED"),
+    ("INT8", "INT8"),
+    ("INT8 mixed", "INT8_MIXED"),
     ("NVFP4", "NVFP4"),
     ("NVFP4 mixed", "NVFP4_MIXED"),
 ]
