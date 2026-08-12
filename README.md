@@ -382,10 +382,21 @@ formats that tab offers (GGUF — collapsing every direct outtype and K-quant �
 plus FP8/FP8_MIXED/INT8/INT8_MIXED/NVFP4/NVFP4_MIXED). As of 2026-08-12,
 **Qwen3-4B** shows **✓ Verified** for GGUF/FP8/FP8_MIXED/NVFP4/NVFP4_MIXED
 (convert+load+render-tested in ComfyUI, 4 seeds each, no format-specific
-defect found); INT8/INT8_MIXED were only added to the dropdown 2026-08-13
-(the underlying quantizer already supported them, the option just wasn't
-offered) and aren't render-tested yet, so they — like every other family's
-every column — still show **⚠ Caution** (untested). Both this table and the main one share one
+defect found); its INT8/INT8_MIXED columns stay **⚠ Caution** — those two
+formats were only added to the dropdown 2026-08-13 (the underlying quantizer
+already supported them, the option just wasn't offered) and aren't
+render-tested for Qwen3-4B yet. **Qwen3-8B** (FLUX.2 Klein 9B's own text
+encoder) shows **✓ Verified** for all six safetensors formats — FP8,
+FP8_MIXED, INT8, INT8_MIXED, NVFP4, *and* NVFP4_MIXED — 3 same-seed
+comparisons for the first four, 2 for INT8/INT8_MIXED, zero visible
+deviation on every seed for every format; its GGUF column stays Caution
+(not render-tested that way yet). Notably NVFP4/NVFP4_MIXED stayed clean
+here even though quantizing the FLUX.2 Klein DiT itself with those same
+formats *did* show visible composition drift in the same testing session —
+text-encoder quantization only perturbs the conditioning vector fed to an
+otherwise full-precision DiT, not the sampling trajectory's own numerics.
+Every other family still shows **⚠ Caution** across every column
+(untested). Both this table and the main one share one
 color legend — literal red/yellow/green, not reused from the app's teal
 accent color. Clicking a cell jumps to the Convert Text Encoder tab with that
 format pre-selected — unlike the diffusion-model table, NVFP4 isn't excluded
