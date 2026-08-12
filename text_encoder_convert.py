@@ -422,7 +422,15 @@ def convert_text_encoder(
         if on_log:
             on_log(msg)
         else:
-            print(msg)
+            # See convert_safetensors.py's identical guard: a Windows console
+            # on a legacy codepage (cp1252) raises UnicodeEncodeError on
+            # non-ASCII log text (e.g. "->" as U+2192) and would otherwise
+            # abort mid-conversion.
+            try:
+                print(msg)
+            except UnicodeEncodeError:
+                enc = sys.stdout.encoding or "ascii"
+                print(msg.encode(enc, errors="replace").decode(enc))
 
     script = find_convert_script()
 
@@ -491,7 +499,15 @@ def convert_text_encoder_kquant(
         if on_log:
             on_log(msg)
         else:
-            print(msg)
+            # See convert_safetensors.py's identical guard: a Windows console
+            # on a legacy codepage (cp1252) raises UnicodeEncodeError on
+            # non-ASCII log text (e.g. "->" as U+2192) and would otherwise
+            # abort mid-conversion.
+            try:
+                print(msg)
+            except UnicodeEncodeError:
+                enc = sys.stdout.encoding or "ascii"
+                print(msg.encode(enc, errors="replace").decode(enc))
 
     if dst_path is None:
         dst_path = f"{weights_path.rsplit('.', 1)[0]}-{quant_key}.gguf"

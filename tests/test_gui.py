@@ -128,11 +128,15 @@ class TestDynamicDropdownAnnotation:
         import torch
         from safetensors.torch import save_file
 
+        # qwen_image, not flux -- flux's plain/mixed FP8 and INT8 are now
+        # render-verified (see safetensors_quant.py's _RENDER_VERIFIED_MIXED
+        # docstring) and would no longer be marked CAUTION here.
         src = tmp_path / "model.safetensors"
         save_file(
             {
-                "double_blocks.0.img_attn.proj.weight": torch.randn(8, 8),
-                "img_in.weight": torch.randn(8, 8),
+                "time_text_embed.timestep_embedder.linear_2.weight": torch.randn(8, 8),
+                "transformer_blocks.0.attn.norm_added_q.weight": torch.randn(8, 8),
+                "transformer_blocks.0.img_mlp.net.0.proj.weight": torch.randn(8, 8),
             },
             str(src),
         )

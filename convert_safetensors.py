@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 
 import torch
 from safetensors.torch import save_file
@@ -152,7 +153,16 @@ def convert_to_safetensors(
         if on_log:
             on_log(msg)
         else:
-            print(msg)
+            # Log lines contain non-ASCII characters (e.g. "->" as U+2192);
+            # a Windows console on a legacy codepage (cp1252) raises
+            # UnicodeEncodeError on print() and aborts the conversion before
+            # save_file() runs. Fall back to a codepage-safe transliteration
+            # instead of crashing mid-run.
+            try:
+                print(msg)
+            except UnicodeEncodeError:
+                enc = sys.stdout.encoding or "ascii"
+                print(msg.encode(enc, errors="replace").decode(enc))
 
     state_dict = load_state_dict(path, strip_prefixes=strip_prefixes)
     quant_formats, quant_skip_keys = _scan_quantized_layers(state_dict)

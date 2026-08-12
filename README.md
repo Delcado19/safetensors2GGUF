@@ -306,11 +306,15 @@ bet the way INT8's `keys_hiprec` is, for the runtime compute path. That
 conclusion comes from reading ComfyUI's source, though, not from an actual
 convert+load+render test with this tool's own output — so the Model Support
 tab still shows FP8_MIXED as **⚠ Caution** on every architecture except
-`lumina2`, where a same-seed/prompt comparison confirmed composition,
-identity, and outfit preserved (only a single secondary prop's color/shape
-deviated, judged tolerable variance) — the same bar INT8_MIXED already met,
-so `lumina2` + FP8_MIXED shows **✓ Verified** (see `docs/issues_analysis.md`
-#16's third correction). `full_precision_matrix_mult` also only fixes the
+`lumina2` and `flux`. `lumina2`: a same-seed/prompt comparison confirmed
+composition, identity, and outfit preserved (only a single secondary prop's
+color/shape deviated, judged tolerable variance) — the same bar INT8_MIXED
+already met, so `lumina2` + FP8_MIXED shows **✓ Verified** (see
+`docs/issues_analysis.md` #16's third correction). `flux` (FLUX.2 Klein 9B):
+3 same-seed/prompt comparisons (5 seeds total) showed zero visible deviation
+from baseline for FP8, FP8_MIXED, INT8, *and* plain INT8 — a stronger result
+than `lumina2`'s, so all four show **✓ Verified** there, unlike `lumina2`
+where plain FP8/INT8 stayed on the ✗ side. `full_precision_matrix_mult` also only fixes the
 *runtime* compute path — it does nothing for precision already lost when a
 tensor is quantized to e4m3 *on disk*, so plain (non-mixed) FP8 carries the
 same keys_hiprec sensitive-architecture risk plain INT8 does, and the

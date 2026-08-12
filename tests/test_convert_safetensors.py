@@ -58,6 +58,29 @@ class TestConvertToSafetensors:
             meta = f.metadata()
         assert meta is not None and "_quantization_metadata" in meta
 
+    def test_no_on_log_callback_survives_non_utf8_console(self, tmp_path, monkeypatch):
+        # Regression: the print() fallback used when on_log is None must not
+        # crash on a Windows console stuck on a legacy codepage (cp1252) that
+        # can't encode the non-ASCII characters in the log text (e.g. "->" as
+        # U+2192) — this previously aborted the conversion mid-run, before
+        # save_file() ever wrote the output.
+        import sys
+
+        class Cp1252Stdout:
+            encoding = "cp1252"
+
+            def write(self, s):
+                s.encode("cp1252")  # raises UnicodeEncodeError on non-Latin-1 text
+
+            def flush(self):
+                pass
+
+        monkeypatch.setattr(sys, "stdout", Cp1252Stdout())
+        src = _write_minimal_flux(tmp_path)
+        dst, _ = convert_to_safetensors(str(src), target_key="FP8", overwrite=True)
+        import os
+        assert os.path.isfile(dst)
+
     def test_quantization_metadata_layer_key_has_no_weight_suffix(self, tmp_path):
         # Regression: ComfyUI's convert_old_quants() writes the comfy_quant
         # sidecar as "{layer}.comfy_quant" where `layer` is the module prefix

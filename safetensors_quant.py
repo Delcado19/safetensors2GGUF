@@ -37,13 +37,30 @@ SAFETENSORS_DTYPE_CHOICES: list[tuple[str, str]] = [
     ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32 · recommended ★", "INT8_MIXED"),
 ]
 
-# (arch_key, format_key) pairs whose *_MIXED keys_hiprec protection has been
+# (arch_key, format_key) pairs -- MIXED or plain -- whose output has been
 # confirmed by an actual convert+load+render cycle in ComfyUI (not just by
 # matching a community tool's published blacklist) -- see
 # docs/issues_analysis.md #15 (INT8_MIXED) and #16's second correction
 # (FP8_MIXED: same-seed/prompt comparison, 2026-08-11, showed identity/
 # composition/outfit preserved -- the only deviation was a single secondary
 # prop, judged tolerable quantization variance, not a correctness failure).
+# flux (FLUX.2 Klein 9B, 2026-08-12): 3 same-seed/prompt comparisons against
+# the unquantized BF16 baseline (garden portrait, bartender portrait, cyborg
+# geisha portrait, 5 seeds total incl. batch variants) showed FP8, FP8_MIXED,
+# INT8 and INT8_MIXED all producing output with zero visible deviation from
+# baseline in every seed -- identity, pose, outfit, and background all
+# matched exactly, a stronger result than lumina2's "one tolerable prop
+# difference" bar. Plain FP8 being safe here is explained by
+# full_precision_matrix_mult (convert_safetensors.py) making ComfyUI skip
+# FP8's quantized-compute path at runtime regardless of on-disk precision
+# loss; plain INT8 has no such runtime flag, so its clean result is direct
+# evidence flux's keys_hiprec-sensitive tensors tolerate INT8 rounding well,
+# not just a mechanism-level argument. NVFP4/NVFP4_MIXED were NOT added here
+# -- the same seed batch showed visible composition drift (background
+# details, and once a missing garment) in 2 of 3 seeds for both variants,
+# while FP8/INT8 stayed pixel-identical on every one of those same seeds --
+# confirming (not just predicting by analogy) the CAUTION rating NVFP4
+# already carries architecture-wide, see model_support.py.
 # Everything else with a non-empty keys_hiprec is protected on the strength
 # of a community-tool cross-reference alone, which format_recommendation()
 # below discloses rather than implying the same level of confidence for
@@ -51,6 +68,10 @@ SAFETENSORS_DTYPE_CHOICES: list[tuple[str, str]] = [
 _RENDER_VERIFIED_MIXED: set[tuple[str, str]] = {
     ("lumina2", "INT8_MIXED"),
     ("lumina2", "FP8_MIXED"),
+    ("flux", "FP8"),
+    ("flux", "FP8_MIXED"),
+    ("flux", "INT8"),
+    ("flux", "INT8_MIXED"),
 }
 
 # (base_format -> {arch_key}) pairs where the PLAIN (non-mixed) output has
@@ -117,6 +138,19 @@ def format_recommendation(model_arch, target_key: str) -> tuple[str, str]:
     if sensitive and not mixed:
         if plain_confirmed_bad:
             evidence = f"plain {fmt_label} has shown visible pose/identity corruption in testing"
+        elif mixed_verified:
+            # Not the *_MIXED case below -- this is (arch, base) e.g.
+            # ("flux", "FP8") itself being in _RENDER_VERIFIED_MIXED (name
+            # notwithstanding, see its docstring): a same-seed/prompt render
+            # test on THIS architecture already confirmed plain output is
+            # clean. Saying "hasn't been render-tested" here would now be
+            # actively false, not just unconfirmed.
+            return "ok", (
+                f"**Plain {fmt_label} has been render-tested on `{arch}`** and showed no "
+                f"visible deviation from the unquantized baseline — safe to use. "
+                f"**{mixed_label}** is an equally safe alternative if you'd rather not "
+                f"depend on per-architecture render evidence."
+            )
         else:
             evidence = (
                 "the same risk caused visible pose/identity corruption on `lumina2` "

@@ -50,14 +50,37 @@ class TestSupportLevel:
         assert support_level("lumina2", True, "F16") == SUPPORT_VERIFIED
         assert support_level("lumina2", True, "F16_MIXED") == SUPPORT_VERIFIED
 
-    def test_fp8_caution_except_lumina2(self):
+    def test_fp8_caution_except_lumina2_and_flux(self):
         # full_precision_matrix_mult=true fixes ComfyUI's compute path by
         # code reading (comfy/utils.py, comfy/ops.py), but no FP8_MIXED
         # output from this tool has ever been convert+load+render confirmed
-        # in ComfyUI on architectures other than lumina2 -- CAUTION, not
+        # in ComfyUI on architectures other than lumina2/flux (see
+        # test_flux_fp8_int8_verified_render_tested below) -- CAUTION, not
         # VERIFIED, under the same bar INT8_MIXED is held to.
-        assert support_level("flux", True, "FP8_MIXED") == SUPPORT_CAUTION
+        assert support_level("qwen_image", True, "FP8_MIXED") == SUPPORT_CAUTION
         assert support_level("sdxl", False, "FP8") == SUPPORT_CAUTION
+
+    def test_flux_fp8_int8_verified_render_tested(self):
+        # FLUX.2 Klein 9B, 2026-08-12: 3 same-seed/prompt comparisons (5
+        # seeds total incl. batch variants) against the unquantized BF16
+        # baseline showed FP8, FP8_MIXED, INT8 and INT8_MIXED all producing
+        # output with zero visible deviation -- identity/pose/outfit/
+        # background all matched exactly, every seed. See
+        # safetensors_quant._RENDER_VERIFIED_MIXED's docstring for the full
+        # writeup, including why plain FP8/INT8 clearing this bar isn't
+        # architecture-specific luck for FP8 (full_precision_matrix_mult
+        # protects it everywhere) but IS real evidence for INT8 (no such
+        # runtime flag exists there).
+        assert support_level("flux", True, "FP8") == SUPPORT_VERIFIED
+        assert support_level("flux", True, "FP8_MIXED") == SUPPORT_VERIFIED
+        assert support_level("flux", True, "INT8") == SUPPORT_VERIFIED
+        assert support_level("flux", True, "INT8_MIXED") == SUPPORT_VERIFIED
+        # NVFP4/NVFP4_MIXED were NOT cleared by the same seed batch -- 2 of 3
+        # seeds showed visible composition drift for both variants while
+        # FP8/INT8 stayed pixel-identical on those same seeds, confirming
+        # (not just predicting by analogy) the existing CAUTION rating.
+        assert support_level("flux", True, "NVFP4") == SUPPORT_CAUTION
+        assert support_level("flux", True, "NVFP4_MIXED") == SUPPORT_CAUTION
 
     def test_fp8_lumina2_split_bad_plain_verified_mixed(self):
         # lumina2 has been directly render-tested for both FP8 variants:
@@ -74,25 +97,31 @@ class TestSupportLevel:
         assert support_level("sdxl", False, "INT8") == SUPPORT_VERIFIED
         assert support_level("sdxl", False, "INT8_MIXED") == SUPPORT_VERIFIED
 
-    def test_int8_mixed_verified_only_for_lumina2(self):
-        # lumina2 is the only architecture render-tested end-to-end
-        # (docs/issues_analysis.md #15).
+    def test_int8_mixed_verified_only_for_lumina2_and_flux(self):
+        # lumina2 and flux are the only architectures render-tested
+        # end-to-end (docs/issues_analysis.md #15; flux: see
+        # test_flux_fp8_int8_verified_render_tested above).
         assert support_level("lumina2", True, "INT8_MIXED") == SUPPORT_VERIFIED
-        assert support_level("flux", True, "INT8_MIXED") == SUPPORT_CAUTION
+        assert support_level("qwen_image", True, "INT8_MIXED") == SUPPORT_CAUTION
 
     def test_plain_int8_bad_on_lumina2_caution_elsewhere(self):
         # lumina2 has direct render-test evidence of corruption with plain
         # INT8 (docs/issues_analysis.md #15) -- BAD, not merely CAUTION.
-        # Every other sensitive architecture shares the same risk class but
-        # has never actually been rendered, so it stays CAUTION.
+        # Every other untested sensitive architecture shares the same risk
+        # class but has never actually been rendered, so it stays CAUTION
+        # (flux is the one exception -- render-tested clean, see
+        # test_flux_fp8_int8_verified_render_tested above).
         assert support_level("lumina2", True, "INT8") == SUPPORT_BAD
-        assert support_level("flux", True, "INT8") == SUPPORT_CAUTION
+        assert support_level("qwen_image", True, "INT8") == SUPPORT_CAUTION
 
     def test_nvfp4_bad_on_lumina2_caution_elsewhere(self):
         # Direct render evidence (full-image noise, #15) exists only for
         # lumina2 -- BAD there, CAUTION everywhere else on the strength of
         # the shared dynamic-activation-quantization mechanism alone (no
-        # verified safe mode, unlike FP8's full_precision_matrix_mult).
+        # verified safe mode, unlike FP8's full_precision_matrix_mult) --
+        # including flux, whose own render test showed visible composition
+        # drift on NVFP4/NVFP4_MIXED rather than clearing them (see
+        # test_flux_fp8_int8_verified_render_tested above).
         assert support_level("lumina2", True, "NVFP4") == SUPPORT_BAD
         assert support_level("lumina2", True, "NVFP4_MIXED") == SUPPORT_BAD
         assert support_level("sdxl", False, "NVFP4_MIXED") == SUPPORT_CAUTION
