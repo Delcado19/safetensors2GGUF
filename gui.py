@@ -32,9 +32,9 @@ from model_support import (
     SUPPORT_CAUTION,
     SUPPORT_SYMBOL,
     TABLE_FORMATS,
-    TEXT_ENCODER_SUPPORT,
     TEXT_ENCODER_TABLE_FORMATS,
     build_support_table,
+    build_text_encoder_support_table,
     support_level,
 )
 from quantize import (
@@ -43,14 +43,16 @@ from quantize import (
     EASY_INSTALL_ROOT_ENV,
     LLAMA_QUANT_KEYS,
     PYTHON_PRECISIONS,
+    SIZE_RATIOS,
     estimate_output_size,
     find_exe,
     run_quantize,
 )
-from safetensors_quant import SAFETENSORS_DTYPE_CHOICES, format_recommendation
+from safetensors_quant import SAFETENSORS_DTYPE_CHOICES, estimate_safetensors_output_size, format_recommendation
 from text_encoder_convert import (
     TEXT_ENCODER_FORMAT_CHOICES,
     TEXT_ENCODER_SAFETENSORS_FORMATS,
+    _TEXT_ENCODER_MODEL_ARCH,
     convert_text_encoder_any,
 )
 
@@ -291,6 +293,76 @@ def update_size_estimate(src: str, quant_key: str) -> str:
     return line
 
 
+def _safetensors_size_estimate_line(model_arch, src: str, target_key: str) -> str:
+    """Return a Markdown string with the estimated safetensors-quant output
+    size, or "" if the architecture couldn't be detected or the source can't
+    be read as a safetensors header — same fail-quiet convention as
+    _format_recommendation_update(). Needs model_arch (not just src) because
+    the *_MIXED formats' size depends on keys_hiprec, unlike GGUF's
+    update_size_estimate() above."""
+    if model_arch is None:
+        return ""
+    src = (src or "").strip()
+    if not src or not os.path.isfile(src):
+        return ""
+    est = estimate_safetensors_output_size(src, target_key, model_arch)
+    if est is None:
+        return ""
+    src_bytes = os.path.getsize(src)
+    line = f"Estimated output: **{_fmt_size(est)}**"
+    if src_bytes > 0 and est < src_bytes:
+        pct = (1 - est / src_bytes) * 100
+        line += f" &nbsp;·&nbsp; {pct:.0f}% smaller than source ({_fmt_size(src_bytes)})"
+    elif src_bytes > 0 and est > src_bytes:
+        line += f" &nbsp;·&nbsp; source: {_fmt_size(src_bytes)}"
+    return line
+
+
+def update_safetensors_size_estimate(src: str, target_key: str) -> str:
+    """Safetensors-tab equivalent of update_size_estimate() — wired to
+    st_format_dropdown's own .change() (target_key changed, src unchanged);
+    st_src_path's .change() uses the combined
+    update_format_recommendation_choices_and_size() below instead."""
+    return _safetensors_size_estimate_line(_detected_arch_or_none(src), src, target_key)
+
+
+def update_text_encoder_size_estimate(src: str, format_key: str) -> str:
+    """Text-encoder-tab equivalent of update_size_estimate()/
+    update_safetensors_size_estimate().
+
+    FP8/FP8_MIXED/NVFP4/NVFP4_MIXED go through estimate_safetensors_output_size()
+    with this tool's fixed text-encoder ModelTemplate (_TEXT_ENCODER_MODEL_ARCH)
+    — there's no per-checkpoint architecture detection for text encoders the
+    way there is for diffusion models, just one fixed keys_shape_critical set.
+
+    GGUF-family keys (F32/F16/BF16/Q8_0/K-quants) deliberately use the plain
+    SIZE_RATIOS ratio, NOT estimate_output_size()'s per-tensor header analysis:
+    that analysis's F32-forcing heuristic was tuned for THIS project's own
+    convert.py GGUF writer (used for diffusion models), not llama.cpp's own
+    convert_hf_to_gguf.py + llama-quantize (used for text encoders) — applying
+    it here would look precise while silently assuming the wrong converter's
+    behavior. SIZE_RATIOS's own reference data (Llama-3-8B via llama-quantize)
+    is actually the better-matched source for an LLM-style text encoder.
+    """
+    src = (src or "").strip()
+    if not src or not os.path.isfile(src):
+        return ""
+    if format_key in TEXT_ENCODER_SAFETENSORS_FORMATS:
+        return _safetensors_size_estimate_line(_TEXT_ENCODER_MODEL_ARCH, src, format_key)
+    ratio = SIZE_RATIOS.get(format_key)
+    if ratio is None:
+        return ""
+    src_bytes = os.path.getsize(src)
+    est = int(src_bytes * ratio)
+    line = f"Estimated output: **{_fmt_size(est)}**"
+    if est < src_bytes:
+        pct = (1 - ratio) * 100
+        line += f" &nbsp;·&nbsp; {pct:.0f}% smaller than source ({_fmt_size(src_bytes)})"
+    elif est > src_bytes:
+        line += f" &nbsp;·&nbsp; source: {_fmt_size(src_bytes)}"
+    return line
+
+
 def _detected_arch_or_none(src: str):
     """Best-effort architecture detection shared by the format-hint and
     dropdown-annotation helpers below. Reads only the safetensors header (via
@@ -377,22 +449,24 @@ def annotate_gguf_choices(src: str):
     return gr.update(choices=[tuple(c) for c in ALL_QUANT_CHOICES])
 
 
-def update_format_recommendation_and_choices(src: str, target_key: str):
+def update_format_recommendation_choices_and_size(src: str, target_key: str):
     """Combined st_src_path.change() handler: detects the architecture once
-    and drives both the format-recommendation hint and the format-dropdown
-    ⚠ annotations, instead of two separate handlers each independently
-    re-detecting (each a full torch.load() for non-safetensors sources)."""
+    and drives the format-recommendation hint, the format-dropdown ⚠
+    annotations, and the size estimate — instead of separate handlers each
+    independently re-detecting (each a full torch.load() for non-safetensors
+    sources)."""
     model_arch = _detected_arch_or_none(src)
     return (
         _format_recommendation_update(model_arch, target_key),
         _annotate_choices_for_arch(model_arch, SAFETENSORS_DTYPE_CHOICES),
+        _safetensors_size_estimate_line(model_arch, src, target_key),
     )
 
 
 _SUPPORT_CELL_COLOR = {
-    "verified": "var(--s2g-accent)",
-    "caution": "var(--s2g-warn)",
-    "bad": "var(--s2g-danger)",
+    "verified": "var(--s2g-support-good)",
+    "caution": "var(--s2g-support-caution)",
+    "bad": "var(--s2g-support-bad)",
     "unknown": "var(--s2g-muted)",
 }
 
@@ -421,21 +495,31 @@ def _support_table_rows_for_dataframe() -> list[list[str]]:
 
 
 def _text_encoder_support_rows_for_dataframe() -> list[list[str]]:
-    """Single-row gr.Dataframe data for the text-encoder support table --
-    one generic row, not per-architecture (see model_support.TEXT_ENCODER_SUPPORT).
+    """One gr.Dataframe row per vendored text-encoder family (see
+    model_support.build_text_encoder_support_table()), mirroring
+    _support_table_rows_for_dataframe() below for the diffusion-model table.
 
-    The label deliberately does NOT read as one model family: Qwen3/Mistral
-    (decoder-only LLMs), T5/UMT5 (encoder-decoder), and CLIP (a contrastive
-    vision-language model) are unrelated architectures that happen to all be
-    usable as a diffusion model's text encoder. They share this one row only
-    because text_encoder_convert.py treats every one of them the same
-    generic way (no per-architecture handling the way diffusion models get),
-    not because they're structurally related to each other.
+    Unlike diffusion-model architectures, these families aren't structurally
+    related to each other -- Qwen3/Mistral (decoder-only LLMs), T5 (encoder-
+    decoder), and CLIP (a contrastive vision-language model) are unrelated
+    architectures that happen to each be usable as a diffusion model's text
+    encoder. The conversion code itself stays generic across all of them
+    (text_encoder_convert.py has no per-family branching); only the *support
+    evidence* per (family, format) pair differs, which is what this table
+    now tracks row-by-row instead of collapsing into one generic row.
     """
-    cells = ["Any text encoder — generic, not architecture-specific (e.g. Qwen3, T5/UMT5, CLIP, Mistral)"]
-    for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
-        cells.append(_support_table_cell_html(TEXT_ENCODER_SUPPORT[format_key]))
-    return [cells]
+    rows = []
+    for row in build_text_encoder_support_table():
+        display_html = (
+            f'<span>{row["display_name"].split(" (")[0]}</span> '
+            f'<span style="color:var(--s2g-muted);font-size:0.85em;">'
+            f'({row["family"]})</span>'
+        )
+        cells = [display_html]
+        for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
+            cells.append(_support_table_cell_html(row[format_key]))
+        rows.append(cells)
+    return rows
 
 
 def apply_text_encoder_support_table_selection(evt: gr.SelectData):
@@ -485,11 +569,11 @@ def apply_support_table_selection(evt: gr.SelectData):
 
 _SUPPORT_TABLE_LEGEND_HTML = """
 <div style="font-size: var(--type-small); color: var(--s2g-muted); margin-top: 8px;">
-  <strong style="color:var(--s2g-accent);">✓ Verified</strong> — actually converted, loaded, and rendered correctly in ComfyUI with this tool's own output.
+  <strong style="color:var(--s2g-support-good);">✓ Verified</strong> — actually converted, loaded, and rendered correctly in ComfyUI with this tool's own output.
   &nbsp;·&nbsp;
-  <strong style="color:var(--s2g-warn);">⚠ Caution</strong> — technically supported by this tool, but not render-tested for this architecture: no evidence either way.
+  <strong style="color:var(--s2g-support-caution);">⚠ Caution</strong> — technically supported by this tool, but not render-tested for this architecture: no evidence either way.
   &nbsp;·&nbsp;
-  <strong style="color:var(--s2g-danger);">✗ Known issue</strong> — actually render-tested and confirmed to produce wrong output.
+  <strong style="color:var(--s2g-support-bad);">✗ Known issue</strong> — actually render-tested and confirmed to produce wrong/broken output.
   &nbsp;·&nbsp;
   <strong style="color:var(--s2g-muted);">? Unknown</strong> — this combination has never been attempted.
 </div>
@@ -525,6 +609,14 @@ CSS = """
     --s2g-warn: #b7791f;
     --s2g-warn-soft: rgba(183, 121, 31, 0.12);
 
+    /* Support-table cell colors ONLY (verified/caution/bad symbols + legend) --
+       deliberately literal red/yellow/green rather than the teal --s2g-accent
+       used for general UI branding elsewhere, per explicit user request for
+       an unambiguous traffic-light scheme on these two tables specifically. */
+    --s2g-support-good: #16a34a;
+    --s2g-support-caution: #ca8a04;
+    --s2g-support-bad: #dc2626;
+
     --s2g-shadow: 0 16px 42px -28px rgba(15, 23, 42, 0.45);
 
     --font-ui: "Segoe UI Variable", "Aptos", "Segoe UI", system-ui, sans-serif;
@@ -553,6 +645,10 @@ CSS = """
     --s2g-danger: #f87171;
     --s2g-warn: #f5b84b;
     --s2g-warn-soft: rgba(245, 184, 75, 0.14);
+
+    --s2g-support-good: #4ade80;
+    --s2g-support-caution: #fbbf24;
+    --s2g-support-bad: #f87171;
 
     --s2g-shadow: 0 20px 52px -30px rgba(0, 0, 0, 0.75);
 }
@@ -1504,6 +1600,7 @@ def build_app() -> gr.Blocks:
                     )
                     overwrite_st = gr.Checkbox(label="Overwrite existing output", value=False)
                 st_format_info = gr.Markdown("", elem_id="st-format-info", elem_classes=["fmt-hint"])
+                st_size_info = gr.Markdown("", elem_id="size-info")
 
                 with gr.Row():
                     st_convert_btn = gr.Button("▶  Convert", variant="primary", scale=5, elem_id="st-convert-btn")
@@ -1528,14 +1625,19 @@ def build_app() -> gr.Blocks:
                     outputs=st_dst_path,
                 )
                 st_src_path.change(
-                    update_format_recommendation_and_choices,
+                    update_format_recommendation_choices_and_size,
                     inputs=[st_src_path, st_format_dropdown],
-                    outputs=[st_format_info, st_format_dropdown],
+                    outputs=[st_format_info, st_format_dropdown, st_size_info],
                 )
                 st_format_dropdown.change(
                     update_format_recommendation,
                     inputs=[st_src_path, st_format_dropdown],
                     outputs=st_format_info,
+                )
+                st_format_dropdown.change(
+                    update_safetensors_size_estimate,
+                    inputs=[st_src_path, st_format_dropdown],
+                    outputs=st_size_info,
                 )
                 st_convert_event = st_convert_btn.click(
                     fn=run_st_convert,
@@ -1590,6 +1692,7 @@ def build_app() -> gr.Blocks:
                     te_format = gr.Dropdown(
                         choices=TEXT_ENCODER_FORMAT_CHOICES, value="F16", label="Format",
                     )
+                te_size_info = gr.Markdown("", elem_id="size-info")
 
                 with gr.Row():
                     te_convert_btn = gr.Button("▶  Convert", variant="primary", scale=5, elem_id="te-convert-btn")
@@ -1608,6 +1711,16 @@ def build_app() -> gr.Blocks:
                     return browse_model()
 
                 browse_te_src_btn.click(_browse_te_src, outputs=te_src_path)
+                te_src_path.change(
+                    update_text_encoder_size_estimate,
+                    inputs=[te_src_path, te_format],
+                    outputs=te_size_info,
+                )
+                te_format.change(
+                    update_text_encoder_size_estimate,
+                    inputs=[te_src_path, te_format],
+                    outputs=te_size_info,
+                )
                 te_convert_event = te_convert_btn.click(
                     fn=run_te_convert,
                     inputs=[te_src_path, te_base_repo, te_dst_path, te_format],
@@ -1762,19 +1875,21 @@ def build_app() -> gr.Blocks:
                 )
                 gr.HTML(_SUPPORT_TABLE_LEGEND_HTML)
                 gr.Markdown(
-                    "**Text encoders** (Convert Text Encoder tab) aren't "
-                    "architecture-detected the way diffusion models are — "
-                    "one generic row covers every format that tab offers.",
+                    "**Text encoders** (Convert Text Encoder tab), one row per "
+                    "vendored base-model family this tool auto-detects "
+                    "(`detect_text_encoder_family()`). Click a cell to jump to "
+                    "the Convert Text Encoder tab with that format pre-selected.",
                     elem_classes=["intro"],
                 )
                 te_support_table = gr.Dataframe(
                     label="Text Encoder Support",
-                    headers=["", *[label for label, _ in TEXT_ENCODER_TABLE_FORMATS]],
+                    headers=["Family", *[label for label, _ in TEXT_ENCODER_TABLE_FORMATS]],
                     datatype="html",
                     value=_text_encoder_support_rows_for_dataframe(),
                     interactive=False,
                     wrap=True,
                 )
+                gr.HTML(_SUPPORT_TABLE_LEGEND_HTML)
 
         # ── Events ─────────────────────────────────────────────────────────
         support_table.select(

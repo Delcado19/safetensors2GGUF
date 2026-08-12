@@ -302,23 +302,43 @@ and reusing it elsewhere in the UI:
   handlers on the source-path inputs. Purely informational — every entry
   stays selectable.
 
-**Text Encoder Support table:** a second, generic (not per-architecture)
-support table below the main one, for the formats `text_encoder_convert.py`
-offers. Text encoders aren't in `models.architectures.arch_list` and have no
-`keys_hiprec`-style risk model (see the Text-Encoder Conversion Pipeline
-section below), so `model_support.py` defines `TEXT_ENCODER_TABLE_FORMATS`
-(GGUF — collapsing every direct outtype/K-quant — plus
-FP8/FP8_MIXED/NVFP4/NVFP4_MIXED) and `TEXT_ENCODER_SUPPORT` (a flat
-`{format_key: level}` dict, currently `SUPPORT_CAUTION` everywhere: no format
-has a documented ComfyUI load+render confirmation by this project) instead
-of a `build_support_table()`-style per-architecture function.
-`gui._text_encoder_support_rows_for_dataframe()` renders it as a
-single-row `gr.Dataframe`, reusing `_support_table_cell_html()`.
+**Text Encoder Support table:** a second support table below the main one,
+one row per vendored text-encoder family (`TEXT_ENCODER_FAMILY_DISPLAY_NAMES`
+in `model_support.py`) rather than one row per `models.architectures.arch_list`
+entry — text encoders aren't in that list and have no `keys_hiprec`-style risk
+model (see the Text-Encoder Conversion Pipeline section below), but
+`detect_text_encoder_family()` (see that section) makes per-family
+identification possible the same way `detect_arch()` does for diffusion
+models, so this table now mirrors `build_support_table()`'s per-row design
+instead of collapsing into one generic row. `model_support.py` defines
+`TEXT_ENCODER_TABLE_FORMATS` (GGUF — collapsing every direct outtype/K-quant,
+see below — plus FP8/FP8_MIXED/NVFP4/NVFP4_MIXED),
+`text_encoder_support_level(family, format_key)` (three-state: `SUPPORT_BAD`
+only for a `_TE_RENDER_CONFIRMED_BAD` pair — actually render-tested and
+confirmed to produce broken/garbage output, not merely "differs from the
+unquantized baseline"; `SUPPORT_VERIFIED` for a `_TE_RENDER_VERIFIED` pair;
+`SUPPORT_CAUTION` otherwise, i.e. untested), and
+`build_text_encoder_support_table()`. As of 2026-08-12, `qwen3-4b` is
+`SUPPORT_VERIFIED` on every column (GGUF direct outtypes/K-quants and all 4
+safetensors formats convert+load+render-tested in ComfyUI, no format-specific
+defect found across 4 seeds each); every other vendored family is
+`SUPPORT_CAUTION` (untested). The GGUF column stays collapsed rather than
+splitting direct-outtype vs. K-quant: testing found no defect distinguishing
+them for `qwen3-4b` (F16/Q8_0/Q6_K all showed the same rate of an unrelated,
+seed-driven base-model prompt-adherence artifact — see the "Corrected" entry
+in CHANGELOG.md for what that artifact turned out to be and why it isn't
+evidence against any format).
+`gui._text_encoder_support_rows_for_dataframe()` renders it as an N-row
+`gr.Dataframe`, reusing `_support_table_cell_html()`.
 `apply_text_encoder_support_table_selection(evt)` mirrors
 `apply_support_table_selection()` but switches to the Convert Text Encoder
 tab (`main_tabs` id 2) and, unlike the diffusion-model table, never no-ops
 on NVFP4 — it's a real `TEXT_ENCODER_FORMAT_CHOICES` entry, not excluded the
-way it is for diffusion-model output.
+way it is for diffusion-model output. Both support tables share one traffic-
+light color legend (`_SUPPORT_TABLE_LEGEND_HTML`): literal red/yellow/green
+CSS custom properties (`--s2g-support-good/-caution/-bad`) rather than the
+app's teal `--s2g-accent` branding color, kept separate so this doesn't
+recolor the rest of the UI.
 
 ## Text-Encoder Conversion Pipeline
 
@@ -529,6 +549,50 @@ design documented for `_LazyStateDict` elsewhere in this file.
 If no signature matches, `convert_text_encoder()` raises `RuntimeError`
 telling the user to supply the base repo ID manually — auto-detection only
 covers this tool's documented candidate families, not arbitrary base models.
+
+### Estimated Output Size (all three Convert tabs)
+
+Every Convert tab (GGUF, Safetensors, Text Encoder) shows an "Estimated
+output" line under its format dropdown, but each uses a different mechanism
+because each output backend's size depends on different inputs:
+
+- **GGUF tab**: `quantize.estimate_output_size()` — parses the safetensors
+  header (no tensor data loaded) and replicates `convert.py`'s own
+  unconditional "1D or ≤`QUANTIZATION_THRESHOLD`-element tensor → always F32"
+  rule, counting F32-forced and quantizable tensors separately per
+  `_QUANT_BYTES_PER_ELEM`. Falls back to `SIZE_RATIOS[quant_key] × source
+  size` for non-safetensors sources.
+- **Safetensors tab**: `safetensors_quant.estimate_safetensors_output_size()`
+  — a header-only estimator that instead replicates `quantize_tensor_st()`'s
+  branching exactly: `is_hiprec_st`'s 1D/small/`keys_hiprec` gate (only
+  relevant in `mixed` mode — this is *why* GGUF's simpler rule can't be
+  reused here, the `*_MIXED` formats' size genuinely depends on the detected
+  architecture's `keys_hiprec`), `keys_shape_critical` F16 fallback, NVFP4's
+  block-scale swizzle-padding (`_swizzle_block_scale` pads to 128×4 tile
+  alignment for 2D weights — can matter a lot for < 128-row tensors), and
+  INT8 ConvRot's one-F32-scale-per-output-row overhead. Cross-checked
+  byte-for-byte against real `quantize_tensor_st()` output in
+  `tests/test_safetensors_quant.py::TestEstimateSafetensorsOutputSize`.
+  `gui.py` supplies the architecture via the same `_detected_arch_or_none()`
+  detection the dropdown ⚠/✗ annotations already use.
+- **Text Encoder tab**: FP8/FP8_MIXED/NVFP4/NVFP4_MIXED reuse the Safetensors
+  tab's estimator with the fixed `_TEXT_ENCODER_MODEL_ARCH` (no per-checkpoint
+  detection for text encoders). GGUF-family formats (F32/F16/BF16/Q8_0/
+  K-quants) deliberately use the plain `SIZE_RATIOS` ratio rather than
+  `estimate_output_size()`'s per-tensor analysis: that analysis's F32-forcing
+  heuristic was calibrated for `convert.py`'s own GGUF writer (diffusion
+  models), not llama.cpp's `convert_hf_to_gguf.py` + `llama-quantize` (what
+  text-encoder GGUF output actually goes through) — `SIZE_RATIOS`' own
+  reference data (Llama-3-8B via `llama-quantize`) is the better-matched
+  source for an LLM-style text encoder regardless.
+
+All three share one `_fmt_size()`/percentage-line formatting helper in
+`gui.py` for display consistency, but the size-estimate KEY point is: **a
+static percentage label is only trustworthy for a fixed-ratio format** (a
+pure per-element cast — F16, FP8, INT8, NVFP4). `*_MIXED` variants have no
+single fixed ratio (it depends on how much of a given checkpoint matches
+`keys_hiprec`), which is why they're estimated live from the actual header
+rather than given a static `% smaller` label in any dropdown's display text.
 
 Primary model references:
 

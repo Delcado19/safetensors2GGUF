@@ -254,6 +254,12 @@ when you want ComfyUI-compatible weights without the GGUF container format.
 | `INT8` | int8_tensorwise, ConvRot-rotated where possible (ComfyUI convention) | Python | Per-layer `weight_scale`; weight-only quantization, no runtime activation quant |
 | `INT8_MIXED` | INT8/ConvRot, high-precision tensors stay F32 | Python | Aggressive 8-bit quantization with protection |
 
+**Estimated output size:** once a source model is selected, the tab shows an
+"Estimated output" size under the format dropdown, computed from the actual
+safetensors header (no tensor data loaded) rather than a fixed ratio — needed
+because `*_MIXED` formats' size depends on the detected architecture's
+protected-tensor list, not just the target dtype.
+
 **Per-architecture recommendation badge:** once a source model is selected,
 the tab shows a colored hint under the format dropdown — analogous to the
 GGUF tab's static "recommended ★" label on `Q4_K_M`, but per-architecture.
@@ -363,22 +369,20 @@ names map to which internal architecture key, and the four-state logic
 itself) lives in `model_support.py` and is documented there as an explicit
 editorial judgment call, open to correction.
 
-Below the per-architecture table is a second, smaller **Text Encoder
-Support** table covering the formats the [Text-Encoder
-Conversion](#text-encoder-conversion) tab offers (GGUF — collapsing every
-direct outtype and K-quant — plus FP8/FP8_MIXED/NVFP4/NVFP4_MIXED). Text
-encoders aren't in `models.architectures.arch_list` and have no
-`keys_hiprec`-style per-architecture risk model (ComfyUI's text-encoder
-loaders build models from fixed config presets, not inferred hyperparameters
-— see [Text-Encoder Conversion](#text-encoder-conversion) below), so this is
-one generic row rather than per-architecture columns. Every format currently
-shows **⚠ Caution**: none has a documented ComfyUI load+render confirmation
-by this project, even though the underlying GGUF path reuses llama.cpp's own
-well-established converter and the FP8/NVFP4 safetensors path reuses the
-same backends the diffusion-model table covers. Clicking a cell jumps to the
-Convert Text Encoder tab with that format pre-selected — unlike the
-diffusion-model table, NVFP4 isn't excluded here since it's a real,
-selectable format for text encoders.
+Below the per-architecture table is a second **Text Encoder Support** table,
+one row per vendored base-model family (Qwen3-4B/8B, Qwen2.5-VL-7B,
+Mistral-Small-3.2-24B, ERNIE-Image's Ministral3 prompt-enhancer, T5-XXL,
+CLIP-L, CLIP-bigG — the same families `detect_text_encoder_family()` matches,
+see [Text-Encoder Conversion](#text-encoder-conversion) below), covering the
+formats that tab offers (GGUF — collapsing every direct outtype and K-quant —
+plus FP8/FP8_MIXED/NVFP4/NVFP4_MIXED). As of 2026-08-12, **Qwen3-4B** shows
+**✓ Verified** across every column (convert+load+render-tested in ComfyUI,
+4 seeds each, no format-specific defect found); every other family still
+shows **⚠ Caution** (untested). Both this table and the main one share one
+color legend — literal red/yellow/green, not reused from the app's teal
+accent color. Clicking a cell jumps to the Convert Text Encoder tab with that
+format pre-selected — unlike the diffusion-model table, NVFP4 isn't excluded
+here since it's a real, selectable format for text encoders.
 
 ## Text-Encoder Conversion
 
@@ -431,6 +435,9 @@ For **GGUF formats** (direct outtypes and K-quants), text-encoder conversion req
 
 For **FP8/FP8_MIXED/NVFP4/NVFP4_MIXED**, only the source weights file and an
 output path are needed — the base repo ID field is ignored.
+
+Like the GGUF and Safetensors tabs, this tab shows an "Estimated output"
+size under the format dropdown once a source file is selected.
 
 ### Implementation
 

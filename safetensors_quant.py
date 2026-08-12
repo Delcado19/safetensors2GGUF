@@ -10,6 +10,9 @@ for the ComfyUI-compatibility research this format registry is based on
 
 from __future__ import annotations
 
+import json
+import struct
+
 import torch
 
 from models.architectures import QUANTIZATION_THRESHOLD
@@ -281,3 +284,114 @@ def quantize_tensor_st(
             return quantize_int8_tensorwise(data, key)
 
     raise ValueError(f"Unknown target_key: {target_key!r}")
+
+
+_ST_DTYPE_BYTES: dict[str, int] = {
+    "F32": 4, "F64": 8, "F16": 2, "BF16": 2,
+    "I64": 8, "I32": 4, "I16": 2, "I8": 1, "U8": 1, "BOOL": 1,
+}
+_CONVROT_GROUP_SIZE = 256  # must match safetensors_quant_int8.py's own constant
+
+
+def estimate_safetensors_output_size(path: str, target_key: str, model_arch) -> int | None:
+    """Estimate quantize_tensor_st()'s output size in bytes by analysing the
+    safetensors header (no tensor data loaded) -- the safetensors-output
+    equivalent of quantize.py's _estimate_from_safetensors() for GGUF.
+
+    Replicates quantize_tensor_st's exact per-tensor branching (is_hiprec_st's
+    1D/small/keys_hiprec gate, keys_shape_critical fallback, NVFP4's last-dim%16
+    and INT8 ConvRot's last-dim%256 shape requirements) rather than GGUF's
+    simpler unconditional "1D always F32" rule -- necessary because the
+    *_MIXED variants' size depends on model_arch.keys_hiprec, which GGUF
+    output doesn't have an analogous per-format dependency on.
+
+    Returns None if the file can't be read as a safetensors header.
+    """
+    try:
+        with open(path, "rb") as fh:
+            raw_len = fh.read(8)
+            if len(raw_len) < 8:
+                return None
+            header_len = struct.unpack("<Q", raw_len)[0]
+            header = json.loads(fh.read(header_len).decode("utf-8", errors="replace"))
+    except (OSError, ValueError, json.JSONDecodeError):
+        return None
+
+    base = _BASE_KEY.get(target_key)
+    if base is None:
+        return None
+    mixed = target_key in _MIXED_KEYS
+    hiprec_substrings = list(getattr(model_arch, "keys_hiprec", None) or [])
+    shape_critical_substrings = list(getattr(model_arch, "keys_shape_critical", None) or [])
+
+    total = 0
+    for name, meta in header.items():
+        if name == "__metadata__":
+            continue
+        shape = meta.get("shape")
+        if not shape and shape != []:
+            continue
+        n_elems = 1
+        for d in shape:
+            n_elems *= d
+        ndim = len(shape)
+        src_dtype = meta.get("dtype", "F16")
+        src_bytes = _ST_DTYPE_BYTES.get(src_dtype, 2)
+
+        # Mirrors is_hiprec_st(): only F32/BF16 sources are eligible, and 1D
+        # or <=QUANTIZATION_THRESHOLD-element tensors qualify unconditionally,
+        # not just via a keys_hiprec substring match.
+        is_hiprec = src_dtype in ("F32", "BF16") and (
+            ndim == 1 or n_elems <= QUANTIZATION_THRESHOLD
+            or any(s in name for s in hiprec_substrings)
+        )
+        if mixed and is_hiprec:
+            total += n_elems * src_bytes
+            continue
+
+        if base == "F16":
+            total += n_elems * 2
+            continue
+
+        if ndim == 1:
+            total += n_elems * 4  # F32 -- unconditional, matches quantize_tensor_st
+            continue
+
+        if base == "FP8":
+            total += n_elems * 1 + 4  # float8_e4m3fn + one F32 scale scalar
+            continue
+
+        if base == "NVFP4":
+            shape_critical = any(s in name for s in shape_critical_substrings)
+            block_ok = shape[-1] % 16 == 0
+            if shape_critical or not block_ok:
+                total += n_elems * 2  # F16 fallback (shape-critical or non-block-aligned)
+            else:
+                packed_bytes = n_elems // 2  # 2 elems/byte
+                k_blocks = shape[-1] // 16
+                if ndim == 2:
+                    # 2D weights go through _swizzle_block_scale: padded to
+                    # 128x4-tile alignment before storage, not the bare
+                    # (rows, k_blocks) shape -- can matter a lot for weights
+                    # with < 128 output features.
+                    m_padded = -(-shape[0] // 128) * 128
+                    k_padded = -(-k_blocks // 4) * 4
+                    scale_bytes = m_padded * k_padded
+                else:
+                    # Higher-rank tensors skip the swizzle (see quantize_nvfp4's
+                    # `if len(lead) == 1` guard) -- plain (rows, k_blocks) layout.
+                    scale_bytes = (n_elems // shape[-1]) * k_blocks
+                total += packed_bytes + scale_bytes + 4  # + one F32 global scale scalar
+            continue
+
+        if base == "INT8":
+            shape_critical = any(s in name for s in shape_critical_substrings)
+            if shape_critical:
+                total += n_elems * 2  # F16 fallback
+            elif ndim == 2 and shape[-1] % _CONVROT_GROUP_SIZE == 0:
+                total += n_elems * 1 + shape[0] * 4  # ConvRot: int8 + one F32 scale per row
+            else:
+                total += n_elems * 1 + 4  # tensor-wise: int8 + one F32 scale scalar
+            continue
+
+    return total

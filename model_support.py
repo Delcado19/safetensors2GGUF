@@ -188,20 +188,16 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
     return SUPPORT_UNKNOWN
 
 
-# Text encoders (text_encoder_convert.py) have no per-architecture risk model
-# the way diffusion models do: they aren't in models.architectures.arch_list,
-# and ComfyUI's text-encoder loaders build models from fixed config presets
-# rather than inferring hyperparameters from checkpoint tensor shapes, so
-# there's no keys_hiprec-style architecture-dependent caution to compute
-# (docs/architecture.md's Text-Encoder Conversion Pipeline section). GGUF
-# output goes through llama.cpp's own upstream convert_hf_to_gguf.py rather
-# than this project's own writer; FP8/FP8_MIXED/NVFP4/NVFP4_MIXED reuse the
-# same safetensors_quant*.py backends the diffusion-model table covers. What
-# stays true either way: none of these have a documented ComfyUI load+render
-# confirmation by this project (the same bar TABLE_FORMATS holds FP8 to
-# above), so every format is CAUTION until one is actually verified that way.
+# Text encoders (text_encoder_convert.py), per vendored base-model family --
+# mirrors the diffusion-model table's per-architecture design (build_support_table()
+# below) rather than the single generic row this table used before
+# detect_text_encoder_family() made per-family identification possible.
 # GGUF collapses every direct outtype (F32/F16/BF16/Q8_0) and K-quant
-# (Q6_K..Q2_K) into one column, mirroring TABLE_FORMATS' own GGUF column.
+# (Q6_K..Q2_K) into one column, mirroring TABLE_FORMATS' own GGUF column --
+# 2026-08-12 same-model testing (Qwen3-4B, F16 vs. Q8_0 vs. Q6_K, 4 seeds
+# each) found no format-specific defect distinguishing K-quants from direct
+# outtypes, so there's no evidence to split this column the way there once
+# seemed to be (see below).
 TEXT_ENCODER_TABLE_FORMATS: list[tuple[str, str]] = [
     ("GGUF", "GGUF"),
     ("FP8", "FP8"),
@@ -210,9 +206,70 @@ TEXT_ENCODER_TABLE_FORMATS: list[tuple[str, str]] = [
     ("NVFP4 mixed", "NVFP4_MIXED"),
 ]
 
-TEXT_ENCODER_SUPPORT: dict[str, str] = {
-    format_key: SUPPORT_CAUTION for _, format_key in TEXT_ENCODER_TABLE_FORMATS
+# Display label per vendored family short name (text_encoder_configs/<name>/,
+# _FAMILY_SIGNATURES in text_encoder_convert.py). Format matches
+# MODEL_DISPLAY_NAMES above: "<public name> (<short name>)".
+TEXT_ENCODER_FAMILY_DISPLAY_NAMES: dict[str, str] = {
+    "qwen3-4b": "Qwen3 4B — Z-Image / FLUX.2 klein 4B (qwen3-4b)",
+    "qwen3-8b": "Qwen3 8B — FLUX.2 klein 9B (qwen3-8b)",
+    "qwen2.5-vl-7b": "Qwen2.5-VL 7B — Qwen-Image / Qwen-Image-Edit (qwen2.5-vl-7b)",
+    "mistral-small-3.2-24b": "Mistral Small 3.2 24B — FLUX.2 dev (mistral-small-3.2-24b)",
+    "ernie-image-pe": "Ministral3 Prompt-Enhancer — ERNIE-Image (ernie-image-pe)",
+    "t5-xxl": "T5-XXL — FLUX.1 / FLUX.1 Kontext (t5-xxl)",
+    "clip-l": "CLIP-L — SDXL / FLUX.1 (clip-l)",
+    "clip-bigg": "OpenCLIP-bigG — SDXL (clip-bigg)",
 }
+
+# (family_short_name, format_key) pairs actually convert+load+render-tested in
+# ComfyUI by this project (same evidence bar _RENDER_VERIFIED_MIXED/
+# _RENDER_CONFIRMED_BAD hold diffusion models to). 2026-08-12: Qwen3-4B tested
+# across GGUF (F16/Q8_0/Q6_K, 4 seeds each) and all 4 safetensors formats --
+# every format loaded and rendered without any format-specific defect. An
+# unintended figure appeared in ~1-in-4 seeds, but at the *same* rate on the
+# unquantized F16 baseline too (see CHANGELOG's "Corrected" entry), so it's
+# base-model prompt-adherence noise, not evidence against any format here.
+_TE_RENDER_VERIFIED: set[tuple[str, str]] = {
+    ("qwen3-4b", "GGUF"),
+    ("qwen3-4b", "FP8"),
+    ("qwen3-4b", "FP8_MIXED"),
+    ("qwen3-4b", "NVFP4"),
+    ("qwen3-4b", "NVFP4_MIXED"),
+}
+
+# No text-encoder (family, format) pair has direct render evidence of
+# producing wrong/broken output yet -- mirrors _RENDER_CONFIRMED_BAD's role
+# for diffusion models, empty until one actually is.
+_TE_RENDER_CONFIRMED_BAD: set[tuple[str, str]] = set()
+
+
+def text_encoder_support_level(family: str, format_key: str) -> str:
+    """Return SUPPORT_VERIFIED / SUPPORT_CAUTION / SUPPORT_BAD for one
+    (vendored text-encoder family, format) pair. Same three-state evidence
+    bar as support_level() above: VERIFIED means actually converted, loaded,
+    and rendered correctly in ComfyUI with this tool's own output; BAD means
+    actually render-tested and confirmed to produce broken/garbage output
+    (not just "differs from the unquantized baseline" -- prompt-adherence
+    variance that also occurs on F16 doesn't count, see
+    _TE_RENDER_VERIFIED's docstring); CAUTION means neither -- untested.
+    """
+    if (family, format_key) in _TE_RENDER_CONFIRMED_BAD:
+        return SUPPORT_BAD
+    if (family, format_key) in _TE_RENDER_VERIFIED:
+        return SUPPORT_VERIFIED
+    return SUPPORT_CAUTION
+
+
+def build_text_encoder_support_table() -> list[dict]:
+    """Return one row per TEXT_ENCODER_FAMILY_DISPLAY_NAMES entry: display
+    name plus a support level per TEXT_ENCODER_TABLE_FORMATS column --
+    mirrors build_support_table() below for the diffusion-model table."""
+    rows = []
+    for family, display_name in TEXT_ENCODER_FAMILY_DISPLAY_NAMES.items():
+        row = {"family": family, "display_name": display_name}
+        for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
+            row[format_key] = text_encoder_support_level(family, format_key)
+        rows.append(row)
+    return rows
 
 
 def build_support_table() -> list[dict]:

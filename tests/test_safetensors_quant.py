@@ -307,6 +307,95 @@ class TestFormatRecommendation:
         _, msg = format_recommendation(ModelFlux(), "INT8_MIXED")
         assert "not yet confirmed" in msg
 
+
+class TestEstimateSafetensorsOutputSize:
+    """Cross-checks estimate_safetensors_output_size() against the REAL
+    per-tensor output of quantize_tensor_st() -- the estimator duplicates
+    quantize_tensor_st's branching logic from a header only (no tensor data),
+    so this is the "one runnable check" that catches the two implementations
+    drifting apart."""
+
+    @staticmethod
+    def _actual_bytes(state_dict: dict, model_arch, target_key: str) -> int:
+        total = 0
+        for key, data in state_dict.items():
+            for tensor in quantize_tensor_st(data, key, model_arch, target_key).values():
+                total += tensor.numel() * tensor.element_size()
+        return total
+
+    @staticmethod
+    def _build_and_estimate(tmp_path, state_dict: dict, model_arch, target_key: str) -> int:
+        from safetensors.torch import save_file
+        from safetensors_quant import estimate_safetensors_output_size
+
+        path = tmp_path / "model.safetensors"
+        save_file(state_dict, str(path))
+        return estimate_safetensors_output_size(str(path), target_key, model_arch)
+
+    def _state_dict(self):
+        torch.manual_seed(0)
+        return {
+            "bias.weight": torch.randn(64, dtype=torch.float32),               # 1D
+            "small.weight": torch.randn(8, 8, dtype=torch.float32),            # small 2D (<=1024 elems)
+            "attn.q_proj.weight": torch.randn(64, 256, dtype=torch.bfloat16),  # keys_hiprec match (ModelLumina2)
+            "large.weight": torch.randn(64, 256, dtype=torch.float32),         # large, block/group-aligned
+            "odd.weight": torch.randn(64, 130, dtype=torch.float32),           # large, NOT 16/256-aligned
+        }
+
+    def test_f16_matches_exactly(self, tmp_path):
+        sd = self._state_dict()
+        actual = self._actual_bytes(sd, ModelLumina2(), "F16")
+        estimated = self._build_and_estimate(tmp_path, sd, ModelLumina2(), "F16")
+        assert estimated == actual
+
+    def test_f16_mixed_matches_exactly(self, tmp_path):
+        sd = self._state_dict()
+        actual = self._actual_bytes(sd, ModelLumina2(), "F16_MIXED")
+        estimated = self._build_and_estimate(tmp_path, sd, ModelLumina2(), "F16_MIXED")
+        assert estimated == actual
+
+    def test_fp8_matches_exactly(self, tmp_path):
+        sd = self._state_dict()
+        actual = self._actual_bytes(sd, ModelLumina2(), "FP8")
+        estimated = self._build_and_estimate(tmp_path, sd, ModelLumina2(), "FP8")
+        assert estimated == actual
+
+    def test_fp8_mixed_matches_exactly(self, tmp_path):
+        sd = self._state_dict()
+        actual = self._actual_bytes(sd, ModelLumina2(), "FP8_MIXED")
+        estimated = self._build_and_estimate(tmp_path, sd, ModelLumina2(), "FP8_MIXED")
+        assert estimated == actual
+
+    def test_int8_matches_exactly(self, tmp_path):
+        sd = self._state_dict()
+        actual = self._actual_bytes(sd, ModelLumina2(), "INT8")
+        estimated = self._build_and_estimate(tmp_path, sd, ModelLumina2(), "INT8")
+        assert estimated == actual
+
+    def test_int8_mixed_matches_exactly(self, tmp_path):
+        sd = self._state_dict()
+        actual = self._actual_bytes(sd, ModelLumina2(), "INT8_MIXED")
+        estimated = self._build_and_estimate(tmp_path, sd, ModelLumina2(), "INT8_MIXED")
+        assert estimated == actual
+
+    def test_nvfp4_matches_exactly(self, tmp_path):
+        sd = self._state_dict()
+        actual = self._actual_bytes(sd, ModelLumina2(), "NVFP4")
+        estimated = self._build_and_estimate(tmp_path, sd, ModelLumina2(), "NVFP4")
+        assert estimated == actual
+
+    def test_nvfp4_mixed_matches_exactly(self, tmp_path):
+        sd = self._state_dict()
+        actual = self._actual_bytes(sd, ModelLumina2(), "NVFP4_MIXED")
+        estimated = self._build_and_estimate(tmp_path, sd, ModelLumina2(), "NVFP4_MIXED")
+        assert estimated == actual
+
+    def test_unreadable_file_returns_none(self, tmp_path):
+        from safetensors_quant import estimate_safetensors_output_size
+        bad = tmp_path / "not_a_safetensors_file.safetensors"
+        bad.write_bytes(b"garbage")
+        assert estimate_safetensors_output_size(str(bad), "FP8", ModelLumina2()) is None
+
     def test_plain_int8_ok_on_architecture_without_hiprec(self):
         assert ModelSDXL().keys_hiprec == []
         level, msg = format_recommendation(ModelSDXL(), "INT8")

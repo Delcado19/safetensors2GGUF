@@ -9,9 +9,11 @@ from model_support import (
     SUPPORT_UNKNOWN,
     SUPPORT_VERIFIED,
     TABLE_FORMATS,
-    TEXT_ENCODER_SUPPORT,
+    TEXT_ENCODER_FAMILY_DISPLAY_NAMES,
     TEXT_ENCODER_TABLE_FORMATS,
+    build_text_encoder_support_table,
     support_level,
+    text_encoder_support_level,
 )
 from models.architectures import arch_list
 
@@ -133,17 +135,32 @@ class TestTextEncoderSupport:
         keys = {key for _, key in TEXT_ENCODER_TABLE_FORMATS}
         assert keys == {"GGUF", "FP8", "FP8_MIXED", "NVFP4", "NVFP4_MIXED"}
 
-    def test_every_format_has_a_support_level(self):
-        for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
-            assert TEXT_ENCODER_SUPPORT[format_key] in (
-                SUPPORT_VERIFIED, SUPPORT_CAUTION, SUPPORT_BAD, SUPPORT_UNKNOWN,
-            )
+    def test_every_family_format_pair_has_a_support_level(self):
+        for family in TEXT_ENCODER_FAMILY_DISPLAY_NAMES:
+            for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
+                assert text_encoder_support_level(family, format_key) in (
+                    SUPPORT_VERIFIED, SUPPORT_CAUTION, SUPPORT_BAD, SUPPORT_UNKNOWN,
+                )
 
-    def test_no_format_claims_unverified_render_confirmation(self):
-        # No format here has a documented ComfyUI load+render confirmation
-        # by this project -- none should claim SUPPORT_VERIFIED.
+    def test_untested_family_stays_caution_on_every_format(self):
+        # clip-l has no render-test evidence at all -- every cell CAUTION.
         for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
-            assert TEXT_ENCODER_SUPPORT[format_key] == SUPPORT_CAUTION
+            assert text_encoder_support_level("clip-l", format_key) == SUPPORT_CAUTION
+
+    def test_qwen3_4b_verified_on_every_format(self):
+        # 2026-08-12: convert+load+render-tested in ComfyUI across GGUF
+        # (F16/Q8_0/Q6_K) and all 4 safetensors formats, no format-specific
+        # defect found (see model_support.py's _TE_RENDER_VERIFIED comment).
+        for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
+            assert text_encoder_support_level("qwen3-4b", format_key) == SUPPORT_VERIFIED
+
+    def test_build_text_encoder_support_table_covers_every_family(self):
+        rows = build_text_encoder_support_table()
+        assert {r["family"] for r in rows} == set(TEXT_ENCODER_FAMILY_DISPLAY_NAMES)
+
+    def test_family_display_names_cite_the_internal_family_key(self):
+        for family, name in TEXT_ENCODER_FAMILY_DISPLAY_NAMES.items():
+            assert f"({family})" in name
 
 
 class TestSupportLevelLumina2Table:
