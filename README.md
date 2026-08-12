@@ -465,26 +465,6 @@ key mapping.
 Override the clone location with the `S2G_LLAMA_CPP_HOME` environment variable
 if you already have a llama.cpp checkout elsewhere and want to reuse it.
 
-### Text-encoder quantization can shift fine prompt details, not just visual detail
-
-Empirically observed (2026-08-12, Z-Image/Qwen3-4B, same seed/prompt/params,
-batch of 2): output from **F16 (unquantized)** and **Q8_0 GGUF** text encoders
-consistently matched the prompt's specified subjects, while **FP8, FP8_MIXED,
-NVFP4, NVFP4_MIXED, and Q6_K** all produced an unintended extra/misgendered
-figure on the same seed. `FP8` vs. `FP8_MIXED` (and `NVFP4` vs. `NVFP4_MIXED`)
-produced pixel-identical output on that seed — `_MIXED` only protects small/1D
-tensors, not the large tensors apparently responsible here, so it didn't help.
-
-Takeaway: aggressive text-encoder quantization (FP8, NVFP4, K-quants below Q8)
-can measurably drift the *semantic* content of the conditioning, not just
-compression artifacts — a small numerical error in a large embedding/attention
-tensor can flip an ambiguous prompt detail (e.g. an implied gender) even though
-the overall composition still looks plausible. This is a real accuracy/size
-tradeoff inherent to lossy quantization, not a bug in this tool's quantizers.
-If exact prompt fidelity for such fine details matters more than file size,
-prefer `Q8_0` GGUF or an unquantized F16 text encoder over `FP8`/`NVFP4`/K-quants
-below Q8.
-
 ### Reference: Encoder Family per Model Family
 
 Candidate models for text-encoder GGUF conversion:
