@@ -366,11 +366,18 @@ ensure_llama_cpp() / find_convert_script()
     │      regular pyproject.toml dependencies, not a separate environment
     │
     ▼
+If base_repo_id is blank, detect_text_encoder_family(state_dict) fingerprints
+the weights first (see "Vendored Text-Encoder Configs" below) and resolves
+straight to a vendored family — fetch_base_config_files() below is only
+reached when base_repo_id was given explicitly.
+
 fetch_base_config_files(repo_id, dest_dir)
-    │  - Downloads config.json (mandatory, RuntimeError if missing) and
-    │      best-effort tokenizer files (tokenizer.json, tokenizer_config.json,
-    │      tokenizer.model, special_tokens_map.json) from HuggingFace Hub
-    │      via huggingface_hub.hf_hub_download
+    │  - If repo_id is one of _VENDORED_REPOS, copies config.json + tokenizer
+    │      files from text_encoder_configs/<name>/ instead — no network call
+    │  - Otherwise downloads config.json (mandatory, RuntimeError if missing)
+    │      and best-effort tokenizer files (tokenizer.json, tokenizer_config.json,
+    │      tokenizer.model, special_tokens_map.json, tekken.json, spiece.model)
+    │      from HuggingFace Hub via huggingface_hub.hf_hub_download
     │
     ▼
 convert_text_encoder() assembles a temp directory
@@ -461,6 +468,67 @@ Compatibility rules that the implementation should enforce:
 - CLIP-L / CLIP-G should remain separate from Qwen/T5/Mistral handling because
   SDXL checkpoints may embed modified CLIP weights that need extraction,
   comparison, and key remapping before conversion.
+
+### Vendored Text-Encoder Configs
+
+`text_encoder_configs/<name>/` vendors `config.json` + tokenizer files for the
+base repos above, so `fetch_base_config_files()` can skip HuggingFace Hub
+entirely for known repo IDs (see `_VENDORED_REPOS` in `text_encoder_convert.py`).
+Vendored so far: `clip-l` (`openai/clip-vit-large-patch14`), `clip-bigg`
+(`laion/CLIP-ViT-bigG-14-laion2B-39B-b160k`), `t5-xxl` (`google/t5-v1_1-xxl`),
+`qwen3-4b` (`Qwen/Qwen3-4B`), `qwen3-8b` (`Qwen/Qwen3-8B`), `qwen2.5-vl-7b`
+(`Qwen/Qwen2.5-VL-7B-Instruct`), `mistral-small-3.2-24b`
+(`mistralai/Mistral-Small-3.2-24B-Instruct-2506`), and `ernie-image-pe` — the
+`Ministral3ForCausalLM` prompt-enhancer, pulled from the `pe/` subfolder of
+`baidu/ERNIE-Image` (not from `_VENDORED_REPOS`/auto-selected yet, since that
+repo ID is ambiguous between its `pe/` and `text_encoder/` subfolders).
+
+Any repo ID not in `_VENDORED_REPOS` still falls through to the live
+HuggingFace download — vendoring is an optimization/availability hedge, not a
+replacement for the download path.
+
+### Base-Model Family Auto-Detection
+
+`detect_text_encoder_family(state_dict)` in `text_encoder_convert.py` lets
+`convert_text_encoder()` skip the manual "Base model HF repo ID" field
+entirely for the 8 vendored families, the same way diffusion-model conversion
+identifies its architecture from the source file alone (`detect_arch()` in
+`models/architectures.py`) rather than asking the user.
+
+Key-name matching (`detect_arch()`'s approach) doesn't work here: Qwen3,
+Mistral, and Ministral3 are all Llama-style decoders with near-identical key
+names (`model.layers.N.self_attn.q_proj.weight`, …) regardless of model size.
+Instead, `detect_text_encoder_family()` reads `(hidden_size, num_hidden_layers,
+vocab_size)` straight off the checkpoint's own embedding tensor shape (`*embed_tokens.weight`,
+`*token_embedding.weight`, or `shared.weight`, matched by suffix to cover
+Llama-style/CLIP/T5 naming) and layer count (highest `layers.N.`/`block.N.`
+index + 1), then looks that triple up in `_FAMILY_SIGNATURES`:
+
+| Signature (hidden, layers, vocab) | Family |
+|---|---|
+| (768, 12, 49408) | clip-l |
+| (1280, 32, 49408) | clip-bigg |
+| (4096, 24, 32128) | t5-xxl |
+| (2560, 36, 151936) | qwen3-4b |
+| (4096, 36, 151936) | qwen3-8b |
+| (3584, 28, 152064) | qwen2.5-vl-7b |
+| (5120, 40, 131072) | mistral-small-3.2-24b |
+| (3072, 26, 131072) | ernie-image-pe |
+
+These triples were verified unique against each family's real `config.json`
+(source of the numbers above), and in particular resolve the Ministral3
+(ERNIE-Image prompt-enhancer) vs. Mistral-Small-3.2-24B ambiguity that made
+`baidu/ERNIE-Image` unsuitable as a `_VENDORED_REPOS` key — the two are
+distinguishable by shape even though their key names alone are not.
+
+For a `_LazyStateDict` (the safetensors loading path), shape is read via its
+`shape_of()` accessor straight from the safetensors header — no tensor data
+is materialized just to detect the family, consistent with the streaming
+design documented for `_LazyStateDict` elsewhere in this file.
+
+If no signature matches, `convert_text_encoder()` raises `RuntimeError`
+telling the user to supply the base repo ID manually — auto-detection only
+covers this tool's documented candidate families, not arbitrary base models.
 
 Primary model references:
 

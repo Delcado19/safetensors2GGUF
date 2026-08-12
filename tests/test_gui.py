@@ -208,7 +208,7 @@ def test_text_encoder_tab_present():
     from gui import build_app
     app = build_app()
     label_texts = [getattr(b, "label", None) for b in app.blocks.values()]
-    assert any("Base model HF repo ID" == t for t in label_texts)
+    assert any(t and t.startswith("Base model HF repo ID") for t in label_texts)
 
 
 def test_model_support_tab_present():

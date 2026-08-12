@@ -410,15 +410,22 @@ For **GGUF formats** (direct outtypes and K-quants), text-encoder conversion req
    a directory). Since standalone text-encoder `.safetensors` files lack `config.json`
    and tokenizer files, you must also provide:
 
-2. **Base model HF repo ID**: The base model's Hugging Face repository (not a
-   fine-tune's repo). For example:
+2. **Base model HF repo ID** (optional): The base model's Hugging Face repository
+   (not a fine-tune's repo). Leave this blank and the tool fingerprints your
+   weights' own tensor shapes (`detect_text_encoder_family()`) against its
+   vendored candidate families — Qwen3-4B/8B, Mistral-Small-3.2-24B, CLIP-L/bigG,
+   T5-XXL, Qwen2.5-VL-7B, ERNIE-Image PE — and uses the matching one automatically,
+   no download needed. Only set this manually for base models outside that list,
+   e.g.:
    - For a Qwen-Image text encoder: `Qwen/Qwen2.5-VL-7B-Instruct`
    - For a Z-Image text encoder: A Qwen3 4B base model
    - For FLUX.2 klein: A Qwen3 4B or 8B base model
 
    The repo ID must have `config.json` (mandatory) and tokenizer files
-   (`tokenizer.json`, `tokenizer.model`, etc.) — these are fetched from HuggingFace
-   and assembled with your weights into a temporary HF-style directory.
+   (`tokenizer.json`, `tokenizer.model`, etc.). For the vendored families these
+   are copied from `text_encoder_configs/` in this repo; for anything else
+   they're fetched from HuggingFace and assembled with your weights into a
+   temporary HF-style directory.
 
 3. **Output path and format**: Choose an output filename and one of the formats above.
 
@@ -457,6 +464,26 @@ key mapping.
 
 Override the clone location with the `S2G_LLAMA_CPP_HOME` environment variable
 if you already have a llama.cpp checkout elsewhere and want to reuse it.
+
+### Text-encoder quantization can shift fine prompt details, not just visual detail
+
+Empirically observed (2026-08-12, Z-Image/Qwen3-4B, same seed/prompt/params,
+batch of 2): output from **F16 (unquantized)** and **Q8_0 GGUF** text encoders
+consistently matched the prompt's specified subjects, while **FP8, FP8_MIXED,
+NVFP4, NVFP4_MIXED, and Q6_K** all produced an unintended extra/misgendered
+figure on the same seed. `FP8` vs. `FP8_MIXED` (and `NVFP4` vs. `NVFP4_MIXED`)
+produced pixel-identical output on that seed — `_MIXED` only protects small/1D
+tensors, not the large tensors apparently responsible here, so it didn't help.
+
+Takeaway: aggressive text-encoder quantization (FP8, NVFP4, K-quants below Q8)
+can measurably drift the *semantic* content of the conditioning, not just
+compression artifacts — a small numerical error in a large embedding/attention
+tensor can flip an ambiguous prompt detail (e.g. an implied gender) even though
+the overall composition still looks plausible. This is a real accuracy/size
+tradeoff inherent to lossy quantization, not a bug in this tool's quantizers.
+If exact prompt fidelity for such fine details matters more than file size,
+prefer `Q8_0` GGUF or an unquantized F16 text encoder over `FP8`/`NVFP4`/K-quants
+below Q8.
 
 ### Reference: Encoder Family per Model Family
 

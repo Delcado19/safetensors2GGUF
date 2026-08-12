@@ -28,6 +28,7 @@ Workflow implemented here:
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -36,6 +37,7 @@ from pathlib import Path
 
 from huggingface_hub import hf_hub_download
 
+from convert import load_state_dict
 from convert_safetensors import convert_to_safetensors
 from models.architectures import ModelTemplate
 from quantize import LLAMA_QUANT_KEYS, run_quantize
@@ -281,18 +283,99 @@ def ensure_plain_llama_quantize(on_log=None) -> Path:
 _MANDATORY_FILES = ("config.json",)
 _OPTIONAL_TOKENIZER_FILES = (
     "tokenizer.json", "tokenizer_config.json", "tokenizer.model", "special_tokens_map.json",
+    "tekken.json",  # Mistral/Ministral repos ship this instead of tokenizer.json
+    "spiece.model",  # T5/UMT5 repos ship this SentencePiece file instead of tokenizer.model
 )
+
+# Config/tokenizer files vendored under text_encoder_configs/ (see docs/architecture.md
+# "Vendored Text-Encoder Configs") for the base repos this tool's documented candidate
+# families use. Avoids a HuggingFace round-trip on every conversion and keeps the tool
+# working if a repo is later gated/pulled. Keyed by exact repo_id as typed into the GUI's
+# base-repo field.
+_VENDORED_CONFIGS_DIR = Path(__file__).parent / "text_encoder_configs"
+_VENDORED_REPOS = {
+    "openai/clip-vit-large-patch14": "clip-l",
+    "laion/CLIP-ViT-bigG-14-laion2B-39B-b160k": "clip-bigg",
+    "google/t5-v1_1-xxl": "t5-xxl",
+    "Qwen/Qwen3-4B": "qwen3-4b",
+    "Qwen/Qwen3-8B": "qwen3-8b",
+    "Qwen/Qwen2.5-VL-7B-Instruct": "qwen2.5-vl-7b",
+    "mistralai/Mistral-Small-3.2-24B-Instruct-2506": "mistral-small-3.2-24b",
+}
+
+# (hidden_size, num_hidden_layers, vocab_size) read straight off a checkpoint's own
+# embedding tensor + layer count -> vendored family short name (text_encoder_configs/<name>/).
+# Unlike models/architectures.py's detect_arch() (exact key-list matching), key NAMES alone
+# can't disambiguate here: Qwen3/Mistral/Ministral3 are all Llama-style decoders with nearly
+# identical key names regardless of size. The shape triple is unique across every vendored
+# family though (verified against each family's real config.json), so it doubles as an
+# architecture+size fingerprint. See docs/architecture.md "Vendored Text-Encoder Configs".
+_FAMILY_SIGNATURES = {
+    (768, 12, 49408): "clip-l",
+    (1280, 32, 49408): "clip-bigg",
+    (4096, 24, 32128): "t5-xxl",
+    (2560, 36, 151936): "qwen3-4b",
+    (4096, 36, 151936): "qwen3-8b",
+    (3584, 28, 152064): "qwen2.5-vl-7b",
+    (5120, 40, 131072): "mistral-small-3.2-24b",
+    (3072, 26, 131072): "ernie-image-pe",  # Ministral3 prompt-enhancer, baidu/ERNIE-Image's pe/ subfolder
+}
+
+_LAYER_IDX_RE = re.compile(r"\.(?:layers|block)\.(\d+)\.")
+_EMBED_KEY_SUFFIXES = ("embed_tokens.weight", "token_embedding.weight", "shared.weight")
+
+
+def detect_text_encoder_family(state_dict) -> str | None:
+    """Identify which vendored family a bare text-encoder checkpoint's weights match.
+
+    Reads (hidden_size, num_hidden_layers, vocab_size) off the checkpoint itself
+    (no config.json needed) and looks it up in _FAMILY_SIGNATURES. Returns the
+    vendored family short name, or None if nothing matches (unknown/uncommon base
+    model — caller falls back to requiring a manual repo ID).
+    """
+    keys = list(state_dict.keys())
+    embed_key = next((k for k in keys if k.endswith(_EMBED_KEY_SUFFIXES)), None)
+    if embed_key is None:
+        return None
+
+    shape_of = getattr(state_dict, "shape_of", None)
+    vocab_size, hidden_size = shape_of(embed_key) if shape_of else tuple(state_dict[embed_key].shape)
+    num_layers = len({int(m.group(1)) for k in keys if (m := _LAYER_IDX_RE.search(k))})
+    return _FAMILY_SIGNATURES.get((hidden_size, num_layers, vocab_size))
+
+
+def _copy_vendored_family(short_name: str, dest_dir: Path, on_log=None) -> list[str]:
+    """Copy a vendored family's config/tokenizer files into dest_dir. RuntimeError if missing."""
+    def _log(msg):
+        if on_log:
+            on_log(msg)
+
+    vendored_dir = _VENDORED_CONFIGS_DIR / short_name
+    if not vendored_dir.is_dir():
+        raise RuntimeError(f"No vendored config directory for {short_name!r} ({vendored_dir})")
+    _log(f"INFO:  Using vendored config for {short_name} ({vendored_dir})")
+    copied = [src.name for src in vendored_dir.iterdir() if src.is_file()]
+    for name in copied:
+        shutil.copy2(vendored_dir / name, dest_dir / name)
+    if "config.json" not in copied:
+        raise RuntimeError(f"Vendored config for {short_name!r} is missing config.json ({vendored_dir})")
+    return copied
 
 
 def fetch_base_config_files(repo_id: str, dest_dir: Path, on_log=None) -> list[str]:
-    """Download config.json + whichever tokenizer files exist for repo_id into dest_dir.
+    """Copy vendored (or download) config.json + tokenizer files for repo_id into dest_dir.
 
+    Checks _VENDORED_REPOS first so common base repos need no network access;
+    falls back to a live HuggingFace download for anything not vendored.
     config.json is mandatory (RuntimeError if missing); tokenizer files are
     best-effort since repos vary in which ones they ship.
     """
     def _log(msg):
         if on_log:
             on_log(msg)
+
+    if repo_id in _VENDORED_REPOS:
+        return _copy_vendored_family(_VENDORED_REPOS[repo_id], dest_dir, on_log=on_log)
 
     downloaded: list[str] = []
     for filename in _MANDATORY_FILES:
@@ -315,7 +398,7 @@ def fetch_base_config_files(repo_id: str, dest_dir: Path, on_log=None) -> list[s
 
 def convert_text_encoder(
     weights_path: str,
-    base_repo_id: str,
+    base_repo_id: str | None = None,
     dst_path: str | None = None,
     outtype: str = "f16",
     on_log=None,
@@ -323,10 +406,17 @@ def convert_text_encoder(
 ) -> str:
     """Convert a bare single-file text-encoder checkpoint to GGUF.
 
-    Downloads config.json/tokenizer files for base_repo_id, assembles a temp
+    Fetches config.json/tokenizer files for the base model, assembles a temp
     HF-style model directory with the local weights, then runs
     convert_hf_to_gguf.py (auto-cloned from llama.cpp) with this tool's own
     Python interpreter.
+
+    ``base_repo_id`` is optional: if omitted (or blank), the checkpoint's own
+    weights are fingerprinted via detect_text_encoder_family() and matched
+    against a vendored family (see docs/architecture.md "Vendored Text-Encoder
+    Configs"). Raises RuntimeError if that fails to match and no base_repo_id
+    was given — auto-detection only covers this tool's documented candidate
+    families, not arbitrary base models.
     """
     def _log(msg):
         if on_log:
@@ -341,8 +431,19 @@ def convert_text_encoder(
 
     with tempfile.TemporaryDirectory(prefix="s2g_text_encoder_") as tmpdir:
         tmp_path = Path(tmpdir)
-        _log(f"INFO:  Fetching config/tokenizer for {base_repo_id}…")
-        fetch_base_config_files(base_repo_id, tmp_path, on_log=_log)
+        if base_repo_id and base_repo_id.strip():
+            _log(f"INFO:  Fetching config/tokenizer for {base_repo_id}…")
+            fetch_base_config_files(base_repo_id.strip(), tmp_path, on_log=_log)
+        else:
+            state_dict = load_state_dict(weights_path, strip_prefixes=False)
+            family = detect_text_encoder_family(state_dict)
+            if family is None:
+                raise RuntimeError(
+                    "Could not auto-detect the base model family from these weights, and no "
+                    "base repo ID was given. Enter the base model's HF repo ID manually."
+                )
+            _log(f"INFO:  Auto-detected base model family: {family}")
+            _copy_vendored_family(family, tmp_path, on_log=_log)
 
         weights_dst = tmp_path / "model.safetensors"
         shutil.copy2(weights_path, weights_dst)

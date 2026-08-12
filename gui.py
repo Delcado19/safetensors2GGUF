@@ -1207,19 +1207,20 @@ def run_te_convert(
     like every other conversion tab in this file. Uses a dedicated
     _active_cancel_te slot, separate from _active_cancel and _active_cancel_st,
     so this tab's Cancel button never interferes with a concurrent GGUF or
-    safetensors conversion. The base repo ID is only required for GGUF
-    formats (direct outtypes and K-quants both need convert_hf_to_gguf.py's
-    config/tokenizer download); FP8/NVFP4 safetensors formats need no
-    HuggingFace download at all, so an empty repo ID is fine for those.
+    safetensors conversion. The base repo ID is optional for GGUF formats:
+    convert_text_encoder()/convert_text_encoder_kquant() auto-detect the base
+    model family from the weights' own tensor shapes (detect_text_encoder_family)
+    when it's left blank, falling back to a manual repo ID only for base models
+    outside this tool's vendored candidate families. FP8/NVFP4 safetensors
+    formats need no HuggingFace download at all, so an empty repo ID is
+    always fine for those. A RuntimeError from the worker (auto-detection
+    failed AND no repo ID given) surfaces through the normal error handler
+    below rather than a separate pre-flight check.
     """
     global _active_cancel_te
 
     if not src or not src.strip():
         yield "❌  No source file selected.", "Error — no input"
-        return
-    needs_repo_id = format_key not in TEXT_ENCODER_SAFETENSORS_FORMATS
-    if needs_repo_id and (not repo_id or not repo_id.strip()):
-        yield "❌  Base model HF repo ID is required for GGUF output.", "Error — no repo ID"
         return
 
     cancel_event = threading.Event()
@@ -1576,10 +1577,10 @@ def build_app() -> gr.Blocks:
                         with gr.Column(scale=0, min_width=124, elem_classes=["browse-col"]):
                             browse_te_src_btn = gr.Button("Browse", size="sm")
                     te_base_repo = gr.Textbox(
-                        label="Base model HF repo ID",
-                        placeholder="e.g. Qwen/Qwen3-8B  (ignored for FP8/NVFP4 formats)",
+                        label="Base model HF repo ID (optional — auto-detected if blank)",
+                        placeholder="Auto-detected from the weights; override e.g. Qwen/Qwen3-8B",
                         lines=1, max_lines=1,
-                        info="The ORIGINAL base model's repo (config.json/tokenizer source), not the fine-tune's. Only needed for GGUF output.",
+                        info="The ORIGINAL base model's repo (config.json/tokenizer source), not the fine-tune's. Left blank, the tool fingerprints the weights' own tensor shapes against its vendored candidate families (Qwen3-4B/8B, Mistral-Small-3.2-24B, CLIP-L/bigG, T5-XXL, Qwen2.5-VL-7B, ERNIE-Image PE) — only needed manually for other base models. Ignored for FP8/NVFP4 formats.",
                     )
                     te_dst_path = gr.Textbox(
                         label="Output path",

@@ -16,6 +16,13 @@ from text_encoder_convert import (
 )
 
 
+class _FakeTensor:
+    """Shape-only stand-in for a torch tensor -- avoids allocating real GB-scale
+    tensors just to test shape-signature detection."""
+    def __init__(self, shape):
+        self.shape = shape
+
+
 class TestOuttypes:
     def test_is_list_of_tuples(self):
         assert isinstance(TEXT_ENCODER_OUTTYPES, list)
@@ -167,6 +174,97 @@ class TestConvertTextEncoder:
         assert str(script) == called_cmd[1]
         assert "--outtype" in called_cmd
         assert "f16" in called_cmd
+
+    def test_auto_detects_family_and_skips_repo_id_when_blank(self, tmp_path):
+        # base_repo_id omitted entirely -- must fingerprint the weights and use the
+        # matching vendored family instead of requiring a manual HF repo ID.
+        from text_encoder_convert import convert_text_encoder
+
+        weights = tmp_path / "model.safetensors"
+        weights.write_bytes(b"stub")
+        script = tmp_path / "convert_hf_to_gguf.py"
+        script.write_text("# stub")
+
+        qwen3_4b_shapes = {"model.embed_tokens.weight": _FakeTensor((151936, 2560))}
+        qwen3_4b_shapes.update({
+            f"model.layers.{i}.self_attn.q_proj.weight": _FakeTensor((2560, 2560))
+            for i in range(36)
+        })
+
+        with patch("text_encoder_convert.find_convert_script", return_value=script), \
+             patch("text_encoder_convert.load_state_dict", return_value=qwen3_4b_shapes), \
+             patch("text_encoder_convert._copy_vendored_family") as mock_copy, \
+             patch("text_encoder_convert.fetch_base_config_files") as mock_fetch, \
+             patch("text_encoder_convert.subprocess.Popen") as mock_popen:
+            mock_proc = mock_popen.return_value
+            mock_proc.stdout = iter(["INFO: done\n"])
+            mock_proc.wait.return_value = 0
+            mock_proc.returncode = 0
+
+            convert_text_encoder(str(weights), dst_path=str(tmp_path / "out.gguf"))
+
+        mock_copy.assert_called_once()
+        assert mock_copy.call_args[0][0] == "qwen3-4b"
+        mock_fetch.assert_not_called()
+
+    def test_raises_when_family_undetectable_and_no_repo_id_given(self, tmp_path):
+        from text_encoder_convert import convert_text_encoder
+
+        weights = tmp_path / "model.safetensors"
+        weights.write_bytes(b"stub")
+        script = tmp_path / "convert_hf_to_gguf.py"
+        script.write_text("# stub")
+
+        with patch("text_encoder_convert.find_convert_script", return_value=script), \
+             patch("text_encoder_convert.load_state_dict", return_value={"some.unrelated.key": _FakeTensor((1, 1))}):
+            try:
+                convert_text_encoder(str(weights))
+                assert False, "expected RuntimeError"
+            except RuntimeError as exc:
+                assert "auto-detect" in str(exc)
+
+
+class TestDetectTextEncoderFamily:
+    def test_detects_qwen3_4b_from_shape_signature(self):
+        from text_encoder_convert import detect_text_encoder_family
+
+        state_dict = {"model.embed_tokens.weight": _FakeTensor((151936, 2560))}
+        state_dict.update({
+            f"model.layers.{i}.self_attn.q_proj.weight": _FakeTensor((2560, 2560))
+            for i in range(36)
+        })
+        assert detect_text_encoder_family(state_dict) == "qwen3-4b"
+
+    def test_distinguishes_ministral3_pe_from_mistral_small_24b(self):
+        # These were the two families whose base repo ID ambiguity (both live
+        # under different subfolders of baidu/ERNIE-Image / share Llama-style
+        # key names) motivated shape-signature detection over key-name matching.
+        from text_encoder_convert import detect_text_encoder_family
+
+        ministral3_pe = {"model.embed_tokens.weight": _FakeTensor((131072, 3072))}
+        ministral3_pe.update({
+            f"model.layers.{i}.self_attn.q_proj.weight": _FakeTensor((3072, 3072))
+            for i in range(26)
+        })
+        assert detect_text_encoder_family(ministral3_pe) == "ernie-image-pe"
+
+        mistral_small = {"model.embed_tokens.weight": _FakeTensor((131072, 5120))}
+        mistral_small.update({
+            f"model.layers.{i}.self_attn.q_proj.weight": _FakeTensor((5120, 5120))
+            for i in range(40)
+        })
+        assert detect_text_encoder_family(mistral_small) == "mistral-small-3.2-24b"
+
+    def test_returns_none_for_unknown_shape(self):
+        from text_encoder_convert import detect_text_encoder_family
+
+        state_dict = {"model.embed_tokens.weight": _FakeTensor((999, 999))}
+        assert detect_text_encoder_family(state_dict) is None
+
+    def test_returns_none_without_embedding_key(self):
+        from text_encoder_convert import detect_text_encoder_family
+
+        assert detect_text_encoder_family({"some.other.weight": _FakeTensor((1, 1))}) is None
 
 
 class TestLocateMsvcBuildEnv:

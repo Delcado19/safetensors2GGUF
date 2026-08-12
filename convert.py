@@ -164,6 +164,10 @@ class _LazyStateDict:
         st_dtype = self._header[self._key_map[key]]["dtype"]
         return _ST_DTYPE_MAP.get(st_dtype)
 
+    def shape_of(self, key):
+        """Return the tensor shape for ``key`` from the header — no tensor load."""
+        return tuple(self._header[self._key_map[key]]["shape"])
+
     def file_metadata(self) -> dict:
         """Return the safetensors file-level ``__metadata__`` dict (e.g. this
         tool's own ``_quantization_metadata``), or {} if none was written."""
