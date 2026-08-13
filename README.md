@@ -386,15 +386,18 @@ defect found); its INT8/INT8_MIXED columns stay **⚠ Caution** — those two
 formats were only added to the dropdown 2026-08-13 (the underlying quantizer
 already supported them, the option just wasn't offered) and aren't
 render-tested for Qwen3-4B yet. **Qwen3-8B** (FLUX.2 Klein 9B's own text
-encoder) shows **✓ Verified** for all six safetensors formats — FP8,
-FP8_MIXED, INT8, INT8_MIXED, NVFP4, *and* NVFP4_MIXED — 3 same-seed
-comparisons for the first four, 2 for INT8/INT8_MIXED, zero visible
-deviation on every seed for every format; its GGUF column stays Caution
-(not render-tested that way yet). Notably NVFP4/NVFP4_MIXED stayed clean
-here even though quantizing the FLUX.2 Klein DiT itself with those same
-formats *did* show visible composition drift in the same testing session —
-text-encoder quantization only perturbs the conditioning vector fed to an
-otherwise full-precision DiT, not the sampling trajectory's own numerics.
+encoder) shows **✓ Verified** across every column — GGUF plus all six
+safetensors formats. FP8/FP8_MIXED/NVFP4/NVFP4_MIXED got 3 same-seed
+comparisons, INT8/INT8_MIXED got 2, GGUF (Q5_K_M) got 2: zero visible
+deviation for the safetensors formats, minor conditioning drift (a
+face-tattoo detail, a small ornament gap) but identical subject and
+composition for GGUF — comparable to the conditioning noise Qwen3-4B's own
+GGUF K-quants already showed, not a format-specific defect. Notably
+NVFP4/NVFP4_MIXED stayed clean here even though quantizing the FLUX.2 Klein
+DiT itself with those same formats *did* show visible composition drift in
+the same testing session — text-encoder quantization only perturbs the
+conditioning vector fed to an otherwise full-precision DiT, not the
+sampling trajectory's own numerics.
 Every other family still shows **⚠ Caution** across every column
 (untested). Both this table and the main one share one
 color legend — literal red/yellow/green, not reused from the app's teal

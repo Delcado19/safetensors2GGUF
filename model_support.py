@@ -246,8 +246,12 @@ _TE_RENDER_VERIFIED: set[tuple[str, str]] = {
     # encoder quantization only perturbs the conditioning vector fed into an
     # otherwise full-precision DiT, not the sampling trajectory's own
     # numerics -- evidently a lot more forgiving here than quantizing DiT
-    # weights directly. GGUF not tested this round, stays CAUTION for
-    # qwen3-8b until it is.
+    # weights directly. GGUF (Q5_K_M) added 2026-08-13, 2 same-seed/prompt
+    # comparisons: minor conditioning drift (a face-tattoo detail, a small
+    # ornament gap) but same subject/composition on both seeds -- comparable
+    # to the conditioning noise qwen3-4b's GGUF K-quants already showed, not
+    # a format-specific defect.
+    ("qwen3-8b", "GGUF"),
     ("qwen3-8b", "FP8"),
     ("qwen3-8b", "FP8_MIXED"),
     ("qwen3-8b", "INT8"),

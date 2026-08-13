@@ -193,20 +193,18 @@ class TestTextEncoderSupport:
             else:
                 assert text_encoder_support_level("qwen3-4b", format_key) == SUPPORT_VERIFIED
 
-    def test_qwen3_8b_verified_on_every_safetensors_format(self):
+    def test_qwen3_8b_verified_on_every_format(self):
         # 2026-08-13 (FLUX.2 Klein 9B's own text encoder): 3 same-seed/
         # prompt comparisons against the unquantized BF16 baseline for
         # FP8/FP8_MIXED/NVFP4/NVFP4_MIXED, 2 for INT8/INT8_MIXED -- zero
         # visible deviation on every seed for every format, including
         # NVFP4/NVFP4_MIXED (which DID show drift quantizing the DiT itself
         # in the same session -- text-encoder quantization only perturbs the
-        # conditioning vector, not the sampling trajectory). GGUF wasn't
-        # tested this round, stays CAUTION.
+        # conditioning vector, not the sampling trajectory). GGUF (Q5_K_M)
+        # added same day: 2 comparisons, minor conditioning drift but same
+        # subject/composition both times -- verified alongside the rest.
         for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
-            if format_key == "GGUF":
-                assert text_encoder_support_level("qwen3-8b", format_key) == SUPPORT_CAUTION
-            else:
-                assert text_encoder_support_level("qwen3-8b", format_key) == SUPPORT_VERIFIED
+            assert text_encoder_support_level("qwen3-8b", format_key) == SUPPORT_VERIFIED
 
     def test_build_text_encoder_support_table_covers_every_family(self):
         rows = build_text_encoder_support_table()
