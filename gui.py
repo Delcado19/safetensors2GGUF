@@ -26,16 +26,19 @@ from convert import ConversionCancelled, convert_file, load_state_dict
 from convert_safetensors import convert_to_safetensors
 from fix_5d_tensors import fix_5d_tensors as _fix_5d
 from fix_pad_tokens import fix_pad_tokens as _fix_pad
+from hf_download import download_repo_as_single_safetensors
 from models.architectures import detect_arch
 from model_support import (
     SUPPORT_BAD,
     SUPPORT_CAUTION,
     SUPPORT_SYMBOL,
+    SUPPORT_UNKNOWN,
     TABLE_FORMATS,
     TEXT_ENCODER_TABLE_FORMATS,
     build_support_table,
     build_text_encoder_support_table,
     support_level,
+    text_encoder_support_level,
 )
 from quantize import (
     ALL_QUANT_CHOICES,
@@ -53,7 +56,10 @@ from text_encoder_convert import (
     TEXT_ENCODER_FORMAT_CHOICES,
     TEXT_ENCODER_SAFETENSORS_FORMATS,
     _TEXT_ENCODER_MODEL_ARCH,
+    _TEXT_ENCODER_SAFETENSORS_TARGET_KEY,
+    _VENDORED_REPOS,
     convert_text_encoder_any,
+    detect_text_encoder_family,
 )
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -69,6 +75,9 @@ _active_cancel_st: threading.Event | None = None
 # both _active_cancel and _active_cancel_st, so all three conversion tabs can
 # run (and be cancelled) independently without stomping on each other.
 _active_cancel_te: threading.Event | None = None
+# Separate cancel slot for the Download from HuggingFace tab, same reasoning
+# as _active_cancel_st/_active_cancel_te above.
+_active_cancel_hf: threading.Event | None = None
 GUI_TENSOR_LOG_EVERY = 25
 
 
@@ -94,6 +103,14 @@ def request_cancel_te() -> str:
         _active_cancel_te.set()
         return "Cancelling…"
     return "No active conversion"
+
+
+def request_cancel_hf() -> str:
+    """Signal the active HuggingFace download to stop."""
+    if _active_cancel_hf is not None:
+        _active_cancel_hf.set()
+        return "Cancelling…"
+    return "No active download"
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -349,7 +366,8 @@ def update_text_encoder_size_estimate(src: str, format_key: str) -> str:
     if not src or not os.path.isfile(src):
         return ""
     if format_key in TEXT_ENCODER_SAFETENSORS_FORMATS:
-        return _safetensors_size_estimate_line(_TEXT_ENCODER_MODEL_ARCH, src, format_key)
+        real_target_key = _TEXT_ENCODER_SAFETENSORS_TARGET_KEY.get(format_key, format_key)
+        return _safetensors_size_estimate_line(_TEXT_ENCODER_MODEL_ARCH, src, real_target_key)
     ratio = SIZE_RATIOS.get(format_key)
     if ratio is None:
         return ""
@@ -409,8 +427,9 @@ def update_format_recommendation(src: str, target_key: str):
 
 def _annotate_choices_for_arch(model_arch, choices, column_key: str | None = None):
     """Return a gr.update(choices=...) prefixing a ⚠ (SUPPORT_CAUTION,
-    unverified) or ✗ (SUPPORT_BAD, actually confirmed wrong) to any matching
-    choice for ``model_arch`` (or unmodified choices if None).
+    render-tested with visible drift), ? (SUPPORT_UNKNOWN, never rendered),
+    or ✗ (SUPPORT_BAD, actually confirmed wrong) to any matching choice for
+    ``model_arch`` (or unmodified choices if None).
 
     ``column_key``, when given, is the fixed TABLE_FORMATS format key every
     choice maps to (the GGUF quant dropdown: every K-quant level collapses
@@ -429,6 +448,8 @@ def _annotate_choices_for_arch(model_arch, choices, column_key: str | None = Non
             label = f"✗ {label}"
         elif level == SUPPORT_CAUTION:
             label = f"⚠ {label}"
+        elif level == SUPPORT_UNKNOWN:
+            label = f"? {label}"
         out.append((label, key))
     return gr.update(choices=out)
 
@@ -448,6 +469,71 @@ def annotate_gguf_choices(src: str):
     .ckpt/.pt/.bin/.pth sources) for a result that can't change; revisit if
     support_level() ever grows an architecture-specific GGUF case."""
     return gr.update(choices=[tuple(c) for c in ALL_QUANT_CHOICES])
+
+
+# Every TEXT_ENCODER_FORMAT_CHOICES GGUF-family key (direct outtypes and
+# K-quants alike) collapses onto TEXT_ENCODER_TABLE_FORMATS' single "GGUF"
+# column -- mirrors annotate_gguf_choices' column_key parameter for the
+# diffusion-model GGUF quant dropdown. F16_ST (the safetensors F16 entry) has
+# no table column of its own (F16 is assumed-safe-by-design, same as the main
+# Safetensors tab) so it's left unannotated, same as F16 there.
+_TEXT_ENCODER_GGUF_KEYS = frozenset(
+    {"F32", "F16", "BF16", "Q8_0", "Q6_K", "Q5_K_M", "Q4_K_M", "Q4_K_S", "Q3_K_M", "Q2_K"}
+)
+
+
+def _detected_text_encoder_family(src: str, base_repo_id: str) -> str | None:
+    """Resolve the vendored family for dropdown annotation, without ever
+    raising: a manually-typed base_repo_id (if it matches a vendored repo)
+    wins over auto-detection, matching convert_text_encoder_any's own
+    priority. Returns None (no annotation) on any failure to read/detect --
+    this drives cosmetic dropdown labels, not the actual conversion, so
+    silently skipping is correct here (the real guard is
+    text_encoder_convert._reject_if_gguf_unsupported, checked at convert time
+    regardless of what this shows)."""
+    base_repo_id = (base_repo_id or "").strip()
+    if base_repo_id:
+        return _VENDORED_REPOS.get(base_repo_id)
+    src = (src or "").strip()
+    if not src or not os.path.isfile(src):
+        return None
+    try:
+        state_dict = load_state_dict(src, strip_prefixes=False)
+        return detect_text_encoder_family(state_dict)
+    except Exception:
+        return None
+
+
+def annotate_text_encoder_choices(src: str, base_repo_id: str):
+    """Dropdown-annotation for the Convert Text Encoder format dropdown,
+    mirroring _annotate_choices_for_arch for the diffusion-model tabs. Only
+    ever adds a warning prefix -- never removes/disables an option (Gradio's
+    Dropdown has no disabled-choice concept, see the CHANGELOG entry on the
+    GGUF-grouping work) -- so a structurally-impossible combination like
+    CLIP-L/bigG + GGUF still shows up, just prefixed ✗ instead of hidden."""
+    family = _detected_text_encoder_family(src, base_repo_id)
+    if family is None:
+        return gr.update(choices=[tuple(c) for c in TEXT_ENCODER_FORMAT_CHOICES])
+    out = []
+    for label, key in TEXT_ENCODER_FORMAT_CHOICES:
+        if key in _TEXT_ENCODER_GGUF_KEYS:
+            table_key = "GGUF"
+        elif key == "F16_ST":
+            table_key = "F16"
+        else:
+            table_key = key
+        if table_key not in {k for _, k in TEXT_ENCODER_TABLE_FORMATS}:
+            out.append((label, key))
+            continue
+        level = text_encoder_support_level(family, table_key)
+        if level == SUPPORT_BAD:
+            label = f"✗ {label}"
+        elif level == SUPPORT_CAUTION:
+            label = f"⚠ {label}"
+        elif level == SUPPORT_UNKNOWN:
+            label = f"? {label}"
+        out.append((label, key))
+    return gr.update(choices=out)
 
 
 def update_format_recommendation_choices_and_size(src: str, target_key: str):
@@ -526,14 +612,24 @@ def _text_encoder_support_rows_for_dataframe() -> list[list[str]]:
 def apply_text_encoder_support_table_selection(evt: gr.SelectData):
     """Handle a click on the text-encoder support table: switch to the
     Convert Text Encoder tab and pre-select that format. Unlike the main
-    Model Support table, every TEXT_ENCODER_TABLE_FORMATS key is a real
+    Model Support table, every TEXT_ENCODER_TABLE_FORMATS key maps to a real
     TEXT_ENCODER_FORMAT_CHOICES entry (NVFP4 isn't excluded here the way it
-    is for diffusion models), so no no-op guard is needed."""
+    is for diffusion models), so no no-op guard is needed -- but two columns
+    need translation, not a direct 1:1 key match: "GGUF" collapses every
+    K-quant/outtype into one cell (defaults to Q4_K_M, this tool's own
+    "recommended ★" choice), and "F16" is the *safetensors* precision-cast
+    column -- its real dropdown key is "F16_ST", not the literal "F16" (that
+    string is taken by the unrelated GGUF F16 outtype)."""
     _row, col = evt.index
     if col == 0:
         return gr.update(), gr.update()
     format_key = TEXT_ENCODER_TABLE_FORMATS[col - 1][1]
-    value = "Q4_K_M" if format_key == "GGUF" else format_key
+    if format_key == "GGUF":
+        value = "Q4_K_M"
+    elif format_key == "F16":
+        value = "F16_ST"
+    else:
+        value = format_key
     return gr.update(selected=2), gr.update(value=value)
 
 
@@ -572,11 +668,11 @@ _SUPPORT_TABLE_LEGEND_HTML = """
 <div style="font-size: var(--type-small); color: var(--s2g-muted); margin-top: 8px;">
   <strong style="color:var(--s2g-support-good);">✓ Verified</strong> — actually converted, loaded, and rendered correctly in ComfyUI with this tool's own output.
   &nbsp;·&nbsp;
-  <strong style="color:var(--s2g-support-caution);">⚠ Caution</strong> — technically supported by this tool, but not render-tested for this architecture: no evidence either way.
+  <strong style="color:var(--s2g-support-caution);">⚠ Caution</strong> — render-tested and shows some visible-but-tolerable difference from the uncompressed version (composition, identity, or fine detail may drift).
   &nbsp;·&nbsp;
   <strong style="color:var(--s2g-support-bad);">✗ Known issue</strong> — actually render-tested and confirmed to produce wrong/broken output.
   &nbsp;·&nbsp;
-  <strong style="color:var(--s2g-muted);">? Unknown</strong> — this combination has never been attempted.
+  <strong style="color:var(--s2g-muted);">? Unknown</strong> — this combination has never actually been rendered, no evidence either way.
 </div>
 """
 
@@ -1361,6 +1457,67 @@ def run_te_convert(
         _active_cancel_te = None
 
 
+def run_hf_download(
+    repo_id: str,
+    dest_dir: str,
+    subfolder: str,
+    overwrite: bool,
+) -> Generator[tuple[str, str], None, None]:
+    """Download repo_id from HuggingFace and merge it into one .safetensors file.
+
+    Mirrors run_st_convert's worker-thread + cancel_event + _stream pattern —
+    dedicated _active_cancel_hf slot so this tab's Cancel button never
+    interferes with a concurrent conversion. subfolder is required when the
+    repo ships more than one checkpoint side by side (download_repo_as_single_
+    safetensors raises RuntimeError naming the available subfolders in that
+    case) — left blank for the common single-checkpoint repo layout.
+    """
+    global _active_cancel_hf
+
+    if not repo_id or not repo_id.strip():
+        yield "❌  No repo ID given.", "Error — no input"
+        return
+    if not dest_dir or not dest_dir.strip():
+        yield "❌  No target folder selected.", "Error — no input"
+        return
+
+    cancel_event = threading.Event()
+    _active_cancel_hf = cancel_event
+
+    q: queue.Queue = queue.Queue()
+    done = threading.Event()
+    result: dict = {}
+
+    def worker() -> None:
+        try:
+            out_path = download_repo_as_single_safetensors(
+                repo_id.strip(),
+                dest_dir.strip(),
+                subfolder=(subfolder.strip() or None) if subfolder else None,
+                overwrite=overwrite,
+                on_log=lambda msg: q.put(("log", msg)),
+                on_progress=lambda idx, total, key: q.put(("progress", idx, total, key)),
+                cancel_event=cancel_event,
+            )
+            result["out"] = out_path
+        except RuntimeError as exc:
+            if str(exc) == "cancelled":
+                result["cancelled"] = True
+            else:
+                result["error"] = str(exc)
+        except Exception as exc:
+            result["error"] = str(exc)
+        finally:
+            q.put(("done",))
+            done.set()
+
+    threading.Thread(target=worker, daemon=True).start()
+    try:
+        yield from _stream(q, done, result)
+    finally:
+        _active_cancel_hf = None
+
+
 def run_fix_pad_tokens(
     src: str,
     dst: str,
@@ -1456,6 +1613,55 @@ def run_extract_components(
 
     threading.Thread(target=worker, daemon=True).start()
     yield from _stream(q, done, result)
+
+
+def _diffusion_models_dst_dir(src: str, models_root: str) -> str:
+    """Return "<models_root>/diffusion_models/" for a checkpoint source.
+
+    convert_file/convert_to_safetensors already strip a full checkpoint down
+    to just the UNet automatically (convert.py's _build_key_map keeps only
+    "model."/"model.diffusion_model."-prefixed keys) -- the only thing this
+    tab previously got wrong was the *destination folder*: left to their own
+    default, both pipelines write next to the source file, i.e. into
+    ComfyUI's checkpoints/ folder, which then needs a manual move to
+    diffusion_models/ before ComfyUI's UNETLoader will find it.
+    """
+    root = Path(models_root.strip()) if models_root and models_root.strip() else default_output_root(src)
+    return str(root / "diffusion_models") + os.sep
+
+
+def run_extract_diffusion_gguf(
+    src: str,
+    models_root: str,
+    quant_key: str,
+    overwrite: bool,
+) -> Generator[tuple[str, str], None, None]:
+    """Extract+quantize just the diffusion model (UNet) as GGUF, into diffusion_models/.
+
+    Thin wrapper around run_convert -- re-detects llama-quantize fresh (same
+    as the GGUF Convert tab's own "Detect llama-quantize" button) instead of
+    threading an exe-path field through this tab too.
+    """
+    if not src or not src.strip():
+        yield "❌  No checkpoint selected.", "Error — no input"
+        return
+    exe = str(find_exe() or "")
+    dst = _diffusion_models_dst_dir(src, models_root)
+    yield from run_convert(src, dst, quant_key, exe, 0, False, overwrite)
+
+
+def run_extract_diffusion_safetensors(
+    src: str,
+    models_root: str,
+    fmt: str,
+    overwrite: bool,
+) -> Generator[tuple[str, str], None, None]:
+    """Extract+quantize just the diffusion model (UNet) as Safetensors, into diffusion_models/."""
+    if not src or not src.strip():
+        yield "❌  No checkpoint selected.", "Error — no input"
+        return
+    dst = _diffusion_models_dst_dir(src, models_root)
+    yield from run_st_convert(src, dst, fmt, overwrite)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -1722,6 +1928,16 @@ def build_app() -> gr.Blocks:
                     inputs=[te_src_path, te_format],
                     outputs=te_size_info,
                 )
+                te_src_path.change(
+                    annotate_text_encoder_choices,
+                    inputs=[te_src_path, te_base_repo],
+                    outputs=te_format,
+                )
+                te_base_repo.change(
+                    annotate_text_encoder_choices,
+                    inputs=[te_src_path, te_base_repo],
+                    outputs=te_format,
+                )
                 te_convert_event = te_convert_btn.click(
                     fn=run_te_convert,
                     inputs=[te_src_path, te_base_repo, te_dst_path, te_format],
@@ -1858,6 +2074,106 @@ def build_app() -> gr.Blocks:
                     interactive=False, autoscroll=False, elem_id="extract-log",
                 )
 
+                gr.Markdown(
+                    "**Diffusion model (UNet)** — the components above only "
+                    "cover VAE/CLIP; the checkpoint's diffusion model itself "
+                    "is extracted here, run through the same GGUF or "
+                    "Safetensors conversion as the Convert tabs, and written "
+                    "to `diffusion_models/` (load with **UNETLoader**, not "
+                    "CheckpointLoader).",
+                    elem_classes=["intro"],
+                )
+                with gr.Column(elem_classes=["card"]):
+                    with gr.Row(equal_height=False):
+                        extract_gguf_quant = gr.Dropdown(
+                            choices=ALL_QUANT_CHOICES, value="Q4_K_M",
+                            label="GGUF quantization", scale=3,
+                        )
+                        extract_gguf_btn = gr.Button("▶  Extract as GGUF", scale=2)
+                    with gr.Row(equal_height=False):
+                        extract_st_fmt = gr.Dropdown(
+                            choices=SAFETENSORS_DTYPE_CHOICES, value="INT8_MIXED",
+                            label="Safetensors format", scale=3,
+                        )
+                        extract_st_btn = gr.Button("▶  Extract as Safetensors", scale=2)
+
+                extract_diffusion_status = gr.Textbox(
+                    value="Ready", show_label=False, interactive=False,
+                    lines=1, max_lines=1, elem_id="extract-diffusion-status",
+                )
+                extract_diffusion_log = gr.Textbox(
+                    label="Log", lines=10, max_lines=10,
+                    interactive=False, autoscroll=False, elem_id="extract-diffusion-log",
+                )
+
+            # ── Download from HuggingFace ────────────────────────────────────
+            with gr.Tab("⇩ Download from HF", id=7):
+                gr.Markdown(
+                    "Download a model repo from HuggingFace and merge it into a "
+                    "**single .safetensors file** — even if the repo ships it split "
+                    "across multiple shards (`model-00001-of-0000N.safetensors`, "
+                    "…). The shards are downloaded to a throwaway temp folder and "
+                    "deleted once merged; only the merged file is left behind, "
+                    "ready to feed into the Convert tabs above. If the repo ships "
+                    "more than one checkpoint side by side (e.g. an old and a "
+                    "\"V2\" variant, each in its own subfolder), Download will "
+                    "list the available subfolders instead of guessing — pick "
+                    "one and re-run. Cancelling or an error leaves the partial "
+                    "shards in place (same repo ID + subfolder), so clicking "
+                    "Download again resumes instead of starting over — cancel "
+                    "only takes effect between shards, not mid-transfer. If a "
+                    "downloaded text encoder renders garbled/noisy output "
+                    "despite loading without errors, the checkpoint's weights "
+                    "may just be numerically unstable in its native BF16 — "
+                    "try converting it to **F16** on the Convert Text Encoder "
+                    "tab (a precision cast, not quantization) before assuming "
+                    "the download is broken.",
+                    elem_classes=["intro"],
+                )
+                with gr.Column(elem_classes=["card"]):
+                    hf_repo_id = gr.Textbox(
+                        label="HuggingFace repo ID",
+                        placeholder="e.g. huihui-ai/Huihui-Qwen3-4B-abliterated-v2",
+                        lines=1, max_lines=1,
+                    )
+                    hf_subfolder = gr.Textbox(
+                        label="Subfolder (optional)",
+                        placeholder="Only needed if the repo has multiple checkpoints, e.g. qwen-4b-zimage-hereticV2",
+                        lines=1, max_lines=1,
+                    )
+                    with gr.Row(equal_height=False):
+                        with gr.Column(scale=5, elem_classes=["path-input"]):
+                            hf_dest_dir = gr.Textbox(
+                                label="Target folder",
+                                placeholder="Where the merged .safetensors file is written",
+                                lines=1, max_lines=1,
+                            )
+                        with gr.Column(scale=0, min_width=124, elem_classes=["browse-col"]):
+                            browse_hf_dest_btn = gr.Button("Browse", size="sm")
+                    overwrite_hf = gr.Checkbox(label="Overwrite existing output", value=False)
+
+                with gr.Row():
+                    hf_download_btn = gr.Button("▶  Download", variant="primary", scale=5, elem_id="hf-download-btn")
+                    hf_cancel_btn   = gr.Button("✕",           variant="stop",    scale=1, elem_id="hf-cancel-btn")
+
+                hf_status = gr.Textbox(
+                    value="Ready", show_label=False, interactive=False,
+                    lines=1, max_lines=1, elem_id="hf-status",
+                )
+                hf_log = gr.Textbox(
+                    label="Log", lines=10, max_lines=10,
+                    interactive=False, autoscroll=False, elem_id="hf-log",
+                )
+
+                browse_hf_dest_btn.click(browse_models_root, outputs=hf_dest_dir)
+                hf_download_event = hf_download_btn.click(
+                    fn=run_hf_download,
+                    inputs=[hf_repo_id, hf_dest_dir, hf_subfolder, overwrite_hf],
+                    outputs=[hf_log, hf_status],
+                    show_progress="hidden",
+                )
+                hf_cancel_btn.click(fn=request_cancel_hf, outputs=[hf_status], cancels=[hf_download_event])
+
             # ── Model Support ──────────────────────────────────────────────
             with gr.Tab("⊞ Model Support", id=6):
                 gr.Markdown(
@@ -1962,6 +2278,16 @@ def build_app() -> gr.Blocks:
                 overwrite_extract,
             ],
             outputs=[extract_log, extract_status],
+        )
+        extract_gguf_btn.click(
+            fn=run_extract_diffusion_gguf,
+            inputs=[extract_src, extract_root, extract_gguf_quant, overwrite_extract],
+            outputs=[extract_diffusion_log, extract_diffusion_status],
+        )
+        extract_st_btn.click(
+            fn=run_extract_diffusion_safetensors,
+            inputs=[extract_src, extract_root, extract_st_fmt, overwrite_extract],
+            outputs=[extract_diffusion_log, extract_diffusion_status],
         )
 
     return app

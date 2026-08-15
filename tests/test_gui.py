@@ -124,13 +124,17 @@ class TestRunTeConvertCancel:
 
 
 class TestDynamicDropdownAnnotation:
-    def test_annotate_safetensors_choices_marks_caution_entries(self, tmp_path):
+    def test_annotate_safetensors_choices_marks_unknown_entries(self, tmp_path):
         import torch
         from safetensors.torch import save_file
 
-        # qwen_image, not flux -- flux's plain/mixed FP8 and INT8 are now
-        # render-verified (see safetensors_quant.py's _RENDER_VERIFIED_MIXED
-        # docstring) and would no longer be marked CAUTION here.
+        # qwen_image, not flux -- flux's FP8/INT8/NVFP4 (plain and mixed) are
+        # all render-verified now (see safetensors_quant.py's
+        # _RENDER_VERIFIED_MIXED docstring) and would no longer be marked
+        # here. These formats have never actually been rendered for
+        # qwen_image -- UNKNOWN ("?"), not CAUTION ("⚠", reserved for
+        # render-tested-with-drift results -- see
+        # model_support._RENDER_TESTED_DRIFT, currently empty).
         src = tmp_path / "model.safetensors"
         save_file(
             {
@@ -142,13 +146,13 @@ class TestDynamicDropdownAnnotation:
         )
         update = gui.annotate_safetensors_choices(str(src))
         labels_by_key = {key: label for label, key in update["choices"]}
-        assert labels_by_key["INT8"].startswith("⚠")
-        assert labels_by_key["INT8_MIXED"].startswith("⚠")
-        assert not labels_by_key["F16"].startswith("⚠")
-        # FP8/FP8_MIXED are CAUTION unconditionally (never render-verified by
+        assert labels_by_key["INT8"].startswith("?")
+        assert labels_by_key["INT8_MIXED"].startswith("?")
+        assert not labels_by_key["F16"].startswith("?")
+        # FP8/FP8_MIXED are UNKNOWN unconditionally (never render-verified by
         # this tool), independent of this architecture's keys_hiprec.
-        assert labels_by_key["FP8"].startswith("⚠")
-        assert labels_by_key["FP8_MIXED"].startswith("⚠")
+        assert labels_by_key["FP8"].startswith("?")
+        assert labels_by_key["FP8_MIXED"].startswith("?")
 
     def test_annotate_safetensors_choices_marks_bad_entries_with_cross(self, tmp_path):
         import torch
@@ -186,6 +190,31 @@ class TestDynamicDropdownAnnotation:
         update = gui.annotate_gguf_choices("")
         from quantize import ALL_QUANT_CHOICES
         assert update["choices"] == [tuple(c) for c in ALL_QUANT_CHOICES]
+
+    def test_annotate_text_encoder_choices_marks_clip_gguf_bad(self):
+        # clip-bigg + GGUF is structurally impossible (no CLIPModel converter
+        # in llama.cpp), confirmed via the manually-typed base_repo_id path
+        # (_VENDORED_REPOS lookup) -- every GGUF-family entry gets ✗.
+        update = gui.annotate_text_encoder_choices("", "laion/CLIP-ViT-bigG-14-laion2B-39B-b160k")
+        labels_by_key = {key: label for label, key in update["choices"]}
+        for gguf_key in ("F32", "F16", "BF16", "Q8_0", "Q6_K", "Q4_K_M", "Q2_K"):
+            assert labels_by_key[gguf_key].startswith("✗"), gguf_key
+        # F16 safetensors has no table column (assumed safe by design) --
+        # never annotated, same as the main Safetensors tab's plain F16.
+        assert not labels_by_key["F16_ST"].startswith(("✗", "⚠", "?"))
+
+    def test_annotate_text_encoder_choices_no_family_returns_unmodified(self):
+        update = gui.annotate_text_encoder_choices("", "")
+        from text_encoder_convert import TEXT_ENCODER_FORMAT_CHOICES
+        assert update["choices"] == [tuple(c) for c in TEXT_ENCODER_FORMAT_CHOICES]
+
+    def test_annotate_text_encoder_choices_verified_family_no_gguf_warning(self):
+        # qwen3-4b's GGUF is render-verified (model_support.py's
+        # _TE_RENDER_VERIFIED) -- no ✗/⚠/? prefix on any GGUF-family entry.
+        update = gui.annotate_text_encoder_choices("", "Qwen/Qwen3-4B")
+        labels_by_key = {key: label for label, key in update["choices"]}
+        for gguf_key in ("F32", "F16", "BF16", "Q8_0", "Q6_K", "Q4_K_M", "Q2_K"):
+            assert not labels_by_key[gguf_key].startswith(("✗", "⚠", "?")), gguf_key
 
 
 def test_convert_safetensors_tab_present():

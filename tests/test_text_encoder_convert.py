@@ -134,6 +134,81 @@ class TestFetchBaseConfigFiles:
                 pass
 
 
+class TestTextEncoderShapeCriticalKeys:
+    def test_position_embedding_protected_under_every_lossy_format(self):
+        # Real bug found 2026-08-14 testing SDXL's CLIP-L/bigG text encoders:
+        # comfy/clip_model.py reads position_embedding.weight via a bare
+        # attribute access (comfy.ops.cast_to(...)), bypassing dequant
+        # entirely. NVFP4 crashed outright (halves the on-disk last dim --
+        # "size of tensor a (768) must match tensor b (384)"); FP8/INT8
+        # quantized silently and produced corrupted (black-image) output.
+        import torch
+        from safetensors_quant import quantize_tensor_st
+        from text_encoder_convert import _TEXT_ENCODER_MODEL_ARCH
+
+        data = torch.randn(77, 768, dtype=torch.float32)
+        key = "text_model.embeddings.position_embedding.weight"
+        for target_key in ("FP8", "INT8", "NVFP4"):
+            out = quantize_tensor_st(data, key, _TEXT_ENCODER_MODEL_ARCH, target_key)
+            assert set(out.keys()) == {key}, target_key
+            assert out[key].dtype == torch.float16, target_key
+            assert out[key].shape == data.shape, target_key
+
+    def test_text_projection_protected_under_every_lossy_format(self):
+        # Real bug found 2026-08-14: clip_g FP8 still rendered solid black
+        # after the position_embedding fix above. text_projection.weight is
+        # the ONLY weight feeding SDXL's global pooled "y" conditioning
+        # vector (CLIP-L contributes no projected output at all) -- a single
+        # global vector has no per-token error-averaging, so it's uniquely
+        # exposed to quantization noise skewing the whole image.
+        import torch
+        from safetensors_quant import quantize_tensor_st
+        from text_encoder_convert import _TEXT_ENCODER_MODEL_ARCH
+
+        data = torch.randn(1280, 1280, dtype=torch.float32)
+        key = "text_projection.weight"
+        for target_key in ("FP8", "INT8", "NVFP4"):
+            out = quantize_tensor_st(data, key, _TEXT_ENCODER_MODEL_ARCH, target_key)
+            assert set(out.keys()) == {key}, target_key
+            assert out[key].dtype == torch.float16, target_key
+            assert out[key].shape == data.shape, target_key
+
+
+class TestGgufUnsupportedFamilies:
+    def test_rejects_clip_family_via_base_repo_id_before_any_subprocess(self, tmp_path):
+        # llama.cpp's convert_hf_to_gguf.py has no CLIPModel converter --
+        # must fail fast, before fetch_base_config_files or Popen ever run.
+        from text_encoder_convert import convert_text_encoder
+
+        weights = tmp_path / "model.safetensors"
+        weights.write_bytes(b"stub")
+        with patch("text_encoder_convert.fetch_base_config_files") as mock_fetch, \
+             patch("text_encoder_convert.subprocess.Popen") as mock_popen:
+            try:
+                convert_text_encoder(str(weights), "openai/clip-vit-large-patch14")
+                assert False, "expected RuntimeError"
+            except RuntimeError as exc:
+                assert "clip-l" in str(exc)
+                assert "CLIPModel" in str(exc)
+        mock_fetch.assert_not_called()
+        mock_popen.assert_not_called()
+
+    def test_rejects_auto_detected_clip_family(self, tmp_path):
+        from text_encoder_convert import convert_text_encoder
+
+        weights = tmp_path / "model.safetensors"
+        weights.write_bytes(b"stub")
+        with patch("text_encoder_convert.load_state_dict", return_value={}), \
+             patch("text_encoder_convert.detect_text_encoder_family", return_value="clip-bigg") as _, \
+             patch("text_encoder_convert.subprocess.Popen") as mock_popen:
+            try:
+                convert_text_encoder(str(weights))
+                assert False, "expected RuntimeError"
+            except RuntimeError as exc:
+                assert "clip-bigg" in str(exc)
+        mock_popen.assert_not_called()
+
+
 class TestConvertTextEncoder:
     def test_propagates_error_when_llama_cpp_unavailable(self, tmp_path):
         from text_encoder_convert import convert_text_encoder
@@ -544,6 +619,22 @@ class TestConvertTextEncoderAny:
             out = convert_text_encoder_any(str(tmp_path / "m.safetensors"), "", None, "NVFP4_MIXED")
         assert out == "out.safetensors"
         mock_st.assert_called_once()
+
+    def test_f16_st_dispatches_to_safetensors_with_translated_target_key(self, tmp_path):
+        # Regression: F16 alone is a GGUF outtype (test_dispatches_direct_
+        # gguf_formats below) -- F16_ST is the distinct GUI-facing key that
+        # produces a real .safetensors file instead, added after a user
+        # selected "F16" expecting safetensors output and got a GGUF. F16_ST
+        # itself isn't a real safetensors_quant target_key (it would log
+        # "-> F16_ST" and name the file "...-F16_ST.safetensors") -- it must
+        # be translated to the real "F16" key before reaching
+        # convert_text_encoder_to_safetensors.
+        from text_encoder_convert import convert_text_encoder_any
+
+        with patch("text_encoder_convert.convert_text_encoder_to_safetensors", return_value="out.safetensors") as mock_st:
+            out = convert_text_encoder_any(str(tmp_path / "m.safetensors"), "", None, "F16_ST")
+        assert out == "out.safetensors"
+        assert mock_st.call_args.kwargs["target_key"] == "F16"
 
     def test_dispatches_kquant_formats(self, tmp_path):
         from text_encoder_convert import convert_text_encoder_any

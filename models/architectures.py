@@ -62,7 +62,22 @@ class ModelFlux(ModelTemplate):
         "double_stream_modulation_img", "double_stream_modulation_txt",
     ]
     # ComfyUI's model_detection.py infers in_channels from img_in.weight.shape[1]
-    keys_shape_critical = ["img_in.weight"]
+    # (already covered). Missing txt_in.weight/vector_in.in_layer.weight caused
+    # a live crash 2026-08-13: plain NVFP4 halves txt_in.weight's on-disk last
+    # dim (2 values/byte), model_detection.py reads that raw pre-dequant shape
+    # to set context_in_dim (and re-sets hidden_size, redundant with img_in's),
+    # so the Linear layer got built with half the correct input width --
+    # RuntimeError: mat1 and mat2 shapes cannot be multiplied (1024x12288 and
+    # 6144x4096) inside comfy_kitchen's NVFP4 dequantize-fallback path at
+    # txt_in's forward() call. vector_in.in_layer.weight feeds vec_in_dim the
+    # same way (model_detection.py line ~280) -- not yet crash-confirmed, but
+    # the identical raw-shape-read pattern, added preemptively rather than
+    # waiting for a second live crash. Both were already in keys_hiprec (so
+    # *_MIXED was never affected), just missing from this list, which is the
+    # one that also matters for plain (non-mixed) NVFP4/NVFP4_MIXED shape
+    # safety -- see quantize_tensor_st()'s NVFP4/INT8 branches in
+    # safetensors_quant.py, which check keys_shape_critical unconditionally.
+    keys_shape_critical = ["img_in.weight", "txt_in.weight", "vector_in.in_layer.weight"]
 
 
 class ModelSD3(ModelTemplate):
@@ -236,11 +251,28 @@ class ModelSDXL(ModelTemplate):
         ),
         ("label_emb.0.0.weight",),
     ]
-    # NOT AUDITED for keys_shape_critical: ComfyUI's model_detection.py infers
-    # context_dim from the first attn2.to_k.weight.shape[1] it finds by scanning
-    # block indices dynamically, rather than a single fixed tensor name — unlike
-    # the DiT architectures above, pinning the exact key requires resolving that
-    # scan for this specific block layout. See docs/issues_analysis.md #9.
+    # Audited 2026-08-13 (docs/issues_analysis.md #9): ComfyUI's
+    # model_detection.py infers context_dim from the first
+    # "input_blocks.N.1.transformer_blocks.0.attn2.to_k.weight".shape[1] it
+    # finds while scanning block indices dynamically (calculate_transformer_
+    # depth() in a live ComfyUI-Easy-Install checkout, comfy_kitchen 0.2.30) --
+    # unlike the DiT architectures above there's no single fixed key, but every
+    # attn2.to_k.weight tensor in a stock SDXL UNet shares the same context_dim
+    # (confirmed against a real checkpoint: input_blocks.4/5/7 all read
+    # shape [*, 2048]), so protecting the substring covers whichever block the
+    # scan actually reads without needing to pin the exact index.
+    #
+    # 2026-08-14: audit had missed "label_emb.0.0.weight" -- model_detection.py
+    # reads its raw .shape[1] to infer adm_in_channels (2816 for stock SDXL).
+    # NVFP4 halved that last dim on disk (2816 -> 1408), which doesn't match
+    # any supported_models entry, so model_config_from_unet_config() returned
+    # None and ComfyUI crashed on "'NoneType' object has no attribute
+    # 'quant_config'" (comfy/model_detection.py:1273) trying to load a real
+    # NVFP4/NVFP4_MIXED SDXL diffusion model in ComfyUI. Same failure mode as
+    # the flux txt_in.weight/vector_in.in_layer.weight bug above -- a
+    # shape-critical key that keys_detect already needs (line 252) but the
+    # protection list didn't cover.
+    keys_shape_critical = ["attn2.to_k.weight", "label_emb.0.0.weight"]
 
 
 class ModelSD1(ModelTemplate):
@@ -257,8 +289,9 @@ class ModelSD1(ModelTemplate):
             "output_blocks.8.2.conv.weight",
         ),
     ]
-    # NOT AUDITED for keys_shape_critical — see ModelSDXL comment above; same
-    # dynamic attn2.to_k.weight scan applies. See docs/issues_analysis.md #9.
+    # Audited 2026-08-13 -- see ModelSDXL comment above; same dynamic
+    # attn2.to_k.weight scan applies (docs/issues_analysis.md #9).
+    keys_shape_critical = ["attn2.to_k.weight"]
 
 
 class ModelLumina2(ModelTemplate):
@@ -349,5 +382,8 @@ def detect_arch(state_dict):
         if is_model_arch(arch, state_dict):
             return arch()
     raise AssertionError(
-        f"Unknown model architecture. Checked: {[a.arch for a in arch_list]}"
+        f"Unknown model architecture. Checked: {[a.arch for a in arch_list]}. "
+        "If this is a standalone text encoder (not a diffusion checkpoint), "
+        "use the 'Convert Text Encoder' tab instead -- this list only covers "
+        "diffusion-model UNet/DiT architectures."
     )

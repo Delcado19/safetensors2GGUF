@@ -267,3 +267,34 @@ class TestFp8FullPrecisionFlag:
             meta = json.loads(f.metadata()["_quantization_metadata"])
         layer_conf = next(iter(meta["layers"].values()))
         assert "full_precision_matrix_mult" not in layer_conf
+
+
+class TestNvfp4FullPrecisionFlag:
+    # comfy/ops.py's _load_quantized_module() reads "full_precision_matrix_mult"
+    # from .comfy_quant generically (not FP8-specific) -- MixedPrecisionOps.
+    # Linear.forward()'s `not self._full_precision_mm` gate applies to every
+    # quant_format identically. Mirrors TestFp8FullPrecisionFlag above.
+    def test_nvfp4_layer_config_defaults_full_precision_matrix_mult_true(self, tmp_path):
+        import json
+        from safetensors import safe_open
+
+        src = _write_minimal_flux(tmp_path)
+        dst, _ = convert_to_safetensors(str(src), target_key="NVFP4", overwrite=True)
+        with safe_open(dst, framework="pt", device="cpu") as f:
+            meta = json.loads(f.metadata()["_quantization_metadata"])
+        layer_conf = next(iter(meta["layers"].values()))
+        assert layer_conf["format"] == "nvfp4"
+        assert layer_conf["full_precision_matrix_mult"] is True
+
+    def test_nvfp4_full_precision_flag_can_be_disabled(self, tmp_path):
+        import json
+        from safetensors import safe_open
+
+        src = _write_minimal_flux(tmp_path)
+        dst, _ = convert_to_safetensors(
+            str(src), target_key="NVFP4", overwrite=True, full_precision_nvfp4=False,
+        )
+        with safe_open(dst, framework="pt", device="cpu") as f:
+            meta = json.loads(f.metadata()["_quantization_metadata"])
+        layer_conf = next(iter(meta["layers"].values()))
+        assert "full_precision_matrix_mult" not in layer_conf

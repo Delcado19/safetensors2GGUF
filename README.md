@@ -103,6 +103,12 @@ The UI provides:
   Click a cell to jump to the matching Convert tab with that format
   pre-selected (the GGUF column pre-selects `Q4_K_M`, since it stands for
   every K-quant level collapsed into one cell)
+- **Download from HF tab** — enter a HuggingFace repo ID and a target folder,
+  click Download. Multi-shard checkpoints (`model-00001-of-0000N.safetensors`,
+  …) are downloaded into a throwaway temp folder, merged into one tensor dict,
+  and written out as a single `<repo-name>.safetensors` file — the shards are
+  deleted afterwards, so the target folder only ever ends up with the one
+  merged file the Convert tabs expect as input
 
 ## Quantization Levels
 
@@ -305,7 +311,7 @@ safe as the checkpoints already circulating in the wild — no per-architecture
 bet the way INT8's `keys_hiprec` is, for the runtime compute path. That
 conclusion comes from reading ComfyUI's source, though, not from an actual
 convert+load+render test with this tool's own output — so the Model Support
-tab still shows FP8_MIXED as **⚠ Caution** on every architecture except
+tab still shows FP8_MIXED as **? Unknown** on every architecture except
 `lumina2` and `flux`. `lumina2`: a same-seed/prompt comparison confirmed
 composition, identity, and outfit preserved (only a single secondary prop's
 color/shape deviated, judged tolerable variance) — the same bar INT8_MIXED
@@ -328,13 +334,35 @@ on top of all that is no FP8
 tensor-core compute speedup; FP8 output is a storage/VRAM-savings format
 only unless a user explicitly opts out (`full_precision_fp8=False`). See
 [docs/issues_analysis.md](docs/issues_analysis.md) #16 for the full
-investigation. NVFP4/MXFP8 have no known equivalent safe-mode flag — that
-investigation is explicitly **not done** (open follow-up, see #16 and
-`model_support.py`'s `support_level()` docstring), so they remain unoffered
-here. The FP8/NVFP4 implementations (`safetensors_quant_fp8.py`/
-`safetensors_quant_nvfp4.py`) remain in the codebase and are still used by
-the separate text-encoder conversion path below, which hasn't shown this
-issue.
+investigation. NVFP4 has a fix now too (2026-08-13): reading ComfyUI's
+actual `comfy/ops.py` source found `full_precision_matrix_mult` is read
+generically per-layer, not FP8-specific — `convert_to_safetensors()` now
+sets it for `nvfp4` layers as well (`full_precision_nvfp4=True`). A first
+`flux` render test with this alone still crashed ComfyUI outright
+(`RuntimeError: mat1 and mat2 shapes cannot be multiplied`) — a second bug,
+`ModelFlux.keys_shape_critical` missing `txt_in.weight`/
+`vector_in.in_layer.weight`, the same #9 shape-inference class `img_in`
+already guarded against. Both fixed, re-converted, re-rendered: `flux` +
+NVFP4/NVFP4_MIXED now show **✓ Verified**, same bar FP8/INT8 already
+cleared. `lumina2` was re-converted and re-tested with the same fix
+(2026-08-13; its own `keys_shape_critical` was audited against ComfyUI's
+Lumina2/Z-Image detection code and already covered every raw shape read
+there, so no `flux`-style gap existed to fix) — no more full-image noise on
+any of 3 tested prompts, but one of the three still showed a full
+composition/pose/outfit change from baseline. That's a real improvement over
+the pre-fix "full-image noise" evidence, but when it does fail it fails
+exactly like plain FP8/INT8 above (full composition/identity swap, not a
+minor detail) — and both of those are **✗ Known issue** on a single failing
+test each, no "but other tests were clean" exception. Holding NVFP4 to a
+looser bar for showing the identical failure mode wasn't consistent, so it
+stays **✗ Known issue** too rather than **✓ Verified** or **⚠ Caution**.
+NVFP4/NVFP4_MIXED remain unoffered in the
+Convert → Safetensors dropdown regardless, since the format is a no-op
+there until every architecture's `keys_shape_critical` coverage is
+confirmed the way `flux`'s now is. The FP8/NVFP4 implementations
+(`safetensors_quant_fp8.py`/`safetensors_quant_nvfp4.py`) remain in the
+codebase and are still used by the separate text-encoder conversion path
+below, which hasn't shown this issue.
 
 **Already-quantized sources:** if you point Convert → Safetensors at a
 checkpoint that's already quantized (e.g. a published ComfyUI-native
@@ -350,23 +378,33 @@ The **Model Support** tab shows, for every architecture this tool detects, a
 color-coded support level for each output format (GGUF, F16/F16_MIXED,
 FP8/FP8_MIXED, INT8/INT8_MIXED, NVFP4/NVFP4_MIXED), using four states:
 **✓ Verified** (actually converted, loaded, and rendered correctly in
-ComfyUI with this tool's own output), **⚠ Caution** (technically supported,
-but not render-tested for this architecture — no evidence either way),
-**✗ Known issue** (actually render-tested and confirmed to produce wrong
-output — e.g. plain INT8, plain FP8, or NVFP4/NVFP4_MIXED, all on `lumina2`;
-see `docs/issues_analysis.md` #15/#16), or **? Unknown** (never attempted).
-Caution and Known-issue are deliberately separate symbols: "never tried" and
-"tried and broke" call for different reactions from a user picking a format.
-Click a format cell to switch to the matching Convert tab with that format
-pre-selected — the GGUF column collapses every K-quant level into one cell,
-since a working F16 GGUF conversion carries over to all of them uniformly,
-so clicking it defaults to `Q4_K_M`. NVFP4/NVFP4_MIXED cells are a no-op:
-they're shown in the table for completeness, but NVFP4 has no verified safe
-mode and stays deliberately absent from the Convert → Safetensors dropdown
-(`gui.py`'s `apply_support_table_selection()`), so clicking them can't
-select it. Once a source checkpoint is selected on either Convert tab, its
-format dropdown also gets a ⚠ or ✗ prefix on any entry that's Caution or
-Known-issue for the detected architecture (`gui.py`'s
+ComfyUI with this tool's own output, no visible deviation from the
+uncompressed baseline — e.g. `flux` + NVFP4/NVFP4_MIXED, after fixing the
+two bugs that caused its earlier composition drift, see above), **⚠ Caution**
+(actually render-tested and showing some visible-but-tolerable deviation
+from the uncompressed baseline — not broken but not clean either; currently
+empty, no combination has earned exactly this bar), **✗ Known issue**
+(actually render-tested and confirmed to produce wrong output on at least
+one real prompt — full composition/identity swap, not a minor detail — e.g.
+plain INT8, plain FP8, or NVFP4/NVFP4_MIXED on `lumina2`; see
+`docs/issues_analysis.md` #15/#16), or **? Unknown** (never actually
+rendered, no evidence either way — most (architecture, format) cells are
+here). Caution used to mean "supported but untested", the same thing
+Unknown means today — split apart 2026-08-13 because "never tried" and
+"tried, and it does something different" call for different reactions from
+a user picking a format: the former is a request for a test report, the
+latter a request to judge whether the tradeoff is acceptable for a given
+use case. Click a format cell to switch to the matching Convert tab with
+that format pre-selected — the GGUF column collapses every K-quant level
+into one cell, since a working F16 GGUF conversion carries over to all of
+them uniformly, so clicking it defaults to `Q4_K_M`. NVFP4/NVFP4_MIXED
+cells are a no-op: they're shown in the table for completeness, but NVFP4
+has no *render-verified* safe mode yet (a candidate fix exists — see
+above) and stays deliberately absent from the Convert → Safetensors
+dropdown (`gui.py`'s `apply_support_table_selection()`), so clicking them
+can't select it. Once a source checkpoint is selected on either Convert
+tab, its format dropdown also gets a ⚠, ✗, or ? prefix on any entry that's
+Caution, Known-issue, or Unknown for the detected architecture (`gui.py`'s
 `annotate_safetensors_choices()`/`annotate_gguf_choices()`) — informational
 only, every entry stays selectable. The underlying support data (which model
 names map to which internal architecture key, and the four-state logic
@@ -380,12 +418,18 @@ CLIP-L, CLIP-bigG — the same families `detect_text_encoder_family()` matches,
 see [Text-Encoder Conversion](#text-encoder-conversion) below), covering the
 formats that tab offers (GGUF — collapsing every direct outtype and K-quant —
 plus FP8/FP8_MIXED/INT8/INT8_MIXED/NVFP4/NVFP4_MIXED). As of 2026-08-12,
-**Qwen3-4B** shows **✓ Verified** for GGUF/FP8/FP8_MIXED/NVFP4/NVFP4_MIXED
-(convert+load+render-tested in ComfyUI, 4 seeds each, no format-specific
-defect found); its INT8/INT8_MIXED columns stay **⚠ Caution** — those two
-formats were only added to the dropdown 2026-08-13 (the underlying quantizer
-already supported them, the option just wasn't offered) and aren't
-render-tested for Qwen3-4B yet. **Qwen3-8B** (FLUX.2 Klein 9B's own text
+**Qwen3-4B** shows **✓ Verified** across every column — GGUF plus all six
+safetensors formats (convert+load+render-tested in ComfyUI, no
+format-specific defect found). INT8/INT8_MIXED come with one sharp
+gotcha, not a quality caveat: this format only loads correctly through
+ComfyUI's native **`CLIPLoader`** node. Loading it through ComfyUI-GGUF's
+**`CLIPLoaderGGUF`** node instead — an easy mistake, since that's the node
+most Z-Image workflows already use for the GGUF text-encoder slot —
+produces full-image structured-noise garbage (that node expects an actual
+`.gguf` file and has no ConvRot/INT8-safetensors decode path). This was
+briefly misdiagnosed as a broken conversion after a same-day batch of
+renders all used the wrong loader node; loading the identical file through
+`CLIPLoader` renders cleanly. **Qwen3-8B** (FLUX.2 Klein 9B's own text
 encoder) shows **✓ Verified** across every column — GGUF plus all six
 safetensors formats. FP8/FP8_MIXED/NVFP4/NVFP4_MIXED got 3 same-seed
 comparisons, INT8/INT8_MIXED got 2, GGUF (Q5_K_M) got 2: zero visible
@@ -398,8 +442,8 @@ DiT itself with those same formats *did* show visible composition drift in
 the same testing session — text-encoder quantization only perturbs the
 conditioning vector fed to an otherwise full-precision DiT, not the
 sampling trajectory's own numerics.
-Every other family still shows **⚠ Caution** across every column
-(untested). Both this table and the main one share one
+Every other family still shows **? Unknown** across every column
+(never actually rendered). Both this table and the main one share one
 color legend — literal red/yellow/green, not reused from the app's teal
 accent color. Clicking a cell jumps to the Convert Text Encoder tab with that
 format pre-selected — unlike the diffusion-model table, NVFP4 isn't excluded

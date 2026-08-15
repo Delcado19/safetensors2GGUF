@@ -62,12 +62,37 @@ _GGUF_DIRECT_OUTTYPES: dict[str, str] = {
 # architecture, and text encoders carry no keys_hiprec (only
 # keys_shape_critical), so INT8 and INT8_MIXED produce identical output --
 # same rule already established for keys_hiprec-less diffusion architectures
-# in model_support.support_level(). Not yet render-tested in ComfyUI though
-# (see TEXT_ENCODER_TABLE_FORMATS in model_support.py, which still omits
-# INT8/INT8_MIXED columns pending that evidence).
+# in model_support.support_level(). Now render-tested (same day) and
+# VERIFIED clean for both qwen3-8b and qwen3-4b -- IMPORTANT: this format
+# only loads correctly through ComfyUI's native `CLIPLoader` node. Loading
+# it through ComfyUI-GGUF's `CLIPLoaderGGUF` node instead (easy mistake --
+# that's the node most Z-Image workflows already use for the GGUF text
+# encoder slot) produces full-image structured-noise garbage: that node
+# expects an actual .gguf file and has no ConvRot/INT8-safetensors decode
+# path. See model_support._TE_RENDER_CONFIRMED_BAD's docstring for the
+# render-test history that uncovered this.
 TEXT_ENCODER_SAFETENSORS_FORMATS: frozenset[str] = frozenset(
-    {"FP8", "FP8_MIXED", "INT8", "INT8_MIXED", "NVFP4", "NVFP4_MIXED"}
+    {"FP8", "FP8_MIXED", "INT8", "INT8_MIXED", "NVFP4", "NVFP4_MIXED", "F16_ST"}
 )
+
+# GUI-facing dropdown key -> real safetensors_quant.py target_key. Only needed
+# for F16_ST: "F16" is already taken in TEXT_ENCODER_FORMAT_CHOICES by the
+# GGUF outtype, so the safetensors variant needs its own dropdown key -- but
+# quantize_tensor_st()/convert_safetensors.py's per-tensor log line and
+# default output filename both print target_key verbatim, so passing "F16_ST"
+# straight through would log "-> F16_ST" and write "...-F16_ST.safetensors",
+# neither of which is a real safetensors_quant format. Translate to the real
+# "F16" key -- deliberately NOT "F16_MIXED", and NOT interchangeable with it
+# despite text encoders carrying no keys_hiprec: quantize_tensor_st's `mixed`
+# branch keeps 1D tensors (biases, norm weights) at their ORIGINAL on-disk
+# dtype unconditionally (is_hiprec_st's `n_dims == 1` check fires regardless
+# of keys_hiprec), so F16_MIXED output would still carry BF16 bias/norm
+# tensors through to the file -- plain "F16" casts every tensor including 1D
+# ones to real float16. That distinction is exactly what this key exists to
+# get right: this option was added because a BF16-native checkpoint's weights
+# were numerically unstable in BF16 (see CHANGELOG), so leaving any BF16
+# tensors behind via F16_MIXED would undermine the fix.
+_TEXT_ENCODER_SAFETENSORS_TARGET_KEY: dict[str, str] = {"F16_ST": "F16"}
 
 TEXT_ENCODER_OUTTYPES: list[tuple[str, str]] = [
     ("F32", "f32"),
@@ -79,23 +104,52 @@ TEXT_ENCODER_OUTTYPES: list[tuple[str, str]] = [
 # Full format dropdown for the GUI: GGUF direct outtypes, GGUF K-quants (via a
 # plain llama-quantize second pass — see ensure_plain_llama_quantize), and
 # safetensors-quant formats (FP8/INT8/NVFP4, no HF download needed).
+#
+# Grouped GGUF-first, then safetensors — matching TEXT_ENCODER_SAFETENSORS_
+# FORMATS/LLAMA_QUANT_KEYS/_GGUF_DIRECT_OUTTYPES' own dispatch split in
+# convert_text_encoder_any() below, so this ordering IS the membership test,
+# not just cosmetic. Gradio 6.x's Dropdown choices are a flat (label, value)
+# list with no separator/disabled-option support (checked against the
+# installed gradio's Dropdown.__init__ signature, 2026-08-14) — a fake
+# separator entry would be selectable and error out downstream, so none is
+# added here; the "(GGUF)"/"(safetensors)" suffix on every label is the
+# grouping cue instead.
 TEXT_ENCODER_FORMAT_CHOICES: list[tuple[str, str]] = [
-    ("F32  — Full precision",                   "F32"),
-    ("F16  — Half precision · standard",        "F16"),
-    ("BF16 — Brain float 16",                  "BF16"),
-    ("Q8_0 — 8-bit · very high quality",       "Q8_0"),
-    ("Q6_K — 6-bit · very high quality  [lq]", "Q6_K"),
-    ("Q5_K_M — 5-bit · high quality  [lq]",    "Q5_K_M"),
-    ("Q4_K_M — 4-bit · recommended ★  [lq]",   "Q4_K_M"),
-    ("Q4_K_S — 4-bit small  [lq]",             "Q4_K_S"),
-    ("Q3_K_M — 3-bit · moderate quality  [lq]", "Q3_K_M"),
-    ("Q2_K  — 2-bit · smallest  [lq]",         "Q2_K"),
-    ("FP8 — float8_e4m3fn scaled (safetensors)",             "FP8"),
-    ("FP8 mixed — FP8 scaled, hiprec tensors stay F32",       "FP8_MIXED"),
+    # ── GGUF ────────────────────────────────────────────────────────────
+    ("F32  — Full precision (GGUF)",              "F32"),
+    ("F16  — Half precision · standard (GGUF)",   "F16"),
+    ("BF16 — Brain float 16 (GGUF)",               "BF16"),
+    ("Q8_0 — 8-bit · very high quality (GGUF)",   "Q8_0"),
+    ("Q6_K — 6-bit · very high quality (GGUF)  [lq]", "Q6_K"),
+    ("Q5_K_M — 5-bit · high quality (GGUF)  [lq]",    "Q5_K_M"),
+    ("Q4_K_M — 4-bit · recommended ★ (GGUF)  [lq]",   "Q4_K_M"),
+    ("Q4_K_S — 4-bit small (GGUF)  [lq]",             "Q4_K_S"),
+    ("Q3_K_M — 3-bit · moderate quality (GGUF)  [lq]", "Q3_K_M"),
+    ("Q2_K  — 2-bit · smallest (GGUF)  [lq]",         "Q2_K"),
+    # ── Safetensors ─────────────────────────────────────────────────────
+    # "F16_ST" (not "F16" -- already taken by the GGUF outtype above, and not
+    # "F16_MIXED" -- see _TEXT_ENCODER_SAFETENSORS_TARGET_KEY's docstring for
+    # why that logged/named wrong) -- listed under TEXT_ENCODER_SAFETENSORS_
+    # FORMATS above so it routes to convert_text_encoder_to_safetensors() and
+    # writes a real .safetensors file, not a GGUF. Added 2026-08-14:
+    # converting a BF16-native checkpoint to F16 safetensors (not GGUF) fixed
+    # a real render-corruption bug where the checkpoint's weights were
+    # numerically unstable under BF16 compute but stable under F16 -- see
+    # CHANGELOG's "Fixed (root cause: user checkpoint, not this tool)".
+    # Casts every tensor (including 1D biases/norms) to real float16 -- no
+    # separate "F16 mixed" entry, unlike FP8/INT8/NVFP4 below: their _MIXED
+    # variants exist to avoid quantization loss on hiprec/small tensors, but
+    # F16 is a precision cast already (nothing lossy to protect against), and
+    # a mixed variant here would leave some tensors at their original BF16 --
+    # exactly the thing this option exists to eliminate (see
+    # _TEXT_ENCODER_SAFETENSORS_TARGET_KEY's docstring above).
+    ("F16 — Half precision (safetensors)",                     "F16_ST"),
+    ("FP8 — float8_e4m3fn scaled (safetensors)",               "FP8"),
+    ("FP8 mixed — FP8 scaled, hiprec tensors stay F32 (safetensors)", "FP8_MIXED"),
     ("INT8 — Tensor-wise INT8, ConvRot-rotated (safetensors)", "INT8"),
-    ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32",    "INT8_MIXED"),
-    ("NVFP4 — Nvidia 4-bit blockscaled (safetensors)",        "NVFP4"),
-    ("NVFP4 mixed — NVFP4, hiprec tensors stay F32",          "NVFP4_MIXED"),
+    ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32 (safetensors)", "INT8_MIXED"),
+    ("NVFP4 — Nvidia 4-bit blockscaled (safetensors)",         "NVFP4"),
+    ("NVFP4 mixed — NVFP4, hiprec tensors stay F32 (safetensors)", "NVFP4_MIXED"),
 ]
 
 
@@ -340,6 +394,31 @@ _FAMILY_SIGNATURES = {
 _LAYER_IDX_RE = re.compile(r"\.(?:layers|block)\.(\d+)\.")
 _EMBED_KEY_SUFFIXES = ("embed_tokens.weight", "token_embedding.weight", "shared.weight")
 
+# Families whose GGUF conversion is not just untested but structurally
+# impossible with this tool's llama.cpp-based pipeline: convert_hf_to_gguf.py
+# has no CLIPModel/CLIPTextModel converter at all (confirmed by grepping the
+# vendored .llama.cpp checkout for either class name -- zero matches), unlike
+# the LLM-style decoder architectures (Qwen3, Mistral) and T5 it does support.
+# ComfyUI-GGUF's CLIPLoaderGGUF node has no CLIP-L/bigG decode path either, so
+# this isn't a "some other outtype might work" situation -- every GGUF
+# outtype and every K-quant is equally impossible. Found 2026-08-14 when a
+# user's clip_g -> F16 GGUF conversion ran the full config-fetch + subprocess
+# dance before failing with llama.cpp's own opaque "Model CLIPModel is not
+# supported" -- this guard fails fast with an actionable message instead.
+_GGUF_UNSUPPORTED_FAMILIES: frozenset[str] = frozenset({"clip-l", "clip-bigg"})
+
+
+def _reject_if_gguf_unsupported(family: str | None) -> None:
+    if family in _GGUF_UNSUPPORTED_FAMILIES:
+        raise RuntimeError(
+            f"'{family}' (CLIP-L/OpenCLIP-bigG) cannot be converted to GGUF -- "
+            "llama.cpp's convert_hf_to_gguf.py has no CLIPModel converter, and "
+            "ComfyUI-GGUF's CLIPLoaderGGUF node has no CLIP-L/bigG decode path "
+            "either, so no GGUF outtype or K-quant will ever work here. Use a "
+            "safetensors format (FP8/FP8_MIXED/INT8/INT8_MIXED/NVFP4/"
+            "NVFP4_MIXED/F16 safetensors) instead."
+        )
+
 
 def detect_text_encoder_family(state_dict) -> str | None:
     """Identify which vendored family a bare text-encoder checkpoint's weights match.
@@ -456,6 +535,7 @@ def convert_text_encoder(
     with tempfile.TemporaryDirectory(prefix="s2g_text_encoder_") as tmpdir:
         tmp_path = Path(tmpdir)
         if base_repo_id and base_repo_id.strip():
+            _reject_if_gguf_unsupported(_VENDORED_REPOS.get(base_repo_id.strip()))
             _log(f"INFO:  Fetching config/tokenizer for {base_repo_id}…")
             fetch_base_config_files(base_repo_id.strip(), tmp_path, on_log=_log)
         else:
@@ -466,6 +546,7 @@ def convert_text_encoder(
                     "Could not auto-detect the base model family from these weights, and no "
                     "base repo ID was given. Enter the base model's HF repo ID manually."
                 )
+            _reject_if_gguf_unsupported(family)
             _log(f"INFO:  Auto-detected base model family: {family}")
             _copy_vendored_family(family, tmp_path, on_log=_log)
 
@@ -563,6 +644,31 @@ def convert_text_encoder_kquant(
 _TEXT_ENCODER_MODEL_ARCH = ModelTemplate()
 _TEXT_ENCODER_MODEL_ARCH.keys_shape_critical = [
     "embed_tokens", "shared", "token_embedding", "wte", "lm_head",
+    # CLIP-L/bigG's position_embedding: comfy/clip_model.py's
+    # CLIPEmbeddings.forward()/CLIPTextModel_.forward() both read
+    # `self.embeddings.position_embedding.weight` via a bare attribute access
+    # (`comfy.ops.cast_to(...)`), not a module call -- bypasses whatever
+    # quantized-dequant machinery the Embedding class has entirely. Found
+    # 2026-08-14: NVFP4 crashed outright ("size of tensor a (768) must match
+    # tensor b (384)" -- NVFP4 halves the on-disk last dim), and FP8/INT8
+    # silently produced corrupted (black-image) output for the same
+    # underlying reason -- see safetensors_quant.py's FP8-branch
+    # keys_shape_critical check, added alongside this entry.
+    "position_embedding",
+    # CLIP-G/bigG's text_projection: the ONLY weight feeding SDXL's global
+    # pooled "y" conditioning vector (adm_in_channels=2816) -- CLIP-L
+    # contributes no pooled/projected output to SDXL at all (its extracted
+    # file has no text_projection.weight), only per-token hidden states.
+    # Unlike position_embedding above, comfy/clip_model.py's CLIPTextModel
+    # calls this as a proper module (`self.text_projection(x[2])`), so it
+    # should in principle dequantize correctly -- but a single global vector
+    # (not per-token, so no error-averaging across many tokens) is uniquely
+    # exposed to a small quantization error skewing the ENTIRE image, not
+    # just local detail. Found 2026-08-14: clip_g FP8 (with position_
+    # embedding already fixed) still rendered solid black; this was the only
+    # remaining unprotected 2D tensor outside the per-layer transformer
+    # blocks.
+    "text_projection",
 ]
 
 
@@ -617,8 +723,9 @@ def convert_text_encoder_any(
     base_repo_id is ignored for these, no HF download needed).
     """
     if format_key in TEXT_ENCODER_SAFETENSORS_FORMATS:
+        real_target_key = _TEXT_ENCODER_SAFETENSORS_TARGET_KEY.get(format_key, format_key)
         return convert_text_encoder_to_safetensors(
-            weights_path, dst_path=dst_path, target_key=format_key,
+            weights_path, dst_path=dst_path, target_key=real_target_key,
             on_log=on_log, cancel_event=cancel_event,
         )
     if format_key in LLAMA_QUANT_KEYS:

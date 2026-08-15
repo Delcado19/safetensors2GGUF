@@ -17,6 +17,7 @@ from models.architectures import (
     ModelLTXV,
     ModelLumina2,
     ModelQwenImage,
+    ModelSD1,
     ModelSD3,
     ModelSDXL,
     ModelWan,
@@ -112,6 +113,31 @@ class TestQuantizeTensorFp8:
         assert set(out.keys()) == {"block.bias"}
         assert out["block.bias"].dtype == torch.float32
 
+    def test_fp8_shape_critical_key_stays_f16(self):
+        # Real bug found 2026-08-14 render-testing CLIP-L/bigG text encoders:
+        # unlike NVFP4/INT8 below, the FP8 branch never checked
+        # keys_shape_critical at all. FP8 doesn't corrupt on-disk shape (so
+        # this was invisible for shape-detection-only cases), but some keys
+        # are read via a bare `.weight` attribute access that bypasses
+        # dequant entirely (comfy/clip_model.py's position_embedding) --
+        # those need value protection under FP8 too, not just NVFP4/INT8.
+        data = torch.randn(64, 64, dtype=torch.float32)
+        out = quantize_tensor_st(data, "img_in.weight", ModelFlux(), "FP8")
+        assert set(out.keys()) == {"img_in.weight"}
+        assert out["img_in.weight"].dtype == torch.float16
+
+    def test_fp8_conv_weight_stays_f16(self):
+        # Real bug found 2026-08-14 render-testing SDXL: FP8 had no dim check
+        # at all, so a Conv2d kernel like input_blocks.0.0.weight
+        # ([320,4,3,3]) quantized to F8_E4M3 without incident here -- but
+        # ComfyUI's MixedPrecisionOps has no quantized Conv2d loader (only
+        # Linear/MoEExperts/Embedding), so it silently misinterpreted the raw
+        # FP8 bytes as floats and the render collapsed to a black image.
+        data = torch.randn(4, 4, 3, 3, dtype=torch.float32)
+        out = quantize_tensor_st(data, "conv.weight", ModelFlux(), "FP8")
+        assert set(out.keys()) == {"conv.weight"}
+        assert out["conv.weight"].dtype == torch.float16
+
 
 class TestQuantizeTensorNvfp4:
     def test_nvfp4_returns_packed_and_two_scales(self):
@@ -179,6 +205,14 @@ class TestQuantizeTensorNvfp4:
         # any dequantization happens.
         cases = [
             (ModelFlux(), "img_in.weight"),
+            # txt_in.weight/vector_in.in_layer.weight: added 2026-08-13 after a
+            # live ComfyUI crash converting FLUX.2 Klein 9B to plain NVFP4 --
+            # model_detection.py reads txt_in.weight.shape[1] for context_in_dim,
+            # halved on-disk by NVFP4 packing, RuntimeError in comfy_kitchen's
+            # dequantize path (mat1/mat2 shape mismatch). vector_in shares the
+            # same raw-shape-read pattern for vec_in_dim.
+            (ModelFlux(), "txt_in.weight"),
+            (ModelFlux(), "vector_in.in_layer.weight"),
             (ModelSD3(), "context_embedder.weight"),
             (ModelAura(), "cond_seq_linear.weight"),
             (CosmosPredict2(), "x_embedder.proj.1.weight"),
@@ -186,6 +220,18 @@ class TestQuantizeTensorNvfp4:
             (ModelHyVid(), "txt_in.input_embedder.weight"),
             (ModelWan(), "head.modulation"),
             (ModelLTXV(), "transformer_blocks.0.attn2.to_k.weight"),
+            # ModelSDXL/ModelSD1: added 2026-08-13 closing a documented audit
+            # gap (docs/issues_analysis.md #9) -- ComfyUI's model_detection.py
+            # dynamically scans for the first attn2.to_k.weight it finds rather
+            # than a fixed key name, so the substring must match every block's
+            # tensor, not just one literal key.
+            (ModelSDXL(), "input_blocks.4.1.transformer_blocks.0.attn2.to_k.weight"),
+            (ModelSD1(), "input_blocks.1.1.transformer_blocks.0.attn2.to_k.weight"),
+            # label_emb.0.0.weight: added 2026-08-14 after a live ComfyUI crash
+            # loading a real NVFP4 SDXL diffusion model ("'NoneType' object has
+            # no attribute 'quant_config'") -- model_detection.py reads its raw
+            # .shape[1] for adm_in_channels, halved on-disk by NVFP4 packing.
+            (ModelSDXL(), "label_emb.0.0.weight"),
         ]
         for arch, key in cases:
             data = torch.randn(32, 32, dtype=torch.float32)
@@ -243,12 +289,22 @@ class TestQuantizeTensorInt8:
         assert out["block.weight"].dtype == torch.int8
         assert out["block.weight_scale"].numel() == 1
 
-    def test_int8_non_2d_tensor_uses_plain_tensorwise(self):
-        # ConvRot's block-Hadamard only applies to 2D [out, in] weights.
-        data = torch.randn(4, 4, 4, dtype=torch.float32)
+    def test_int8_non_2d_but_not_conv_tensor_uses_plain_tensorwise(self):
+        # ConvRot's block-Hadamard only applies to 2D [out, in] weights; a
+        # non-2D, non-conv (2D-ish but odd-shaped) tensor still isn't caught
+        # by the >=3D conv guard below, so it falls through to tensorwise.
+        data = torch.randn(8, 100, dtype=torch.float32)
+        out = quantize_tensor_st(data, "block.weight", ModelFlux(), "INT8")
+        assert out["block.weight"].dtype == torch.int8
+
+    def test_int8_conv_weight_stays_f16(self):
+        # ComfyUI's MixedPrecisionOps has no quantized Conv2d loader (see
+        # quantize_tensor_st's ndim >= 3 guard) -- a real Conv2d kernel
+        # ([out, in, kh, kw]) must never get a weight_scale sidecar.
+        data = torch.randn(4, 4, 3, 3, dtype=torch.float32)
         out = quantize_tensor_st(data, "conv.weight", ModelFlux(), "INT8")
-        assert out["conv.weight"].dtype == torch.int8
-        assert out["conv.weight_scale"].numel() == 1
+        assert set(out.keys()) == {"conv.weight"}
+        assert out["conv.weight"].dtype == torch.float16
 
     def test_int8_mixed_keeps_hiprec_tensor_f32_unscaled(self):
         data = torch.randn(4, 4, dtype=torch.float32)

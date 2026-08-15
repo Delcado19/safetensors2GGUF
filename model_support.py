@@ -87,16 +87,60 @@ _RENDER_CONFIRMED_BAD: set[tuple[str, str]] = {
     # runtime compute path, not on-disk keys_hiprec precision loss) --
     # now with direct evidence instead of just the shared mechanism.
     ("lumina2", "FP8"),
-    # NVFP4_MIXED on lumina2: full-image noise, tested end-to-end against
-    # both a fine-tune and the official zImageBase checkpoint
-    # (docs/issues_analysis.md #15). Plain NVFP4 shares the same root cause
-    # (ComfyUI dynamically quantizes activations for every NVFP4 layer
-    # regardless of which weights keys_hiprec protects, per #15's
-    # Investigation) so it's marked bad too, though only the _MIXED variant
-    # was directly rendered.
+    # NVFP4/NVFP4_MIXED: briefly moved to _RENDER_TESTED_DRIFT (CAUTION) on
+    # 2026-08-13 after a full_precision_nvfp4 re-test showed no more garbage/
+    # noise, 2 of 3 prompts matching baseline cleanly. Moved BACK here the same
+    # day on review: when it does fail (the 3rd prompt), it fails exactly the
+    # same way plain FP8/INT8 above do -- full composition/pose/outfit swap,
+    # not a minor detail -- and both of those were judged BAD off a *single*
+    # failing test each, with no "but 2 other tests were clean" exception
+    # granted. Holding NVFP4 to a looser bar than FP8/INT8 for showing the
+    # identical failure mode, just because it also had passing samples,
+    # wasn't a consistent standard -- a format that produces a full wrong
+    # image on some real prompts is "confirmed wrong", not "tolerable
+    # deviation", regardless of how often it happens to succeed elsewhere.
+    # See _RENDER_TESTED_DRIFT's comment below for the full render-test
+    # writeup this classification is based on.
     ("lumina2", "NVFP4"),
     ("lumina2", "NVFP4_MIXED"),
 }
+
+# (arch_key, format_key) pairs that HAVE been convert+load+render-tested but
+# showed some visible deviation from the uncompressed baseline that isn't
+# severe enough to call BAD (no wrong identity, no broken/garbage output) --
+# distinct from "never tested" (2026-08-13: previously both states shared
+# CAUTION, which made the symbol mean two different things a user needs to
+# react to differently — "please go test this" vs. "tested, use with
+# awareness of a known quality tradeoff"). flux's NVFP4/NVFP4_MIXED were the
+# original motivating case (2026-08-12, visible composition drift in 2 of 3
+# seeds) but got root-caused and fixed the next day (missing
+# keys_shape_critical entries + full_precision_nvfp4 never being set) -- a
+# re-test came back clean, so they moved to safetensors_quant.
+# _RENDER_VERIFIED_MIXED instead.
+#
+# lumina2's NVFP4/NVFP4_MIXED were previously _RENDER_CONFIRMED_BAD ("full-
+# image noise") from a pre-fix conversion (docs/issues_analysis.md #15).
+# 2026-08-13: re-converted with the same full_precision_nvfp4 fix that cleared
+# flux, then render-tested with 3 prompts x 2 seeds via qwen3-4b. Unlike the
+# old evidence, the fixed conversion produces coherent, well-formed images for
+# every seed -- no garbage/noise. 2 of 3 prompts matched the BF16 baseline
+# closely (fine-detail-only variance). The third (the longest, most
+# detail-dense prompt) showed the entire composition, pose, and outfit change
+# between baseline and both NVFP4 variants, and even varied noticeably
+# between the two images of the same NVFP4 batch -- more batch-internal
+# variance than baseline showed for the same prompt. Audited
+# ModelLumina2.keys_shape_critical against ComfyUI's model_detection.py
+# Lumina2/Z-Image branch (G:\ComfyUI-Easy-Install\ComfyUI, comfy_kitchen
+# 0.2.30) and found no missing raw-shape read comparable to flux's txt_in/
+# vector_in gap -- cap_embedder.1.weight, x_pad_token, and cap_pad_token
+# already cover everything read there. So this isn't the same fixable
+# architecture-detection bug; it reads as genuine content-dependent
+# quantization sensitivity, and it briefly moved to _RENDER_TESTED_DRIFT
+# (CAUTION) on the strength of that improvement -- reverted back to
+# _RENDER_CONFIRMED_BAD the same day, see that set's comment above for why
+# (the one failing prompt is a full wrong-image swap, judged the same way
+# FP8/INT8's single failing tests were, not a "2 of 3 were fine" exception).
+_RENDER_TESTED_DRIFT: set[tuple[str, str]] = set()
 
 
 def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) -> str:
@@ -104,26 +148,57 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
     for one (architecture, format) pair.
 
     The four-state scheme: VERIFIED means actually converted+loaded+rendered
-    correctly in ComfyUI; CAUTION means "technically supported but not
-    render-tested for this architecture" (no evidence either way); BAD means
-    actually render-tested and confirmed wrong (_RENDER_CONFIRMED_BAD);
-    UNKNOWN means this combination has never even been attempted. An earlier
-    version of this scheme folded CAUTION and BAD into one symbol — split
-    apart because "never tried" and "tried and broke" need different user
-    reactions (the former is a request for a test report, the latter a
-    warning not to use it).
+    correctly in ComfyUI, no visible deviation from the uncompressed
+    baseline; CAUTION means convert+load+render-TESTED and showing some
+    visible-but-tolerable deviation (_RENDER_TESTED_DRIFT) — not "we didn't
+    check", but "we checked, and compression changed the output somewhat";
+    BAD means actually render-tested and confirmed wrong — broken output or
+    lost identity/composition (_RENDER_CONFIRMED_BAD); UNKNOWN means this
+    combination has never actually been rendered, no evidence either way.
+    Before 2026-08-13, CAUTION covered both "untested" and "tested with
+    drift" — split apart because those need different user reactions (the
+    former is a request for a test report, the latter a request to judge
+    whether the tradeoff is acceptable for a given use case), and "never
+    tried" vs. "tried and broke" already got the same split treatment
+    earlier for the same reason.
 
     - GGUF: always VERIFIED. Every models.architectures.arch_list entry is an
       architecture this tool's GGUF pipeline explicitly detects and handles
       (including automated 5D-tensor/pad-token fixes); K-quants are a
       generic post-processing step (llama-quantize) applied uniformly on top
       of a working F16 GGUF conversion, not something that varies per
-      architecture the way keys_hiprec-driven precision choices do.
+      architecture the way keys_hiprec-driven precision choices do. This is
+      a design-reasoning conclusion, not a per-architecture render-test
+      claim -- note llama-quantize's K-quant path has no keys_hiprec
+      equivalent at all (quantize.py's own F32-forcing only covers
+      1D/small/BF16-or-F32-source tensors uniformly, nothing
+      architecture-aware), so an architecture-dependent K-quant defect isn't
+      ruled out by design the way it is for the safetensors path. 2026-08-13:
+      got actual render evidence for lumina2/Z-Image specifically -- Q6_K
+      (5 seeds across 2 prompts via a Qwen3-4B-family text encoder) matched
+      the unquantized baseline's composition/identity/pose exactly, batch-
+      index-for-batch-index (a "3 women vs. 2 women" difference between the
+      two prompt-C batch images looked like a defect at first, until the
+      *unquantized baseline itself* showed the same split -- prompt-adherence
+      seed variance, not a quantization artifact). No code change from this
+      (GGUF was already unconditionally VERIFIED), just an evidence upgrade
+      from "assumed safe by design" to "render-confirmed" for this
+      architecture. Same day, `flux` got the same treatment (a matching
+      render-test folder, qwen3-8b vanilla text encoder):
+      Q6_K across 3 prompts x 2 seeds matched the unquantized baseline with
+      no visible deviation at all (closer agreement than lumina2's, no
+      seed-variance false alarm this time).
     - F16 / F16_MIXED: always VERIFIED. This is a precision cast, not
       compressed-representation quantization with a runtime scale lookup —
       it never touches ComfyUI's quantized-compute code path
       (MixedPrecisionOps) at all, so it carries none of the
-      architecture-dependent risk INT8/FP8/NVFP4 do.
+      architecture-dependent risk INT8/FP8/NVFP4 do. Same 2026-08-13
+      render-test as GGUF's note above also covered lumina2's GGUF F16
+      (direct, unquantized) and safetensors F16_MIXED -- both matched the
+      baseline cleanly, backing this design-reasoning conclusion with actual
+      evidence for this architecture too. `flux`'s matching GGUF F16 and
+      safetensors F16_MIXED renders (same test run as its Q6_K note above)
+      were equally clean.
     - FP8 / FP8_MIXED: BAD for plain FP8 on lumina2 (direct render evidence —
       same-seed/prompt comparison showed the standing figure's outfit and
       the room background changed between the unquantized and plain-FP8
@@ -133,35 +208,57 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
       the only deviation being a single secondary prop judged tolerable
       quantization variance, not a correctness failure — the same bar
       INT8_MIXED was held to (_RENDER_VERIFIED_MIXED,
-      safetensors_quant.py). Everywhere else, FP8/FP8_MIXED stay CAUTION:
-      full_precision_matrix_mult=true should, by code reading of ComfyUI's
-      comfy/utils.py and comfy/ops.py, make FP8_MIXED skip the risky
-      quantized-compute branch entirely on any architecture, but that's a
-      code-reading conclusion, not an actual convert+load+render
-      confirmation for architectures other than lumina2. Plain FP8
-      additionally carries the same keys_hiprec on-disk precision-loss risk
-      plain INT8 does on sensitive architectures (format_recommendation() in
-      safetensors_quant.py warns identically) — confirmed rather than just
-      predicted by analogy, for lumina2.
+      safetensors_quant.py). Everywhere else, FP8/FP8_MIXED are UNKNOWN
+      (never actually rendered on that architecture): full_precision_
+      matrix_mult=true should, by code reading of ComfyUI's comfy/utils.py
+      and comfy/ops.py, make FP8_MIXED skip the risky quantized-compute
+      branch entirely on any architecture, but that's a code-reading
+      conclusion, not an actual convert+load+render confirmation.
     - INT8 / INT8_MIXED: depends on keys_hiprec. If the architecture has no
       keys_hiprec at all, plain INT8 and INT8_MIXED produce byte-identical
       output (nothing to protect either way) — both VERIFIED. If it does:
-      INT8_MIXED is VERIFIED only for lumina2 (_RENDER_VERIFIED_MIXED, the
-      one architecture actually render-tested end-to-end); every other
-      sensitive architecture's INT8_MIXED is CAUTION (protection list
-      cross-referenced against community tools, never confirmed with this
-      tool's own output). Plain INT8 on a sensitive architecture is BAD for
-      lumina2 specifically — the one *confirmed-bad* case
-      (docs/issues_analysis.md #15's plain-INT8 corruption) — and CAUTION
-      (unverified, not confirmed) for every other sensitive architecture,
-      since the same class of risk hasn't actually been rendered there.
-    - NVFP4 / NVFP4_MIXED: BAD for lumina2 (direct render evidence, #15);
-      CAUTION everywhere else. The mechanism is the same class of dynamic-
-      activation-quantization risk as pre-fix FP8, and unlike FP8 there is
-      no verified full_precision_matrix_mult-equivalent safe mode for NVFP4
-      yet, so the structural risk generalizes to CAUTION (not UNKNOWN) on
-      every other architecture until that's specifically investigated
-      (tracked as a future plan, see docs/issues_analysis.md #16).
+      INT8_MIXED is VERIFIED only for lumina2 and flux (_RENDER_VERIFIED_
+      MIXED, both render-tested end-to-end); every other sensitive
+      architecture's INT8_MIXED is UNKNOWN (never actually rendered).
+      Plain INT8 on a sensitive architecture is BAD for lumina2
+      specifically — the one *confirmed-bad* case (docs/issues_analysis.md
+      #15's plain-INT8 corruption) — VERIFIED for flux (render-tested
+      clean), and UNKNOWN for every other sensitive architecture, since the
+      same class of risk hasn't actually been rendered there.
+    - NVFP4 / NVFP4_MIXED: VERIFIED for flux (2026-08-12 render test showed
+      composition drift, root-caused 2026-08-13 to two bugs — missing
+      keys_shape_critical entries and full_precision_matrix_mult never being
+      set for nvfp4 — both fixed, re-tested clean, see safetensors_quant.py's
+      _RENDER_VERIFIED_MIXED docstring). BAD for lumina2 (same
+      full_precision_nvfp4 fix applied and re-tested 2026-08-13; no longer
+      the pre-fix full-image noise, but one of three tested prompts still
+      showed a full composition/pose/outfit change from baseline — the same
+      "confirmed wrong on at least one real prompt" bar plain FP8/INT8 are
+      held to, so this stays BAD rather than CAUTION despite the other two
+      prompts rendering cleanly — see _RENDER_CONFIRMED_BAD). UNKNOWN
+      everywhere else, since neither the corruption mechanism nor the fix
+      has actually been render-confirmed
+      there yet (docs/issues_analysis.md #16).
+    - sd1 (2026-08-14): FP8/FP8_MIXED/NVFP4/NVFP4_MIXED all VERIFIED —
+      DreamShaper 8 (civitai.com/models/4384), render-tested clean first try
+      (the sdxl fixes below already covered it: the dim()>=3 Conv2d guard,
+      and ModelSD1's attn2.to_k.weight shape_critical entry -- SD1 has no
+      label_emb/class-conditioning, so no analog to sdxl's label_emb fix was
+      needed). 2 prompts (a photoreal portrait, a fantasy character
+      portrait) via CLIP-L, composition/identity/outfit matching the F16
+      baseline. INT8/INT8_MIXED already VERIFIED via the `not
+      keys_hiprec_nonempty` branch (sd1 has no keys_hiprec, same as sdxl).
+    - sdxl (2026-08-14): FP8/FP8_MIXED/NVFP4/NVFP4_MIXED all VERIFIED —
+      initially FP8/INT8 produced solid-black renders and plain NVFP4/
+      NVFP4_MIXED crashed on load, both root-caused to real bugs (a missing
+      >=3D-tensor guard letting Conv2d weights get quantized into a format
+      ComfyUI can't load, and a missing keys_shape_critical entry), fixed,
+      then re-tested clean across 2 prompts (fantasy render + photorealistic
+      portrait) with composition/identity/outfit matching the F16 baseline
+      exactly — see safetensors_quant.py's _RENDER_VERIFIED_MIXED docstring.
+      INT8/INT8_MIXED are VERIFIED too, but via the `not keys_hiprec_nonempty`
+      branch below (sdxl has no keys_hiprec) rather than an explicit
+      _RENDER_VERIFIED_MIXED entry — same render evidence backs both paths.
     """
     if format_key == "GGUF":
         return SUPPORT_VERIFIED
@@ -172,7 +269,9 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
             return SUPPORT_VERIFIED
         if (arch_key, format_key) in _RENDER_CONFIRMED_BAD:
             return SUPPORT_BAD
-        return SUPPORT_CAUTION
+        if (arch_key, format_key) in _RENDER_TESTED_DRIFT:
+            return SUPPORT_CAUTION
+        return SUPPORT_UNKNOWN
     if format_key in ("INT8", "INT8_MIXED"):
         if not keys_hiprec_nonempty:
             return SUPPORT_VERIFIED
@@ -180,11 +279,17 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
             return SUPPORT_VERIFIED
         if (arch_key, format_key) in _RENDER_CONFIRMED_BAD:
             return SUPPORT_BAD
-        return SUPPORT_CAUTION
+        if (arch_key, format_key) in _RENDER_TESTED_DRIFT:
+            return SUPPORT_CAUTION
+        return SUPPORT_UNKNOWN
     if format_key in ("NVFP4", "NVFP4_MIXED"):
+        if (arch_key, format_key) in _RENDER_VERIFIED_MIXED:
+            return SUPPORT_VERIFIED
         if (arch_key, format_key) in _RENDER_CONFIRMED_BAD:
             return SUPPORT_BAD
-        return SUPPORT_CAUTION
+        if (arch_key, format_key) in _RENDER_TESTED_DRIFT:
+            return SUPPORT_CAUTION
+        return SUPPORT_UNKNOWN
     return SUPPORT_UNKNOWN
 
 
@@ -200,6 +305,18 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
 # seemed to be (see below).
 TEXT_ENCODER_TABLE_FORMATS: list[tuple[str, str]] = [
     ("GGUF", "GGUF"),
+    # A plain precision cast (real float16, no quantization/compression), not
+    # the GGUF-outtype "F16" collapsed into the column above -- corresponds
+    # to TEXT_ENCODER_FORMAT_CHOICES' "F16_ST" dropdown key (routes to
+    # convert_text_encoder_to_safetensors(), see text_encoder_convert.py).
+    # Missing until 2026-08-14: this table previously had no column for it at
+    # all, so a family like clip-l/clip-bigg -- where F16 safetensors is the
+    # ONLY working format after every quantized format was confirmed BAD --
+    # showed a row of nothing but ✗, with no visible indication that
+    # anything works. See text_encoder_support_level()'s unconditional
+    # SUPPORT_VERIFIED for this column, mirroring TABLE_FORMATS' own F16
+    # column for diffusion models.
+    ("F16", "F16"),
     ("FP8", "FP8"),
     ("FP8 mixed", "FP8_MIXED"),
     ("INT8", "INT8"),
@@ -236,6 +353,18 @@ _TE_RENDER_VERIFIED: set[tuple[str, str]] = {
     ("qwen3-4b", "FP8_MIXED"),
     ("qwen3-4b", "NVFP4"),
     ("qwen3-4b", "NVFP4_MIXED"),
+    # qwen3-4b INT8/INT8_MIXED, 2026-08-13: 2 checkpoints (Z-Image Base +
+    # its juggernautZ fine-tune), loaded with the correct native
+    # `CLIPLoader` node -- both clean, no format-specific defect. (An
+    # earlier same-day batch of 6 checkpoints appeared to show these
+    # formats totally broken -- full-image structured noise -- but that
+    # was a workflow error, not a conversion bug: those renders all fed
+    # the .safetensors INT8 output through ComfyUI-GGUF's `CLIPLoaderGGUF`
+    # node, which expects an actual .gguf file and can't decode a
+    # ConvRot-rotated INT8 safetensors tensor. See
+    # `_TE_RENDER_CONFIRMED_BAD`'s docstring.)
+    ("qwen3-4b", "INT8"),
+    ("qwen3-4b", "INT8_MIXED"),
     # qwen3-8b, 2026-08-13 (FLUX.2 Klein 9B's own text encoder): 3 same-
     # seed/prompt comparisons against the unquantized BF16 baseline for
     # FP8/FP8_MIXED/NVFP4/NVFP4_MIXED, 2 for INT8/INT8_MIXED (added to the
@@ -262,25 +391,98 @@ _TE_RENDER_VERIFIED: set[tuple[str, str]] = {
 
 # No text-encoder (family, format) pair has direct render evidence of
 # producing wrong/broken output yet -- mirrors _RENDER_CONFIRMED_BAD's role
-# for diffusion models, empty until one actually is.
-_TE_RENDER_CONFIRMED_BAD: set[tuple[str, str]] = set()
+# for diffusion models, empty until one actually is. 2026-08-13: a batch of
+# 8 renders across 6 Z-Image checkpoints briefly looked like qwen3-4b
+# INT8/INT8_MIXED were confirmed-broken (full-image structured noise) --
+# turned out to be a workflow error, not a conversion bug: the broken
+# renders all loaded the .safetensors INT8 output through ComfyUI-GGUF's
+# `CLIPLoaderGGUF` node (for .gguf files), not the native `CLIPLoader`
+# node this format actually needs. The 3 renders that used `CLIPLoader`
+# correctly (Z-Image Base + its juggernautZ fine-tune, INT8 and
+# INT8_MIXED) were clean -- see _TE_RENDER_VERIFIED below.
+_TE_RENDER_CONFIRMED_BAD: set[tuple[str, str]] = {
+    # Not a render defect -- GGUF conversion itself is structurally
+    # impossible for these two families: llama.cpp's convert_hf_to_gguf.py
+    # has no CLIPModel/CLIPTextModel converter at all (confirmed 2026-08-14
+    # by grepping the vendored .llama.cpp checkout, zero matches), and
+    # ComfyUI-GGUF's CLIPLoaderGGUF node has no CLIP-L/bigG decode path
+    # either -- every GGUF outtype/K-quant fails identically
+    # (text_encoder_convert.py's _reject_if_gguf_unsupported() now fails
+    # fast with this explanation instead of llama.cpp's opaque "Model
+    # CLIPModel is not supported"). BAD is a stretch of its usual "render-
+    # tested and confirmed broken" meaning (this never gets far enough to
+    # render), but UNKNOWN would wrongly invite retesting something that can
+    # never succeed -- BAD is the more useful signal of the four states here.
+    ("clip-l", "GGUF"),
+    ("clip-bigg", "GGUF"),
+    # Also not a render defect in the usual sense -- a genuine ComfyUI-side
+    # gap, found 2026-08-14 render-testing SDXL's clip_g: FP8 loaded without
+    # error but rendered solid black, NVFP4 crashed outright ("mat1 and mat2
+    # shapes cannot be multiplied", the packed on-disk shape used raw). Two
+    # real bugs in this tool were found and fixed along the way (missing
+    # keys_shape_critical protection for position_embedding and
+    # text_projection -- see text_encoder_convert.py), but the root cause
+    # survives both fixes: comfy/sd1_clip.py's CLIPTextModel.__init__() only
+    # selects the quantization-aware MixedPrecisionOps when
+    # model_options["quantization_metadata"] is set, and comfy/sd.py's
+    # load_text_encoder_state_dicts() only ever sets that key inside its
+    # CLIPType.MINIMAX branch -- the standard TEModel.CLIP_G/CLIP_L path
+    # (every SDXL load) always falls through to plain comfy.ops.manual_cast,
+    # which has no .comfy_quant/weight_scale-aware loading at all. This
+    # tool's own .comfy_quant sidecar synthesis (comfy.utils.convert_old_
+    # quants(), confirmed reading our file-level _quantization_metadata
+    # correctly) never even gets consulted, regardless of how correct the
+    # output file is. Every FP8/INT8/NVFP4 (plain and mixed) variant fails
+    # identically for both CLIP-L and CLIP-G until ComfyUI wires up
+    # quantization_metadata for the standard CLIP text-encoder path too.
+    ("clip-l", "FP8"), ("clip-l", "FP8_MIXED"),
+    ("clip-l", "INT8"), ("clip-l", "INT8_MIXED"),
+    ("clip-l", "NVFP4"), ("clip-l", "NVFP4_MIXED"),
+    ("clip-bigg", "FP8"), ("clip-bigg", "FP8_MIXED"),
+    ("clip-bigg", "INT8"), ("clip-bigg", "INT8_MIXED"),
+    ("clip-bigg", "NVFP4"), ("clip-bigg", "NVFP4_MIXED"),
+}
+
+# (family, format_key) pairs render-tested with visible-but-tolerable
+# deviation from the uncompressed baseline -- mirrors _RENDER_TESTED_DRIFT's
+# role for diffusion models (model_support.py's CAUTION/UNKNOWN split,
+# 2026-08-13). Empty for now: qwen3-8b's GGUF (Q5_K_M) conditioning drift was
+# judged tolerable enough to fold into VERIFIED rather than land here (see
+# _TE_RENDER_VERIFIED's comment) -- no text-encoder format has yet earned
+# this middle state on its own.
+_TE_RENDER_TESTED_DRIFT: set[tuple[str, str]] = set()
 
 
 def text_encoder_support_level(family: str, format_key: str) -> str:
-    """Return SUPPORT_VERIFIED / SUPPORT_CAUTION / SUPPORT_BAD for one
-    (vendored text-encoder family, format) pair. Same three-state evidence
-    bar as support_level() above: VERIFIED means actually converted, loaded,
-    and rendered correctly in ComfyUI with this tool's own output; BAD means
-    actually render-tested and confirmed to produce broken/garbage output
-    (not just "differs from the unquantized baseline" -- prompt-adherence
-    variance that also occurs on F16 doesn't count, see
-    _TE_RENDER_VERIFIED's docstring); CAUTION means neither -- untested.
+    """Return SUPPORT_VERIFIED / SUPPORT_CAUTION / SUPPORT_BAD / SUPPORT_UNKNOWN
+    for one (vendored text-encoder family, format) pair. Same four-state
+    evidence bar as support_level() above: VERIFIED means actually
+    converted, loaded, and rendered correctly with no visible deviation;
+    CAUTION means render-tested with visible-but-tolerable deviation
+    (_TE_RENDER_TESTED_DRIFT); BAD means actually render-tested and
+    confirmed to produce broken/garbage output (not just "differs from the
+    unquantized baseline" -- prompt-adherence variance that also occurs on
+    F16 doesn't count, see _TE_RENDER_VERIFIED's docstring); UNKNOWN means
+    never actually rendered, no evidence either way.
+
+    F16 (the safetensors precision-cast column, not the GGUF-outtype "F16"
+    collapsed into the GGUF column): always VERIFIED, unconditionally, same
+    reasoning as support_level()'s F16/F16_MIXED bullet for diffusion models
+    -- a plain dtype cast never touches ComfyUI's quantized-compute code path
+    at all, so it carries none of the architecture-dependent risk the
+    quantized formats do. Checked first, before any per-family evidence
+    lookup, so a family can't accidentally end up in _TE_RENDER_CONFIRMED_BAD
+    for "F16" and silently flip this.
     """
+    if format_key == "F16":
+        return SUPPORT_VERIFIED
     if (family, format_key) in _TE_RENDER_CONFIRMED_BAD:
         return SUPPORT_BAD
     if (family, format_key) in _TE_RENDER_VERIFIED:
         return SUPPORT_VERIFIED
-    return SUPPORT_CAUTION
+    if (family, format_key) in _TE_RENDER_TESTED_DRIFT:
+        return SUPPORT_CAUTION
+    return SUPPORT_UNKNOWN
 
 
 def build_text_encoder_support_table() -> list[dict]:

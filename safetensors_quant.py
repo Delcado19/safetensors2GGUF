@@ -25,9 +25,17 @@ from models.architectures import QUANTIZATION_THRESHOLD
 # dynamic-activation-quantization compute path entirely for every FP8
 # layer, matching the safety profile of the "scaled_fp8" checkpoints
 # already circulating on Civitai/HuggingFace (see docs/issues_analysis.md
-# #16). NVFP4 has no equivalent verified safe mode yet (see
-# safetensors_quant_nvfp4.py and docs/issues_analysis.md #15) and stays
-# unoffered here; its writer/tests remain in the codebase.
+# #16). NVFP4 stays unoffered here too, but no longer for lack of a safe
+# mode: reading comfy/ops.py's actual source (2026-08-13) found
+# full_precision_matrix_mult is read generically from any layer's
+# .comfy_quant config, not gated to float8_e4m3fn -- convert_safetensors.py
+# now sets it for nvfp4 too (full_precision_nvfp4=True, default on). The
+# old "NVFP4 has no equivalent safe mode" conclusion only held for
+# ComfyUI's own legacy-checkpoint upgrade path (convert_old_quants(), which
+# really is FP8-only); it never applied to this tool's own writer. NOT yet
+# render-tested in ComfyUI though -- stays out of the GUI dropdown until
+# that happens, same evidence bar every other promotion here follows. See
+# convert_safetensors.py's full_precision_nvfp4 docstring.
 SAFETENSORS_DTYPE_CHOICES: list[tuple[str, str]] = [
     ("F16       — Half precision",                                       "F16"),
     ("F16 mixed — Half precision, hiprec tensors stay F32",               "F16_MIXED"),
@@ -55,16 +63,30 @@ SAFETENSORS_DTYPE_CHOICES: list[tuple[str, str]] = [
 # FP8's quantized-compute path at runtime regardless of on-disk precision
 # loss; plain INT8 has no such runtime flag, so its clean result is direct
 # evidence flux's keys_hiprec-sensitive tensors tolerate INT8 rounding well,
-# not just a mechanism-level argument. NVFP4/NVFP4_MIXED were NOT added here
-# -- the same seed batch showed visible composition drift (background
-# details, and once a missing garment) in 2 of 3 seeds for both variants,
-# while FP8/INT8 stayed pixel-identical on every one of those same seeds --
-# confirming (not just predicting by analogy) the CAUTION rating NVFP4
-# already carries architecture-wide, see model_support.py.
-# Everything else with a non-empty keys_hiprec is protected on the strength
-# of a community-tool cross-reference alone, which format_recommendation()
-# below discloses rather than implying the same level of confidence for
-# every architecture.
+# not just a mechanism-level argument. NVFP4/NVFP4_MIXED were NOT added that
+# day -- the same seed batch showed visible composition drift (background
+# details, and once a missing garment) in 2 of 3 seeds for both variants.
+# 2026-08-13: root-caused as two compounding bugs, both fixed, then
+# re-tested clean. (1) ModelFlux.keys_shape_critical was missing
+# txt_in.weight/vector_in.in_layer.weight -- NVFP4 halved their on-disk last
+# dim, and ComfyUI's model_detection.py reads those raw shapes to infer
+# context_in_dim/vec_in_dim, silently corrupting the built model's config
+# (this alone crashed plain NVFP4 outright once full_precision_nvfp4 forced
+# a dequantize path that couldn't tolerate the wrong shape -- see (2)).
+# (2) convert_to_safetensors() never set full_precision_matrix_mult for
+# nvfp4 layers (FP8-only before this fix), so NVFP4 always ran through
+# ComfyUI's dynamic-activation-quantization compute path -- the same
+# mechanism #15/#16 already identified as the corruption source for
+# lumina2. With both fixed (models/architectures.py's keys_shape_critical,
+# convert_safetensors.py's full_precision_nvfp4=True default), 2 same-seed/
+# prompt comparisons against the same BF16 baseline showed NVFP4 and
+# NVFP4_MIXED both producing output with only minor palette/decorative
+# variance (an earring color, a hat ornament) -- composition, identity,
+# pose, and outfit all preserved on every seed, the same bar FP8/INT8
+# cleared. Everything else with a non-empty keys_hiprec is protected on the
+# strength of a community-tool cross-reference alone, which
+# format_recommendation() below discloses rather than implying the same
+# level of confidence for every architecture.
 _RENDER_VERIFIED_MIXED: set[tuple[str, str]] = {
     ("lumina2", "INT8_MIXED"),
     ("lumina2", "FP8_MIXED"),
@@ -72,6 +94,41 @@ _RENDER_VERIFIED_MIXED: set[tuple[str, str]] = {
     ("flux", "FP8_MIXED"),
     ("flux", "INT8"),
     ("flux", "INT8_MIXED"),
+    ("flux", "NVFP4"),
+    ("flux", "NVFP4_MIXED"),
+    # sdxl (realvisxlV50_v50LightningBakedvae, 2026-08-14): FP8/INT8 both
+    # initially produced solid-black renders -- root-caused to a bug (not an
+    # SDXL-specific precision issue): quantize_tensor_st() had no guard
+    # against quantizing >=3D (Conv1d/2d/3d) weights, and ComfyUI's
+    # MixedPrecisionOps only implements quantized loading for
+    # nn.Linear/MoEExperts/Embedding, silently misreading the raw FP8/INT8
+    # bytes of a Conv2d kernel as floats. Separately, plain NVFP4/NVFP4_MIXED
+    # crashed on load ('NoneType' object has no attribute 'quant_config') --
+    # ModelSDXL.keys_shape_critical was missing label_emb.0.0.weight, whose
+    # NVFP4-halved last dim corrupted adm_in_channels detection. Both fixed
+    # (safetensors_quant.py's dim()>=3 guard, models/architectures.py); a
+    # same-seed/prompt comparison across 2 prompts (a fantasy skeleton
+    # render, an unrelated photorealistic portrait) then showed FP8,
+    # FP8_MIXED, INT8, INT8_MIXED, NVFP4 and NVFP4_MIXED all matching the
+    # F16 baseline's composition/identity/outfit exactly -- SDXL has no
+    # keys_hiprec (empty), so plain and *_MIXED behave identically here by
+    # design, consistent with what was observed.
+    ("sdxl", "FP8"),
+    ("sdxl", "FP8_MIXED"),
+    ("sdxl", "NVFP4"),
+    ("sdxl", "NVFP4_MIXED"),
+    # sd1 (DreamShaper 8, civitai.com/models/4384, 2026-08-14): same fix set
+    # as sdxl above already covers it (dim()>=3 Conv2d guard, ModelSD1's
+    # attn2.to_k.weight shape_critical entry -- SD1 has no label_emb, so no
+    # class-conditioning analog to protect there). Render-tested across 2
+    # prompts (a photoreal portrait, a fantasy character portrait) via
+    # CLIP-L: FP8, INT8, NVFP4, NVFP4_MIXED all matched the F16 baseline's
+    # composition/identity/outfit with only quantization-noise-level
+    # decorative variance -- no code changes needed, first-try clean.
+    ("sd1", "FP8"),
+    ("sd1", "FP8_MIXED"),
+    ("sd1", "NVFP4"),
+    ("sd1", "NVFP4_MIXED"),
 }
 
 # (base_format -> {arch_key}) pairs where the PLAIN (non-mixed) output has
@@ -266,8 +323,41 @@ def quantize_tensor_st(
     if data.dim() == 1:
         return {key: data.to(torch.float32)}
 
+    # ComfyUI's MixedPrecisionOps (comfy/ops.py) only implements quantized
+    # (weight_scale-aware) loading for nn.Linear/MoEExperts/Embedding --
+    # Conv1d/2d/3d have no equivalent override and fall through to the plain,
+    # non-quantization-aware cast-only ops class, which never reads a
+    # weight_scale sidecar. Quantizing a >=3D (i.e. conv) weight here writes
+    # bytes ComfyUI silently misinterprets as raw floats on load: confirmed
+    # against a real SDXL FP8 conversion where a Conv2d kernel
+    # (input_blocks.0.0.weight, [320,4,3,3]) quantized to F8_E4M3 without
+    # incident here but rendered a fully black image in ComfyUI -- INT8 hits
+    # the same bug via its dim()!=2 tensorwise fallback further down, which
+    # also writes a scale sidecar. NVFP4 already dodges this by accident (a
+    # 3x3 kernel's last dim isn't %16, so quantize_nvfp4 raises and the
+    # except-ValueError fallback below keeps it F16) -- this makes the same
+    # protection explicit and applies it to every format, not just SDXL: no
+    # architecture's Conv2d layers are quantization-loadable right now.
+    if data.dim() >= 3:
+        return {key: data.to(torch.float16)}
+
     if base == "FP8":
         from safetensors_quant_fp8 import quantize_fp8_scaled
+
+        # Not shape-safety this time (FP8 never changes on-disk shape, unlike
+        # NVFP4/INT8-ConvRot below) -- value-safety. keys_shape_critical also
+        # covers keys ComfyUI reads via a bare `.weight` attribute access,
+        # bypassing the module's normal dequantizing forward()/
+        # _load_from_state_dict() entirely (e.g. comfy/clip_model.py's
+        # CLIPTextModel_.forward(): `embeds + comfy.ops.cast_to(self.
+        # embeddings.position_embedding.weight, ...)`). NVFP4/INT8 already
+        # checked this list, but FP8 never did -- unnoticed until a real CLIP-
+        # L/bigG conversion: NVFP4 crashed outright (halved last dim breaks
+        # the addition's shape), but FP8 quantized silently and produced
+        # numerically wrong (raw float8 bytes, never dequantized) output --
+        # visible only as a corrupted render, not an error.
+        if any(x in key for x in getattr(model_arch, "keys_shape_critical", [])):
+            return {key: data.to(torch.float16)}
         return quantize_fp8_scaled(data, key)
 
     if base == "NVFP4":
@@ -333,11 +423,12 @@ def estimate_safetensors_output_size(path: str, target_key: str, model_arch) -> 
     equivalent of quantize.py's _estimate_from_safetensors() for GGUF.
 
     Replicates quantize_tensor_st's exact per-tensor branching (is_hiprec_st's
-    1D/small/keys_hiprec gate, keys_shape_critical fallback, NVFP4's last-dim%16
-    and INT8 ConvRot's last-dim%256 shape requirements) rather than GGUF's
-    simpler unconditional "1D always F32" rule -- necessary because the
-    *_MIXED variants' size depends on model_arch.keys_hiprec, which GGUF
-    output doesn't have an analogous per-format dependency on.
+    1D/small/keys_hiprec gate, the >=3D Conv1d/2d/3d fallback, keys_shape_critical
+    fallback, NVFP4's last-dim%16 and INT8 ConvRot's last-dim%256 shape
+    requirements) rather than GGUF's simpler unconditional "1D always F32"
+    rule -- necessary because the *_MIXED variants' size depends on
+    model_arch.keys_hiprec, which GGUF output doesn't have an analogous
+    per-format dependency on.
 
     Returns None if the file can't be read as a safetensors header.
     """
@@ -389,6 +480,13 @@ def estimate_safetensors_output_size(path: str, target_key: str, model_arch) -> 
 
         if ndim == 1:
             total += n_elems * 4  # F32 -- unconditional, matches quantize_tensor_st
+            continue
+
+        # Conv1d/2d/3d weights (>=3D): ComfyUI's MixedPrecisionOps has no
+        # quantized-loading Conv override (see quantize_tensor_st's matching
+        # ndim >= 3 guard) -- always F16 regardless of format/architecture.
+        if ndim >= 3:
+            total += n_elems * 2
             continue
 
         if base == "FP8":

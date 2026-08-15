@@ -101,6 +101,7 @@ def convert_to_safetensors(
     model_arch=None,
     log_tensor_every=1,
     full_precision_fp8=True,
+    full_precision_nvfp4=True,
     strip_prefixes=True,
 ):
     """Convert a model checkpoint to a quantized .safetensors file.
@@ -137,6 +138,25 @@ def convert_to_safetensors(
             The tradeoff is no FP8 tensor-core compute speedup — this format
             is storage/VRAM savings only unless a user explicitly opts out.
             See docs/issues_analysis.md #16.
+        full_precision_nvfp4: Same mechanism as full_precision_fp8, applied
+            to NVFP4/NVFP4_MIXED (default True). comfy/ops.py's
+            _load_quantized_module() reads "full_precision_matrix_mult" from
+            the per-layer .comfy_quant config generically — the gate at
+            MixedPrecisionOps.Linear.forward() (`not self._full_precision_mm`)
+            is not format-specific, it applies identically regardless of
+            quant_format. docs/issues_analysis.md #16's original "NVFP4 has
+            no equivalent safe mode" conclusion was based on ComfyUI's
+            legacy-checkpoint convert_old_quants() only synthesizing this
+            flag for scaled_fp8 checkpoints — true for checkpoints ComfyUI
+            itself upgrades, but this tool controls its own .comfy_quant
+            output directly and was simply never setting the flag for nvfp4.
+            Verified by reading comfy/ops.py's actual source (a local
+            ComfyUI-Easy-Install checkout, comfy_kitchen 0.2.30) — NOT
+            yet render-tested in ComfyUI. lumina2 was previously
+            _RENDER_CONFIRMED_BAD for NVFP4/NVFP4_MIXED and flux was CAUTION
+            (visible composition drift) under the OLD writer that never set
+            this flag; both need re-testing against this fix before either
+            model_support.py table changes.
         strip_prefixes: Passed through to ``load_state_dict()``. Diffusion
             checkpoints often wrap the UNet in a "model."/"model.diffusion_model."
             prefix that must be stripped for architecture detection and clean
@@ -253,6 +273,8 @@ def convert_to_safetensors(
                     layer_conf["convrot"] = True
                     layer_conf["convrot_groupsize"] = CONVROT_GROUP_SIZE
             elif quant_format == "float8_e4m3fn" and full_precision_fp8:
+                layer_conf["full_precision_matrix_mult"] = True
+            elif quant_format == "nvfp4" and full_precision_nvfp4:
                 layer_conf["full_precision_matrix_mult"] = True
             layer_formats[layer_key(key)] = layer_conf
 

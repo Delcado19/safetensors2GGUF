@@ -50,15 +50,15 @@ class TestSupportLevel:
         assert support_level("lumina2", True, "F16") == SUPPORT_VERIFIED
         assert support_level("lumina2", True, "F16_MIXED") == SUPPORT_VERIFIED
 
-    def test_fp8_caution_except_lumina2_and_flux(self):
+    def test_fp8_unknown_except_lumina2_and_flux(self):
         # full_precision_matrix_mult=true fixes ComfyUI's compute path by
         # code reading (comfy/utils.py, comfy/ops.py), but no FP8_MIXED
         # output from this tool has ever been convert+load+render confirmed
         # in ComfyUI on architectures other than lumina2/flux (see
-        # test_flux_fp8_int8_verified_render_tested below) -- CAUTION, not
-        # VERIFIED, under the same bar INT8_MIXED is held to.
-        assert support_level("qwen_image", True, "FP8_MIXED") == SUPPORT_CAUTION
-        assert support_level("sdxl", False, "FP8") == SUPPORT_CAUTION
+        # test_flux_fp8_int8_verified_render_tested below) -- UNKNOWN (never
+        # rendered), not VERIFIED, under the same bar INT8_MIXED is held to.
+        assert support_level("qwen_image", True, "FP8_MIXED") == SUPPORT_UNKNOWN
+        assert support_level("cosmos", False, "FP8") == SUPPORT_UNKNOWN
 
     def test_flux_fp8_int8_verified_render_tested(self):
         # FLUX.2 Klein 9B, 2026-08-12: 3 same-seed/prompt comparisons (5
@@ -75,12 +75,28 @@ class TestSupportLevel:
         assert support_level("flux", True, "FP8_MIXED") == SUPPORT_VERIFIED
         assert support_level("flux", True, "INT8") == SUPPORT_VERIFIED
         assert support_level("flux", True, "INT8_MIXED") == SUPPORT_VERIFIED
-        # NVFP4/NVFP4_MIXED were NOT cleared by the same seed batch -- 2 of 3
+        # NVFP4/NVFP4_MIXED were NOT cleared by this same seed batch -- 2 of 3
         # seeds showed visible composition drift for both variants while
-        # FP8/INT8 stayed pixel-identical on those same seeds, confirming
-        # (not just predicting by analogy) the existing CAUTION rating.
-        assert support_level("flux", True, "NVFP4") == SUPPORT_CAUTION
-        assert support_level("flux", True, "NVFP4_MIXED") == SUPPORT_CAUTION
+        # FP8/INT8 stayed pixel-identical on those same seeds. Root-caused
+        # and fixed 2026-08-13 (missing keys_shape_critical entries +
+        # full_precision_matrix_mult never set for nvfp4); a re-test with
+        # both fixes active came back clean -- see test_flux_nvfp4_verified
+        # below and safetensors_quant._RENDER_VERIFIED_MIXED's docstring.
+
+    def test_flux_nvfp4_verified(self):
+        # 2026-08-13: models/architectures.py's ModelFlux.keys_shape_critical
+        # was missing txt_in.weight/vector_in.in_layer.weight (NVFP4 halved
+        # their on-disk last dim, corrupting ComfyUI's raw-shape hyperparameter
+        # inference -- the same #9 bug class img_in.weight was already
+        # protected against), and convert_safetensors.py never set
+        # full_precision_matrix_mult for nvfp4 layers (FP8-only before this
+        # fix), leaving NVFP4 on ComfyUI's dynamic-activation-quantization
+        # compute path. Both fixed; 2 same-seed/prompt comparisons against the
+        # BF16 baseline then showed only minor palette/decorative variance
+        # (earring color, hat ornament) -- composition/identity/pose/outfit
+        # all preserved, the same bar FP8/INT8 already cleared.
+        assert support_level("flux", True, "NVFP4") == SUPPORT_VERIFIED
+        assert support_level("flux", True, "NVFP4_MIXED") == SUPPORT_VERIFIED
 
     def test_fp8_lumina2_split_bad_plain_verified_mixed(self):
         # lumina2 has been directly render-tested for both FP8 variants:
@@ -102,30 +118,53 @@ class TestSupportLevel:
         # end-to-end (docs/issues_analysis.md #15; flux: see
         # test_flux_fp8_int8_verified_render_tested above).
         assert support_level("lumina2", True, "INT8_MIXED") == SUPPORT_VERIFIED
-        assert support_level("qwen_image", True, "INT8_MIXED") == SUPPORT_CAUTION
+        assert support_level("qwen_image", True, "INT8_MIXED") == SUPPORT_UNKNOWN
 
-    def test_plain_int8_bad_on_lumina2_caution_elsewhere(self):
+    def test_plain_int8_bad_on_lumina2_unknown_elsewhere(self):
         # lumina2 has direct render-test evidence of corruption with plain
-        # INT8 (docs/issues_analysis.md #15) -- BAD, not merely CAUTION.
+        # INT8 (docs/issues_analysis.md #15) -- BAD, not merely UNKNOWN.
         # Every other untested sensitive architecture shares the same risk
-        # class but has never actually been rendered, so it stays CAUTION
+        # class but has never actually been rendered, so it stays UNKNOWN
         # (flux is the one exception -- render-tested clean, see
         # test_flux_fp8_int8_verified_render_tested above).
         assert support_level("lumina2", True, "INT8") == SUPPORT_BAD
-        assert support_level("qwen_image", True, "INT8") == SUPPORT_CAUTION
+        assert support_level("qwen_image", True, "INT8") == SUPPORT_UNKNOWN
 
-    def test_nvfp4_bad_on_lumina2_caution_elsewhere(self):
-        # Direct render evidence (full-image noise, #15) exists only for
-        # lumina2 -- BAD there, CAUTION everywhere else on the strength of
-        # the shared dynamic-activation-quantization mechanism alone (no
-        # verified safe mode, unlike FP8's full_precision_matrix_mult) --
-        # including flux, whose own render test showed visible composition
-        # drift on NVFP4/NVFP4_MIXED rather than clearing them (see
-        # test_flux_fp8_int8_verified_render_tested above).
+    def test_nvfp4_bad_on_lumina2_verified_on_flux_unknown_elsewhere(self):
+        # lumina2's original BAD verdict (full-image noise, #15) was from a
+        # pre-fix conversion. 2026-08-13: re-tested with the same
+        # full_precision_nvfp4 fix that cleared flux -- no more noise, but one
+        # of three tested prompts still showed a full composition/pose/outfit
+        # change from baseline. Briefly moved to CAUTION on the strength of
+        # "2 of 3 were clean", then back to BAD the same day: FP8/INT8 above
+        # were judged BAD off a single failing test each showing the identical
+        # failure pattern, so holding NVFP4 to a looser bar just because it
+        # also had passing samples wasn't a consistent standard. flux is
+        # VERIFIED (see test_flux_nvfp4_verified above). Every other
+        # architecture has never actually been rendered with NVFP4 -- UNKNOWN,
+        # not a blanket CAUTION/BAD on the strength of the shared mechanism
+        # alone.
         assert support_level("lumina2", True, "NVFP4") == SUPPORT_BAD
         assert support_level("lumina2", True, "NVFP4_MIXED") == SUPPORT_BAD
-        assert support_level("sdxl", False, "NVFP4_MIXED") == SUPPORT_CAUTION
-        assert support_level("flux", True, "NVFP4") == SUPPORT_CAUTION
+        assert support_level("cosmos", False, "NVFP4_MIXED") == SUPPORT_UNKNOWN
+        assert support_level("flux", True, "NVFP4") == SUPPORT_VERIFIED
+        assert support_level("flux", True, "NVFP4_MIXED") == SUPPORT_VERIFIED
+
+    def test_sdxl_verified_after_conv_and_label_emb_fixes(self):
+        # 2026-08-14: FP8/INT8 initially rendered solid black (>=3D Conv2d
+        # weights got quantized into a format ComfyUI can't load) and plain
+        # NVFP4/NVFP4_MIXED crashed on load (label_emb.0.0.weight missing
+        # from keys_shape_critical). Both fixed and re-tested clean across 2
+        # prompts -- see safetensors_quant._RENDER_VERIFIED_MIXED's docstring.
+        assert support_level("sdxl", False, "FP8") == SUPPORT_VERIFIED
+        assert support_level("sdxl", False, "FP8_MIXED") == SUPPORT_VERIFIED
+        assert support_level("sdxl", False, "NVFP4") == SUPPORT_VERIFIED
+        assert support_level("sdxl", False, "NVFP4_MIXED") == SUPPORT_VERIFIED
+        # INT8/INT8_MIXED were already VERIFIED via the `not
+        # keys_hiprec_nonempty` branch (sdxl has no keys_hiprec) -- unaffected
+        # by either bug, but same render evidence now backs it too.
+        assert support_level("sdxl", False, "INT8") == SUPPORT_VERIFIED
+        assert support_level("sdxl", False, "INT8_MIXED") == SUPPORT_VERIFIED
 
     def test_unknown_format_key_returns_unknown(self):
         assert support_level("sdxl", False, "BOGUS") == SUPPORT_UNKNOWN
@@ -163,7 +202,7 @@ class TestTextEncoderSupport:
     def test_covers_gguf_and_safetensors_formats(self):
         keys = {key for _, key in TEXT_ENCODER_TABLE_FORMATS}
         assert keys == {
-            "GGUF", "FP8", "FP8_MIXED", "INT8", "INT8_MIXED", "NVFP4", "NVFP4_MIXED",
+            "GGUF", "F16", "FP8", "FP8_MIXED", "INT8", "INT8_MIXED", "NVFP4", "NVFP4_MIXED",
         }
 
     def test_every_family_format_pair_has_a_support_level(self):
@@ -173,25 +212,66 @@ class TestTextEncoderSupport:
                     SUPPORT_VERIFIED, SUPPORT_CAUTION, SUPPORT_BAD, SUPPORT_UNKNOWN,
                 )
 
-    def test_untested_family_stays_caution_on_every_format(self):
-        # clip-l has no render-test evidence at all -- every cell CAUTION.
+    def test_untested_family_stays_unknown_on_every_format(self):
+        # t5-xxl has no render-test evidence at all -- every cell UNKNOWN,
+        # except F16: that's always unconditionally VERIFIED (a plain
+        # precision cast, same reasoning as the diffusion-model table's F16/
+        # F16_MIXED columns) -- see test_f16_always_verified below.
+        # (clip-l/clip-bigg are NOT a good "untested" example here anymore --
+        # every one of their quantized formats is now a confirmed structural
+        # impossibility, not merely untested -- see
+        # test_clip_families_gguf_confirmed_bad and
+        # test_clip_families_quantized_safetensors_confirmed_bad below.)
         for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
-            assert text_encoder_support_level("clip-l", format_key) == SUPPORT_CAUTION
+            if format_key == "F16":
+                continue
+            assert text_encoder_support_level("t5-xxl", format_key) == SUPPORT_UNKNOWN
 
-    def test_qwen3_4b_verified_on_every_render_tested_format(self):
-        # 2026-08-12: convert+load+render-tested in ComfyUI across GGUF
-        # (F16/Q8_0/Q6_K) and the FP8/NVFP4 safetensors formats, no
-        # format-specific defect found (see model_support.py's
-        # _TE_RENDER_VERIFIED comment). INT8/INT8_MIXED were added to the
-        # table 2026-08-13 (safetensors_quant already supported them for
-        # text encoders, the dropdown just never offered them) but haven't
-        # been render-tested yet -- CAUTION, not VERIFIED, same evidence bar
-        # as everything else.
+    def test_f16_always_verified(self):
+        # Plain precision cast, never touches ComfyUI's quantized-compute
+        # path -- unconditionally VERIFIED regardless of family, even ones
+        # with zero other evidence (t5-xxl) or every other format confirmed
+        # BAD (clip-l/clip-bigg, where F16 safetensors is the only format
+        # that actually works).
+        for family in ("t5-xxl", "clip-l", "clip-bigg", "qwen3-4b"):
+            assert text_encoder_support_level(family, "F16") == SUPPORT_VERIFIED, family
+
+    def test_clip_families_quantized_safetensors_confirmed_bad(self):
+        # Not a render defect either -- a genuine ComfyUI-side gap found
+        # 2026-08-14 render-testing SDXL's clip_g: comfy/sd1_clip.py only
+        # selects the quantization-aware MixedPrecisionOps when
+        # model_options["quantization_metadata"] is set, and comfy/sd.py's
+        # load_text_encoder_state_dicts() only ever sets that key inside its
+        # CLIPType.MINIMAX branch -- the standard SDXL CLIP-L/CLIP-G path
+        # always falls through to plain comfy.ops.manual_cast, which ignores
+        # any .comfy_quant/weight_scale sidecar entirely. FP8 loaded without
+        # error but rendered solid black; NVFP4 crashed outright (packed
+        # on-disk shape used raw). See model_support.py's
+        # _TE_RENDER_CONFIRMED_BAD docstring for the full trace.
+        for family in ("clip-l", "clip-bigg"):
+            for fmt in ("FP8", "FP8_MIXED", "INT8", "INT8_MIXED", "NVFP4", "NVFP4_MIXED"):
+                assert text_encoder_support_level(family, fmt) == SUPPORT_BAD, (family, fmt)
+
+    def test_clip_families_gguf_confirmed_bad(self):
+        # Not a render defect -- llama.cpp's convert_hf_to_gguf.py has no
+        # CLIPModel/CLIPTextModel converter at all, so GGUF conversion fails
+        # before it could ever render (see model_support.py's
+        # _TE_RENDER_CONFIRMED_BAD comment and
+        # text_encoder_convert._reject_if_gguf_unsupported).
+        assert text_encoder_support_level("clip-l", "GGUF") == SUPPORT_BAD
+        assert text_encoder_support_level("clip-bigg", "GGUF") == SUPPORT_BAD
+
+    def test_qwen3_4b_verified_on_every_format(self):
+        # 2026-08-12/13: convert+load+render-tested in ComfyUI across GGUF
+        # (F16/Q8_0/Q6_K) and all 6 safetensors formats, no format-specific
+        # defect found (see model_support.py's _TE_RENDER_VERIFIED comment).
+        # INT8/INT8_MIXED: 2 Z-Image checkpoints, loaded through the correct
+        # native `CLIPLoader` node -- clean. (A same-day batch through the
+        # wrong node, ComfyUI-GGUF's `CLIPLoaderGGUF`, looked like total
+        # breakage; that was a workflow error, not a conversion defect --
+        # see _TE_RENDER_CONFIRMED_BAD's docstring.)
         for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
-            if format_key in ("INT8", "INT8_MIXED"):
-                assert text_encoder_support_level("qwen3-4b", format_key) == SUPPORT_CAUTION
-            else:
-                assert text_encoder_support_level("qwen3-4b", format_key) == SUPPORT_VERIFIED
+            assert text_encoder_support_level("qwen3-4b", format_key) == SUPPORT_VERIFIED
 
     def test_qwen3_8b_verified_on_every_format(self):
         # 2026-08-13 (FLUX.2 Klein 9B's own text encoder): 3 same-seed/
@@ -222,6 +302,10 @@ class TestSupportLevelLumina2Table:
         lumina2_row = next(r for r in rows if r["arch"] == "lumina2")
         assert lumina2_row["INT8"] == SUPPORT_BAD
         assert lumina2_row["FP8"] == SUPPORT_BAD
+        # NVFP4/NVFP4_MIXED: briefly CAUTION on 2026-08-13 after a re-test
+        # with the full_precision_nvfp4 fix, reverted to BAD the same day for
+        # consistency with FP8/INT8's bar -- see model_support.py's
+        # _RENDER_CONFIRMED_BAD comment.
         assert lumina2_row["NVFP4"] == SUPPORT_BAD
         assert lumina2_row["NVFP4_MIXED"] == SUPPORT_BAD
 
