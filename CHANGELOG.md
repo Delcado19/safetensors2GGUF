@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+- **CI: `TestGgufUnsupportedFamilies` failed on a clean checkout with no local llama.cpp clone**: `convert_text_encoder()` called `find_convert_script()` (which auto-clones llama.cpp via subprocess if not already present) before `_reject_if_gguf_unsupported()`. Locally this was masked because llama.cpp was already cloned, so the clone subprocess was a no-op; in CI (no cached clone, restricted network) the clone itself failed first with an unrelated `ValueError`, hiding the intended `RuntimeError` for CLIP families. `text_encoder_convert.py` now runs the (cheap, offline) family check before `find_convert_script()`.
+
 ### Corrected
 - **`sd1` FP8/FP8_MIXED/NVFP4/NVFP4_MIXED moved from `? Unknown` to `✓ Verified`** (INT8/INT8_MIXED were already `✓ Verified` via the `keys_hiprec`-empty fast path, same as `sdxl`): render-tested clean on the first try — DreamShaper 8 (civitai.com/models/4384) via CLIP-L across 2 prompts (a photoreal portrait, a fantasy character portrait), matching the F16 baseline's composition/identity/outfit with only quantization-noise-level decorative variance. No code changes needed: `sdxl`'s earlier fixes this session (the `dim()>=3` Conv2d guard, `ModelSD1.keys_shape_critical`'s `attn2.to_k.weight` entry) already covered `sd1`, and SD1 has no class-conditioning `label_emb` to need an analog of that other `sdxl` fix. `safetensors_quant.py`'s `_RENDER_VERIFIED_MIXED` gains four `sd1` entries; `model_support.py`'s docstring updated.
 

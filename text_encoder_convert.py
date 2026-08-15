@@ -527,6 +527,21 @@ def convert_text_encoder(
                 enc = sys.stdout.encoding or "ascii"
                 print(msg.encode(enc, errors="replace").decode(enc))
 
+    if base_repo_id and base_repo_id.strip():
+        _reject_if_gguf_unsupported(_VENDORED_REPOS.get(base_repo_id.strip()))
+    else:
+        state_dict = load_state_dict(weights_path, strip_prefixes=False)
+        family = detect_text_encoder_family(state_dict)
+        if family is None:
+            raise RuntimeError(
+                "Could not auto-detect the base model family from these weights, and no "
+                "base repo ID was given. Enter the base model's HF repo ID manually."
+            )
+        _reject_if_gguf_unsupported(family)
+
+    # find_convert_script() may clone llama.cpp (network + subprocess) --
+    # deferred until after the cheap, offline family check above so a
+    # rejected CLIP family fails fast instead of triggering a clone first.
     script = find_convert_script()
 
     if dst_path is None:
@@ -535,18 +550,9 @@ def convert_text_encoder(
     with tempfile.TemporaryDirectory(prefix="s2g_text_encoder_") as tmpdir:
         tmp_path = Path(tmpdir)
         if base_repo_id and base_repo_id.strip():
-            _reject_if_gguf_unsupported(_VENDORED_REPOS.get(base_repo_id.strip()))
             _log(f"INFO:  Fetching config/tokenizer for {base_repo_id}…")
             fetch_base_config_files(base_repo_id.strip(), tmp_path, on_log=_log)
         else:
-            state_dict = load_state_dict(weights_path, strip_prefixes=False)
-            family = detect_text_encoder_family(state_dict)
-            if family is None:
-                raise RuntimeError(
-                    "Could not auto-detect the base model family from these weights, and no "
-                    "base repo ID was given. Enter the base model's HF repo ID manually."
-                )
-            _reject_if_gguf_unsupported(family)
             _log(f"INFO:  Auto-detected base model family: {family}")
             _copy_vendored_family(family, tmp_path, on_log=_log)
 
