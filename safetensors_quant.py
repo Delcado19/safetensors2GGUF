@@ -129,6 +129,21 @@ _RENDER_VERIFIED_MIXED: set[tuple[str, str]] = {
     ("sd1", "FP8_MIXED"),
     ("sd1", "NVFP4"),
     ("sd1", "NVFP4_MIXED"),
+    # sd3 (sd3_medium, 2026-08-15/16): FP8/FP8_MIXED render-tested clean
+    # before this session (F16/F16_MIXED/FP8/FP8_MIXED/INT8/INT8_MIXED/
+    # Q4_K_M GGUF all verified by the user via CLIP-G). NVFP4/NVFP4_MIXED
+    # initially crashed on load ('mat1 and mat2 shapes cannot be
+    # multiplied') -- ModelSD3.keys_shape_critical was missing
+    # y_embedder.mlp.0.weight, the same adm_in_channels-corruption pattern
+    # already fixed for sdxl's label_emb.0.0.weight. Fixed in
+    # models/architectures.py, then re-tested clean (composition/identity
+    # matching the F16 baseline). SD3 has no keys_hiprec, so INT8/INT8_MIXED
+    # are already VERIFIED via the `not keys_hiprec_nonempty` branch below,
+    # same as sdxl/sd1.
+    ("sd3", "FP8"),
+    ("sd3", "FP8_MIXED"),
+    ("sd3", "NVFP4"),
+    ("sd3", "NVFP4_MIXED"),
 }
 
 # (base_format -> {arch_key}) pairs where the PLAIN (non-mixed) output has

@@ -259,6 +259,17 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
       INT8/INT8_MIXED are VERIFIED too, but via the `not keys_hiprec_nonempty`
       branch below (sdxl has no keys_hiprec) rather than an explicit
       _RENDER_VERIFIED_MIXED entry — same render evidence backs both paths.
+    - sd3 (sd3_medium, 2026-08-15/16): FP8/FP8_MIXED/NVFP4/NVFP4_MIXED all
+      VERIFIED. F16/F16_MIXED/FP8/FP8_MIXED/INT8/INT8_MIXED/Q4_K_M GGUF
+      render-tested clean via CLIP-G first. Plain NVFP4/NVFP4_MIXED then
+      crashed on load ('mat1 and mat2 shapes cannot be multiplied') —
+      ModelSD3.keys_shape_critical was missing y_embedder.mlp.0.weight, the
+      same adm_in_channels-corruption pattern already fixed for sdxl's
+      label_emb.0.0.weight (see safetensors_quant.py's
+      _RENDER_VERIFIED_MIXED docstring). Fixed, re-tested clean, no visible
+      deviation from the F16 baseline. INT8/INT8_MIXED are VERIFIED via the
+      `not keys_hiprec_nonempty` branch (sd3 has no keys_hiprec), same as
+      sdxl/sd1.
     """
     if format_key == "GGUF":
         return SUPPORT_VERIFIED

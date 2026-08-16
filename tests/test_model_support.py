@@ -166,6 +166,22 @@ class TestSupportLevel:
         assert support_level("sdxl", False, "INT8") == SUPPORT_VERIFIED
         assert support_level("sdxl", False, "INT8_MIXED") == SUPPORT_VERIFIED
 
+    def test_sd3_verified_after_y_embedder_fix(self):
+        # 2026-08-16: plain NVFP4/NVFP4_MIXED crashed on load
+        # (y_embedder.mlp.0.weight missing from keys_shape_critical,
+        # corrupting adm_in_channels -- same pattern as sdxl's label_emb
+        # fix). Fixed and re-tested clean; FP8/FP8_MIXED were already
+        # render-tested clean before that -- see
+        # safetensors_quant._RENDER_VERIFIED_MIXED's docstring.
+        assert support_level("sd3", False, "FP8") == SUPPORT_VERIFIED
+        assert support_level("sd3", False, "FP8_MIXED") == SUPPORT_VERIFIED
+        assert support_level("sd3", False, "NVFP4") == SUPPORT_VERIFIED
+        assert support_level("sd3", False, "NVFP4_MIXED") == SUPPORT_VERIFIED
+        # INT8/INT8_MIXED were already VERIFIED via the `not
+        # keys_hiprec_nonempty` branch (sd3 has no keys_hiprec).
+        assert support_level("sd3", False, "INT8") == SUPPORT_VERIFIED
+        assert support_level("sd3", False, "INT8_MIXED") == SUPPORT_VERIFIED
+
     def test_unknown_format_key_returns_unknown(self):
         assert support_level("sdxl", False, "BOGUS") == SUPPORT_UNKNOWN
 
