@@ -290,4 +290,18 @@ def convert_to_safetensors(
     _log(f"INFO:  Writing {len(out_tensors)} tensors → {dst_path}")
     save_file(out_tensors, dst_path, metadata=metadata)
     _log(f"INFO:  Done → {dst_path}")
+
+    # Quantization is supposed to shrink the file; scale/zero-point tensors
+    # added per layer can outgrow the savings on already-small or oddly-shaped
+    # models, silently producing an output that is both bigger AND lower
+    # precision than the input. Warn rather than fail the conversion.
+    src_size = os.path.getsize(path)
+    dst_size = os.path.getsize(dst_path)
+    if dst_size > src_size:
+        _log(
+            f"WARNING:  Output is larger than the input "
+            f"({dst_size / 1e6:.1f} MB > {src_size / 1e6:.1f} MB) despite quantizing to "
+            f"'{target_key}' — the precision loss bought no size reduction."
+        )
+
     return dst_path, model_arch

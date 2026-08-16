@@ -160,6 +160,33 @@ class TestConvertToSafetensors:
         assert "double_blocks.0." in tensor_lines[0]
         assert "double_blocks.4." in tensor_lines[-1]
 
+    def test_warns_when_output_is_larger_than_input(self, tmp_path, monkeypatch):
+        """A tiny/oddly-shaped model can gain more from per-layer scale
+        tensors than it loses from quantizing, so "quantized" doesn't always
+        imply "smaller". User-reported: silently shipping a file that is
+        both larger AND lower precision than the input defeats the point of
+        quantizing at all — surface it instead of staying quiet."""
+        import os
+
+        src = _write_minimal_flux(tmp_path)
+        real_getsize = os.path.getsize
+
+        def fake_getsize(p):
+            # Only the destination is forced "larger"; the source read must
+            # still reflect its true size or the comparison is meaningless.
+            return real_getsize(p) + 1_000_000 if str(p) != str(src) else real_getsize(p)
+
+        monkeypatch.setattr("convert_safetensors.os.path.getsize", fake_getsize)
+        logged: list[str] = []
+        convert_to_safetensors(str(src), target_key="FP8", overwrite=True, on_log=logged.append)
+        assert any("WARNING" in line and "larger" in line for line in logged)
+
+    def test_no_warning_when_output_shrinks(self, tmp_path):
+        src = _write_minimal_flux(tmp_path)
+        logged: list[str] = []
+        convert_to_safetensors(str(src), target_key="FP8", overwrite=True, on_log=logged.append)
+        assert not any("larger" in line for line in logged)
+
 
 class TestAlreadyQuantizedGuard:
     """docs/issues_analysis.md #12/dequantize.py: an already-quantized source
