@@ -214,6 +214,11 @@ class TestQuantizeTensorNvfp4:
             (ModelFlux(), "txt_in.weight"),
             (ModelFlux(), "vector_in.in_layer.weight"),
             (ModelSD3(), "context_embedder.weight"),
+            # y_embedder.mlp.0.weight: added 2026-08-16 after a live ComfyUI
+            # crash rendering SD3-medium NVFP4 ("mat1 and mat2 shapes cannot
+            # be multiplied") -- model_detection.py reads its raw .shape[1]
+            # for adm_in_channels, halved on-disk by NVFP4 packing.
+            (ModelSD3(), "y_embedder.mlp.0.weight"),
             (ModelAura(), "cond_seq_linear.weight"),
             (CosmosPredict2(), "x_embedder.proj.1.weight"),
             (ModelQwenImage(), "img_in.weight"),

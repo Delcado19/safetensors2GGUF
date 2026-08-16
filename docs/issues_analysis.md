@@ -194,6 +194,7 @@ raw `.shape[-1]` (or `.shape[1]` for a 2D weight) is read to infer hyperparamete
 | `ModelFlux` | `img_in.weight` | `in_channels` from `.shape[1]` |
 | `ModelQwenImage` | `img_in.weight` | same convention as Flux |
 | `ModelSD3` | `context_embedder.weight` | `in_features` from `.shape[1]` |
+| `ModelSD3` | `y_embedder.mlp.0.weight` | `adm_in_channels` from `.shape[1]`; missing entry caused a live NVFP4/NVFP4_MIXED crash on load (`mat1 and mat2 shapes cannot be multiplied`), fixed 2026-08-16 |
 | `ModelAura` | `cond_seq_linear.weight` | `cond_seq_dim` from `.shape[1]` |
 | `ModelLumina2` | `cap_embedder.1.weight` | `cap_feat_dim` from `.shape[1]` |
 | `CosmosPredict2` | `x_embedder.proj.1.weight` | Linear inside `PatchEmbed`'s `Sequential` (index 1, after a `Rearrange`) |

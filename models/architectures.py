@@ -87,8 +87,15 @@ class ModelSD3(ModelTemplate):
         ("joint_blocks.0.x_block.attn.qkv.weight",),
     ]
     keys_banned = ["transformer_blocks.0.attn.add_q_proj.weight"]
-    # ComfyUI's model_detection.py infers context_embedder_config from context_embedder.weight.shape[1]
-    keys_shape_critical = ["context_embedder.weight"]
+    # ComfyUI's model_detection.py infers context_embedder_config from
+    # context_embedder.weight.shape[1], and adm_in_channels from
+    # y_embedder.mlp.0.weight.shape[1] -- same pattern as ModelFlux's
+    # txt_in.weight/vector_in.in_layer.weight (see that class's comment).
+    # NVFP4 halves the on-disk last dim; without this entry, ComfyUI infers
+    # a corrupted adm_in_channels and crashes with a mat1/mat2 shape
+    # mismatch in y_embedder.mlp on load (confirmed against a live ComfyUI
+    # SD3-medium NVFP4 render).
+    keys_shape_critical = ["context_embedder.weight", "y_embedder.mlp.0.weight"]
 
 
 class ModelAura(ModelTemplate):
