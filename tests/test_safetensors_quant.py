@@ -13,6 +13,7 @@ from safetensors_quant import (
 from models.architectures import (
     ModelAura,
     ModelFlux,
+    ModelHiDream,
     ModelHyVid,
     ModelLTXV,
     ModelLumina2,
@@ -237,6 +238,16 @@ class TestQuantizeTensorNvfp4:
             # no attribute 'quant_config'") -- model_detection.py reads its raw
             # .shape[1] for adm_in_channels, halved on-disk by NVFP4 packing.
             (ModelSDXL(), "label_emb.0.0.weight"),
+            # ff_i.gate.weight/img_emb.emb_pos: added 2026-08-17 after a live
+            # ComfyUI crash loading plain NVFP4 hidream_i1_dev ("size
+            # mismatch ... [4, 1280] ... [4, 2560]") -- not a shape-inference
+            # case (HiDream's unet_config is hardcoded), but ComfyUI's
+            # HiDream module loads this tensor via a raw state_dict assign
+            # that never goes through the quantized-loading path, so NVFP4
+            # halving its last dim breaks the plain load_state_dict shape
+            # check directly.
+            (ModelHiDream(), "double_stream_blocks.0.block.ff_i.gate.weight"),
+            (ModelHiDream(), "img_emb.emb_pos"),
         ]
         for arch, key in cases:
             data = torch.randn(32, 32, dtype=torch.float32)

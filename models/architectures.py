@@ -118,9 +118,22 @@ class ModelHiDream(ModelTemplate):
         )
     ]
     keys_hiprec = [".ff_i.gate.weight", "img_emb.emb_pos"]
-    # Audited against ComfyUI's model_detection.py: HiDream's unet_config is all
-    # hardcoded constants, no shape-based hyperparameter inference — safe as-is,
-    # no keys_shape_critical needed.
+    # keys_shape_critical here is NOT about shape-based hyperparameter
+    # inference (unet_config is all hardcoded constants, confirmed against
+    # ComfyUI's model_detection.py) -- it's about tensors ComfyUI's HiDream
+    # module loads via a raw state_dict assign that never goes through
+    # MixedPrecisionOps' quantized-loading path (same class of bug as the
+    # FP8 branch's CLIPTextModel_ position_embedding example in
+    # safetensors_quant.py). Confirmed via live ComfyUI render for
+    # ff_i.gate.weight (the MoE router, shape [4, 2560]): plain NVFP4
+    # crashed on load ("size mismatch ... [4, 1280] ... [4, 2560]", NVFP4
+    # halves the last dim) and plain INT8 produced severely corrupted
+    # output (2026-08-17) -- both fixed by forcing this tensor to stay F16
+    # in every quantization branch, same mechanism keys_shape_critical
+    # already provides. img_emb.emb_pos added proactively on the same
+    # reasoning (a raw nn.Parameter read, not present in the i1-dev
+    # checkpoint tested here, so unconfirmed but same risk class).
+    keys_shape_critical = [".ff_i.gate.weight", "img_emb.emb_pos"]
 
 
 class CosmosPredict2(ModelTemplate):

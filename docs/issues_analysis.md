@@ -201,7 +201,7 @@ raw `.shape[-1]` (or `.shape[1]` for a 2D weight) is read to infer hyperparamete
 | `ModelHyVid` | `txt_in.input_embedder.weight` | `context_in_dim` from `.shape[1]`; `img_in.proj.weight` is a Conv and safe (only its kernel-width last dim is touched, and ComfyUI reads `.shape[1]`/`.shape[2:]` there, not `.shape[-1]`) |
 | `ModelWan` | `head.modulation` | 3D `nn.Parameter` `(1, 2, dim)` — `dim` from `.shape[-1]`; not 1D, so the unconditional 1D-skip doesn't already cover it |
 | `ModelLTXV` | `transformer_blocks.0.attn2.to_k.weight` | `cross_attention_dim` from `.shape[1]` |
-| `ModelHiDream` | *(none — audited, confirmed safe)* | its `unet_config` is entirely hardcoded constants, no shape reads at all |
+| `ModelHiDream` | `.ff_i.gate.weight`, `img_emb.emb_pos` | not a shape-inference case (`unet_config` is hardcoded) — these are read via a raw state_dict assign that bypasses `MixedPrecisionOps`' quantized-loading path entirely, same bug class as `safetensors_quant.py`'s FP8-branch CLIP `position_embedding` example. NVFP4 halving `ff_i.gate.weight`'s last dim crashed load (`size mismatch ... [4, 1280] ... [4, 2560]`); plain INT8 produced severely corrupted renders. Fixed 2026-08-17 |
 
 **Status:** Fixed for `ModelFlux`, `ModelQwenImage`, `ModelSD3`, `ModelAura`,
 `ModelLumina2`, `CosmosPredict2`, `ModelHyVid`, `ModelWan`, `ModelLTXV` (9 of 12 — and

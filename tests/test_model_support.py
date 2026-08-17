@@ -182,6 +182,22 @@ class TestSupportLevel:
         assert support_level("sd3", False, "INT8") == SUPPORT_VERIFIED
         assert support_level("sd3", False, "INT8_MIXED") == SUPPORT_VERIFIED
 
+    def test_hidream_mixed_verified_plain_unknown_after_gate_fix(self):
+        # 2026-08-17: ff_i.gate.weight (MoE router) wasn't in
+        # keys_shape_critical -- plain NVFP4 crashed on load (halved last
+        # dim) and plain INT8 produced severely corrupted output, both
+        # because this tensor never goes through ComfyUI's quantized-
+        # loading path. Fixed by adding it (hidream has keys_hiprec, so
+        # sensitive=True). FP8_MIXED/INT8_MIXED were unaffected (already
+        # skip quantizing hiprec tensors) and render-tested clean.
+        assert support_level("hidream", True, "FP8_MIXED") == SUPPORT_VERIFIED
+        assert support_level("hidream", True, "INT8_MIXED") == SUPPORT_VERIFIED
+        # Plain FP8/INT8/NVFP4 all regenerated after the fix and
+        # re-render-tested clean.
+        assert support_level("hidream", True, "FP8") == SUPPORT_VERIFIED
+        assert support_level("hidream", True, "INT8") == SUPPORT_VERIFIED
+        assert support_level("hidream", True, "NVFP4") == SUPPORT_VERIFIED
+
     def test_unknown_format_key_returns_unknown(self):
         assert support_level("sdxl", False, "BOGUS") == SUPPORT_UNKNOWN
 

@@ -270,6 +270,23 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
       deviation from the F16 baseline. INT8/INT8_MIXED are VERIFIED via the
       `not keys_hiprec_nonempty` branch (sd3 has no keys_hiprec), same as
       sdxl/sd1.
+    - hidream (hidream_i1_dev, 2026-08-17): FP8_MIXED/INT8_MIXED VERIFIED --
+      render-tested clean via CLIP-L, matching composition/identity on a
+      fixed seed. Plain INT8 produced severely corrupted output (structural
+      collapse, not just quality drift) and plain NVFP4 crashed on load
+      (`size mismatch ... [4, 1280] ... [4, 2560]`) -- both traced to
+      `ff_i.gate.weight` (the MoE router) being quantized in plain mode
+      when it never goes through ComfyUI's quantized-loading path at all
+      (raw state_dict assign, same bug class as the FP8 branch's CLIP
+      `position_embedding` example in `safetensors_quant.py`). Fixed by
+      adding it (and `img_emb.emb_pos`, same risk, unconfirmed) to
+      `ModelHiDream.keys_shape_critical`, which forces F16 in every
+      quantization branch regardless of plain/mixed. Plain FP8/INT8/NVFP4
+      all regenerated after the fix and re-render-tested clean -- VERIFIED
+      across the board. GGUF Q4_K_M rendered clean throughout (unaffected --
+      llama-quantize's K-quant path doesn't go through this tensor-level
+      protection at all, and never needed to: it's a post-process on a
+      full-precision F16 GGUF, not a `quantize_tensor_st()` call).
     """
     if format_key == "GGUF":
         return SUPPORT_VERIFIED

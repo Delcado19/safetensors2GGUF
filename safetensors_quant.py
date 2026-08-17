@@ -144,6 +144,18 @@ _RENDER_VERIFIED_MIXED: set[tuple[str, str]] = {
     ("sd3", "FP8_MIXED"),
     ("sd3", "NVFP4"),
     ("sd3", "NVFP4_MIXED"),
+    # hidream (hidream_i1_dev_bf16, 2026-08-17): FP8_MIXED/INT8_MIXED
+    # render-tested clean via CLIP-L -- both matched the same prompt's
+    # composition/identity closely (fixed seed). Unaffected by the
+    # ff_i.gate.weight bug below since MIXED already skips quantizing
+    # keys_hiprec tensors. Plain FP8/INT8/NVFP4 all regenerated after the
+    # keys_shape_critical fix (models/architectures.py) and re-render-tested
+    # clean -- no crash, no corruption, matching composition across formats.
+    ("hidream", "FP8_MIXED"),
+    ("hidream", "INT8_MIXED"),
+    ("hidream", "FP8"),
+    ("hidream", "INT8"),
+    ("hidream", "NVFP4"),
 }
 
 # (base_format -> {arch_key}) pairs where the PLAIN (non-mixed) output has
