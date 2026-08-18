@@ -173,6 +173,26 @@ class TestTextEncoderShapeCriticalKeys:
             assert out[key].dtype == torch.float16, target_key
             assert out[key].shape == data.shape, target_key
 
+    def test_relative_attention_bias_protected_under_every_lossy_format(self):
+        # Real bug found 2026-08-18 testing HiDream's T5-XXL text encoder in
+        # ComfyUI: relative_attention_bias.weight is a small [num_buckets,
+        # num_heads] table read via a bare nn.Embedding lookup (comfy/
+        # text_encoders/t5.py's T5Attention.forward), same unpacking gap as
+        # position_embedding above. NVFP4/NVFP4_MIXED crashed loading with
+        # "size mismatch ... torch.Size([32, 32]) ... current model is
+        # torch.Size([32, 64])" (NVFP4 halves the on-disk last dim).
+        import torch
+        from safetensors_quant import quantize_tensor_st
+        from text_encoder_convert import _TEXT_ENCODER_MODEL_ARCH
+
+        data = torch.randn(32, 64, dtype=torch.float32)
+        key = "encoder.block.0.layer.0.SelfAttention.relative_attention_bias.weight"
+        for target_key in ("FP8", "INT8", "NVFP4"):
+            out = quantize_tensor_st(data, key, _TEXT_ENCODER_MODEL_ARCH, target_key)
+            assert set(out.keys()) == {key}, target_key
+            assert out[key].dtype == torch.float16, target_key
+            assert out[key].shape == data.shape, target_key
+
 
 class TestGgufUnsupportedFamilies:
     def test_rejects_clip_family_via_base_repo_id_before_any_subprocess(self, tmp_path):

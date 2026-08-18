@@ -675,6 +675,15 @@ _TEXT_ENCODER_MODEL_ARCH.keys_shape_critical = [
     # remaining unprotected 2D tensor outside the per-layer transformer
     # blocks.
     "text_projection",
+    # T5/UMT5's relative_attention_bias: a small [num_buckets, num_heads]
+    # lookup table (e.g. HiDream's T5-XXL: [32, 64]) read via a bare
+    # nn.Embedding indexing op (comfy/text_encoders/t5.py's
+    # T5Attention.forward -> self.relative_attention_bias(...)), same
+    # unpacking gap as position_embedding above. Found 2026-08-18: HiDream
+    # T5-XXL NVFP4/NVFP4_MIXED crashed loading in ComfyUI with "size
+    # mismatch ... torch.Size([32, 32]) ... current model is
+    # torch.Size([32, 64])" (NVFP4 halves the on-disk last dim).
+    "relative_attention_bias",
 ]
 
 
