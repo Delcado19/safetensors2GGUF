@@ -140,7 +140,21 @@ _RENDER_CONFIRMED_BAD: set[tuple[str, str]] = {
 # _RENDER_CONFIRMED_BAD the same day, see that set's comment above for why
 # (the one failing prompt is a full wrong-image swap, judged the same way
 # FP8/INT8's single failing tests were, not a "2 of 3 were fine" exception).
-_RENDER_TESTED_DRIFT: set[tuple[str, str]] = set()
+#
+# aura's plain NVFP4 (aura_flow_0.3, 2026-08-18, fixed seed via aura_t5):
+# after both fixes (ModelAura.keys_hiprec + is_hiprec_st's F16 dtype-gate,
+# see safetensors_quant.py's _RENDER_VERIFIED_MIXED docstring), NVFP4_MIXED
+# matched the F16 baseline exactly on the close-up vampire-portrait prompt
+# that originally showed drift. Plain NVFP4 on that same prompt still showed
+# visible facial-detail loss (missing lace-veil texture, softer skin, no
+# freckles) -- keys_hiprec only ever protects *_MIXED, so this is the
+# expected plain-format tradeoff, not a bug. No wrong identity, no crash --
+# CAUTION, not BAD. (3 other, less face-detail-dependent motifs had plain
+# NVFP4 matching cleanly, so this is prompt/content-dependent severity, not
+# a guaranteed failure.)
+_RENDER_TESTED_DRIFT: set[tuple[str, str]] = {
+    ("aura", "NVFP4"),
+}
 
 
 def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) -> str:
@@ -187,7 +201,17 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
       render-test folder, qwen3-8b vanilla text encoder):
       Q6_K across 3 prompts x 2 seeds matched the unquantized baseline with
       no visible deviation at all (closer agreement than lumina2's, no
-      seed-variance false alarm this time).
+      seed-variance false alarm this time). IMPORTANT: every render-test
+      backing the `flux` arch_key (this GGUF note and every safetensors
+      entry in safetensors_quant.py's _RENDER_VERIFIED_MIXED) used a
+      FLUX.2 Klein 9B checkpoint (qwen3-8b text encoder), not Flux.1/
+      Flux.1 Kontext (T5-XXL text encoder) -- found 2026-08-18 while
+      auditing text-encoder test coverage. `ModelFlux` detects both by
+      shared tensor naming, so the VERIFIED status applies to the
+      `arch_key` as coded, but neither Flux.1 itself nor its T5-XXL text
+      encoder have ever actually been render-tested against this tool.
+      Treat Flux.1-specific claims as UNKNOWN pending real evidence, not as
+      covered by the FLUX.2 results above.
     - F16 / F16_MIXED: always VERIFIED. This is a precision cast, not
       compressed-representation quantization with a runtime scale lookup —
       it never touches ComfyUI's quantized-compute code path
@@ -287,6 +311,35 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
       llama-quantize's K-quant path doesn't go through this tensor-level
       protection at all, and never needed to: it's a post-process on a
       full-precision F16 GGUF, not a `quantize_tensor_st()` call).
+    - aura (aura_flow_0.3, 2026-08-18): F16/F16_MIXED/FP8/FP8_MIXED/
+      INT8/INT8_MIXED/NVFP4_MIXED/Q4_K_M GGUF all VERIFIED -- render-tested
+      clean via aura_t5 (Pile-T5-XL), fixed seed, matching composition/
+      identity across formats. NVFP4/NVFP4_MIXED initially showed a
+      reproducible composition/lighting shift vs. the baseline, traced to
+      two compounding bugs: (1) `ModelAura` had no `keys_hiprec` at all --
+      the AdaLN modulation Linears (modC/modX/modCX/modF) scale the
+      *entire* residual stream per block and were quantized in every
+      format including NVFP4_MIXED, which should have been immune. Fixed by
+      adding `keys_hiprec` (the same tensor class Flux/Lumina2 already
+      protect, see those classes' comments in models/architectures.py). (2)
+      Even with `keys_hiprec` populated, the drift persisted: `is_hiprec_st()`
+      (and its GGUF mirror `_quant_type_for()`) only granted hiprec
+      protection to F32/BF16 sources -- aura_flow_0.3 ships F16-native on
+      disk (unlike the BF16 checkpoints this mechanism was validated
+      against), so `keys_hiprec` was a silent no-op for it regardless of
+      content. Fixed by widening both gates (and the GUI size-estimate
+      mirror) to also accept float16. Re-converted and re-render-tested
+      clean across 4 motifs (fire-queen portrait, mountain golem, haunted-
+      house/blood-moon, and the original close-up vampire portrait that
+      first showed the drift) -- NVFP4_MIXED now matches the F16 baseline
+      exactly on every one, including facial detail on the portrait prompt.
+      Plain NVFP4 is CAUTION, not VERIFIED: `keys_hiprec` only ever protects
+      *_MIXED (by design, same tradeoff every other architecture has), and
+      on the vampire-portrait prompt specifically, plain NVFP4 still showed
+      visible (tolerable, no wrong identity) facial-detail loss vs. the
+      baseline -- the 3 other, less face-detail-dependent motifs matched
+      cleanly, so this reads as prompt-dependent severity of an accepted
+      tradeoff, not a bug.
     """
     if format_key == "GGUF":
         return SUPPORT_VERIFIED
@@ -362,9 +415,11 @@ TEXT_ENCODER_FAMILY_DISPLAY_NAMES: dict[str, str] = {
     "qwen2.5-vl-7b": "Qwen2.5-VL 7B — Qwen-Image / Qwen-Image-Edit (qwen2.5-vl-7b)",
     "mistral-small-3.2-24b": "Mistral Small 3.2 24B — FLUX.2 dev (mistral-small-3.2-24b)",
     "ernie-image-pe": "Ministral3 Prompt-Enhancer — ERNIE-Image (ernie-image-pe)",
-    "t5-xxl": "T5-XXL — FLUX.1 / FLUX.1 Kontext (t5-xxl)",
+    "t5-xxl": "T5-XXL — FLUX.1 / FLUX.1 Kontext / HiDream-I1 (t5-xxl)",
     "clip-l": "CLIP-L — SDXL / FLUX.1 (clip-l)",
     "clip-bigg": "OpenCLIP-bigG — SDXL (clip-bigg)",
+    "pile-t5xl": "Pile-T5-XL — AuraFlow (pile-t5xl)",
+    "llama-3.1-8b": "Llama-3.1-8B — HiDream-I1 (llama-3.1-8b)",
 }
 
 # (family_short_name, format_key) pairs actually convert+load+render-tested in
@@ -415,11 +470,51 @@ _TE_RENDER_VERIFIED: set[tuple[str, str]] = {
     ("qwen3-8b", "INT8_MIXED"),
     ("qwen3-8b", "NVFP4"),
     ("qwen3-8b", "NVFP4_MIXED"),
+    # pile-t5xl (AuraFlow's aura_t5, 2026-08-18): GGUF Q4_K_M render-tested
+    # clean across 2 motifs (vampire portrait, haunted-house/blood-moon) via
+    # both an F16 and an FP8_MIXED aura_flow_0.3 diffusion model, matching
+    # the fully unquantized F16/F16 baseline exactly. Unlike FP8/INT8/NVFP4
+    # safetensors (_TE_RENDER_CONFIRMED_BAD below -- structurally unsupported,
+    # aura_t5.py has no quantization_metadata wiring at all), GGUF goes
+    # through ComfyUI-GGUF's own CLIPLoaderGGUF node, an independent
+    # quantized-loading path that doesn't depend on that wiring -- confirms
+    # this is a real, working alternative for this text-encoder family.
+    ("pile-t5xl", "GGUF"),
+    # llama-3.1-8b / t5-xxl (HiDream-I1's Llama-3.1-8B-Instruct and T5-XXL
+    # encoders, 2026-08-18): FP8/FP8_MIXED/INT8/INT8_MIXED/NVFP4/NVFP4_MIXED
+    # all render-tested clean at a fixed seed via a live HiDream-I1-Dev
+    # workflow, matching the unquantized baseline's composition/identity --
+    # sources were Comfy-Org's own fp8_scaled repackaging, dequantized and
+    # re-quantized through this tool (exercises the same `.scale_weight`
+    # fix documented in CHANGELOG.md). T5-XXL NVFP4/NVFP4_MIXED initially
+    # crashed ComfyUI's `load_state_dict` on `relative_attention_bias.weight`
+    # (a [32, 64] lookup table read via a bare nn.Embedding, same dequant-
+    # bypass class as CLIP's `position_embedding`) -- fixed by adding it to
+    # `_TEXT_ENCODER_MODEL_ARCH.keys_shape_critical` in text_encoder_convert.py,
+    # re-converted and re-render-tested clean. A separate, more spatially
+    # complex two-subject prompt showed a non-monotonic compositional
+    # sensitivity (subject placement relative to a piano prop shifted
+    # between formats, not correlated with quantization strength -- F16
+    # showed it, FP8 didn't) -- logged as an observation, not a defect, in
+    # docs/issues_analysis.md; it didn't reproduce on the simpler prompt
+    # used for the pass/fail render test here.
+    ("llama-3.1-8b", "FP8"),
+    ("llama-3.1-8b", "FP8_MIXED"),
+    ("llama-3.1-8b", "INT8"),
+    ("llama-3.1-8b", "INT8_MIXED"),
+    ("llama-3.1-8b", "NVFP4"),
+    ("llama-3.1-8b", "NVFP4_MIXED"),
+    ("t5-xxl", "FP8"),
+    ("t5-xxl", "FP8_MIXED"),
+    ("t5-xxl", "INT8"),
+    ("t5-xxl", "INT8_MIXED"),
+    ("t5-xxl", "NVFP4"),
+    ("t5-xxl", "NVFP4_MIXED"),
 }
 
-# No text-encoder (family, format) pair has direct render evidence of
-# producing wrong/broken output yet -- mirrors _RENDER_CONFIRMED_BAD's role
-# for diffusion models, empty until one actually is. 2026-08-13: a batch of
+# Mirrors _RENDER_CONFIRMED_BAD's role for diffusion models -- (family,
+# format) pairs with direct render evidence of producing wrong/broken
+# output. 2026-08-13: a batch of
 # 8 renders across 6 Z-Image checkpoints briefly looked like qwen3-4b
 # INT8/INT8_MIXED were confirmed-broken (full-image structured noise) --
 # turned out to be a workflow error, not a conversion bug: the broken
@@ -463,12 +558,55 @@ _TE_RENDER_CONFIRMED_BAD: set[tuple[str, str]] = {
     # output file is. Every FP8/INT8/NVFP4 (plain and mixed) variant fails
     # identically for both CLIP-L and CLIP-G until ComfyUI wires up
     # quantization_metadata for the standard CLIP text-encoder path too.
+    #
+    # This gap is architectural, not SDXL-specific: HiDream-I1 also uses
+    # CLIP-L/CLIP-G as 2 of its 4 text encoders, and comfy/text_encoders/
+    # hidream.py's hidream_clip() factory (checked 2026-08-18) only accepts
+    # t5_quantization_metadata/llama_quantization_metadata kwargs -- no
+    # clip_l_/clip_g_quantization_metadata equivalent exists there either.
+    # These clip-l/clip-bigg entries below therefore apply to HiDream-I1's
+    # CLIP-L/CLIP-G too, even though HiDream itself was never separately
+    # render-tested for this (only Llama-3.1-8B and T5-XXL were, see
+    # _TE_RENDER_VERIFIED below) -- HiDream is NOT fully quantizable end to
+    # end: F16 safetensors is the only safe format for 2 of its 4 encoders.
     ("clip-l", "FP8"), ("clip-l", "FP8_MIXED"),
     ("clip-l", "INT8"), ("clip-l", "INT8_MIXED"),
     ("clip-l", "NVFP4"), ("clip-l", "NVFP4_MIXED"),
     ("clip-bigg", "FP8"), ("clip-bigg", "FP8_MIXED"),
     ("clip-bigg", "INT8"), ("clip-bigg", "INT8_MIXED"),
     ("clip-bigg", "NVFP4"), ("clip-bigg", "NVFP4_MIXED"),
+    # pile-t5xl (AuraFlow's aura_t5, 2026-08-18): render-tested via the
+    # verified aura_flow_0.3-NVFP4_MIXED diffusion model (fixed seed) --
+    # FP8 and INT8 both produced complete full-image structured noise, no
+    # relation to the prompt at all (worse than clip-g/clip-l's "loads but
+    # wrong" failure mode above). Root cause is the same ComfyUI-side
+    # quantization_metadata gap, but a level further back:
+    # comfy/text_encoders/aura_t5.py's AuraT5Model is a plain
+    # sd1_clip.SD1ClipModel subclass with no *_quantization_metadata
+    # parameter at all -- unlike flux_clip/sd3_clip/hidream_clip/lumina2's
+    # te()/qwen_image's te(), which all accept and wire through their own
+    # quantization-metadata kwarg (comfy/text_encoders/flux.py,
+    # sd3_clip.py, hidream.py, lumina2.py, qwen_image.py). AuraFlow's text
+    # encoder never got this wiring added upstream -- structurally
+    # unsupported, not something this tool's output can route around, same
+    # class of gap as clip-l/clip-bigg above. NVFP4_MIXED render-tested
+    # separately (2026-08-18, user report): hard crash, not just silent
+    # noise -- "mat1 and mat2 shapes cannot be multiplied (256x2048 and
+    # 1024x2048)" inside t5.py's SelfAttention.q Linear (comfy/ops.py's
+    # plain forward_comfy_cast_weights path). 1024 == 2048 // 2: NVFP4
+    # halves the on-disk last dim when packing, and with no quantization-
+    # aware loading wired for this family, the packed bytes get read raw as
+    # a plain weight matrix -- the dimension mismatch crashes outright
+    # before any garbage output is even possible.
+    # _TEXT_ENCODER_MODEL_ARCH (text_encoder_convert.py) has no keys_hiprec
+    # for text encoders, only keys_shape_critical (which doesn't cover
+    # per-layer attention Linears like SelfAttention.q), so plain and MIXED
+    # are equally affected here -- both entries added on the strength of
+    # this one crash, consistent with FP8/INT8's identical root cause
+    # rather than requiring separate plain-format evidence.
+    ("pile-t5xl", "FP8"), ("pile-t5xl", "FP8_MIXED"),
+    ("pile-t5xl", "INT8"), ("pile-t5xl", "INT8_MIXED"),
+    ("pile-t5xl", "NVFP4"), ("pile-t5xl", "NVFP4_MIXED"),
 }
 
 # (family, format_key) pairs render-tested with visible-but-tolerable

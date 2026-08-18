@@ -678,3 +678,42 @@ deliberately keeps NVFP4/NVFP4_MIXED at `SUPPORT_CAUTION` for every architecture
 that investigation, tracked as a future, separate plan — see its docstring for the full
 reasoning. Until then, NVFP4 stays out of `SAFETENSORS_DTYPE_CHOICES` for diffusion-model
 output for the same reason #15 removed it.
+
+---
+
+## Observations (not bugs)
+
+Findings noted for future reference that did not lead to a code change, because the
+evidence didn't point at a defect in this tool's output.
+
+### HiDream-I1 text encoders: subject placement drift on a spatially complex prompt, not correlated with quantization strength
+
+**Observation (2026-08-18):** render-testing HiDream-I1's Llama-3.1-8B and T5-XXL text
+encoders (see `_TE_RENDER_VERIFIED`'s docstring in `model_support.py` for the pass/fail
+evidence) with a spatially complex two-subject prompt ("a woman stands beside a grand
+piano, leaning toward a seated pianist") showed the standing subject's position relative
+to the piano shift between some formats: in the original source checkpoint and this
+tool's plain `FP8` Llama-3.1-8B output, she stands clearly in front of the piano case
+(her legs occlude it, floor tiles visible beneath her); in this tool's `F16` and `INT8`
+Llama-3.1-8B output, her body instead overlaps the piano's keybed with no visible
+separation, as if standing inside the instrument. On the T5-XXL side, `NVFP4` and
+`NVFP4_MIXED` placed her correctly (matching the source); `F16`, `FP8`, `FP8_MIXED`,
+`INT8`, and `INT8_MIXED` did not.
+
+**Why this isn't classified as a defect:** the pattern doesn't correlate with
+quantization strength in either direction. `F16` — the least lossy of this tool's
+outputs, effectively a precision re-save of the source tensors — reproduced the
+misplacement, while the more lossy `FP8` did not; `NVFP4`/`NVFP4_MIXED` (normally the
+formats under the most scrutiny) were the *correct* ones on the T5-XXL side. A defect
+tied to this tool's quantization code would be expected to at least trend with format
+lossiness; this doesn't. All renders used a fixed seed and only the text-encoder weights
+varied, so the effect is real (not seed noise) — but it looks like inherent sensitivity
+of this specific, decision-boundary-adjacent multi-subject spatial prompt to small
+numerical perturbations in the text-encoder output, not a correctness bug in any one
+format. The simpler single-subject prompt used for the actual pass/fail render-test
+evidence (a lone humanoid figure, no relative-placement instruction) showed zero
+compositional deviation across all 14 format combinations tested.
+
+**Action:** none taken. Not used to change any format's support-level classification in
+`model_support.py`. Recorded here in case the same pattern reappears on another
+architecture or prompt and turns out to be systematic after all.

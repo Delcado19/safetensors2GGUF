@@ -389,6 +389,7 @@ _FAMILY_SIGNATURES = {
     (3584, 28, 152064): "qwen2.5-vl-7b",
     (5120, 40, 131072): "mistral-small-3.2-24b",
     (3072, 26, 131072): "ernie-image-pe",  # Ministral3 prompt-enhancer, baidu/ERNIE-Image's pe/ subfolder
+    (4096, 32, 128256): "llama-3.1-8b",  # Llama-3.1-8B-Instruct, HiDream-I1's 4th text encoder
 }
 
 _LAYER_IDX_RE = re.compile(r"\.(?:layers|block)\.(\d+)\.")

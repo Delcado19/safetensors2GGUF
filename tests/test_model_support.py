@@ -198,6 +198,25 @@ class TestSupportLevel:
         assert support_level("hidream", True, "INT8") == SUPPORT_VERIFIED
         assert support_level("hidream", True, "NVFP4") == SUPPORT_VERIFIED
 
+    def test_aura_verified_except_plain_nvfp4_caution(self):
+        # 2026-08-18: aura_flow_0.3, fixed seed via aura_t5. FP8/FP8_MIXED/
+        # INT8/INT8_MIXED render-tested clean. NVFP4/NVFP4_MIXED initially
+        # drifted -- root-caused to two compounding bugs: ModelAura had no
+        # keys_hiprec (AdaLN modulation Linears quantized in every format),
+        # and is_hiprec_st()'s dtype gate excluded float16 sources
+        # (aura_flow_0.3 is F16-native), so keys_hiprec was inert even once
+        # populated. Both fixed; NVFP4_MIXED re-render confirmed clean
+        # across 4 motifs including the original failing vampire-portrait
+        # prompt. Plain NVFP4 still showed visible facial-detail loss on
+        # that same portrait prompt -- keys_hiprec never protects plain
+        # mode, by design (same as every other architecture) -- CAUTION.
+        assert support_level("aura", True, "FP8") == SUPPORT_VERIFIED
+        assert support_level("aura", True, "FP8_MIXED") == SUPPORT_VERIFIED
+        assert support_level("aura", True, "INT8") == SUPPORT_VERIFIED
+        assert support_level("aura", True, "INT8_MIXED") == SUPPORT_VERIFIED
+        assert support_level("aura", True, "NVFP4") == SUPPORT_CAUTION
+        assert support_level("aura", True, "NVFP4_MIXED") == SUPPORT_VERIFIED
+
     def test_unknown_format_key_returns_unknown(self):
         assert support_level("sdxl", False, "BOGUS") == SUPPORT_UNKNOWN
 
@@ -245,27 +264,29 @@ class TestTextEncoderSupport:
                 )
 
     def test_untested_family_stays_unknown_on_every_format(self):
-        # t5-xxl has no render-test evidence at all -- every cell UNKNOWN,
-        # except F16: that's always unconditionally VERIFIED (a plain
-        # precision cast, same reasoning as the diffusion-model table's F16/
-        # F16_MIXED columns) -- see test_f16_always_verified below.
-        # (clip-l/clip-bigg are NOT a good "untested" example here anymore --
-        # every one of their quantized formats is now a confirmed structural
-        # impossibility, not merely untested -- see
-        # test_clip_families_gguf_confirmed_bad and
-        # test_clip_families_quantized_safetensors_confirmed_bad below.)
+        # qwen2.5-vl-7b has no render-test evidence at all -- every cell
+        # UNKNOWN, except F16: that's always unconditionally VERIFIED (a
+        # plain precision cast, same reasoning as the diffusion-model
+        # table's F16/F16_MIXED columns) -- see test_f16_always_verified
+        # below. (t5-xxl was this test's example until 2026-08-18, when it
+        # gained real render-test evidence via HiDream-I1's T5-XXL encoder
+        # -- see _TE_RENDER_VERIFIED's docstring. clip-l/clip-bigg are NOT a
+        # good "untested" example here either -- every one of their
+        # quantized formats is now a confirmed structural impossibility,
+        # not merely untested -- see test_clip_families_gguf_confirmed_bad
+        # and test_clip_families_quantized_safetensors_confirmed_bad below.)
         for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
             if format_key == "F16":
                 continue
-            assert text_encoder_support_level("t5-xxl", format_key) == SUPPORT_UNKNOWN
+            assert text_encoder_support_level("qwen2.5-vl-7b", format_key) == SUPPORT_UNKNOWN
 
     def test_f16_always_verified(self):
         # Plain precision cast, never touches ComfyUI's quantized-compute
         # path -- unconditionally VERIFIED regardless of family, even ones
-        # with zero other evidence (t5-xxl) or every other format confirmed
-        # BAD (clip-l/clip-bigg, where F16 safetensors is the only format
-        # that actually works).
-        for family in ("t5-xxl", "clip-l", "clip-bigg", "qwen3-4b"):
+        # with zero other evidence (qwen2.5-vl-7b) or every other format
+        # confirmed BAD (clip-l/clip-bigg, where F16 safetensors is the only
+        # format that actually works).
+        for family in ("qwen2.5-vl-7b", "clip-l", "clip-bigg", "qwen3-4b"):
             assert text_encoder_support_level(family, "F16") == SUPPORT_VERIFIED, family
 
     def test_clip_families_quantized_safetensors_confirmed_bad(self):
@@ -292,6 +313,29 @@ class TestTextEncoderSupport:
         # text_encoder_convert._reject_if_gguf_unsupported).
         assert text_encoder_support_level("clip-l", "GGUF") == SUPPORT_BAD
         assert text_encoder_support_level("clip-bigg", "GGUF") == SUPPORT_BAD
+
+    def test_pile_t5xl_confirmed_bad(self):
+        # 2026-08-18: aura_t5 (Pile-T5-XL) render-tested via the verified
+        # aura_flow_0.3-NVFP4_MIXED diffusion model. FP8/INT8 both produced
+        # complete full-image structured noise -- no relation to the prompt
+        # at all. NVFP4_MIXED crashed outright ("mat1 and mat2 shapes
+        # cannot be multiplied (256x2048 and 1024x2048)" -- NVFP4's last-
+        # dim packing halving 2048 to 1024). Root cause one level further
+        # back than clip-l/clip-bigg's gap: comfy/text_encoders/aura_t5.py's
+        # AuraT5Model never got *_quantization_metadata wiring added at all
+        # (unlike flux_clip/sd3_clip/hidream_clip/lumina2/qwen_image, which
+        # all have their own te() accepting one) -- structurally unsupported
+        # by ComfyUI, not something this tool's output can route around.
+        for fmt in ("FP8", "FP8_MIXED", "INT8", "INT8_MIXED", "NVFP4", "NVFP4_MIXED"):
+            assert text_encoder_support_level("pile-t5xl", fmt) == SUPPORT_BAD, fmt
+
+    def test_pile_t5xl_gguf_verified(self):
+        # 2026-08-18: aura_t5 GGUF Q4_K_M render-tested clean across 2
+        # motifs via both F16 and FP8_MIXED diffusion models, matching the
+        # unquantized baseline. GGUF loads through ComfyUI-GGUF's own
+        # CLIPLoaderGGUF node, independent of the quantization_metadata gap
+        # that makes every safetensors-quant format BAD for this family.
+        assert text_encoder_support_level("pile-t5xl", "GGUF") == SUPPORT_VERIFIED
 
     def test_qwen3_4b_verified_on_every_format(self):
         # 2026-08-12/13: convert+load+render-tested in ComfyUI across GGUF

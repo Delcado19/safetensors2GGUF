@@ -414,8 +414,9 @@ editorial judgment call, open to correction.
 Below the per-architecture table is a second **Text Encoder Support** table,
 one row per vendored base-model family (Qwen3-4B/8B, Qwen2.5-VL-7B,
 Mistral-Small-3.2-24B, ERNIE-Image's Ministral3 prompt-enhancer, T5-XXL,
-CLIP-L, CLIP-bigG — the same families `detect_text_encoder_family()` matches,
-see [Text-Encoder Conversion](#text-encoder-conversion) below), covering the
+CLIP-L, CLIP-bigG, Pile-T5-XL, Llama-3.1-8B — the same families
+`detect_text_encoder_family()` matches, see [Text-Encoder
+Conversion](#text-encoder-conversion) below), covering the
 formats that tab offers (GGUF — collapsing every direct outtype and K-quant —
 plus FP8/FP8_MIXED/INT8/INT8_MIXED/NVFP4/NVFP4_MIXED). As of 2026-08-12,
 **Qwen3-4B** shows **✓ Verified** across every column — GGUF plus all six
@@ -442,8 +443,22 @@ DiT itself with those same formats *did* show visible composition drift in
 the same testing session — text-encoder quantization only perturbs the
 conditioning vector fed to an otherwise full-precision DiT, not the
 sampling trajectory's own numerics.
-Every other family still shows **? Unknown** across every column
-(never actually rendered). Both this table and the main one share one
+**Llama-3.1-8B** and **T5-XXL** (HiDream-I1's Llama-3.1-8B-Instruct and T5-XXL
+text encoders) show **✓ Verified** for FP8/FP8_MIXED/INT8/INT8_MIXED/
+NVFP4/NVFP4_MIXED, render-tested clean at a fixed seed against the
+unquantized baseline. **Pile-T5-XL** (AuraFlow's `aura_t5`) shows **✓
+Verified** for GGUF only — its FP8/INT8/NVFP4 safetensors formats show **✗
+Known-issue**: ComfyUI's `AuraT5Model` loader never got the
+`*_quantization_metadata` wiring other families' loaders have, so those
+formats render broken output structurally, not from a conversion defect.
+**CLIP-L**/**CLIP-bigG** show **✗ Known-issue** on every quantized format for
+the same class of reason (see `model_support.py`'s docstring for the
+per-family evidence behind every cell) — this applies to HiDream-I1 too,
+which uses CLIP-L/CLIP-G as 2 of its 4 text encoders: F16 safetensors is
+therefore the only safe format for those two, even though the other two
+(Llama-3.1-8B/T5-XXL, above) are fully Verified. HiDream-I1 is not
+end-to-end quantizable across all four of its text encoders. Every other family still shows
+**? Unknown** across every column (never actually rendered). Both this table and the main one share one
 color legend — literal red/yellow/green, not reused from the app's teal
 accent color. Clicking a cell jumps to the Convert Text Encoder tab with that
 format pre-selected — unlike the diffusion-model table, NVFP4 isn't excluded

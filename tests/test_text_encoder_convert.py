@@ -350,6 +350,18 @@ class TestDetectTextEncoderFamily:
         })
         assert detect_text_encoder_family(mistral_small) == "mistral-small-3.2-24b"
 
+    def test_detects_llama_3_1_8b_from_shape_signature(self):
+        # HiDream-I1's 4th text encoder (Llama-3.1-8B-Instruct); added
+        # 2026-08-18 after this family had no signature entry at all.
+        from text_encoder_convert import detect_text_encoder_family
+
+        state_dict = {"model.embed_tokens.weight": _FakeTensor((128256, 4096))}
+        state_dict.update({
+            f"model.layers.{i}.self_attn.q_proj.weight": _FakeTensor((4096, 4096))
+            for i in range(32)
+        })
+        assert detect_text_encoder_family(state_dict) == "llama-3.1-8b"
+
     def test_returns_none_for_unknown_shape(self):
         from text_encoder_convert import detect_text_encoder_family
 
