@@ -1132,6 +1132,60 @@ def _resolve_dst_st(src: str, dst: str | None, target_key: str) -> str | None:
     return dst
 
 
+def _resolve_dst_te(src: str, dst: str | None, format_key: str) -> str | None:
+    """Resolve the user-supplied Text Encoder output path; mirrors _resolve_dst_st.
+
+    Unlike the GGUF/Safetensors tabs, this tab's format dropdown mixes GGUF
+    outtypes/K-quants and safetensors-quant formats, so the extension isn't
+    fixed the way it is for those two -- picked here from
+    TEXT_ENCODER_SAFETENSORS_FORMATS instead. Without this resolution step, a
+    bare directory path (typed by hand, no browse dialog previously existed
+    to produce a full file path -- see browse_and_set_dst_te) got passed
+    straight through to convert_text_encoder_any()/llama-quantize, which
+    can't open a directory as an output file (confirmed 2026-08-18: aura_t5
+    K-quant conversion failed with a bare "ios_base::failbit set: iostream
+    stream error" instead of a clear message).
+    """
+    if not dst:
+        return None
+    dst = dst.strip()
+    if not dst:
+        return None
+
+    ext = ".safetensors" if format_key in TEXT_ENCODER_SAFETENSORS_FORMATS else ".gguf"
+
+    if dst.endswith(("/", "\\")) or Path(dst).is_dir():
+        stem = _strip_model_suffix(src)
+        return str(Path(dst) / f"{stem.name}-{format_key}{ext}")
+
+    if "{ftype}" in dst:
+        resolved = dst.replace("{ftype}", format_key)
+        if not resolved.endswith((".gguf", ".safetensors")):
+            resolved += ext
+        return resolved
+
+    return dst
+
+
+def browse_and_set_dst_te(src: str) -> str:
+    """Open directory picker and compose a Text Encoder output path template.
+
+    Mirrors browse_and_set_dst_st, but leaves the extension out of the
+    template (unlike the GGUF/Safetensors tabs' single-extension outputs,
+    this tab's format dropdown spans both .gguf and .safetensors) --
+    _resolve_dst_te appends the right one from the format selected at
+    convert time.
+    """
+    dir_path = _pick_dir()
+    if not dir_path:
+        return ""  # user cancelled — leave dst_path unchanged
+    src = (src or "").strip()
+    if src:
+        stem = _strip_model_suffix(src)
+        return str(Path(dir_path) / f"{stem.name}-{{ftype}}")
+    return dir_path + "\\"
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Conversion pipeline
 # ──────────────────────────────────────────────────────────────────────────────
@@ -1428,7 +1482,7 @@ def run_te_convert(
             out_path = convert_text_encoder_any(
                 src.strip(),
                 repo_id.strip() if repo_id else "",
-                dst_path=(dst.strip() or None) if dst else None,
+                dst_path=_resolve_dst_te(src.strip(), dst, format_key),
                 format_key=format_key,
                 on_log=lambda msg: q.put(("log", msg)),
                 cancel_event=cancel_event,
@@ -1891,11 +1945,15 @@ def build_app() -> gr.Blocks:
                         lines=1, max_lines=1,
                         info="The ORIGINAL base model's repo (config.json/tokenizer source), not the fine-tune's. Left blank, the tool fingerprints the weights' own tensor shapes against its vendored candidate families (Qwen3-4B/8B, Mistral-Small-3.2-24B, CLIP-L/bigG, T5-XXL, Qwen2.5-VL-7B, ERNIE-Image PE) — only needed manually for other base models. Ignored for FP8/NVFP4 formats.",
                     )
-                    te_dst_path = gr.Textbox(
-                        label="Output path",
-                        placeholder="Auto-generated next to source",
-                        lines=1, max_lines=1,
-                    )
+                    with gr.Row(equal_height=False):
+                        with gr.Column(scale=5, elem_classes=["path-input"]):
+                            te_dst_path = gr.Textbox(
+                                label="Output path",
+                                placeholder="Auto-generated next to source",
+                                lines=1, max_lines=1,
+                            )
+                        with gr.Column(scale=0, min_width=124, elem_classes=["browse-col"]):
+                            browse_te_dst_btn = gr.Button("Browse", size="sm")
                     te_format = gr.Dropdown(
                         choices=TEXT_ENCODER_FORMAT_CHOICES, value="F16", label="Format",
                     )
@@ -1918,6 +1976,7 @@ def build_app() -> gr.Blocks:
                     return browse_model()
 
                 browse_te_src_btn.click(_browse_te_src, outputs=te_src_path)
+                browse_te_dst_btn.click(browse_and_set_dst_te, inputs=[te_src_path], outputs=te_dst_path)
                 te_src_path.change(
                     update_text_encoder_size_estimate,
                     inputs=[te_src_path, te_format],

@@ -123,6 +123,40 @@ class TestRunTeConvertCancel:
         assert "boom" in log
 
 
+class TestResolveDstTe:
+    """Regression for the 2026-08-18 aura_t5 K-quant failure: a bare
+    directory dst_path (typed by hand, no browse dialog existed yet) was
+    passed straight to llama-quantize, which failed to open it as an
+    output file ('ios_base::failbit set: iostream stream error') instead
+    of a clear error. _resolve_dst_te mirrors _resolve_dst_st but picks
+    .gguf vs .safetensors from TEXT_ENCODER_SAFETENSORS_FORMATS, since this
+    tab's format dropdown spans both extensions unlike the other two tabs."""
+
+    def test_empty_dst_returns_none(self):
+        assert gui._resolve_dst_te("model.safetensors", "", "F16") is None
+        assert gui._resolve_dst_te("model.safetensors", None, "F16") is None
+
+    def test_existing_directory_gets_filename_appended_gguf(self, tmp_path):
+        result = gui._resolve_dst_te(str(tmp_path / "aura_t5.safetensors"), str(tmp_path), "Q4_K_M")
+        assert result == str(tmp_path / "aura_t5-Q4_K_M.gguf")
+
+    def test_existing_directory_gets_filename_appended_safetensors(self, tmp_path):
+        result = gui._resolve_dst_te(str(tmp_path / "aura_t5.safetensors"), str(tmp_path), "FP8")
+        assert result == str(tmp_path / "aura_t5-FP8.safetensors")
+
+    def test_trailing_separator_treated_as_directory(self, tmp_path):
+        result = gui._resolve_dst_te(str(tmp_path / "aura_t5.safetensors"), str(tmp_path) + "\\", "NVFP4")
+        assert result == str(tmp_path / "aura_t5-NVFP4.safetensors")
+
+    def test_ftype_placeholder_gets_extension_appended(self):
+        result = gui._resolve_dst_te("aura_t5.safetensors", "C:\\out\\aura_t5-{ftype}", "Q4_K_M")
+        assert result == "C:\\out\\aura_t5-Q4_K_M.gguf"
+
+    def test_full_file_path_used_as_is(self):
+        result = gui._resolve_dst_te("aura_t5.safetensors", "C:\\out\\custom_name.gguf", "Q4_K_M")
+        assert result == "C:\\out\\custom_name.gguf"
+
+
 class TestDynamicDropdownAnnotation:
     def test_annotate_safetensors_choices_marks_unknown_entries(self, tmp_path):
         import torch
