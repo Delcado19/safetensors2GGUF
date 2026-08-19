@@ -521,6 +521,21 @@ _TE_RENDER_VERIFIED: set[tuple[str, str]] = {
     # cosmetic background-text-glyph variance.
     ("llama-3.1-8b", "GGUF"),
     ("t5-xxl", "GGUF"),
+    # umt5-xxl (Wan 2.2's text encoder, 2026-08-19): 8 same-seed I2V
+    # generations against a fixed image+prompt, varying only this encoder's
+    # format -- diffusion model held constant at wan's verified NVFP4_MIXED
+    # (see safetensors_quant.py's _RENDER_VERIFIED_MIXED). Character/pose/
+    # outfit/background identical to the original scaled_fp8 checkpoint's
+    # own baseline for every format except plain INT8 -- see
+    # _TE_RENDER_TESTED_DRIFT below for that one. F16 not listed here --
+    # always VERIFIED unconditionally, see text_encoder_support_level()'s
+    # docstring. GGUF Q4_K_M not yet render-tested (built successfully but
+    # not exercised in this batch).
+    ("umt5-xxl", "FP8"),
+    ("umt5-xxl", "FP8_MIXED"),
+    ("umt5-xxl", "INT8_MIXED"),
+    ("umt5-xxl", "NVFP4"),
+    ("umt5-xxl", "NVFP4_MIXED"),
 }
 
 # Mirrors _RENDER_CONFIRMED_BAD's role for diffusion models -- (family,
@@ -623,11 +638,23 @@ _TE_RENDER_CONFIRMED_BAD: set[tuple[str, str]] = {
 # (family, format_key) pairs render-tested with visible-but-tolerable
 # deviation from the uncompressed baseline -- mirrors _RENDER_TESTED_DRIFT's
 # role for diffusion models (model_support.py's CAUTION/UNKNOWN split,
-# 2026-08-13). Empty for now: qwen3-8b's GGUF (Q5_K_M) conditioning drift was
-# judged tolerable enough to fold into VERIFIED rather than land here (see
-# _TE_RENDER_VERIFIED's comment) -- no text-encoder format has yet earned
-# this middle state on its own.
-_TE_RENDER_TESTED_DRIFT: set[tuple[str, str]] = set()
+# 2026-08-13). qwen3-8b's GGUF (Q5_K_M) conditioning drift was judged
+# tolerable enough to fold into VERIFIED rather than land here (see
+# _TE_RENDER_VERIFIED's comment).
+_TE_RENDER_TESTED_DRIFT: set[tuple[str, str]] = {
+    # umt5-xxl plain INT8 (Wan 2.2, 2026-08-19): same 8-render I2V batch as
+    # _TE_RENDER_VERIFIED's umt5-xxl entries above -- character/pose/outfit/
+    # background identical to every other format's baseline, but the
+    # generated motion's blink cycle landed a few frames off (eyes open at
+    # the same frame index every other format shows them closed/mid-blink).
+    # Not a composition/identity failure, not INT8's usual keys_hiprec-
+    # protection gap either (INT8_MIXED, tested in the same batch, matched
+    # the baseline exactly) -- most likely ordinary seed-level sensitivity
+    # to the small numeric difference INT8 quantization makes to the
+    # conditioning vector, the same class of variance qwen3-8b's GGUF
+    # drift above was. Real enough to note, tolerable enough not to be BAD.
+    ("umt5-xxl", "INT8"),
+}
 
 
 def text_encoder_support_level(family: str, format_key: str) -> str:

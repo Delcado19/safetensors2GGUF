@@ -394,8 +394,8 @@ ComfyUI with this tool's own output, no visible deviation from the
 uncompressed baseline — e.g. `flux` + NVFP4/NVFP4_MIXED, after fixing the
 two bugs that caused its earlier composition drift, see above), **⚠ Caution**
 (actually render-tested and showing some visible-but-tolerable deviation
-from the uncompressed baseline — not broken but not clean either; currently
-empty, no combination has earned exactly this bar), **✗ Known issue**
+from the uncompressed baseline — not broken but not clean either; e.g. plain
+`NVFP4` on `aura`, see above), **✗ Known issue**
 (actually render-tested and confirmed to produce wrong output on at least
 one real prompt — full composition/identity swap, not a minor detail — e.g.
 plain INT8, plain FP8, or NVFP4/NVFP4_MIXED on `lumina2`; see
@@ -420,6 +420,13 @@ only, every entry stays selectable. The underlying support data (which model
 names map to which internal architecture key, and the four-state logic
 itself) lives in `model_support.py` and is documented there as an explicit
 editorial judgment call, open to correction.
+
+**Wan** (Wan 2.2 I2V 14B) shows **✓ Verified** for `NVFP4_MIXED` — its
+first-ever render evidence, 2026-08-19: 8 same-seed I2V generations against
+a live ComfyUI workflow, quantized from a community `fp8_mixed` checkpoint
+(no bf16 source available). `ModelWan.keys_hiprec`/`keys_shape_critical`
+were already populated from a published community blacklist but had never
+actually been exercised by a real render before this.
 
 Below the per-architecture table is a second **Text Encoder Support** table,
 one row per vendored base-model family (Qwen3-4B/8B, Qwen2.5-VL-7B,
@@ -467,7 +474,17 @@ per-family evidence behind every cell) — this applies to HiDream-I1 too,
 which uses CLIP-L/CLIP-G as 2 of its 4 text encoders: F16 safetensors is
 therefore the only safe format for those two, even though the other two
 (Llama-3.1-8B/T5-XXL, above) are fully Verified. HiDream-I1 is not
-end-to-end quantizable across all four of its text encoders. Every other family still shows
+end-to-end quantizable across all four of its text encoders. **UMT5-XXL**
+(Wan 2.2's text encoder) shows **✓ Verified** for FP8/FP8_MIXED/INT8_MIXED/
+NVFP4/NVFP4_MIXED — 8 same-seed I2V renders against Wan 2.2's own
+NVFP4_MIXED diffusion model (also newly **✓ Verified** on the main table
+above, its first render evidence ever), varying only this encoder's format.
+Plain **INT8** shows **⚠ Caution** instead: character/pose/outfit/background
+matched every other format's baseline, but the generated motion's blink
+timing landed a few frames off — not a composition/identity failure, most
+likely ordinary seed-level sensitivity rather than INT8's usual
+`keys_hiprec`-protection gap (`INT8_MIXED`, same batch, matched exactly).
+Every other family still shows
 **? Unknown** across every column (never actually rendered). Both this table and the main one share one
 color legend — literal red/yellow/green, not reused from the app's teal
 accent color. Clicking a cell jumps to the Convert Text Encoder tab with that

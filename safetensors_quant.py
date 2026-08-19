@@ -270,6 +270,17 @@ _RENDER_VERIFIED_MIXED: set[tuple[str, str]] = {
     # crash, no wrong identity, but a real deviation. See model_support.py's
     # _RENDER_TESTED_DRIFT for that CAUTION-level entry.
     ("aura", "NVFP4_MIXED"),
+    # wan (Wan 2.2 I2V 14B, "DaSiWa SnatchKiss v11" fp8_mixed community
+    # checkpoint, quantized from that FP8 source since no bf16 was available,
+    # 2026-08-19): render-tested via 8 same-seed I2V generations (fixed image
+    # + prompt), varying only the umt5xxl text-encoder format -- the
+    # NVFP4_MIXED diffusion model itself stayed constant across all 8, so
+    # this is really 8 independent confirmations of the same (arch_key,
+    # format_key) pair. Character/pose/outfit/background identical across
+    # every render; the only visible variance (a blink-timing offset by a
+    # few frames on plain INT8's text encoder, not this model) is documented
+    # under model_support.py's umt5-xxl entries, not here.
+    ("wan", "NVFP4_MIXED"),
 }
 
 # (base_format -> {arch_key}) pairs where the PLAIN (non-mixed) output has

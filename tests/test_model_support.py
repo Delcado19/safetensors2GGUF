@@ -203,6 +203,15 @@ class TestSupportLevel:
         # identity/outfit, only minor secondary-detail variance.
         assert support_level("hidream", True, "NVFP4_MIXED") == SUPPORT_VERIFIED
 
+    def test_wan_nvfp4_mixed_verified(self):
+        # 2026-08-19: Wan 2.2 I2V 14B ("DaSiWa SnatchKiss v11" fp8_mixed
+        # community checkpoint, quantized from that FP8 source -- no bf16
+        # available), 8 same-seed I2V renders via a live ComfyUI workflow.
+        # This was "wan" arch's first ever render evidence (keys_hiprec/
+        # keys_shape_critical were already populated from a published
+        # community blacklist, but never actually exercised until now).
+        assert support_level("wan", True, "NVFP4_MIXED") == SUPPORT_VERIFIED
+
     def test_aura_verified_except_plain_nvfp4_caution(self):
         # 2026-08-18: aura_flow_0.3, fixed seed via aura_t5. FP8/FP8_MIXED/
         # INT8/INT8_MIXED render-tested clean. NVFP4/NVFP4_MIXED initially
@@ -377,6 +386,24 @@ class TestTextEncoderSupport:
         for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
             assert text_encoder_support_level("llama-3.1-8b", format_key) == SUPPORT_VERIFIED
             assert text_encoder_support_level("t5-xxl", format_key) == SUPPORT_VERIFIED
+
+    def test_umt5_xxl_verified_except_plain_int8_caution(self):
+        # 2026-08-19: Wan 2.2's umt5-xxl encoder, 8 same-seed I2V renders
+        # (fixed image+prompt) against wan's verified NVFP4_MIXED diffusion
+        # model, varying only this encoder's format. Character/pose/outfit/
+        # background identical across every format except plain INT8, whose
+        # generated motion's blink cycle landed a few frames off the other
+        # formats' baseline -- not a composition/identity failure, judged
+        # CAUTION (see _TE_RENDER_TESTED_DRIFT's comment for why it's not
+        # INT8's usual keys_hiprec-protection gap: INT8_MIXED, same batch,
+        # matched the baseline exactly).
+        assert text_encoder_support_level("umt5-xxl", "F16") == SUPPORT_VERIFIED
+        assert text_encoder_support_level("umt5-xxl", "FP8") == SUPPORT_VERIFIED
+        assert text_encoder_support_level("umt5-xxl", "FP8_MIXED") == SUPPORT_VERIFIED
+        assert text_encoder_support_level("umt5-xxl", "INT8") == SUPPORT_CAUTION
+        assert text_encoder_support_level("umt5-xxl", "INT8_MIXED") == SUPPORT_VERIFIED
+        assert text_encoder_support_level("umt5-xxl", "NVFP4") == SUPPORT_VERIFIED
+        assert text_encoder_support_level("umt5-xxl", "NVFP4_MIXED") == SUPPORT_VERIFIED
 
     def test_build_text_encoder_support_table_covers_every_family(self):
         rows = build_text_encoder_support_table()
