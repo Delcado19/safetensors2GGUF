@@ -679,6 +679,57 @@ that investigation, tracked as a future, separate plan — see its docstring for
 reasoning. Until then, NVFP4 stays out of `SAFETENSORS_DTYPE_CHOICES` for diffusion-model
 output for the same reason #15 removed it.
 
+## 17. NVFP4's "no equivalent safe mode" follow-up from #16, closed — and a
+naming pass to align this tool's format keys with ComfyUI/Civitai/HuggingFace convention
+
+**Follow-up (2026-08-13, recorded retroactively):** #16's "Open follow-up" above turned out
+to be wrong. Reading `comfy/ops.py`'s `MixedPrecisionOps.Linear.forward()` directly (not
+just `convert_old_quants()`, which is FP8-only) shows `full_precision_matrix_mult` is read
+generically from any layer's `.comfy_quant` config, regardless of quant format — nothing
+gates it to `float8_e4m3fn`. `convert_safetensors.py` already sets it for NVFP4 too
+(`full_precision_nvfp4=True`, default on) since that finding. The "NVFP4 has no equivalent
+safe mode" conclusion only ever applied to ComfyUI's own legacy-checkpoint upgrade path,
+never to this tool's own writer.
+
+**Render-test evidence:** NVFP4/NVFP4_MIXED have since been render-tested clean across
+`flux`, `sdxl`, `sd1`, `sd3`, `hidream`, and `aura` (`safetensors_quant.py`'s
+`_RENDER_VERIFIED_MIXED`, see each entry's own comment for the specific evidence) — the
+render-test bar #16 held FP8 to before re-adding it is equally met here.
+
+**Symptom (2026-08-19, separate from the above):** the user asked whether this tool offers
+the "fp8_e4m3fn_scaled" compression seen constantly on Civitai as an alternative to fp16
+releases. It does (this tool's `FP8`), but nothing in the GUI or output filenames said so —
+`FP8` doesn't read as "scaled fp8_e4m3fn" to someone comparing against a Civitai listing.
+Asked to research and align this tool's naming against ComfyUI/Civitai/HuggingFace/
+llama.cpp convention broadly, not just for FP8.
+
+**Findings:**
+- `F16`/`FP16`, GGUF's `Q4_K_M`/`Q8_0`/etc. (llama.cpp's own naming), and `INT8`/`INT8_MIXED`
+  (no established external convention for this tool's tensor-wise/ConvRot method) already
+  match or have no external term to align to. Left unchanged.
+- `FP8`/`FP8_MIXED` — external convention is `fp8_e4m3fn_scaled` (Comfy-Org's own
+  repackaging name, ubiquitous on Civitai/HuggingFace). This tool only writes the e4m3fn
+  variant, never e5m2.
+- `NVFP4`/`NVFP4_MIXED` — the key already matches NVIDIA's own name. The real risk is
+  confusion with **NF4** (bitsandbytes' 4-bit normalfloat, common on Civitai for Flux NF4
+  releases) — a different algorithm this tool does not offer. Documented, not renamed.
+
+**Fix:** `SAFETENSORS_DTYPE_CHOICES` (`safetensors_quant.py`) re-gained `NVFP4`/
+`NVFP4_MIXED` (closing #16's follow-up) and every label now spells out the external-naming
+equivalent or lack thereof. Deliberately did **not** rename the internal target_key strings
+(`"FP8"`, `"NVFP4_MIXED"`, etc.) — that identifier is threaded through `_MIXED_KEYS`,
+every `_RENDER_VERIFIED_MIXED`/`model_support.py` tuple, and ~330 tests; renaming it would
+be a purely cosmetic, repo-wide, high-risk change for no behavioural benefit. Instead, a
+new `filename_suffix_for()` in `safetensors_quant.py` maps `target_key` to an
+output-filename suffix, identity for every key except `FP8`→`"fp8_e4m3fn_scaled"` and
+`FP8_MIXED`→`"fp8_e4m3fn_scaled_mixed"`. Applied everywhere a default/templated output
+filename gets built: `convert_to_safetensors()`'s own `dst_path=None` default
+(`convert_safetensors.py`), and `gui.py`'s `_resolve_dst_st`/`_resolve_dst_te` (the
+Safetensors and Convert Text Encoder tabs' Browse-button/`{ftype}`-template resolution).
+`gui.py`'s stale `apply_support_table_selection()` docstring (asserting NVFP4 is
+deliberately absent) and `text_encoder_convert.py`'s NVFP4 dropdown label were also
+corrected/aligned. Tests added.
+
 ---
 
 ## Observations (not bugs)

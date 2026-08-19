@@ -148,7 +148,7 @@ TEXT_ENCODER_FORMAT_CHOICES: list[tuple[str, str]] = [
     ("FP8 mixed — FP8 scaled, hiprec tensors stay F32 (safetensors)", "FP8_MIXED"),
     ("INT8 — Tensor-wise INT8, ConvRot-rotated (safetensors)", "INT8"),
     ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32 (safetensors)", "INT8_MIXED"),
-    ("NVFP4 — Nvidia 4-bit blockscaled (safetensors)",         "NVFP4"),
+    ("NVFP4 — NVIDIA FP4, needs Blackwell GPU (safetensors)",  "NVFP4"),
     ("NVFP4 mixed — NVFP4, hiprec tensors stay F32 (safetensors)", "NVFP4_MIXED"),
 ]
 

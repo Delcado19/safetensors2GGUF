@@ -28,6 +28,15 @@ class TestConvertToSafetensors:
         assert os.path.isfile(dst)
         assert arch is not None and arch.arch == "flux"
 
+    def test_fp8_default_filename_uses_external_naming(self, tmp_path):
+        # The auto-generated filename (dst_path=None) spells out FP8's
+        # external "fp8_e4m3fn_scaled" naming (Civitai/Comfy-Org convention),
+        # not the internal "FP8" target_key -- see safetensors_quant.py's
+        # filename_suffix_for()/_FILENAME_SUFFIX.
+        src = _write_minimal_flux(tmp_path)
+        dst, _ = convert_to_safetensors(str(src), target_key="FP8", overwrite=True)
+        assert dst.endswith("-fp8_e4m3fn_scaled.safetensors")
+
     def test_output_tensor_dtype_matches_target(self, tmp_path):
         src = _write_minimal_flux(tmp_path)
         dst, _ = convert_to_safetensors(str(src), target_key="F16", overwrite=True)

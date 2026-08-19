@@ -6,6 +6,7 @@ import torch
 
 from safetensors_quant import (
     SAFETENSORS_DTYPE_CHOICES,
+    filename_suffix_for,
     format_recommendation,
     is_hiprec_st,
     quantize_tensor_st,
@@ -34,13 +35,16 @@ class TestRegistry:
             assert isinstance(key, str) and key
 
     def test_expected_keys_present(self):
-        # FP8 is now re-offered (re-enabled with full_precision_matrix_mult=true
-        # default in convert_safetensors.py). NVFP4 is still not offered in the
-        # GUI dropdown (docs/issues_analysis.md #15) — quantize_tensor_st still
-        # supports it internally (TestQuantizeTensorNvfp4 exercises that dispatch
-        # directly), it's just not user-selectable.
+        # FP8 is re-offered (re-enabled with full_precision_matrix_mult=true
+        # default in convert_safetensors.py). NVFP4 is re-offered too, as of
+        # docs/issues_analysis.md #17: full_precision_nvfp4 gives it the same
+        # safe-mode mechanism FP8 already has, and it's now render-verified
+        # across flux/sdxl/sd1/sd3/hidream/aura (_RENDER_VERIFIED_MIXED).
         keys = {k for _, k in SAFETENSORS_DTYPE_CHOICES}
-        assert keys == {"F16", "F16_MIXED", "FP8", "FP8_MIXED", "INT8", "INT8_MIXED"}
+        assert keys == {
+            "F16", "F16_MIXED", "FP8", "FP8_MIXED",
+            "INT8", "INT8_MIXED", "NVFP4", "NVFP4_MIXED",
+        }
 
     def test_fp8_is_offered_again(self):
         keys = {key for _, key in SAFETENSORS_DTYPE_CHOICES}
@@ -50,6 +54,24 @@ class TestRegistry:
     def test_no_duplicate_keys(self):
         keys = [k for _, k in SAFETENSORS_DTYPE_CHOICES]
         assert len(keys) == len(set(keys))
+
+    def test_nvfp4_is_offered(self):
+        keys = {key for _, key in SAFETENSORS_DTYPE_CHOICES}
+        assert "NVFP4" in keys
+        assert "NVFP4_MIXED" in keys
+
+
+class TestFilenameSuffixFor:
+    def test_fp8_maps_to_external_naming(self):
+        # Civitai/Comfy-Org convention -- see _FILENAME_SUFFIX's comment.
+        assert filename_suffix_for("FP8") == "fp8_e4m3fn_scaled"
+        assert filename_suffix_for("FP8_MIXED") == "fp8_e4m3fn_scaled_mixed"
+
+    def test_unmapped_keys_are_identity(self):
+        # NVFP4 already matches NVIDIA's own naming; GGUF quant keys already
+        # match llama.cpp's -- neither needs remapping.
+        for key in ("F16", "F16_MIXED", "INT8", "INT8_MIXED", "NVFP4", "NVFP4_MIXED", "Q4_K_M"):
+            assert filename_suffix_for(key) == key
 
 
 class TestHiprec:

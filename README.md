@@ -259,6 +259,16 @@ when you want ComfyUI-compatible weights without the GGUF container format.
 | `FP8_MIXED` | FP8, high-precision tensors stay F32 | Python | Same full-precision-compute default as `FP8` |
 | `INT8` | int8_tensorwise, ConvRot-rotated where possible (ComfyUI convention) | Python | Per-layer `weight_scale`; weight-only quantization, no runtime activation quant |
 | `INT8_MIXED` | INT8/ConvRot, high-precision tensors stay F32 | Python | Aggressive 8-bit quantization with protection |
+| `NVFP4` | NVIDIA FP4, block-scaled | Python | Full-precision compute by default (`full_precision_nvfp4`); needs a Blackwell GPU (RTX 50-series/B200) to run — see below |
+| `NVFP4_MIXED` | NVFP4, high-precision tensors stay F32 | Python | Same full-precision-compute default as `NVFP4` |
+
+**Naming vs. the community:** `FP8`/`FP8_MIXED` write files named
+`<model>-fp8_e4m3fn_scaled(_mixed).safetensors` — the same "scaled fp8"
+convention Civitai/Comfy-Org releases use, so you can tell at a glance it's
+the same compression as a Civitai `fp8_e4m3fn_scaled` upload (this tool only
+writes the e4m3fn variant, never e5m2). `NVFP4` is NVIDIA's own name and
+**not** the same algorithm as **NF4** (bitsandbytes' 4-bit normalfloat, the
+format behind Civitai's "Flux NF4" releases) — this tool does not offer NF4.
 
 **Estimated output size:** once a source model is selected, the tab shows an
 "Estimated output" size under the format dropdown, computed from the actual
@@ -356,13 +366,15 @@ minor detail) — and both of those are **✗ Known issue** on a single failing
 test each, no "but other tests were clean" exception. Holding NVFP4 to a
 looser bar for showing the identical failure mode wasn't consistent, so it
 stays **✗ Known issue** too rather than **✓ Verified** or **⚠ Caution**.
-NVFP4/NVFP4_MIXED remain unoffered in the
-Convert → Safetensors dropdown regardless, since the format is a no-op
-there until every architecture's `keys_shape_critical` coverage is
-confirmed the way `flux`'s now is. The FP8/NVFP4 implementations
-(`safetensors_quant_fp8.py`/`safetensors_quant_nvfp4.py`) remain in the
-codebase and are still used by the separate text-encoder conversion path
-below, which hasn't shown this issue.
+**Update (2026-08-19, docs/issues_analysis.md #17):** NVFP4/NVFP4_MIXED are
+now offered in the Convert → Safetensors dropdown. Since the investigation
+above, `keys_shape_critical`/`keys_hiprec` coverage was audited and fixed
+architecture-by-architecture (`flux`, `sdxl`, `sd1`, `sd3`, `hidream`,
+`aura`), and each was re-converted and render-tested clean at a fixed seed —
+see `safetensors_quant.py`'s `_RENDER_VERIFIED_MIXED` for the evidence
+behind each entry. `lumina2`'s NVFP4/NVFP4_MIXED — the specific case
+described above — remains **✗ Known issue**; that finding wasn't
+re-investigated or superseded.
 
 **Already-quantized sources:** if you point Convert → Safetensors at a
 checkpoint that's already quantized (e.g. a published ComfyUI-native
@@ -398,11 +410,9 @@ use case. Click a format cell to switch to the matching Convert tab with
 that format pre-selected — the GGUF column collapses every K-quant level
 into one cell, since a working F16 GGUF conversion carries over to all of
 them uniformly, so clicking it defaults to `Q4_K_M`. NVFP4/NVFP4_MIXED
-cells are a no-op: they're shown in the table for completeness, but NVFP4
-has no *render-verified* safe mode yet (a candidate fix exists — see
-above) and stays deliberately absent from the Convert → Safetensors
-dropdown (`gui.py`'s `apply_support_table_selection()`), so clicking them
-can't select it. Once a source checkpoint is selected on either Convert
+cells behave like any other Safetensors format now (see the Update note
+above) — clicking one switches to Convert → Safetensors with that format
+pre-selected. Once a source checkpoint is selected on either Convert
 tab, its format dropdown also gets a ⚠, ✗, or ? prefix on any entry that's
 Caution, Known-issue, or Unknown for the detected architecture (`gui.py`'s
 `annotate_safetensors_choices()`/`annotate_gguf_choices()`) — informational

@@ -18,7 +18,7 @@ from safetensors.torch import save_file
 from convert import load_state_dict
 from dequantize import detect_quantized_weight, dequantize_weight
 from models.architectures import detect_arch
-from safetensors_quant import layer_key, quantize_tensor_st
+from safetensors_quant import filename_suffix_for, layer_key, quantize_tensor_st
 from safetensors_quant_int8 import CONVROT_GROUP_SIZE
 
 # Float8 dtypes — resolved once at import time; empty tuple on older PyTorch builds.
@@ -224,7 +224,11 @@ def convert_to_safetensors(
         _log(f"INFO:  Architecture: {model_arch.arch}")
 
     if dst_path is None:
-        dst_path = f"{os.path.splitext(path)[0]}-{target_key}.safetensors"
+        # filename_suffix_for() spells out FP8/FP8_MIXED's external
+        # "fp8_e4m3fn_scaled" naming (Civitai/Comfy-Org convention) instead
+        # of the internal target_key -- see safetensors_quant.py's
+        # _FILENAME_SUFFIX comment. Every other key's suffix is unchanged.
+        dst_path = f"{os.path.splitext(path)[0]}-{filename_suffix_for(target_key)}.safetensors"
 
     if os.path.isfile(dst_path) and not overwrite:
         raise OSError(f"Output exists and overwrite is disabled: {dst_path}")

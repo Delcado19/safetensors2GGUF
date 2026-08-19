@@ -25,25 +25,59 @@ from models.architectures import QUANTIZATION_THRESHOLD
 # dynamic-activation-quantization compute path entirely for every FP8
 # layer, matching the safety profile of the "scaled_fp8" checkpoints
 # already circulating on Civitai/HuggingFace (see docs/issues_analysis.md
-# #16). NVFP4 stays unoffered here too, but no longer for lack of a safe
-# mode: reading comfy/ops.py's actual source (2026-08-13) found
-# full_precision_matrix_mult is read generically from any layer's
-# .comfy_quant config, not gated to float8_e4m3fn -- convert_safetensors.py
-# now sets it for nvfp4 too (full_precision_nvfp4=True, default on). The
-# old "NVFP4 has no equivalent safe mode" conclusion only held for
-# ComfyUI's own legacy-checkpoint upgrade path (convert_old_quants(), which
-# really is FP8-only); it never applied to this tool's own writer. NOT yet
-# render-tested in ComfyUI though -- stays out of the GUI dropdown until
-# that happens, same evidence bar every other promotion here follows. See
-# convert_safetensors.py's full_precision_nvfp4 docstring.
+# #16). NVFP4 went through the identical arc: reading comfy/ops.py's actual
+# source (2026-08-13) found full_precision_matrix_mult is read generically
+# from any layer's .comfy_quant config, not gated to float8_e4m3fn --
+# convert_safetensors.py now sets it for nvfp4 too (full_precision_nvfp4=
+# True, default on). The old "NVFP4 has no equivalent safe mode" conclusion
+# only ever held for ComfyUI's own legacy-checkpoint upgrade path
+# (convert_old_quants(), which really is FP8-only); it never applied to this
+# tool's own writer. NVFP4/NVFP4_MIXED are now render-verified across
+# flux/sdxl/sd1/sd3/hidream/aura (see _RENDER_VERIFIED_MIXED below) -- the
+# render-test bar that kept it out of this list is cleared. Re-added
+# 2026-08-19 (docs/issues_analysis.md #17).
+#
+# Labels below spell out each key's external-naming equivalent (ComfyUI/
+# Civitai/HuggingFace) so a user comparing against a community checkpoint
+# knows exactly what they're getting:
+#   - FP8/FP8_MIXED  = Civitai/Comfy-Org's "scaled fp8" / "fp8_e4m3fn_scaled"
+#     (this tool only writes the e4m3fn variant, not e5m2).
+#   - NVFP4/NVFP4_MIXED = NVIDIA's own "NVFP4" name (Blackwell-only compute,
+#     RTX 50-series/B200) -- NOT the same algorithm as "NF4" (bitsandbytes'
+#     4-bit normalfloat, seen on Civitai for Flux NF4 releases). This tool
+#     does not offer NF4.
+#   - F16/F16_MIXED and INT8/INT8_MIXED have no distinct external-naming
+#     convention beyond "fp16"/"int8" (case only) -- kept as-is.
 SAFETENSORS_DTYPE_CHOICES: list[tuple[str, str]] = [
-    ("F16       — Half precision",                                       "F16"),
-    ("F16 mixed — Half precision, hiprec tensors stay F32",               "F16_MIXED"),
-    ("FP8       — Scaled float8_e4m3fn, full-precision compute (safe)",   "FP8"),
-    ("FP8 mixed — FP8, hiprec tensors stay F32",                          "FP8_MIXED"),
-    ("INT8      — Tensor-wise INT8, ConvRot-rotated where possible",      "INT8"),
-    ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32 · recommended ★", "INT8_MIXED"),
+    ("F16       — Half precision",                                                    "F16"),
+    ("F16 mixed — Half precision, hiprec tensors stay F32",                            "F16_MIXED"),
+    ("FP8       — Scaled float8_e4m3fn, full-precision compute (safe)",                "FP8"),
+    ("FP8 mixed — FP8, hiprec tensors stay F32",                                       "FP8_MIXED"),
+    ("INT8      — Tensor-wise INT8, ConvRot-rotated where possible",                   "INT8"),
+    ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32 · recommended ★",             "INT8_MIXED"),
+    ("NVFP4     — NVIDIA FP4, full-precision compute (safe) · needs Blackwell GPU",    "NVFP4"),
+    ("NVFP4 mixed — NVFP4, hiprec tensors stay F32 · needs Blackwell GPU",             "NVFP4_MIXED"),
 ]
+
+# Output-filename suffix for each SAFETENSORS_DTYPE_CHOICES key. Deliberately
+# separate from the dict key above (used everywhere internally: _MIXED_KEYS,
+# _RENDER_VERIFIED_MIXED, model_support.py's tuples, ~330 tests) -- renaming
+# that key would be a purely-cosmetic, high-risk, repo-wide change for zero
+# behavioural benefit. Only FP8/FP8_MIXED get a different filename suffix,
+# spelling out the external "fp8_e4m3fn_scaled" name a Civitai/ComfyUI user
+# would recognize; every other key's filename suffix already matches (or has
+# no established external form to match).
+_FILENAME_SUFFIX: dict[str, str] = {
+    "FP8": "fp8_e4m3fn_scaled",
+    "FP8_MIXED": "fp8_e4m3fn_scaled_mixed",
+}
+
+
+def filename_suffix_for(target_key: str) -> str:
+    """Return the output-filename suffix for a SAFETENSORS_DTYPE_CHOICES (or
+    GGUF quant/outtype) key -- identity for every key without a more
+    recognizable external name (see _FILENAME_SUFFIX's comment)."""
+    return _FILENAME_SUFFIX.get(target_key, target_key)
 
 # (arch_key, format_key) pairs -- MIXED or plain -- whose output has been
 # confirmed by an actual convert+load+render cycle in ComfyUI (not just by

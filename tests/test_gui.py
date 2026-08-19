@@ -123,6 +123,19 @@ class TestRunTeConvertCancel:
         assert "boom" in log
 
 
+class TestResolveDstSt:
+    def test_fp8_directory_gets_external_naming_suffix(self, tmp_path):
+        # FP8's filename suffix is "fp8_e4m3fn_scaled", the Civitai/Comfy-Org
+        # convention -- not the internal "FP8" key.
+        result = gui._resolve_dst_st(str(tmp_path / "model.safetensors"), str(tmp_path), "FP8")
+        assert result == str(tmp_path / "model-fp8_e4m3fn_scaled.safetensors")
+
+    def test_nvfp4_directory_keeps_key_as_suffix(self, tmp_path):
+        # NVFP4 already matches NVIDIA's own naming -- no remapping.
+        result = gui._resolve_dst_st(str(tmp_path / "model.safetensors"), str(tmp_path), "NVFP4")
+        assert result == str(tmp_path / "model-NVFP4.safetensors")
+
+
 class TestResolveDstTe:
     """Regression for the 2026-08-18 aura_t5 K-quant failure: a bare
     directory dst_path (typed by hand, no browse dialog existed yet) was
@@ -141,8 +154,10 @@ class TestResolveDstTe:
         assert result == str(tmp_path / "aura_t5-Q4_K_M.gguf")
 
     def test_existing_directory_gets_filename_appended_safetensors(self, tmp_path):
+        # FP8's filename suffix is "fp8_e4m3fn_scaled", not the internal
+        # "FP8" key -- see safetensors_quant.py's filename_suffix_for().
         result = gui._resolve_dst_te(str(tmp_path / "aura_t5.safetensors"), str(tmp_path), "FP8")
-        assert result == str(tmp_path / "aura_t5-FP8.safetensors")
+        assert result == str(tmp_path / "aura_t5-fp8_e4m3fn_scaled.safetensors")
 
     def test_trailing_separator_treated_as_directory(self, tmp_path):
         result = gui._resolve_dst_te(str(tmp_path / "aura_t5.safetensors"), str(tmp_path) + "\\", "NVFP4")
@@ -329,6 +344,21 @@ def test_apply_support_table_selection_model_column_is_a_noop():
     evt.index = (0, 0)  # the Model name column itself
     tabs_update, quant_update, st_format_update = gui.apply_support_table_selection(evt)
     assert "selected" not in tabs_update
+
+
+def test_apply_support_table_selection_nvfp4_column():
+    # Regression: NVFP4/NVFP4_MIXED were re-added to SAFETENSORS_DTYPE_CHOICES
+    # (docs/issues_analysis.md #17) -- clicking their table cell must now
+    # switch tabs like any other Safetensors format, not stay a no-op.
+    from unittest.mock import MagicMock
+    from model_support import TABLE_FORMATS
+
+    col = 1 + next(i for i, (_, key) in enumerate(TABLE_FORMATS) if key == "NVFP4_MIXED")
+    evt = MagicMock()
+    evt.index = (0, col)
+    tabs_update, quant_update, st_format_update = gui.apply_support_table_selection(evt)
+    assert tabs_update.get("selected") == 1
+    assert st_format_update.get("value") == "NVFP4_MIXED"
 
 
 def test_apply_text_encoder_support_table_selection_gguf_column():

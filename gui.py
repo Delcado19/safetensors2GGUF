@@ -51,7 +51,12 @@ from quantize import (
     find_exe,
     run_quantize,
 )
-from safetensors_quant import SAFETENSORS_DTYPE_CHOICES, estimate_safetensors_output_size, format_recommendation
+from safetensors_quant import (
+    SAFETENSORS_DTYPE_CHOICES,
+    estimate_safetensors_output_size,
+    filename_suffix_for,
+    format_recommendation,
+)
 from text_encoder_convert import (
     TEXT_ENCODER_FORMAT_CHOICES,
     TEXT_ENCODER_SAFETENSORS_FORMATS,
@@ -611,11 +616,13 @@ def _text_encoder_support_rows_for_dataframe() -> list[list[str]]:
 
 def apply_text_encoder_support_table_selection(evt: gr.SelectData):
     """Handle a click on the text-encoder support table: switch to the
-    Convert Text Encoder tab and pre-select that format. Unlike the main
-    Model Support table, every TEXT_ENCODER_TABLE_FORMATS key maps to a real
-    TEXT_ENCODER_FORMAT_CHOICES entry (NVFP4 isn't excluded here the way it
-    is for diffusion models), so no no-op guard is needed -- but two columns
-    need translation, not a direct 1:1 key match: "GGUF" collapses every
+    Convert Text Encoder tab and pre-select that format. Every
+    TEXT_ENCODER_TABLE_FORMATS key maps to a real TEXT_ENCODER_FORMAT_CHOICES
+    entry (same as the main Model Support table now that NVFP4/NVFP4_MIXED
+    are real SAFETENSORS_DTYPE_CHOICES entries too -- see
+    apply_support_table_selection()'s docstring), so no no-op guard is
+    needed -- but two columns need translation, not a direct 1:1 key match:
+    "GGUF" collapses every
     K-quant/outtype into one cell (defaults to Q4_K_M, this tool's own
     "recommended ★" choice), and "F16" is the *safetensors* precision-cast
     column -- its real dropdown key is "F16_ST", not the literal "F16" (that
@@ -645,12 +652,12 @@ def apply_support_table_selection(evt: gr.SelectData):
     specific quant level, so it defaults to Q4_K_M, this tool's own
     "recommended ★" choice, same as GGUF's own dropdown default.
 
-    NVFP4/NVFP4_MIXED appear in the table (TABLE_FORMATS) but are
-    deliberately absent from SAFETENSORS_DTYPE_CHOICES — no verified safe
-    mode exists for them yet (safetensors_quant.py, docs/issues_analysis.md
-    #15). Clicking those cells must stay a no-op like the Model column, or
-    it would set the Safetensors dropdown to a value outside its own
-    choices and let a NVFP4 conversion run through the GUI despite that.
+    NVFP4/NVFP4_MIXED are real SAFETENSORS_DTYPE_CHOICES entries now (re-added
+    2026-08-19, docs/issues_analysis.md #17) — clicking those cells behaves
+    the same as any other Safetensors-tab format, no special-casing needed.
+    The `format_key not in _SAFETENSORS_DTYPE_KEYS` guard below still exists
+    for the Model column (col == 0 already returns earlier) and any future
+    TABLE_FORMATS entry that has no Safetensors-tab equivalent.
     """
     row, col = evt.index
     if col == 0:
@@ -1115,19 +1122,26 @@ def _resolve_dst(src: str, dst: str | None, quant_key: str) -> str | None:
 
 
 def _resolve_dst_st(src: str, dst: str | None, target_key: str) -> str | None:
-    """Resolve the user-supplied Safetensors output path; mirrors _resolve_dst."""
+    """Resolve the user-supplied Safetensors output path; mirrors _resolve_dst.
+
+    The filename suffix comes from filename_suffix_for(), not target_key
+    directly, so e.g. FP8 files are named with the external
+    "fp8_e4m3fn_scaled" convention a Civitai/ComfyUI user would recognize —
+    see safetensors_quant.py's _FILENAME_SUFFIX comment.
+    """
     if not dst:
         return None
     dst = dst.strip()
     if not dst:
         return None
+    suffix = filename_suffix_for(target_key)
 
     if dst.endswith(("/", "\\")) or Path(dst).is_dir():
         stem = _strip_model_suffix(src)
-        return str(Path(dst) / f"{stem.name}-{target_key}.safetensors")
+        return str(Path(dst) / f"{stem.name}-{suffix}.safetensors")
 
     if "{ftype}" in dst:
-        return dst.replace("{ftype}", target_key)
+        return dst.replace("{ftype}", suffix)
 
     return dst
 
@@ -1153,13 +1167,14 @@ def _resolve_dst_te(src: str, dst: str | None, format_key: str) -> str | None:
         return None
 
     ext = ".safetensors" if format_key in TEXT_ENCODER_SAFETENSORS_FORMATS else ".gguf"
+    suffix = filename_suffix_for(format_key)
 
     if dst.endswith(("/", "\\")) or Path(dst).is_dir():
         stem = _strip_model_suffix(src)
-        return str(Path(dst) / f"{stem.name}-{format_key}{ext}")
+        return str(Path(dst) / f"{stem.name}-{suffix}{ext}")
 
     if "{ftype}" in dst:
-        resolved = dst.replace("{ftype}", format_key)
+        resolved = dst.replace("{ftype}", suffix)
         if not resolved.endswith((".gguf", ".safetensors")):
             resolved += ext
         return resolved
@@ -1821,15 +1836,17 @@ def build_app() -> gr.Blocks:
                     "ComfyUI's `int8_tensorwise` convention (per-layer `weight_scale`), "
                     "rotating each weight with a block-Hadamard transform (ConvRot) "
                     "before quantizing where the input dimension allows it — loads "
-                    "natively in ComfyUI without the GGUF loader node. FP8 defaults to "
-                    "`full_precision_matrix_mult=true`, which makes ComfyUI skip its "
-                    "dynamic activation-quantization compute path entirely, matching "
-                    "the safety profile of \"scaled_fp8\" checkpoints already circulating "
-                    "on Civitai/HuggingFace. NVFP4/MXFP8 are not offered here: ComfyUI "
-                    "dynamically quantizes *activations* too for those formats, which "
-                    "produced visibly wrong output on Lumina2/Z-Image in our testing — "
-                    "INT8 only quantizes weights, avoiding that entirely "
-                    "(docs/issues_analysis.md #15, #16).",
+                    "natively in ComfyUI without the GGUF loader node. FP8 writes the "
+                    "same \"scaled fp8_e4m3fn\" convention already common on Civitai/"
+                    "HuggingFace and defaults to `full_precision_matrix_mult=true`, "
+                    "which makes ComfyUI skip its dynamic activation-quantization "
+                    "compute path entirely. NVFP4 (NVIDIA's own 4-bit float, needs a "
+                    "Blackwell GPU — not the same algorithm as bitsandbytes' NF4) gets "
+                    "the same `full_precision_nvfp4` safe-mode default. MXFP8 is still "
+                    "not offered: ComfyUI dynamically quantizes *activations* too for "
+                    "that format, which produced visibly wrong output on Lumina2/"
+                    "Z-Image in our testing — INT8 only quantizes weights, avoiding "
+                    "that entirely (docs/issues_analysis.md #15, #16, #17).",
                     elem_classes=["intro"],
                 )
                 with gr.Column(elem_classes=["card"]):
