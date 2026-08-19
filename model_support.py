@@ -510,6 +510,16 @@ _TE_RENDER_VERIFIED: set[tuple[str, str]] = {
     ("t5-xxl", "INT8_MIXED"),
     ("t5-xxl", "NVFP4"),
     ("t5-xxl", "NVFP4_MIXED"),
+    # llama-3.1-8b/t5-xxl GGUF Q4_K_M (2026-08-19): both built via
+    # convert_text_encoder_kquant() against the new vendored
+    # text_encoder_configs/llama-3.1-8b/ config (see CHANGELOG.md for the
+    # pad_token/unk_token vocab-overflow fix that took to build it), loaded
+    # through ComfyUI-GGUF's QuadrupleCLIPLoaderGGUF alongside the other 3
+    # HiDream encoders, render-tested clean at the same fixed seed against
+    # the FP8 baseline -- composition/identity/outfit identical, only
+    # cosmetic background-text-glyph variance.
+    ("llama-3.1-8b", "GGUF"),
+    ("t5-xxl", "GGUF"),
 }
 
 # Mirrors _RENDER_CONFIRMED_BAD's role for diffusion models -- (family,

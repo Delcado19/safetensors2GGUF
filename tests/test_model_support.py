@@ -367,6 +367,17 @@ class TestTextEncoderSupport:
         for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
             assert text_encoder_support_level("qwen3-8b", format_key) == SUPPORT_VERIFIED
 
+    def test_hidream_llama_and_t5xxl_verified_on_every_format(self):
+        # 2026-08-18: FP8/FP8_MIXED/INT8/INT8_MIXED/NVFP4/NVFP4_MIXED
+        # render-tested clean via a live HiDream-I1-Dev workflow.
+        # 2026-08-19: GGUF Q4_K_M added -- built against the new vendored
+        # text_encoder_configs/llama-3.1-8b/ config, loaded through
+        # ComfyUI-GGUF's QuadrupleCLIPLoaderGGUF alongside the other 3
+        # HiDream encoders, render-tested clean against the FP8 baseline.
+        for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
+            assert text_encoder_support_level("llama-3.1-8b", format_key) == SUPPORT_VERIFIED
+            assert text_encoder_support_level("t5-xxl", format_key) == SUPPORT_VERIFIED
+
     def test_build_text_encoder_support_table_covers_every_family(self):
         rows = build_text_encoder_support_table()
         assert {r["family"] for r in rows} == set(TEXT_ENCODER_FAMILY_DISPLAY_NAMES)
