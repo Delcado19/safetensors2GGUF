@@ -369,7 +369,7 @@ checkpoint that's already quantized (e.g. a published ComfyUI-native
 `int8_tensorwise`/ConvRot or scaled-FP8 release), it's automatically
 dequantized first and then cleanly re-quantized to your chosen target format
 — see `dequantize.py`. The one case that still fails is an int8/uint8 weight
-with no recognizable `weight_scale`/`comfy_quant` sidecar at all, since
+with no recognizable `weight_scale`/`scale_weight`/`comfy_quant` sidecar at all, since
 there's no way to reconstruct the original magnitude without a scale.
 
 ## Model Support Tab

@@ -79,6 +79,26 @@ def _read_comfy_quant_sidecar(state_dict, prefix: str) -> dict | None:
     return _read_file_level_quant_metadata(state_dict, prefix)
 
 
+def _find_scale_key(state_dict, prefix: str) -> str | None:
+    """Return whichever per-layer scale sidecar key is present, checking
+    both this tool's own ".weight_scale" convention and Comfy-Org's
+    "fp8_scaled" repackaging convention ".scale_weight" (reversed word
+    order). Found 2026-08-18 converting HiDream's
+    llama_3.1_8b_instruct_fp8_scaled.safetensors: with only ".weight_scale"
+    recognized, the checkpoint's actual ".weight" tensors (raw on-disk
+    float8_e4m3fn bytes) were never detected as quantized at all, so they
+    fed straight into the normal pipeline unscaled — numerically wrong
+    output for every affected tensor, not just a missed optimization. The
+    orphaned 0-dim ".scale_weight" sidecar tensors were then themselves
+    treated as ordinary weights, crashing NVFP4's quantize_nvfp4() on
+    `.shape[-1]` for a tensor with zero dimensions."""
+    for suffix in (".weight_scale", ".scale_weight"):
+        candidate = f"{prefix}{suffix}"
+        if candidate in state_dict:
+            return candidate
+    return None
+
+
 def detect_quantized_weight(state_dict, key: str) -> str | None:
     """Return the detected on-disk quant format for a ".weight" tensor, or
     None if it isn't recognizably quantized. One of "int8_tensorwise",
@@ -93,8 +113,8 @@ def detect_quantized_weight(state_dict, key: str) -> str | None:
         if fmt in ("int8_tensorwise", "float8_e4m3fn", "nvfp4"):
             return fmt
 
-    scale_key = f"{prefix}.weight_scale"
-    if scale_key not in state_dict:
+    scale_key = _find_scale_key(state_dict, prefix)
+    if scale_key is None:
         return None
 
     dtype_of = getattr(state_dict, "dtype_of", None)
@@ -135,7 +155,7 @@ def dequantize_weight(state_dict, key: str, fmt: str, q: torch.Tensor) -> torch.
             key,
         )
 
-    scale = state_dict[f"{prefix}.weight_scale"].to(torch.float32)
+    scale = state_dict[_find_scale_key(state_dict, prefix)].to(torch.float32)
     value = q.to(torch.float32) * scale
 
     if fmt == "float8_e4m3fn":

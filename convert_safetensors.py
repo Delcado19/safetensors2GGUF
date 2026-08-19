@@ -66,9 +66,31 @@ def _scan_quantized_layers(state_dict) -> tuple[dict[str, str], set[str]]:
     scale sidecar — that case is genuinely unrecoverable (no scale to
     reconstruct the original magnitude from), not just unhandled.
     """
+    # .scale_weight (reversed word order) is Comfy-Org's own "fp8_scaled"
+    # repackaging convention, distinct from this tool's ".weight_scale" --
+    # see dequantize.py's _find_scale_key() docstring for the bug this
+    # closes (found 2026-08-18 converting a HiDream text encoder shipped in
+    # that format).
+    #
+    # "{prefix}scaled_fp8" (bare, or prefixed like "diffusion_model.
+    # scaled_fp8") is a separate Comfy-Org convention: a sentinel tensor with
+    # 0 elements (dtype float8_e4m3fn) that comfy/utils.py's
+    # convert_old_quants() checks for *presence*, not content, to detect its
+    # own legacy "scaled_fp8" repackaging format. It carries no actual
+    # weight data and is meaningless once dequantized/re-quantized by this
+    # tool (our own output is never in that legacy format -- it either
+    # carries its own `_quantization_metadata`, which makes ComfyUI skip
+    # convert_old_quants()'s legacy branch entirely, or is plain F16 with no
+    # scale sidecars left for that branch to act on either way). Left
+    # unstripped, it silently rode through every quantized output
+    # (confirmed harmless there only because ComfyUI's loader tolerates the
+    # unmapped key) but crashes llama.cpp's convert_hf_to_gguf.py outright
+    # with `ValueError: Can not map tensor 'scaled_fp8'` -- found 2026-08-18
+    # attempting a GGUF conversion of a re-quantized HiDream text encoder
+    # that started life as a Comfy-Org fp8_scaled checkpoint.
     skip = {
         key for key in state_dict.keys()
-        if key.endswith((".weight_scale", ".weight_scale_2", ".comfy_quant"))
+        if key.endswith((".weight_scale", ".weight_scale_2", ".comfy_quant", ".scale_weight", "scaled_fp8"))
     }
     formats: dict[str, str] = {}
     dtype_of = getattr(state_dict, "dtype_of", None)

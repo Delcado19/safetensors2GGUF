@@ -257,6 +257,62 @@ class TestAlreadyQuantizedGuard:
         # Should not raise
         convert_to_safetensors(str(src), target_key="FP8", overwrite=True)
 
+    def test_dequantizes_comfy_org_scale_weight_checkpoint(self, tmp_path):
+        # Regression, found 2026-08-18 converting HiDream's
+        # llama_3.1_8b_instruct_fp8_scaled.safetensors: Comfy-Org's own
+        # "fp8_scaled" repackaging convention uses ".scale_weight" (reversed
+        # word order), which this tool didn't recognize at all. The actual
+        # ".weight" tensor (raw float8_e4m3fn bytes) was fed straight into
+        # the pipeline unscaled -- numerically wrong for every affected
+        # layer, not just a missed optimization -- and the orphaned 0-dim
+        # ".scale_weight" sidecar got treated as an ordinary weight,
+        # crashing NVFP4's quantize_nvfp4() on `.shape[-1]` for a shape
+        # with zero dimensions (IndexError: tuple index out of range).
+        src = tmp_path / "model.safetensors"
+        original = torch.randn(64, 64, dtype=torch.float32)
+        amax = original.abs().max()
+        scale = (amax / 448.0).clamp(min=1e-12)
+        q = (original / scale).clamp(-448, 448).to(torch.float8_e4m3fn)
+        sd = {
+            "double_blocks.0.img_attn.proj.weight": q,
+            "double_blocks.0.img_attn.proj.scale_weight": scale,  # 0-dim, Comfy-Org naming
+        }
+        save_file(sd, str(src))
+
+        # Must not crash on the 0-dim sidecar, and must actually dequantize
+        # (not just pass the guard) -- restored value close to `original`.
+        dst, _ = convert_to_safetensors(str(src), target_key="F16", overwrite=True)
+        out = load_file(dst)
+        assert "double_blocks.0.img_attn.proj.scale_weight" not in out
+        restored = out["double_blocks.0.img_attn.proj.weight"].to(torch.float32)
+        assert torch.allclose(restored, original, atol=scale.item(), rtol=0.15)
+
+        # The original NVFP4 crash reproduction.
+        convert_to_safetensors(str(src), target_key="NVFP4", overwrite=True)
+
+    def test_strips_scaled_fp8_sentinel_tensor(self, tmp_path):
+        # Regression, found 2026-08-18 attempting to GGUF-convert a
+        # re-quantized HiDream text encoder: Comfy-Org's fp8_scaled
+        # checkpoints carry a top-level "scaled_fp8" sentinel (0 elements,
+        # float8_e4m3fn dtype) that comfy/utils.py's convert_old_quants()
+        # checks for presence, not content. It carries no real weight data
+        # but rode straight through this tool's conversion pipeline into
+        # every output format -- harmless for ComfyUI's safetensors loader
+        # (which tolerates the unmapped key) but crashed llama.cpp's
+        # convert_hf_to_gguf.py outright with "Can not map tensor
+        # 'scaled_fp8'" when that output was fed into GGUF conversion.
+        src = tmp_path / "model.safetensors"
+        sd = {
+            "double_blocks.0.img_attn.proj.weight": torch.randn(64, 64, dtype=torch.float32),
+            "scaled_fp8": torch.zeros(0, dtype=torch.float32),
+        }
+        save_file(sd, str(src))
+
+        dst, _ = convert_to_safetensors(str(src), target_key="F16", overwrite=True)
+        out = load_file(dst)
+        assert "scaled_fp8" not in out
+        assert "double_blocks.0.img_attn.proj.weight" in out
+
 
 class TestFp8FullPrecisionFlag:
     def test_fp8_layer_config_defaults_full_precision_matrix_mult_true(self, tmp_path):
