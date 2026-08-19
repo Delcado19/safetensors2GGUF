@@ -196,6 +196,17 @@ _RENDER_VERIFIED_MIXED: set[tuple[str, str]] = {
     ("hidream", "FP8"),
     ("hidream", "INT8"),
     ("hidream", "NVFP4"),
+    # hidream NVFP4_MIXED (2026-08-19): unlike every other hidream entry
+    # above, this one's source was hidream_i1_dev_fp8.safetensors, not the
+    # original bf16 -- the original bf16 checkpoint was no longer available
+    # locally and the user explicitly declined a third ~34GB re-download,
+    # accepting the double-quantization tradeoff (FP8 -> NVFP4_MIXED). 2
+    # same-seed prompts (eclipse landscape, gothic portrait) compared against
+    # the FP8 baseline above showed identical composition/identity/outfit --
+    # only minor secondary-detail variance (a background text glyph, a
+    # pendant's exact shape), the same tolerance bar every other _MIXED
+    # entry here is held to.
+    ("hidream", "NVFP4_MIXED"),
     # aura (aura_flow_0.3, 2026-08-18): FP8/FP8_MIXED/INT8/INT8_MIXED
     # render-tested clean via aura_t5 (Pile-T5-XL), fixed seed --
     # composition/identity matched the F16 baseline exactly. (INT8/

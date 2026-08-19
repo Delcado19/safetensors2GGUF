@@ -197,6 +197,11 @@ class TestSupportLevel:
         assert support_level("hidream", True, "FP8") == SUPPORT_VERIFIED
         assert support_level("hidream", True, "INT8") == SUPPORT_VERIFIED
         assert support_level("hidream", True, "NVFP4") == SUPPORT_VERIFIED
+        # NVFP4_MIXED (2026-08-19): quantized from the FP8 source (bf16
+        # unavailable, user declined a third re-download), 2 same-seed
+        # prompts vs. the FP8 baseline showed identical composition/
+        # identity/outfit, only minor secondary-detail variance.
+        assert support_level("hidream", True, "NVFP4_MIXED") == SUPPORT_VERIFIED
 
     def test_aura_verified_except_plain_nvfp4_caution(self):
         # 2026-08-18: aura_flow_0.3, fixed seed via aura_t5. FP8/FP8_MIXED/
