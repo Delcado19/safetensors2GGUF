@@ -493,6 +493,45 @@ def fetch_base_config_files(repo_id: str, dest_dir: Path, on_log=None) -> list[s
     return downloaded
 
 
+# Tensor-key suffixes that must never reach convert_hf_to_gguf.py: real
+# weight/scale-sidecar/sentinel tensors llama.cpp's converter can't map to
+# any GGUF tensor name (ValueError: Can not map tensor '<key>').
+# "scaled_fp8" is a harmless legacy-format marker (see convert_safetensors.py's
+# _scan_quantized_layers() -- already stripped from every safetensors output
+# by convert_to_safetensors(), listed here again in case weights_path is a
+# raw, never-passed-through-this-tool checkpoint). "spiece_model" is the
+# opposite case: load-bearing for ComfyUI's own safetensors loading (see that
+# same docstring for why it's deliberately NOT stripped there) but equally
+# fatal for llama.cpp's converter, which needs the tokenizer as an external
+# vendored .model file instead -- so it's filtered only here, in the copy
+# feeding the GGUF conversion, never in the shared F16/FP8/etc. output file
+# a user might also load directly in ComfyUI. Found 2026-08-19: an earlier
+# version of this fix stripped spiece_model unconditionally in
+# convert_safetensors.py, breaking every safetensors output of a self-
+# contained-tokenizer checkpoint (ComfyUI: `ValueError: invalid tokenizer`).
+_GGUF_INCOMPATIBLE_TENSOR_SUFFIXES = ("scaled_fp8", "spiece_model")
+
+
+def _copy_weights_for_gguf(weights_path: str, dst: Path) -> None:
+    """Copy a safetensors file into dst, dropping any tensor whose key ends
+    in _GGUF_INCOMPATIBLE_TENSOR_SUFFIXES. Streams one tensor at a time via
+    load_state_dict's lazy view (same memory profile convert_to_safetensors()
+    already uses for every conversion) -- never a raw byte-for-byte copy once
+    filtering is needed, but also never holds more than the final output
+    dict, matching this project's existing OOM-safety bar."""
+    state_dict = load_state_dict(weights_path, strip_prefixes=False)
+    keys = state_dict.keys()
+    if not any(k.endswith(_GGUF_INCOMPATIBLE_TENSOR_SUFFIXES) for k in keys):
+        shutil.copy2(weights_path, dst)
+        return
+    from safetensors.torch import save_file
+    out = {
+        k: v for k, v in state_dict.items()
+        if not k.endswith(_GGUF_INCOMPATIBLE_TENSOR_SUFFIXES)
+    }
+    save_file(out, str(dst))
+
+
 def convert_text_encoder(
     weights_path: str,
     base_repo_id: str | None = None,
@@ -559,7 +598,7 @@ def convert_text_encoder(
             _copy_vendored_family(family, tmp_path, on_log=_log)
 
         weights_dst = tmp_path / "model.safetensors"
-        shutil.copy2(weights_path, weights_dst)
+        _copy_weights_for_gguf(weights_path, weights_dst)
 
         cmd = [
             sys.executable, str(script), str(tmp_path),

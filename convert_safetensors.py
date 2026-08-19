@@ -48,6 +48,17 @@ _ALREADY_QUANTIZED_DTYPES: tuple = tuple(
     if d is not None
 )
 
+# Tensor-key suffixes for opaque, non-weight blobs that must survive a
+# conversion completely byte-identical (dtype included) -- never routed
+# through nan_to_num/quantize_tensor_st, both of which assume floating-point
+# weight data. Currently just Comfy-Org's "spiece_model" (a raw SentencePiece
+# tokenizer.model embedded as a 1D uint8 tensor, see _scan_quantized_layers()'s
+# docstring) -- found 2026-08-19 after an F16 "conversion" silently upcast it
+# to float16, which would have made SPieceTokenizer's protobuf parse fail on
+# load in ComfyUI (garbage bytes, not a missing-key crash like the earlier,
+# already-fixed unconditional-strip mistake).
+_PASSTHROUGH_TENSOR_SUFFIXES = ("spiece_model",)
+
 
 def _scan_quantized_layers(state_dict) -> tuple[dict[str, str], set[str]]:
     """Pre-scan for already-quantized ".weight" tensors so they can be
@@ -89,21 +100,29 @@ def _scan_quantized_layers(state_dict) -> tuple[dict[str, str], set[str]]:
     # attempting a GGUF conversion of a re-quantized HiDream text encoder
     # that started life as a Comfy-Org fp8_scaled checkpoint.
     #
-    # "{prefix}spiece_model" (bare, or prefixed) is a third, unrelated
-    # Comfy-Org convention specific to self-contained SentencePiece-tokenizer
-    # checkpoints (comfy/text_encoders/wan.py's UMT5XXlTokenizer): the raw
-    # tokenizer.model bytes are embedded as a 1D uint8 tensor so ComfyUI can
-    # load the checkpoint without a separate tokenizer file. It is not model
-    # weight data -- treating it as one would feed a uint8 byte blob through
-    # this tool's float-tensor quantization/hiprec logic, and (same failure
-    # mode as scaled_fp8) crashes llama.cpp's convert_hf_to_gguf.py with
-    # `ValueError: Can not map tensor 'spiece_model'` -- found 2026-08-19
-    # GGUF-converting Wan 2.2's UMT5-XXL text encoder.
+    # NOTE: "{prefix}spiece_model" (Comfy-Org's self-contained SentencePiece-
+    # tokenizer convention, comfy/text_encoders/wan.py's UMT5XXlTokenizer)
+    # is deliberately NOT in this skip set, unlike scaled_fp8 above --
+    # despite looking like the same class of sentinel tensor, it is load-
+    # bearing: comfy/sd.py's load_text_encoder_state_dicts() actively reads
+    # it out of the checkpoint into tokenizer_data["spiece_model"] to build
+    # the CLIP object's tokenizer, for UMT5/T5/ACE/gemma/jina-family
+    # encoders. It must reach the output file, byte-identical -- handled by
+    # _PASSTHROUGH_TENSOR_SUFFIXES in the main conversion loop below instead
+    # of this skip set, since "skip" here means "omit from the output
+    # entirely" (right for scale/comfy_quant sidecars, wrong for a tensor
+    # that has to survive). It only needs to be excluded from the *GGUF*
+    # conversion path specifically (llama.cpp's converter reads the
+    # tokenizer from an external vendored .model file instead, and can't
+    # map a "spiece_model" byte-blob tensor to a weight) -- see
+    # text_encoder_convert.py's convert_text_encoder() for that filtering,
+    # done as a separate copy step so it never touches this function's
+    # (user-facing) safetensors output.
     skip = {
         key for key in state_dict.keys()
         if key.endswith((
             ".weight_scale", ".weight_scale_2", ".comfy_quant", ".scale_weight",
-            "scaled_fp8", "spiece_model",
+            "scaled_fp8",
         ))
     }
     formats: dict[str, str] = {}
@@ -265,6 +284,17 @@ def convert_to_safetensors(
         if on_progress:
             on_progress(idx + 1, total, key)
         if key in quant_skip_keys:
+            continue
+        if key.endswith(_PASSTHROUGH_TENSOR_SUFFIXES):
+            # Not a weight at all -- e.g. "spiece_model", a raw SentencePiece
+            # tokenizer blob some Comfy-Org checkpoints embed (see
+            # _scan_quantized_layers()'s docstring). Every other tensor below
+            # goes through nan_to_num/quantize_tensor_st, both of which
+            # assume floating-point weight data; either would corrupt or
+            # dtype-cast an opaque byte blob like this one into something
+            # SPieceTokenizer can no longer parse. Copy through completely
+            # unchanged -- same dtype, same bytes, no quantization.
+            out_tensors[key] = data
             continue
         if any(x in key for x in model_arch.keys_ignore):
             continue

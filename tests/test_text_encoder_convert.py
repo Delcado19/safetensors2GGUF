@@ -251,6 +251,65 @@ class TestGgufUnsupportedFamilies:
         mock_popen.assert_not_called()
 
 
+class TestCopyWeightsForGguf:
+    """_copy_weights_for_gguf() feeds convert_text_encoder()'s temp HF-style
+    dir -- must drop scaled_fp8/spiece_model (llama.cpp can't map either to
+    a weight) without touching the caller's own weights_path file."""
+
+    def test_plain_copy_when_no_sentinel_tensors_present(self, tmp_path):
+        import torch
+        from safetensors.torch import save_file, load_file
+
+        from text_encoder_convert import _copy_weights_for_gguf
+
+        src = tmp_path / "model.safetensors"
+        save_file({"layer.weight": torch.randn(8, 8)}, str(src))
+        dst = tmp_path / "out.safetensors"
+
+        _copy_weights_for_gguf(str(src), dst)
+
+        assert dst.is_file()
+        assert set(load_file(str(dst)).keys()) == {"layer.weight"}
+
+    def test_strips_scaled_fp8_and_spiece_model(self, tmp_path):
+        import torch
+        from safetensors.torch import save_file, load_file
+
+        from text_encoder_convert import _copy_weights_for_gguf
+
+        src = tmp_path / "model.safetensors"
+        save_file({
+            "layer.weight": torch.randn(8, 8),
+            "scaled_fp8": torch.zeros(0, dtype=torch.float32),
+            "spiece_model": torch.randint(0, 255, (100,), dtype=torch.uint8),
+        }, str(src))
+        dst = tmp_path / "out.safetensors"
+
+        _copy_weights_for_gguf(str(src), dst)
+
+        out = load_file(str(dst))
+        assert set(out.keys()) == {"layer.weight"}
+
+    def test_does_not_modify_the_source_file(self, tmp_path):
+        # A regression against accidentally writing dst == weights_path or
+        # otherwise touching the caller's own (user-facing) file.
+        import torch
+        from safetensors.torch import save_file, load_file
+
+        from text_encoder_convert import _copy_weights_for_gguf
+
+        src = tmp_path / "model.safetensors"
+        save_file({
+            "layer.weight": torch.randn(8, 8),
+            "spiece_model": torch.randint(0, 255, (100,), dtype=torch.uint8),
+        }, str(src))
+        dst = tmp_path / "out.safetensors"
+
+        _copy_weights_for_gguf(str(src), dst)
+
+        assert "spiece_model" in load_file(str(src))
+
+
 class TestConvertTextEncoder:
     def test_propagates_error_when_llama_cpp_unavailable(self, tmp_path):
         from text_encoder_convert import convert_text_encoder
@@ -265,10 +324,16 @@ class TestConvertTextEncoder:
                 pass
 
     def test_runs_subprocess_with_expected_args(self, tmp_path):
+        import torch
+        from safetensors.torch import save_file
+
         from text_encoder_convert import convert_text_encoder
 
         weights = tmp_path / "model.safetensors"
-        weights.write_bytes(b"stub")
+        # A real (minimal) safetensors file -- _copy_weights_for_gguf() now
+        # actually parses this to check for scaled_fp8/spiece_model, unlike
+        # the plain shutil.copy2() this replaced.
+        save_file({"layer.weight": torch.randn(4, 4)}, str(weights))
         script = tmp_path / "convert_hf_to_gguf.py"
         script.write_text("# stub")
 
