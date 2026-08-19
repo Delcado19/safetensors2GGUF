@@ -105,6 +105,20 @@ class ModelAura(ModelTemplate):
         ("joint_transformer_blocks.3.ff_context.out_projection.weight",),
     ]
     keys_banned = ["joint_transformer_blocks.3.ff_context.out_projection.weight"]
+    # Same class of tensor Flux/Lumina2 already protect (see those classes'
+    # comments): the AdaLN modulation Linears (modC/modX/modCX/modF -- produce
+    # the per-block scale/shift/gate that's applied to the *entire* residual
+    # stream, so quantization error there doesn't stay local like it does in
+    # an attention/FFN weight) plus the input/time embedders and final output
+    # projection. Found 2026-08-18 auditing aura_flow_0.3 render tests: NVFP4
+    # and NVFP4_MIXED both showed a reproducible composition/lighting shift
+    # vs. the F16 baseline even though NVFP4_MIXED should have been immune --
+    # the only way *_MIXED still drifts is if the drifting tensors were never
+    # in keys_hiprec to begin with (this class previously had none at all).
+    keys_hiprec = [
+        "modC", "modX", "modCX", "modF",
+        "final_linear", "init_x_linear", "t_embedder", "cond_seq_linear",
+    ]
     # ComfyUI's model_detection.py infers cond_seq_dim from cond_seq_linear.weight.shape[1]
     keys_shape_critical = ["cond_seq_linear.weight"]
 

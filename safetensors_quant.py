@@ -52,6 +52,12 @@ SAFETENSORS_DTYPE_CHOICES: list[tuple[str, str]] = [
 # (FP8_MIXED: same-seed/prompt comparison, 2026-08-11, showed identity/
 # composition/outfit preserved -- the only deviation was a single secondary
 # prop, judged tolerable quantization variance, not a correctness failure).
+# IMPORTANT: every flux entry below is backed exclusively by FLUX.2 Klein 9B
+# checkpoints (qwen3-8b text encoder) -- Flux.1/Flux.1 Kontext (T5-XXL text
+# encoder) share the `flux` arch_key via ModelFlux's tensor-naming detection
+# but have never themselves been render-tested against this tool (found
+# 2026-08-18 auditing text-encoder test coverage). Don't read "flux is
+# VERIFIED" as covering Flux.1 specifically.
 # flux (FLUX.2 Klein 9B, 2026-08-12): 3 same-seed/prompt comparisons against
 # the unquantized BF16 baseline (garden portrait, bartender portrait, cyborg
 # geisha portrait, 5 seeds total incl. batch variants) showed FP8, FP8_MIXED,
@@ -156,6 +162,39 @@ _RENDER_VERIFIED_MIXED: set[tuple[str, str]] = {
     ("hidream", "FP8"),
     ("hidream", "INT8"),
     ("hidream", "NVFP4"),
+    # aura (aura_flow_0.3, 2026-08-18): FP8/FP8_MIXED/INT8/INT8_MIXED
+    # render-tested clean via aura_t5 (Pile-T5-XL), fixed seed --
+    # composition/identity matched the F16 baseline exactly. (INT8/
+    # INT8_MIXED needed an explicit entry here, not the usual
+    # `not keys_hiprec_nonempty` fast path, once ModelAura gained a
+    # keys_hiprec list below -- but the render evidence predates that and
+    # still holds: these renders quantized the modulation/embedder tensors
+    # too and were still clean, so INT8 tolerates them fine, unlike NVFP4.)
+    # NVFP4/NVFP4_MIXED deliberately excluded from this set: both showed the
+    # same reproducible composition/lighting shift vs. the F16/FP8/INT8
+    # baseline. Root-caused to ModelAura.keys_hiprec being empty -- the
+    # AdaLN modulation Linears (modC/modX/modCX/modF) scale the entire
+    # residual stream per block and were getting quantized in *every*
+    # format including NVFP4_MIXED, which should have been immune. Fixed by
+    # adding keys_hiprec (same tensors Flux/Lumina2 already protect for the
+    # identical reason). NVFP4/NVFP4_MIXED need re-conversion + re-render
+    # against the fix before they can move to VERIFIED.
+    ("aura", "FP8"),
+    ("aura", "FP8_MIXED"),
+    ("aura", "INT8"),
+    ("aura", "INT8_MIXED"),
+    # NVFP4_MIXED re-converted after both fixes (ModelAura.keys_hiprec +
+    # is_hiprec_st's F16 dtype-gate) and re-render-tested clean across 4
+    # motifs via aura_t5, same fixed seed each time -- including the
+    # original close-up vampire-portrait prompt that first showed the drift,
+    # now matching the F16 baseline's composition/identity/lighting/facial
+    # detail exactly. Plain NVFP4 deliberately excluded: keys_hiprec only
+    # ever protects *_MIXED (by design, same tradeoff every other
+    # architecture has), and on that same vampire-portrait motif plain
+    # NVFP4 still showed visible (if tolerable) facial-detail loss -- no
+    # crash, no wrong identity, but a real deviation. See model_support.py's
+    # _RENDER_TESTED_DRIFT for that CAUTION-level entry.
+    ("aura", "NVFP4_MIXED"),
 }
 
 # (base_format -> {arch_key}) pairs where the PLAIN (non-mixed) output has
@@ -296,7 +335,16 @@ def is_hiprec_st(key: str, data: torch.Tensor, model_arch, old_dtype: torch.dtyp
     """Return True if ``key`` must stay high-precision (F32), mirroring
     convert._quant_type_for's rule so 'mixed' safetensors output matches the
     existing GGUF mixed-precision behaviour exactly."""
-    if old_dtype not in (torch.float32, torch.bfloat16):
+    # F16 belongs in this gate too, not just F32/BF16 -- found 2026-08-18
+    # auditing aura_flow_0.3 (an F16-native checkpoint, unlike Flux/SD3/
+    # HiDream's BF16 sources this mechanism was validated against): with F16
+    # excluded, every 2D+ keys_hiprec entry (AdaLN modulation, embedders,
+    # etc.) was silently unprotected in every _MIXED format for this
+    # checkpoint, regardless of what keys_hiprec listed. Line 357 below keeps
+    # a hit at its ORIGINAL dtype (no forced F32 upcast), so including F16
+    # here just means "leave it at F16" -- no size regression, unlike a
+    # hypothetical forced-upcast path.
+    if old_dtype not in (torch.float32, torch.bfloat16, torch.float16):
         return False
     n_dims = data.dim()
     if n_dims == 1:
@@ -490,10 +538,11 @@ def estimate_safetensors_output_size(path: str, target_key: str, model_arch) -> 
         src_dtype = meta.get("dtype", "F16")
         src_bytes = _ST_DTYPE_BYTES.get(src_dtype, 2)
 
-        # Mirrors is_hiprec_st(): only F32/BF16 sources are eligible, and 1D
-        # or <=QUANTIZATION_THRESHOLD-element tensors qualify unconditionally,
+        # Mirrors is_hiprec_st(): F32/BF16/F16 sources are eligible (F16
+        # added 2026-08-18, see that function's comment), and 1D or
+        # <=QUANTIZATION_THRESHOLD-element tensors qualify unconditionally,
         # not just via a keys_hiprec substring match.
-        is_hiprec = src_dtype in ("F32", "BF16") and (
+        is_hiprec = src_dtype in ("F32", "BF16", "F16") and (
             ndim == 1 or n_elems <= QUANTIZATION_THRESHOLD
             or any(s in name for s in hiprec_substrings)
         )

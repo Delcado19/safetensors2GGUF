@@ -69,6 +69,16 @@ class TestHiprec:
         data = torch.zeros(64, 64, dtype=torch.bfloat16)
         assert is_hiprec_st("x_pad_token", data, ModelLumina2(), torch.bfloat16)
 
+    def test_keys_hiprec_key_is_hiprec_when_source_is_f16(self):
+        # Regression: is_hiprec_st's dtype gate previously only allowed
+        # F32/BF16 sources, silently making keys_hiprec a no-op for any
+        # F16-native checkpoint (found 2026-08-18 auditing aura_flow_0.3,
+        # which ships F16 on disk unlike the BF16 checkpoints this mechanism
+        # was validated against — ModelAura's newly-added keys_hiprec entries
+        # for the AdaLN modulation Linears had zero effect until this fix).
+        data = torch.zeros(64, 64, dtype=torch.float16)
+        assert is_hiprec_st("x_pad_token", data, ModelLumina2(), torch.float16)
+
 
 class TestQuantizeTensorF16:
     def test_f16_plain_casts_dtype(self):
@@ -153,6 +163,15 @@ class TestQuantizeTensorNvfp4:
         out = quantize_tensor_st(data, "block.bias", ModelFlux(), "NVFP4_MIXED")
         assert set(out.keys()) == {"block.bias"}
         assert out["block.bias"].dtype == torch.float32
+
+    def test_nvfp4_mixed_keeps_f16_source_hiprec_tensor_unpacked(self):
+        # Regression companion to test_keys_hiprec_key_is_hiprec_when_source_is_f16:
+        # a keys_hiprec-listed 2D tensor from an F16-native checkpoint must
+        # stay unquantized in *_MIXED mode, not just BF16/F32 sources.
+        data = torch.randn(64, 64, dtype=torch.float16)
+        out = quantize_tensor_st(data, "x_pad_token", ModelLumina2(), "NVFP4_MIXED")
+        assert set(out.keys()) == {"x_pad_token"}
+        assert out["x_pad_token"].dtype == torch.float16
 
     def test_nvfp4_non_multiple_of_16_last_dim_falls_back_to_f16(self):
         # Regression for review finding #1: a real conv weight (e.g. 3x3 conv,

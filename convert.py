@@ -214,7 +214,12 @@ def _quant_type_for(data, key, model_arch, old_dtype, target_quant=None):
     n_dims = len(data.shape)
     n_params = data.numel()
 
-    if old_dtype in (torch.float32, torch.bfloat16):
+    # F16 belongs in this gate too, not just F32/BF16 -- see
+    # safetensors_quant.py's is_hiprec_st() comment (2026-08-18, aura_flow_0.3
+    # is F16-native, unlike the BF16 checkpoints this mechanism was validated
+    # against). Without it, keys_hiprec is silently inert for any F16-native
+    # source checkpoint's GGUF conversion too, same bug class.
+    if old_dtype in (torch.float32, torch.bfloat16, torch.float16):
         if n_dims == 1:
             return gguf.GGMLQuantizationType.F32
         if n_params <= QUANTIZATION_THRESHOLD:
