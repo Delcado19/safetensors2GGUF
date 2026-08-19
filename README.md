@@ -424,7 +424,7 @@ editorial judgment call, open to correction.
 Below the per-architecture table is a second **Text Encoder Support** table,
 one row per vendored base-model family (Qwen3-4B/8B, Qwen2.5-VL-7B,
 Mistral-Small-3.2-24B, ERNIE-Image's Ministral3 prompt-enhancer, T5-XXL,
-CLIP-L, CLIP-bigG, Pile-T5-XL, Llama-3.1-8B — the same families
+CLIP-L, CLIP-bigG, Pile-T5-XL, Llama-3.1-8B, UMT5-XXL — the same families
 `detect_text_encoder_family()` matches, see [Text-Encoder
 Conversion](#text-encoder-conversion) below), covering the
 formats that tab offers (GGUF — collapsing every direct outtype and K-quant —

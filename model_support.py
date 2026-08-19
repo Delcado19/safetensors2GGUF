@@ -420,6 +420,7 @@ TEXT_ENCODER_FAMILY_DISPLAY_NAMES: dict[str, str] = {
     "clip-bigg": "OpenCLIP-bigG — SDXL (clip-bigg)",
     "pile-t5xl": "Pile-T5-XL — AuraFlow (pile-t5xl)",
     "llama-3.1-8b": "Llama-3.1-8B — HiDream-I1 (llama-3.1-8b)",
+    "umt5-xxl": "UMT5-XXL — Wan 2.1 / Wan 2.2 (umt5-xxl)",
 }
 
 # (family_short_name, format_key) pairs actually convert+load+render-tested in

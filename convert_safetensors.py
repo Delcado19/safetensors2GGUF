@@ -88,9 +88,23 @@ def _scan_quantized_layers(state_dict) -> tuple[dict[str, str], set[str]]:
     # with `ValueError: Can not map tensor 'scaled_fp8'` -- found 2026-08-18
     # attempting a GGUF conversion of a re-quantized HiDream text encoder
     # that started life as a Comfy-Org fp8_scaled checkpoint.
+    #
+    # "{prefix}spiece_model" (bare, or prefixed) is a third, unrelated
+    # Comfy-Org convention specific to self-contained SentencePiece-tokenizer
+    # checkpoints (comfy/text_encoders/wan.py's UMT5XXlTokenizer): the raw
+    # tokenizer.model bytes are embedded as a 1D uint8 tensor so ComfyUI can
+    # load the checkpoint without a separate tokenizer file. It is not model
+    # weight data -- treating it as one would feed a uint8 byte blob through
+    # this tool's float-tensor quantization/hiprec logic, and (same failure
+    # mode as scaled_fp8) crashes llama.cpp's convert_hf_to_gguf.py with
+    # `ValueError: Can not map tensor 'spiece_model'` -- found 2026-08-19
+    # GGUF-converting Wan 2.2's UMT5-XXL text encoder.
     skip = {
         key for key in state_dict.keys()
-        if key.endswith((".weight_scale", ".weight_scale_2", ".comfy_quant", ".scale_weight", "scaled_fp8"))
+        if key.endswith((
+            ".weight_scale", ".weight_scale_2", ".comfy_quant", ".scale_weight",
+            "scaled_fp8", "spiece_model",
+        ))
     }
     formats: dict[str, str] = {}
     dtype_of = getattr(state_dict, "dtype_of", None)

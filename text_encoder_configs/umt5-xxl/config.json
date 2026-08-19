@@ -1,0 +1,23 @@
+{
+  "architectures": ["UMT5ForConditionalGeneration"],
+  "model_type": "umt5",
+  "d_model": 4096,
+  "d_ff": 10240,
+  "d_kv": 64,
+  "num_heads": 64,
+  "num_layers": 24,
+  "num_decoder_layers": 24,
+  "relative_attention_num_buckets": 32,
+  "vocab_size": 256384,
+  "dense_act_fn": "gelu_pytorch_tanh",
+  "is_gated_act": true,
+  "is_encoder_decoder": true,
+  "dropout_rate": 0.1,
+  "layer_norm_epsilon": 1e-06,
+  "initializer_factor": 1.0,
+  "decoder_start_token_id": 0,
+  "pad_token_id": 0,
+  "eos_token_id": 1,
+  "tie_word_embeddings": false,
+  "output_past": true
+}

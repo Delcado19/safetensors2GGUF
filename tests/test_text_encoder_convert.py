@@ -44,21 +44,26 @@ class TestFormatChoices:
         assert {"Q6_K", "Q5_K_M", "Q4_K_M", "Q4_K_S", "Q3_K_M", "Q2_K"} <= keys
         assert TEXT_ENCODER_SAFETENSORS_FORMATS <= keys
 
-    def test_safetensors_size_savings_percentages_match_safetensors_quant(self):
-        # Hand-written literals here mirror safetensors_quant.py's own
-        # SAFETENSORS_DTYPE_CHOICES labels/_SIZE_RATIOS -- this is what keeps
-        # the two tabs' dropdowns from silently drifting apart.
+    def test_size_savings_percentages_match_their_source_ratio_tables(self):
+        # Hand-written literals here mirror the two other dropdowns' own
+        # source-of-truth ratio tables -- quantize.py's SIZE_RATIOS for the
+        # GGUF entries (this tab reuses the diffusion-model tab's own
+        # percentages verbatim), safetensors_quant.py's _SIZE_RATIOS for the
+        # safetensors entries -- keeping all three dropdowns from silently
+        # drifting apart.
         import re
 
+        from quantize import SIZE_RATIOS
         from safetensors_quant import _SIZE_RATIOS
 
         for label, key in TEXT_ENCODER_FORMAT_CHOICES:
             match = re.search(r"(\d+)% smaller than F16", label)
             if not match:
                 continue
-            expected = round((1 - _SIZE_RATIOS[key]) * 100)
+            ratios = SIZE_RATIOS if key in SIZE_RATIOS else _SIZE_RATIOS
+            expected = round((1 - ratios[key]) * 100)
             assert int(match.group(1)) == expected, (
-                f"{key!r} label says {match.group(1)}% but _SIZE_RATIOS gives {expected}%"
+                f"{key!r} label says {match.group(1)}% but its ratio table gives {expected}%"
             )
 
 
@@ -378,6 +383,19 @@ class TestDetectTextEncoderFamily:
             for i in range(32)
         })
         assert detect_text_encoder_family(state_dict) == "llama-3.1-8b"
+
+    def test_detects_umt5_xxl_from_shape_signature(self):
+        # Wan 2.1/2.2's text encoder; added 2026-08-19 after this family had
+        # no signature entry at all. Same hidden_size/layer count as t5-xxl,
+        # distinguished only by vocab_size (256384 vs. 32128).
+        from text_encoder_convert import detect_text_encoder_family
+
+        state_dict = {"shared.weight": _FakeTensor((256384, 4096))}
+        state_dict.update({
+            f"encoder.block.{i}.layer.0.SelfAttention.q.weight": _FakeTensor((4096, 4096))
+            for i in range(24)
+        })
+        assert detect_text_encoder_family(state_dict) == "umt5-xxl"
 
     def test_returns_none_for_unknown_shape(self):
         from text_encoder_convert import detect_text_encoder_family

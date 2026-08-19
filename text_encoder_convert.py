@@ -119,13 +119,13 @@ TEXT_ENCODER_FORMAT_CHOICES: list[tuple[str, str]] = [
     ("F32  — Full precision (GGUF)",              "F32"),
     ("F16  — Half precision · standard (GGUF)",   "F16"),
     ("BF16 — Brain float 16 (GGUF)",               "BF16"),
-    ("Q8_0 — 8-bit · very high quality (GGUF)",   "Q8_0"),
-    ("Q6_K — 6-bit · very high quality (GGUF)  [lq]", "Q6_K"),
-    ("Q5_K_M — 5-bit · high quality (GGUF)  [lq]",    "Q5_K_M"),
-    ("Q4_K_M — 4-bit · recommended ★ (GGUF)  [lq]",   "Q4_K_M"),
-    ("Q4_K_S — 4-bit small (GGUF)  [lq]",             "Q4_K_S"),
-    ("Q3_K_M — 3-bit · moderate quality (GGUF)  [lq]", "Q3_K_M"),
-    ("Q2_K  — 2-bit · smallest (GGUF)  [lq]",         "Q2_K"),
+    ("Q8_0 — 8-bit · very high quality · 43% smaller than F16 (GGUF)",   "Q8_0"),
+    ("Q6_K — 6-bit · very high quality · 56% smaller than F16 (GGUF)  [lq]", "Q6_K"),
+    ("Q5_K_M — 5-bit · high quality · 62% smaller than F16 (GGUF)  [lq]",    "Q5_K_M"),
+    ("Q4_K_M — 4-bit · recommended ★ · 67% smaller than F16 (GGUF)  [lq]",   "Q4_K_M"),
+    ("Q4_K_S — 4-bit small · 69% smaller than F16 (GGUF)  [lq]",             "Q4_K_S"),
+    ("Q3_K_M — 3-bit · moderate quality · 73% smaller than F16 (GGUF)  [lq]", "Q3_K_M"),
+    ("Q2_K  — 2-bit · smallest · 79% smaller than F16 (GGUF)  [lq]",         "Q2_K"),
     # ── Safetensors ─────────────────────────────────────────────────────
     # "F16_ST" (not "F16" -- already taken by the GGUF outtype above, and not
     # "F16_MIXED" -- see _TEXT_ENCODER_SAFETENSORS_TARGET_KEY's docstring for
@@ -145,11 +145,11 @@ TEXT_ENCODER_FORMAT_CHOICES: list[tuple[str, str]] = [
     # _TEXT_ENCODER_SAFETENSORS_TARGET_KEY's docstring above).
     ("F16 — Half precision (safetensors)",                     "F16_ST"),
     ("FP8 — float8_e4m3fn scaled · ~43% smaller than F16 (safetensors)",               "FP8"),
-    ("FP8 mixed — FP8 scaled, hiprec tensors stay F32 · ~43% smaller than F16 (safetensors)", "FP8_MIXED"),
+    ("FP8 mixed — FP8 scaled, hiprec tensors stay F32 · usually ~43% smaller than F16 (safetensors)", "FP8_MIXED"),
     ("INT8 — Tensor-wise INT8, ConvRot-rotated · ~43% smaller than F16 (safetensors)", "INT8"),
-    ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32 · ~43% smaller than F16 (safetensors)", "INT8_MIXED"),
+    ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32 · usually ~43% smaller than F16 (safetensors)", "INT8_MIXED"),
     ("NVFP4 — NVIDIA FP4, needs Blackwell GPU · ~62% smaller than F16 (safetensors)",  "NVFP4"),
-    ("NVFP4 mixed — NVFP4, hiprec tensors stay F32 · ~62% smaller than F16 (safetensors)", "NVFP4_MIXED"),
+    ("NVFP4 mixed — NVFP4, hiprec tensors stay F32 · needs Blackwell GPU · usually ~62% smaller than F16 (safetensors)", "NVFP4_MIXED"),
 ]
 
 
@@ -384,6 +384,7 @@ _FAMILY_SIGNATURES = {
     (768, 12, 49408): "clip-l",
     (1280, 32, 49408): "clip-bigg",
     (4096, 24, 32128): "t5-xxl",
+    (4096, 24, 256384): "umt5-xxl",  # UMT5-XXL, Wan 2.1/2.2's text encoder (multilingual T5, larger vocab than t5-xxl)
     (2560, 36, 151936): "qwen3-4b",
     (4096, 36, 151936): "qwen3-8b",
     (3584, 28, 152064): "qwen2.5-vl-7b",

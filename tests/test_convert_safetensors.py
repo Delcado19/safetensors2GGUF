@@ -322,6 +322,31 @@ class TestAlreadyQuantizedGuard:
         assert "scaled_fp8" not in out
         assert "double_blocks.0.img_attn.proj.weight" in out
 
+    def test_strips_spiece_model_sentinel_tensor(self, tmp_path):
+        # Regression, found 2026-08-19 GGUF-converting Wan 2.2's UMT5-XXL
+        # text encoder: comfy/text_encoders/wan.py's UMT5XXlTokenizer embeds
+        # the raw SentencePiece tokenizer.model bytes as a top-level 1D
+        # uint8 "spiece_model" tensor so ComfyUI can load the checkpoint
+        # standalone. Not model weight data -- crashed llama.cpp's
+        # convert_hf_to_gguf.py with "Can not map tensor 'spiece_model'"
+        # when carried through into GGUF conversion, same failure mode as
+        # the scaled_fp8 sentinel above.
+        src = tmp_path / "model.safetensors"
+        sd = {
+            "encoder.block.0.layer.0.SelfAttention.q.weight": torch.randn(64, 64, dtype=torch.float32),
+            "spiece_model": torch.zeros(4548313, dtype=torch.uint8),
+        }
+        save_file(sd, str(src))
+
+        from text_encoder_convert import _TEXT_ENCODER_MODEL_ARCH
+
+        dst, _ = convert_to_safetensors(
+            str(src), target_key="F16", overwrite=True, model_arch=_TEXT_ENCODER_MODEL_ARCH,
+        )
+        out = load_file(dst)
+        assert "spiece_model" not in out
+        assert "encoder.block.0.layer.0.SelfAttention.q.weight" in out
+
 
 class TestFp8FullPrecisionFlag:
     def test_fp8_layer_config_defaults_full_precision_matrix_mult_true(self, tmp_path):
