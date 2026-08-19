@@ -475,8 +475,8 @@ which uses CLIP-L/CLIP-G as 2 of its 4 text encoders: F16 safetensors is
 therefore the only safe format for those two, even though the other two
 (Llama-3.1-8B/T5-XXL, above) are fully Verified. HiDream-I1 is not
 end-to-end quantizable across all four of its text encoders. **UMT5-XXL**
-(Wan 2.2's text encoder) shows **✓ Verified** for FP8/FP8_MIXED/INT8_MIXED/
-NVFP4/NVFP4_MIXED — 8 same-seed I2V renders against Wan 2.2's own
+(Wan 2.2's text encoder) shows **✓ Verified** for GGUF Q4_K_M/FP8/FP8_MIXED/
+INT8_MIXED/NVFP4/NVFP4_MIXED — 9 same-seed I2V renders against Wan 2.2's own
 NVFP4_MIXED diffusion model (also newly **✓ Verified** on the main table
 above, its first render evidence ever), varying only this encoder's format.
 Plain **INT8** shows **⚠ Caution** instead: character/pose/outfit/background

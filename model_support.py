@@ -529,8 +529,10 @@ _TE_RENDER_VERIFIED: set[tuple[str, str]] = {
     # own baseline for every format except plain INT8 -- see
     # _TE_RENDER_TESTED_DRIFT below for that one. F16 not listed here --
     # always VERIFIED unconditionally, see text_encoder_support_level()'s
-    # docstring. GGUF Q4_K_M not yet render-tested (built successfully but
-    # not exercised in this batch).
+    # docstring. GGUF Q4_K_M added same day, one more render in the same
+    # batch/seed/image -- blink-cycle timing matched the baseline (not
+    # plain INT8's off-timing above), everything else identical.
+    ("umt5-xxl", "GGUF"),
     ("umt5-xxl", "FP8"),
     ("umt5-xxl", "FP8_MIXED"),
     ("umt5-xxl", "INT8_MIXED"),

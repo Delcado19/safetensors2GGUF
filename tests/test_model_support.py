@@ -388,9 +388,10 @@ class TestTextEncoderSupport:
             assert text_encoder_support_level("t5-xxl", format_key) == SUPPORT_VERIFIED
 
     def test_umt5_xxl_verified_except_plain_int8_caution(self):
-        # 2026-08-19: Wan 2.2's umt5-xxl encoder, 8 same-seed I2V renders
-        # (fixed image+prompt) against wan's verified NVFP4_MIXED diffusion
-        # model, varying only this encoder's format. Character/pose/outfit/
+        # 2026-08-19: Wan 2.2's umt5-xxl encoder, 9 same-seed I2V renders
+        # (fixed image+prompt, GGUF Q4_K_M added same day in a follow-up
+        # render) against wan's verified NVFP4_MIXED diffusion model,
+        # varying only this encoder's format. Character/pose/outfit/
         # background identical across every format except plain INT8, whose
         # generated motion's blink cycle landed a few frames off the other
         # formats' baseline -- not a composition/identity failure, judged
@@ -398,6 +399,7 @@ class TestTextEncoderSupport:
         # INT8's usual keys_hiprec-protection gap: INT8_MIXED, same batch,
         # matched the baseline exactly).
         assert text_encoder_support_level("umt5-xxl", "F16") == SUPPORT_VERIFIED
+        assert text_encoder_support_level("umt5-xxl", "GGUF") == SUPPORT_VERIFIED
         assert text_encoder_support_level("umt5-xxl", "FP8") == SUPPORT_VERIFIED
         assert text_encoder_support_level("umt5-xxl", "FP8_MIXED") == SUPPORT_VERIFIED
         assert text_encoder_support_level("umt5-xxl", "INT8") == SUPPORT_CAUTION
