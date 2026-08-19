@@ -61,6 +61,31 @@ class TestRegistry:
         assert "NVFP4_MIXED" in keys
 
 
+class TestSafetensorsDtypeChoicesLabels:
+    def test_every_lossy_choice_states_size_savings_except_baseline(self):
+        for label, key in SAFETENSORS_DTYPE_CHOICES:
+            if key in ("F16", "F16_MIXED"):
+                continue  # baseline / architecture-dependent -- no static % figure
+            assert "smaller than F16" in label, f"{key!r} label missing a size-savings figure: {label!r}"
+
+    def test_size_savings_percentages_match_size_ratios(self):
+        # Mirrors test_quantize.py's TestAllQuantChoicesLabels: the labels'
+        # percentages are hand-written literals, this is what keeps them
+        # from silently drifting apart from _SIZE_RATIOS.
+        import re
+
+        from safetensors_quant import _SIZE_RATIOS
+
+        for label, key in SAFETENSORS_DTYPE_CHOICES:
+            match = re.search(r"(\d+)% smaller than F16", label)
+            if not match:
+                continue
+            expected = round((1 - _SIZE_RATIOS[key]) * 100)
+            assert int(match.group(1)) == expected, (
+                f"{key!r} label says {match.group(1)}% but _SIZE_RATIOS gives {expected}%"
+            )
+
+
 class TestFilenameSuffixFor:
     def test_fp8_maps_to_external_naming(self):
         # Civitai/Comfy-Org convention -- see _FILENAME_SUFFIX's comment.

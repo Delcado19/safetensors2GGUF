@@ -44,6 +44,23 @@ class TestFormatChoices:
         assert {"Q6_K", "Q5_K_M", "Q4_K_M", "Q4_K_S", "Q3_K_M", "Q2_K"} <= keys
         assert TEXT_ENCODER_SAFETENSORS_FORMATS <= keys
 
+    def test_safetensors_size_savings_percentages_match_safetensors_quant(self):
+        # Hand-written literals here mirror safetensors_quant.py's own
+        # SAFETENSORS_DTYPE_CHOICES labels/_SIZE_RATIOS -- this is what keeps
+        # the two tabs' dropdowns from silently drifting apart.
+        import re
+
+        from safetensors_quant import _SIZE_RATIOS
+
+        for label, key in TEXT_ENCODER_FORMAT_CHOICES:
+            match = re.search(r"(\d+)% smaller than F16", label)
+            if not match:
+                continue
+            expected = round((1 - _SIZE_RATIOS[key]) * 100)
+            assert int(match.group(1)) == expected, (
+                f"{key!r} label says {match.group(1)}% but _SIZE_RATIOS gives {expected}%"
+            )
+
 
 class TestEnsureLlamaCpp:
     def test_returns_existing_dir_without_cloning(self, tmp_path):

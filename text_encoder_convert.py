@@ -144,12 +144,12 @@ TEXT_ENCODER_FORMAT_CHOICES: list[tuple[str, str]] = [
     # exactly the thing this option exists to eliminate (see
     # _TEXT_ENCODER_SAFETENSORS_TARGET_KEY's docstring above).
     ("F16 — Half precision (safetensors)",                     "F16_ST"),
-    ("FP8 — float8_e4m3fn scaled (safetensors)",               "FP8"),
-    ("FP8 mixed — FP8 scaled, hiprec tensors stay F32 (safetensors)", "FP8_MIXED"),
-    ("INT8 — Tensor-wise INT8, ConvRot-rotated (safetensors)", "INT8"),
-    ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32 (safetensors)", "INT8_MIXED"),
-    ("NVFP4 — NVIDIA FP4, needs Blackwell GPU (safetensors)",  "NVFP4"),
-    ("NVFP4 mixed — NVFP4, hiprec tensors stay F32 (safetensors)", "NVFP4_MIXED"),
+    ("FP8 — float8_e4m3fn scaled · ~43% smaller than F16 (safetensors)",               "FP8"),
+    ("FP8 mixed — FP8 scaled, hiprec tensors stay F32 · ~43% smaller than F16 (safetensors)", "FP8_MIXED"),
+    ("INT8 — Tensor-wise INT8, ConvRot-rotated · ~43% smaller than F16 (safetensors)", "INT8"),
+    ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32 · ~43% smaller than F16 (safetensors)", "INT8_MIXED"),
+    ("NVFP4 — NVIDIA FP4, needs Blackwell GPU · ~62% smaller than F16 (safetensors)",  "NVFP4"),
+    ("NVFP4 mixed — NVFP4, hiprec tensors stay F32 · ~62% smaller than F16 (safetensors)", "NVFP4_MIXED"),
 ]
 
 

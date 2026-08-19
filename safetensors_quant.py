@@ -48,15 +48,33 @@ from models.architectures import QUANTIZATION_THRESHOLD
 #     does not offer NF4.
 #   - F16/F16_MIXED and INT8/INT8_MIXED have no distinct external-naming
 #     convention beyond "fp16"/"int8" (case only) -- kept as-is.
+#
+# Size-savings percentages (mirrors quantize.py's ALL_QUANT_CHOICES pattern:
+# hand-written literals, not computed at runtime -- tests.test_safetensors_
+# quant.TestSafetensorsDtypeChoicesLabels checks they stay in sync with
+# _SIZE_RATIOS if that's ever recalibrated). Measured from an actual
+# reference conversion (HiDream-I1's llama-3.1-8b text encoder, 2026-08-19:
+# F16 16,060,556,312 bytes), the same one-reference-checkpoint approach
+# quantize.py's own GGUF ratios use -- an approximation, not a per-
+# architecture guarantee (scale-sidecar/1D-tensor overhead varies by model).
+# F16_MIXED omitted: hiprec tensors staying at their original (usually
+# higher-precision) dtype instead of F16 makes it larger than plain F16 by
+# an architecture-dependent amount too small and variable to state as one
+# number -- not worth the false precision of a static "~0%" figure.
+_SIZE_RATIOS: dict[str, float] = {
+    "FP8": 0.5655, "FP8_MIXED": 0.5654,
+    "INT8": 0.5658, "INT8_MIXED": 0.5658,
+    "NVFP4": 0.3754, "NVFP4_MIXED": 0.3753,
+}
 SAFETENSORS_DTYPE_CHOICES: list[tuple[str, str]] = [
-    ("F16       — Half precision",                                                    "F16"),
-    ("F16 mixed — Half precision, hiprec tensors stay F32",                            "F16_MIXED"),
-    ("FP8       — Scaled float8_e4m3fn, full-precision compute (safe)",                "FP8"),
-    ("FP8 mixed — FP8, hiprec tensors stay F32",                                       "FP8_MIXED"),
-    ("INT8      — Tensor-wise INT8, ConvRot-rotated where possible",                   "INT8"),
-    ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32 · recommended ★",             "INT8_MIXED"),
-    ("NVFP4     — NVIDIA FP4, full-precision compute (safe) · needs Blackwell GPU",    "NVFP4"),
-    ("NVFP4 mixed — NVFP4, hiprec tensors stay F32 · needs Blackwell GPU",             "NVFP4_MIXED"),
+    ("F16       — Half precision",                                                              "F16"),
+    ("F16 mixed — Half precision, hiprec tensors stay F32",                                      "F16_MIXED"),
+    ("FP8       — Scaled float8_e4m3fn, full-precision compute (safe) · ~43% smaller than F16",  "FP8"),
+    ("FP8 mixed — FP8, hiprec tensors stay F32 · ~43% smaller than F16",                          "FP8_MIXED"),
+    ("INT8      — Tensor-wise INT8, ConvRot-rotated where possible · ~43% smaller than F16",      "INT8"),
+    ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32 · ~43% smaller than F16 · recommended ★", "INT8_MIXED"),
+    ("NVFP4     — NVIDIA FP4, full-precision compute (safe) · needs Blackwell GPU · ~62% smaller than F16", "NVFP4"),
+    ("NVFP4 mixed — NVFP4, hiprec tensors stay F32 · needs Blackwell GPU · ~62% smaller than F16", "NVFP4_MIXED"),
 ]
 
 # Output-filename suffix for each SAFETENSORS_DTYPE_CHOICES key. Deliberately
