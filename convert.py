@@ -25,6 +25,7 @@ from models.architectures import (
     QUANTIZATION_THRESHOLD,
     REARRANGE_THRESHOLD,
 )
+from dequantize import _scan_quantized_layers, dequantize_weight
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
@@ -287,6 +288,20 @@ def handle_tensors(
         else:
             tqdm.write(msg)
 
+    # Pre-scan for an already-quantized source checkpoint (e.g. a community
+    # fp8_mixed Wan 2.2 file) so its ".weight_scale"/".comfy_quant" sidecars
+    # get dequantized into the real weight instead of being written straight
+    # to GGUF as-is — those sidecars are 0-dim tensors, and llama-quantize
+    # crashes with `GGML_ASSERT(n_dims >= 1 && n_dims <= GGML_MAX_DIMS)` on
+    # them (found 2026-08-20, see _scan_quantized_layers() in dequantize.py).
+    quant_formats, quant_skip_keys = _scan_quantized_layers(state_dict)
+    if quant_formats:
+        _emit(
+            f"INFO:  Dequantizing {len(quant_formats)} already-quantized "
+            f"layer(s) before GGUF conversion (formats: "
+            f"{sorted(set(quant_formats.values()))})"
+        )
+
     # Iterate state_dict directly — never materialize all tensors into a list,
     # otherwise _LazyStateDict's streaming would degrade to eager load.
     total = len(state_dict)
@@ -301,6 +316,14 @@ def handle_tensors(
 
         if on_progress is not None:
             on_progress(idx + 1, total, key)
+
+        if key in quant_skip_keys:
+            continue
+
+        if key in quant_formats:
+            # Reconstruct the approximate float original from its scale
+            # sidecar before the normal dtype coercion/GGUF path below.
+            data = dequantize_weight(state_dict, key, quant_formats[key], data)
 
         old_dtype = data.dtype
 

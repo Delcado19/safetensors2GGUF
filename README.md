@@ -421,12 +421,15 @@ names map to which internal architecture key, and the four-state logic
 itself) lives in `model_support.py` and is documented there as an explicit
 editorial judgment call, open to correction.
 
-**Wan** (Wan 2.2 I2V 14B) shows **✓ Verified** for `NVFP4_MIXED` — its
-first-ever render evidence, 2026-08-19: 8 same-seed I2V generations against
-a live ComfyUI workflow, quantized from a community `fp8_mixed` checkpoint
-(no bf16 source available). `ModelWan.keys_hiprec`/`keys_shape_critical`
-were already populated from a published community blacklist but had never
-actually been exercised by a real render before this.
+**Wan** (Wan 2.2 I2V 14B) shows **✓ Verified** for `FP8`/`FP8_MIXED`/`INT8`/
+`INT8_MIXED`/`NVFP4`/`NVFP4_MIXED`/GGUF `Q4_K_M` — full diffusion-model
+format coverage as of 2026-08-20, all quantized from the same community
+`fp8_mixed` checkpoint (no bf16 source available) at a fixed seed/image/
+prompt. `NVFP4_MIXED` was this architecture's first-ever render evidence
+(2026-08-19, 8 same-seed I2V generations); `ModelWan.keys_hiprec`/
+`keys_shape_critical` were already populated from a published community
+blacklist but had never actually been exercised by a real render before
+then.
 
 Below the per-architecture table is a second **Text Encoder Support** table,
 one row per vendored base-model family (Qwen3-4B/8B, Qwen2.5-VL-7B,

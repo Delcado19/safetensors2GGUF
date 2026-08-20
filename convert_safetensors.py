@@ -16,7 +16,12 @@ import torch
 from safetensors.torch import save_file
 
 from convert import load_state_dict
-from dequantize import detect_quantized_weight, dequantize_weight
+from dequantize import (
+    _PASSTHROUGH_TENSOR_SUFFIXES,
+    _scan_quantized_layers,
+    detect_quantized_weight,
+    dequantize_weight,
+)
 from models.architectures import detect_arch
 from safetensors_quant import filename_suffix_for, layer_key, quantize_tensor_st
 from safetensors_quant_int8 import CONVROT_GROUP_SIZE
@@ -35,114 +40,6 @@ _TARGET_TO_QUANT_FORMAT = {
     "NVFP4": "nvfp4", "NVFP4_MIXED": "nvfp4",
     "INT8": "int8_tensorwise", "INT8_MIXED": "int8_tensorwise",
 }
-
-# int8/uint8 only — NOT float8: an isolated float8 weight (no .comfy_quant
-# sidecar) is an existing, deliberately-supported case (coerced to float16,
-# see test_float8_input_coerced_to_float16), not proof of a fully quantized
-# checkpoint. int8/uint8 weights have no such legitimate unquantized use.
-_ALREADY_QUANTIZED_DTYPES: tuple = tuple(
-    d for d in (
-        getattr(torch, "int8", None),
-        getattr(torch, "uint8", None),
-    )
-    if d is not None
-)
-
-# Tensor-key suffixes for opaque, non-weight blobs that must survive a
-# conversion completely byte-identical (dtype included) -- never routed
-# through nan_to_num/quantize_tensor_st, both of which assume floating-point
-# weight data. Currently just Comfy-Org's "spiece_model" (a raw SentencePiece
-# tokenizer.model embedded as a 1D uint8 tensor, see _scan_quantized_layers()'s
-# docstring) -- found 2026-08-19 after an F16 "conversion" silently upcast it
-# to float16, which would have made SPieceTokenizer's protobuf parse fail on
-# load in ComfyUI (garbage bytes, not a missing-key crash like the earlier,
-# already-fixed unconditional-strip mistake).
-_PASSTHROUGH_TENSOR_SUFFIXES = ("spiece_model",)
-
-
-def _scan_quantized_layers(state_dict) -> tuple[dict[str, str], set[str]]:
-    """Pre-scan for already-quantized ".weight" tensors so they can be
-    automatically dequantized and cleanly re-quantized to a different target
-    format, instead of refusing outright (mirrors Starnodes ComfyUI Model
-    Converter's "Automatic Dequantization" feature; see dequantize.py and
-    docs/issues_analysis.md #12 for why a hard refusal was the original
-    behavior here).
-
-    Returns (formats, skip): ``formats`` maps each detected quantized
-    ".weight" key to its on-disk format string; ``skip`` is the set of
-    scale/comfy_quant sidecar keys that must not be treated as ordinary
-    weights during the main conversion loop below.
-
-    Still raises if an int8/uint8 ".weight" is found with no recognizable
-    scale sidecar — that case is genuinely unrecoverable (no scale to
-    reconstruct the original magnitude from), not just unhandled.
-    """
-    # .scale_weight (reversed word order) is Comfy-Org's own "fp8_scaled"
-    # repackaging convention, distinct from this tool's ".weight_scale" --
-    # see dequantize.py's _find_scale_key() docstring for the bug this
-    # closes (found 2026-08-18 converting a HiDream text encoder shipped in
-    # that format).
-    #
-    # "{prefix}scaled_fp8" (bare, or prefixed like "diffusion_model.
-    # scaled_fp8") is a separate Comfy-Org convention: a sentinel tensor with
-    # 0 elements (dtype float8_e4m3fn) that comfy/utils.py's
-    # convert_old_quants() checks for *presence*, not content, to detect its
-    # own legacy "scaled_fp8" repackaging format. It carries no actual
-    # weight data and is meaningless once dequantized/re-quantized by this
-    # tool (our own output is never in that legacy format -- it either
-    # carries its own `_quantization_metadata`, which makes ComfyUI skip
-    # convert_old_quants()'s legacy branch entirely, or is plain F16 with no
-    # scale sidecars left for that branch to act on either way). Left
-    # unstripped, it silently rode through every quantized output
-    # (confirmed harmless there only because ComfyUI's loader tolerates the
-    # unmapped key) but crashes llama.cpp's convert_hf_to_gguf.py outright
-    # with `ValueError: Can not map tensor 'scaled_fp8'` -- found 2026-08-18
-    # attempting a GGUF conversion of a re-quantized HiDream text encoder
-    # that started life as a Comfy-Org fp8_scaled checkpoint.
-    #
-    # NOTE: "{prefix}spiece_model" (Comfy-Org's self-contained SentencePiece-
-    # tokenizer convention, comfy/text_encoders/wan.py's UMT5XXlTokenizer)
-    # is deliberately NOT in this skip set, unlike scaled_fp8 above --
-    # despite looking like the same class of sentinel tensor, it is load-
-    # bearing: comfy/sd.py's load_text_encoder_state_dicts() actively reads
-    # it out of the checkpoint into tokenizer_data["spiece_model"] to build
-    # the CLIP object's tokenizer, for UMT5/T5/ACE/gemma/jina-family
-    # encoders. It must reach the output file, byte-identical -- handled by
-    # _PASSTHROUGH_TENSOR_SUFFIXES in the main conversion loop below instead
-    # of this skip set, since "skip" here means "omit from the output
-    # entirely" (right for scale/comfy_quant sidecars, wrong for a tensor
-    # that has to survive). It only needs to be excluded from the *GGUF*
-    # conversion path specifically (llama.cpp's converter reads the
-    # tokenizer from an external vendored .model file instead, and can't
-    # map a "spiece_model" byte-blob tensor to a weight) -- see
-    # text_encoder_convert.py's convert_text_encoder() for that filtering,
-    # done as a separate copy step so it never touches this function's
-    # (user-facing) safetensors output.
-    skip = {
-        key for key in state_dict.keys()
-        if key.endswith((
-            ".weight_scale", ".weight_scale_2", ".comfy_quant", ".scale_weight",
-            "scaled_fp8",
-        ))
-    }
-    formats: dict[str, str] = {}
-    dtype_of = getattr(state_dict, "dtype_of", None)
-    for key in state_dict.keys():
-        if key in skip or not key.endswith(".weight"):
-            continue
-        fmt = detect_quantized_weight(state_dict, key)
-        if fmt is not None:
-            formats[key] = fmt
-            continue
-        dtype = dtype_of(key) if dtype_of is not None else state_dict[key].dtype
-        if dtype in _ALREADY_QUANTIZED_DTYPES:
-            raise ValueError(
-                f"'{key}' is stored as {dtype} but has no recognizable "
-                "weight_scale/comfy_quant sidecar to reconstruct it from — "
-                "cannot safely dequantize. Convert from the original "
-                "unquantized checkpoint instead."
-            )
-    return formats, skip
 
 
 def convert_to_safetensors(

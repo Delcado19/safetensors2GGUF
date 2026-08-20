@@ -212,6 +212,20 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
       encoder have ever actually been render-tested against this tool.
       Treat Flux.1-specific claims as UNKNOWN pending real evidence, not as
       covered by the FLUX.2 results above.
+      2026-08-20 caveat: the "design reasoning" above implicitly assumed a
+      plain (never-quantized) source checkpoint. `convert.py`'s GGUF path
+      had no dequantization pre-pass for an already-quantized source until
+      that day — crashed `llama-quantize` (and, unfixed, would have written
+      silently-wrong unscaled weights) converting a community `wan` fp8_mixed
+      checkpoint. Fixed (docs/issues_analysis.md #18, shared with
+      `convert_safetensors.py`'s pre-existing `_scan_quantized_layers()`).
+      The blanket VERIFIED-by-design conclusion above still holds for a
+      plain-precision source; a pre-quantized source checkpoint is no longer
+      an exception now that the fix is in, but was one before this date.
+      Same day, `wan` Q4_K_M got actual render evidence backing this design
+      reasoning too: one I2V render with both HIGH- and LOW-noise
+      `UnetLoaderGGUF` loaded (`wan22_i2v_14b_{HIGH,LOW}-Q4_K_M.gguf`)
+      matched the safetensors-format renders' composition/pose exactly.
     - F16 / F16_MIXED: always VERIFIED. This is a precision cast, not
       compressed-representation quantization with a runtime scale lookup —
       it never touches ComfyUI's quantized-compute code path

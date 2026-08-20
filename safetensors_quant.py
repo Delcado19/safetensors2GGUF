@@ -281,6 +281,27 @@ _RENDER_VERIFIED_MIXED: set[tuple[str, str]] = {
     # few frames on plain INT8's text encoder, not this model) is documented
     # under model_support.py's umt5-xxl entries, not here.
     ("wan", "NVFP4_MIXED"),
+    # wan FP8/FP8_MIXED/INT8/INT8_MIXED/NVFP4 (2026-08-20): same "DaSiWa
+    # SnatchKiss v11" fp8_mixed source, same fixed seed/image/prompt as
+    # NVFP4_MIXED above -- this time both the HIGH- and LOW-noise UNETLoader
+    # were swapped together per format (not held fixed like the umt5xxl
+    # sweep), since the goal was full diffusion-model format coverage rather
+    # than isolating the text encoder. `convert.py`'s GGUF path also needed a
+    # dequantization pre-pass fix here (see docs/issues_analysis.md #18) --
+    # unrelated to these 5 safetensors formats, which built and rendered
+    # clean on the first attempt. All 5 renders matched each other and the
+    # NVFP4_MIXED baseline exactly (composition/pose/outfit/background) --
+    # frame-by-frame comparison at video frame 40 initially looked like a
+    # drift (baseline's eyes open, all 5 new formats mid-blink), but the
+    # baseline's own frame 45 shows the identical blink pose -- a ~5-frame
+    # (of 81) blink-cycle timing offset from ordinary seed-level numeric
+    # sensitivity, the same non-defect pattern already documented for plain
+    # INT8's umt5xxl text-encoder entry, not a composition/identity issue.
+    ("wan", "FP8"),
+    ("wan", "FP8_MIXED"),
+    ("wan", "INT8"),
+    ("wan", "INT8_MIXED"),
+    ("wan", "NVFP4"),
 }
 
 # (base_format -> {arch_key}) pairs where the PLAIN (non-mixed) output has

@@ -732,6 +732,66 @@ corrected/aligned. Tests added.
 
 ---
 
+## 18. `convert.py`'s GGUF path had no dequantization pre-pass for already-quantized
+source checkpoints — crashed llama-quantize on a community Wan 2.2 fp8_mixed file
+
+**Symptom (2026-08-20):** quantizing the remaining Wan 2.2 diffusion-model formats (FP8,
+FP8_MIXED, INT8, INT8_MIXED, NVFP4, GGUF Q4_K_M — only NVFP4_MIXED was previously
+render-verified) from the community `DaSiWa_Wan22_I2V_14B_SnatchKiss_v11_{HIGH,LOW}_
+fp8_mixed.safetensors` checkpoints (no bf16 source available). The five safetensors
+formats built fine via `convert_to_safetensors()`. The GGUF path crashed:
+`llama-quantize` exited with `GGML_ASSERT(n_dims >= 1 && n_dims <= GGML_MAX_DIMS) failed`
+(Windows exit code 3221226505 / `STATUS_STACK_BUFFER_OVERRUN` when run through `quantize.
+run_quantize()`, since it swallows llama-quantize's own stderr assert message).
+
+**Root cause:** `convert_safetensors.py` has had `_scan_quantized_layers()` since #12 —
+it detects already-quantized `.weight` tensors in the *source* checkpoint (via their
+`.weight_scale`/`.comfy_quant` sidecars) and dequantizes them before re-quantizing to the
+requested target format. `convert.py`'s GGUF path never had the equivalent. This
+particular source checkpoint carries hundreds of 0-dimensional F32
+`.weight_scale` tensors (one per quantized Linear layer, Comfy-Org's own fp8_scaled
+repackaging convention) that `convert.py`'s `handle_tensors()` wrote straight through as
+ordinary weight tensors — a 0-dim tensor is invalid in GGUF/GGML (`n_dims` must be 1–4),
+which is what `llama-quantize` asserts on. Beyond the crash, this would also have been
+silently *wrong* had it not crashed: the real weight tensors (on-disk as `float8_e4m3fn`)
+were being coerced straight to float16 and written out without ever being multiplied by
+their scale, i.e. the GGUF's raw fp8 bit patterns reinterpreted as scaled-down fp16
+values — an architecture-independent correctness gap that could silently corrupt any
+future GGUF conversion of a pre-quantized source checkpoint, not just this one.
+
+**Fix:** moved `_scan_quantized_layers()` (and its `_ALREADY_QUANTIZED_DTYPES`/
+`_PASSTHROUGH_TENSOR_SUFFIXES` constants) from `convert_safetensors.py` into
+`dequantize.py`, the one module both `convert.py` and `convert_safetensors.py` already
+depend on without creating a cycle (`convert_safetensors.py` imports `load_state_dict`
+from `convert.py`, so `convert.py` importing back from `convert_safetensors.py` directly
+would have been circular). `convert.py`'s `handle_tensors()` now runs the same
+scan-and-dequantize pre-pass — skip known scale/comfy_quant sidecar keys, and for any
+`.weight` key `_scan_quantized_layers()` flagged, call `dequantize_weight()` before the
+existing dtype-coercion/nan-clamp/GGUF-write path. Both call sites now share one
+implementation instead of two independently-maintained copies. 346 tests pass (no new
+tests added — this is a plumbing fix with existing coverage of `_scan_quantized_layers`/
+`dequantize_weight` themselves via `test_convert_safetensors.py`/`test_dequantize.py`;
+the GGUF-specific integration only surfaces with a real pre-quantized multi-GB checkpoint,
+impractical to fixture).
+
+**Separate footgun found while fixing the above (2026-08-20, workflow not code):**
+`convert.py`'s 5D-tensor side-car file is named `fix_5d_tensors_<arch>.safetensors` —
+architecture-scoped, not source-file-scoped. Building Wan's GGUF for both HIGH and LOW
+noise checkpoints back-to-back (same `arch == "wan"`) without running `fix_5d_tensors.py`
+between them silently overwrote HIGH's side-car with LOW's before HIGH's Q4_K_M was ever
+fixed — both checkpoints' `patch_embedding.weight` values differ (confirmed:
+`max abs diff` ~0.13, not a near-duplicate), so this would have shipped the LOW model's
+patch-embedding weight inside the HIGH GGUF and left the LOW GGUF missing its own
+patch-embedding entirely (nothing left to insert once already consumed... in this
+instance the HIGH `.safetensors` was still on disk, so the correct tensor was
+re-extracted and both files were manually re-fixed; not always recoverable in general).
+No code change made — the GUI's own per-conversion "Fix 5D Tensors" step already forces
+sequential single-file handling, so this only bites scripted/batch use outside the GUI.
+Noted here so a future batch script (or CLI wrapper) applies `fix_5d_tensors()`
+immediately after each GGUF build instead of batching the whole side-car step to the end.
+
+---
+
 ## Observations (not bugs)
 
 Findings noted for future reference that did not lead to a code change, because the

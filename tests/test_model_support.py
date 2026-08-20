@@ -212,6 +212,21 @@ class TestSupportLevel:
         # community blacklist, but never actually exercised until now).
         assert support_level("wan", True, "NVFP4_MIXED") == SUPPORT_VERIFIED
 
+    def test_wan_remaining_diffusion_formats_verified(self):
+        # 2026-08-20: same source/seed/image/prompt as the NVFP4_MIXED test
+        # above, completing full format coverage for the diffusion model
+        # itself (both HIGH- and LOW-noise UNETLoader swapped together per
+        # format, unlike the umt5xxl text-encoder sweep which held the
+        # diffusion model fixed). All 5 renders matched each other and the
+        # NVFP4_MIXED baseline exactly; a frame-40 comparison against the
+        # baseline initially looked like drift until the baseline's own
+        # frame 45 showed the same blink pose -- ordinary seed-level timing
+        # offset, not a defect. See docs/issues_analysis.md #18 for the
+        # convert.py GGUF dequantization bug found and fixed along the way
+        # (unrelated to these 5 safetensors formats).
+        for fmt in ("FP8", "FP8_MIXED", "INT8", "INT8_MIXED", "NVFP4"):
+            assert support_level("wan", True, fmt) == SUPPORT_VERIFIED
+
     def test_aura_verified_except_plain_nvfp4_caution(self):
         # 2026-08-18: aura_flow_0.3, fixed seed via aura_t5. FP8/FP8_MIXED/
         # INT8/INT8_MIXED render-tested clean. NVFP4/NVFP4_MIXED initially
