@@ -177,19 +177,19 @@ class TestDynamicDropdownAnnotation:
         import torch
         from safetensors.torch import save_file
 
-        # qwen_image, not flux -- flux's FP8/INT8/NVFP4 (plain and mixed) are
-        # all render-verified now (see safetensors_quant.py's
-        # _RENDER_VERIFIED_MIXED docstring) and would no longer be marked
-        # here. These formats have never actually been rendered for
-        # qwen_image -- UNKNOWN ("?"), not CAUTION ("⚠", reserved for
-        # render-tested-with-drift results -- see
+        # cosmos, not flux/qwen_image -- flux's FP8/INT8/NVFP4 (plain and
+        # mixed) are all render-verified (see safetensors_quant.py's
+        # _RENDER_VERIFIED_MIXED docstring), and qwen_image gained the same
+        # evidence 2026-08-23 (Qwen-Image-Edit-2511 batch), so neither would
+        # be marked here anymore. These formats have never actually been
+        # rendered for cosmos -- UNKNOWN ("?"), not CAUTION ("⚠", reserved
+        # for render-tested-with-drift results -- see
         # model_support._RENDER_TESTED_DRIFT, currently empty).
         src = tmp_path / "model.safetensors"
         save_file(
             {
-                "time_text_embed.timestep_embedder.linear_2.weight": torch.randn(8, 8),
-                "transformer_blocks.0.attn.norm_added_q.weight": torch.randn(8, 8),
-                "transformer_blocks.0.img_mlp.net.0.proj.weight": torch.randn(8, 8),
+                "blocks.0.mlp.layer1.weight": torch.randn(8, 8),
+                "blocks.0.adaln_modulation_cross_attn.1.weight": torch.randn(8, 8),
             },
             str(src),
         )

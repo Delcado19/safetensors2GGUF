@@ -311,6 +311,25 @@ _RENDER_VERIFIED_MIXED: set[tuple[str, str]] = {
     ("wan", "INT8"),
     ("wan", "INT8_MIXED"),
     ("wan", "NVFP4"),
+    # qwen_image (Qwen-Image-Edit-2511, Comfy-Org's official fp8_scaled
+    # repackage, 2026-08-20 batch + 2026-08-23 render review): FP8, FP8_MIXED
+    # (copied through unchanged -- the source already was that format),
+    # INT8, INT8_MIXED all render-tested clean via a fixed-seed edit workflow
+    # (qwen2.5-vl-7b BF16 text encoder held constant), matching the BF16
+    # text-encoder baseline's composition/identity/outfit exactly.
+    # NVFP4_MIXED also matched cleanly -- ModelQwenImage.keys_hiprec (img_in/
+    # txt_in/time_text_embed/norm_out/proj_out/img_mod.1, cross-referenced
+    # from tritant/ComfyUI_Kitchen_nvfp4_Converter's published blacklist, see
+    # models/architectures.py) does its job here. Plain NVFP4 is the
+    # exception: severe full-image mosaic/pixel-noise corruption, worse than
+    # any other architecture's plain-NVFP4 failure mode seen so far (not just
+    # detail loss or a composition swap -- the whole frame is visibly
+    # corrupted) -- see model_support.py's _RENDER_CONFIRMED_BAD.
+    ("qwen_image", "FP8"),
+    ("qwen_image", "FP8_MIXED"),
+    ("qwen_image", "INT8"),
+    ("qwen_image", "INT8_MIXED"),
+    ("qwen_image", "NVFP4_MIXED"),
 }
 
 # (base_format -> {arch_key}) pairs where the PLAIN (non-mixed) output has

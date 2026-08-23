@@ -18,6 +18,7 @@ from models.architectures import (
     ModelHyVid,
     ModelLTXV,
     ModelLumina2,
+    CosmosPredict2,
     ModelQwenImage,
     ModelSD1,
     ModelSD3,
@@ -457,8 +458,8 @@ class TestFormatRecommendation:
 
     def test_unverified_sensitive_architecture_discloses_caveat(self):
         # flux itself is now render-verified (see safetensors_quant.py's
-        # _RENDER_VERIFIED_MIXED docstring) -- qwen_image is still untested.
-        _, msg = format_recommendation(ModelQwenImage(), "INT8_MIXED")
+        # _RENDER_VERIFIED_MIXED docstring) -- cosmos is still untested.
+        _, msg = format_recommendation(CosmosPredict2(), "INT8_MIXED")
         assert "not yet confirmed" in msg
 
 
@@ -589,8 +590,8 @@ class TestEstimateSafetensorsOutputSize:
 
     def test_fp8_mixed_on_unverified_architecture_discloses_caveat(self):
         # flux itself is now render-verified (see safetensors_quant.py's
-        # _RENDER_VERIFIED_MIXED docstring) -- qwen_image is still untested.
-        _, msg = format_recommendation(ModelQwenImage(), "FP8_MIXED")
+        # _RENDER_VERIFIED_MIXED docstring) -- cosmos is still untested.
+        _, msg = format_recommendation(CosmosPredict2(), "FP8_MIXED")
         assert "not yet confirmed" in msg
 
     def test_plain_fp8_on_lumina2_claims_shown_in_testing(self):
@@ -601,13 +602,15 @@ class TestEstimateSafetensorsOutputSize:
         assert "plain FP8 has shown visible pose/identity corruption in testing" in msg
 
     def test_plain_fp8_on_unconfirmed_architecture_does_not_overclaim(self):
-        # qwen_image has neither INT8 nor FP8 directly render-tested -- the
+        # cosmos has neither INT8 nor FP8 directly render-tested -- the
         # FP8 warning must not imply FP8 itself was tested there, the way it
         # would be wrong to claim for lumina2 before the confirmation above.
         # (flux WAS render-tested and cleared plain FP8/INT8 -- see
         # safetensors_quant.py's _RENDER_VERIFIED_MIXED docstring -- so it's
-        # no longer a valid "unconfirmed" example for this test.)
-        _, msg = format_recommendation(ModelQwenImage(), "FP8")
+        # no longer a valid "unconfirmed" example for this test. qwen_image
+        # was also removed as an example here 2026-08-23, having gained real
+        # plain-FP8 render evidence of its own.)
+        _, msg = format_recommendation(CosmosPredict2(), "FP8")
         assert "plain FP8 has shown visible pose/identity corruption in testing" not in msg
 
     def test_render_verified_architecture_warn_claims_shown_in_testing(self):
@@ -617,14 +620,16 @@ class TestEstimateSafetensorsOutputSize:
         assert "has shown visible pose/identity corruption in testing" in msg
 
     def test_unverified_architecture_warn_does_not_overclaim(self):
-        # qwen_image's keys_hiprec was never render-tested by this project
+        # cosmos's keys_hiprec was never render-tested by this project
         # (only cross-referenced against a community blacklist) -- the
         # warning must not assert corruption "shown in testing" for an
         # architecture nobody has actually rendered with this tool's output.
         # (flux WAS render-tested and cleared plain INT8 -- see
         # test_plain_int8_render_verified_on_flux_recommends_ok below --
-        # so it's no longer a valid "unconfirmed" example for this test.)
-        _, msg = format_recommendation(ModelQwenImage(), "INT8")
+        # so it's no longer a valid "unconfirmed" example for this test.
+        # qwen_image was also removed as an example here 2026-08-23, having
+        # gained real plain-INT8 render evidence of its own.)
+        _, msg = format_recommendation(CosmosPredict2(), "INT8")
         assert "has shown visible pose/identity corruption in testing" not in msg
         assert "lumina2" in msg  # still cites the actual evidence source
         assert "hasn't been render-tested on this specific architecture" in msg

@@ -66,6 +66,56 @@ SUPPORT_SYMBOL: dict[str, str] = {
     SUPPORT_UNKNOWN: "?",
 }
 
+# (arch_key, format_key) pairs where BAD means "cannot be built at all" --
+# an upstream/tooling gap, not a render-tested-and-wrong result. The table's
+# ✗ symbol alone doesn't distinguish this from "builds fine but the picture
+# is wrong" (e.g. qwen_image's plain NVFP4, lumina2's plain FP8/INT8) --
+# support_reason()/text_encoder_support_reason() surface this text as a
+# tooltip so the difference is visible without reading source comments.
+_STRUCTURALLY_IMPOSSIBLE: dict[tuple[str, str], str] = {
+    ("qwen_image", "GGUF"): (
+        "No GGUF build exists or can exist with this project's tooling -- "
+        "city96/ComfyUI-GGUF's lcpp.patch (needed to make llama-quantize "
+        "understand diffusion-model GGUFs) has no qwen_image llm_arch entry "
+        "at all. Upstream gap, not a failed/wrong render. "
+        "docs/issues_analysis.md #21's correction."
+    ),
+}
+
+_TE_STRUCTURALLY_IMPOSSIBLE: dict[tuple[str, str], str] = {
+    ("clip-l", "GGUF"): (
+        "No GGUF build exists or can exist with this project's tooling -- "
+        "llama.cpp's convert_hf_to_gguf.py has no CLIPModel converter, and "
+        "ComfyUI-GGUF's CLIPLoaderGGUF has no CLIP-L decode path either. "
+        "Upstream gap, not a failed/wrong render."
+    ),
+    ("clip-bigg", "GGUF"): (
+        "No GGUF build exists or can exist with this project's tooling -- "
+        "llama.cpp's convert_hf_to_gguf.py has no CLIPModel converter, and "
+        "ComfyUI-GGUF's CLIPLoaderGGUF has no OpenCLIP-bigG decode path "
+        "either. Upstream gap, not a failed/wrong render."
+    ),
+    ("qwen2.5-vl-7b", "GGUF"): (
+        "The GGUF file builds and loads, but is missing its entire vision "
+        "tower (llama.cpp's plain converter only exports the language-model "
+        "half) -- unusable for any image-conditioning workflow, which is "
+        "this family's only real use case. Upstream tooling gap, not a "
+        "failed/wrong render. docs/issues_analysis.md #22."
+    ),
+}
+
+
+def support_reason(arch_key: str, format_key: str) -> str | None:
+    """Tooltip text for a diffusion-model support-table cell, or None if the
+    cell needs no extra explanation beyond its symbol."""
+    return _STRUCTURALLY_IMPOSSIBLE.get((arch_key, format_key))
+
+
+def text_encoder_support_reason(family: str, format_key: str) -> str | None:
+    """Tooltip text for a text-encoder support-table cell, or None if the
+    cell needs no extra explanation beyond its symbol."""
+    return _TE_STRUCTURALLY_IMPOSSIBLE.get((family, format_key))
+
 # (arch_key, format_key) pairs with DIRECT negative render-test evidence —
 # actually converted+loaded+rendered and visibly wrong (wrong pose/identity,
 # black bars, full-image noise), not just "never tried" or "risky by
@@ -116,6 +166,16 @@ _RENDER_CONFIRMED_BAD: set[tuple[str, str]] = {
     # UNKNOWN) so the table doesn't invite retesting something that can
     # never succeed with this project's public llama-quantize dependency.
     ("qwen_image", "GGUF"),
+    # qwen_image plain NVFP4 (Qwen-Image-Edit-2511, 2026-08-20 batch,
+    # reviewed 2026-08-23): render-tested via the fixed-seed edit workflow
+    # (BF16 text encoder held constant) -- severe full-image mosaic/pixel-
+    # noise corruption, not just detail loss or a composition swap like other
+    # architectures' plain-NVFP4 drift; the whole frame is visibly wrong.
+    # NVFP4_MIXED (same batch) is clean -- see safetensors_quant.py's
+    # _RENDER_VERIFIED_MIXED -- so keys_hiprec protection is doing its job
+    # and this is the expected plain-format tradeoff turning out unusually
+    # severe for this architecture, not a NVFP4_MIXED-side bug.
+    ("qwen_image", "NVFP4"),
 }
 
 # (arch_key, format_key) pairs that HAVE been convert+load+render-tested but
@@ -189,7 +249,16 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
     tried" vs. "tried and broke" already got the same split treatment
     earlier for the same reason.
 
-    - GGUF: always VERIFIED. Every models.architectures.arch_list entry is an
+    - GGUF: always VERIFIED, EXCEPT an architecture explicitly listed in
+      _RENDER_CONFIRMED_BAD for "GGUF" -- currently only `qwen_image`, where
+      no build is even possible (city96/ComfyUI-GGUF's lcpp.patch has no
+      qwen_image llm_arch entry, docs/issues_analysis.md #21's correction).
+      This exception was added 2026-08-23 after the blanket-VERIFIED
+      reasoning below silently overrode an already-added
+      ("qwen_image", "GGUF") _RENDER_CONFIRMED_BAD entry -- the format_key
+      == "GGUF" branch used to return unconditionally before ever
+      consulting that set. For every other architecture, the reasoning
+      below still applies: every models.architectures.arch_list entry is an
       architecture this tool's GGUF pipeline explicitly detects and handles
       (including automated 5D-tensor/pad-token fixes); K-quants are a
       generic post-processing step (llama-quantize) applied uniformly on top
@@ -378,6 +447,15 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
       tradeoff, not a bug.
     """
     if format_key == "GGUF":
+        # The "always VERIFIED by design" reasoning above assumes a K-quant
+        # build is actually possible for this architecture at all. It isn't
+        # for qwen_image (city96/ComfyUI-GGUF's lcpp.patch has no qwen_image
+        # llm_arch entry -- docs/issues_analysis.md #21's correction) --
+        # checked first so a structurally-impossible GGUF doesn't silently
+        # show as VERIFIED just because every buildable architecture's GGUF
+        # is. See support_reason() for the corresponding tooltip text.
+        if (arch_key, format_key) in _RENDER_CONFIRMED_BAD:
+            return SUPPORT_BAD
         return SUPPORT_VERIFIED
     if format_key in ("F16", "F16_MIXED"):
         return SUPPORT_VERIFIED
@@ -574,6 +652,21 @@ _TE_RENDER_VERIFIED: set[tuple[str, str]] = {
     ("umt5-xxl", "INT8_MIXED"),
     ("umt5-xxl", "NVFP4"),
     ("umt5-xxl", "NVFP4_MIXED"),
+    # qwen2.5-vl-7b (Qwen2.5-VL-7B-Huihui-Abliterated, Qwen-Image-Edit-2511's
+    # text encoder, 2026-08-20 batch, reviewed 2026-08-23): all 6 safetensors
+    # formats render-tested clean via the fixed-seed edit workflow (FP8
+    # diffusion model held constant, varying only the text-encoder format),
+    # matching the unquantized BF16 baseline's composition/identity/outfit
+    # exactly -- only trivial background-figure variance across renders.
+    # GGUF is NOT here -- see _TE_RENDER_CONFIRMED_BAD above, structurally
+    # missing its vision tower and unusable for this family's actual
+    # (image-conditioning) use case.
+    ("qwen2.5-vl-7b", "FP8"),
+    ("qwen2.5-vl-7b", "FP8_MIXED"),
+    ("qwen2.5-vl-7b", "INT8"),
+    ("qwen2.5-vl-7b", "INT8_MIXED"),
+    ("qwen2.5-vl-7b", "NVFP4"),
+    ("qwen2.5-vl-7b", "NVFP4_MIXED"),
 }
 
 # Mirrors _RENDER_CONFIRMED_BAD's role for diffusion models -- (family,
@@ -754,6 +847,7 @@ def build_text_encoder_support_table() -> list[dict]:
         row = {"family": family, "display_name": display_name}
         for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
             row[format_key] = text_encoder_support_level(family, format_key)
+            row[f"{format_key}__reason"] = text_encoder_support_reason(family, format_key)
         rows.append(row)
     return rows
 
@@ -777,5 +871,6 @@ def build_support_table() -> list[dict]:
         }
         for _, format_key in TABLE_FORMATS:
             row[format_key] = support_level(instance.arch, sensitive, format_key)
+            row[f"{format_key}__reason"] = support_reason(instance.arch, format_key)
         rows.append(row)
     return rows

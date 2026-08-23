@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import html
 import os
 import queue
 import threading
@@ -563,11 +564,18 @@ _SUPPORT_CELL_COLOR = {
 }
 
 
-def _support_table_cell_html(level: str) -> str:
-    """Return the colored-symbol HTML for one Model Support table cell."""
+def _support_table_cell_html(level: str, reason: str | None = None) -> str:
+    """Return the colored-symbol HTML for one Model Support table cell.
+
+    `reason` (from model_support.support_reason()/text_encoder_support_reason())
+    renders as a native title="" tooltip -- used to distinguish "cannot be
+    built at all" (upstream/tooling gap) from "builds fine but the render
+    came out wrong", both of which otherwise show the identical ✗ symbol.
+    """
     symbol = SUPPORT_SYMBOL[level]
     color = _SUPPORT_CELL_COLOR[level]
-    return f'<span style="color:{color};font-weight:700;font-size:1.1em;">{symbol}</span>'
+    title_attr = f' title="{html.escape(reason)}"' if reason else ""
+    return f'<span{title_attr} style="color:{color};font-weight:700;font-size:1.1em;">{symbol}</span>'
 
 
 def _support_table_rows_for_dataframe() -> list[list[str]]:
@@ -581,7 +589,7 @@ def _support_table_rows_for_dataframe() -> list[list[str]]:
         )
         cells = [display_html]
         for _, format_key in TABLE_FORMATS:
-            cells.append(_support_table_cell_html(row[format_key]))
+            cells.append(_support_table_cell_html(row[format_key], row.get(f"{format_key}__reason")))
         rows.append(cells)
     return rows
 
@@ -609,7 +617,7 @@ def _text_encoder_support_rows_for_dataframe() -> list[list[str]]:
         )
         cells = [display_html]
         for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
-            cells.append(_support_table_cell_html(row[format_key]))
+            cells.append(_support_table_cell_html(row[format_key], row.get(f"{format_key}__reason")))
         rows.append(cells)
     return rows
 

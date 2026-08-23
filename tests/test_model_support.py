@@ -11,9 +11,12 @@ from model_support import (
     TABLE_FORMATS,
     TEXT_ENCODER_FAMILY_DISPLAY_NAMES,
     TEXT_ENCODER_TABLE_FORMATS,
+    build_support_table,
     build_text_encoder_support_table,
     support_level,
+    support_reason,
     text_encoder_support_level,
+    text_encoder_support_reason,
 )
 from models.architectures import arch_list
 
@@ -46,6 +49,39 @@ class TestSupportLevel:
         assert support_level("lumina2", True, "GGUF") == SUPPORT_VERIFIED
         assert support_level("sdxl", False, "GGUF") == SUPPORT_VERIFIED
 
+    def test_gguf_bad_for_qwen_image_structural_gap(self):
+        # 2026-08-23: the format_key == "GGUF" branch used to return
+        # SUPPORT_VERIFIED unconditionally, before ever consulting
+        # _RENDER_CONFIRMED_BAD -- silently overriding the
+        # ("qwen_image", "GGUF") entry already in that set and showing GGUF
+        # as verified for an architecture with no possible GGUF build at
+        # all (city96/ComfyUI-GGUF's lcpp.patch has no qwen_image llm_arch
+        # entry). Must actually surface as BAD, with a tooltip reason
+        # distinguishing "cannot be built" from a render-tested-wrong
+        # result -- caught by build_support_table() still returning
+        # "verified" for this cell after the fix was believed complete.
+        assert support_level("qwen_image", True, "GGUF") == SUPPORT_BAD
+        assert support_reason("qwen_image", "GGUF") is not None
+        assert "lcpp.patch" in support_reason("qwen_image", "GGUF")
+        row = next(r for r in build_support_table() if r["arch"] == "qwen_image")
+        assert row["GGUF"] == SUPPORT_BAD
+        assert row["GGUF__reason"] == support_reason("qwen_image", "GGUF")
+
+    def test_gguf_reason_none_when_not_structurally_impossible(self):
+        assert support_reason("qwen_image", "NVFP4") is None
+        assert support_reason("lumina2", "GGUF") is None
+
+    def test_te_gguf_reason_matches_confirmed_bad(self):
+        assert text_encoder_support_reason("qwen2.5-vl-7b", "GGUF") is not None
+        assert "vision tower" in text_encoder_support_reason("qwen2.5-vl-7b", "GGUF")
+        assert text_encoder_support_reason("clip-l", "GGUF") is not None
+        assert text_encoder_support_reason("t5-xxl", "GGUF") is None
+        row = next(
+            r for r in build_text_encoder_support_table() if r["family"] == "qwen2.5-vl-7b"
+        )
+        assert row["GGUF"] == SUPPORT_BAD
+        assert row["GGUF__reason"] == text_encoder_support_reason("qwen2.5-vl-7b", "GGUF")
+
     def test_f16_always_verified(self):
         assert support_level("lumina2", True, "F16") == SUPPORT_VERIFIED
         assert support_level("lumina2", True, "F16_MIXED") == SUPPORT_VERIFIED
@@ -57,7 +93,7 @@ class TestSupportLevel:
         # in ComfyUI on architectures other than lumina2/flux (see
         # test_flux_fp8_int8_verified_render_tested below) -- UNKNOWN (never
         # rendered), not VERIFIED, under the same bar INT8_MIXED is held to.
-        assert support_level("qwen_image", True, "FP8_MIXED") == SUPPORT_UNKNOWN
+        assert support_level("cosmos", True, "FP8_MIXED") == SUPPORT_UNKNOWN
         assert support_level("cosmos", False, "FP8") == SUPPORT_UNKNOWN
 
     def test_flux_fp8_int8_verified_render_tested(self):
@@ -118,7 +154,7 @@ class TestSupportLevel:
         # end-to-end (docs/issues_analysis.md #15; flux: see
         # test_flux_fp8_int8_verified_render_tested above).
         assert support_level("lumina2", True, "INT8_MIXED") == SUPPORT_VERIFIED
-        assert support_level("qwen_image", True, "INT8_MIXED") == SUPPORT_UNKNOWN
+        assert support_level("cosmos", True, "INT8_MIXED") == SUPPORT_UNKNOWN
 
     def test_plain_int8_bad_on_lumina2_unknown_elsewhere(self):
         # lumina2 has direct render-test evidence of corruption with plain
@@ -128,7 +164,7 @@ class TestSupportLevel:
         # (flux is the one exception -- render-tested clean, see
         # test_flux_fp8_int8_verified_render_tested above).
         assert support_level("lumina2", True, "INT8") == SUPPORT_BAD
-        assert support_level("qwen_image", True, "INT8") == SUPPORT_UNKNOWN
+        assert support_level("cosmos", True, "INT8") == SUPPORT_UNKNOWN
 
     def test_nvfp4_bad_on_lumina2_verified_on_flux_unknown_elsewhere(self):
         # lumina2's original BAD verdict (full-image noise, #15) was from a
@@ -181,6 +217,21 @@ class TestSupportLevel:
         # keys_hiprec_nonempty` branch (sd3 has no keys_hiprec).
         assert support_level("sd3", False, "INT8") == SUPPORT_VERIFIED
         assert support_level("sd3", False, "INT8_MIXED") == SUPPORT_VERIFIED
+
+    def test_qwen_image_verified_except_plain_nvfp4(self):
+        # Qwen-Image-Edit-2511 (Comfy-Org fp8_scaled source), 2026-08-20 batch
+        # reviewed 2026-08-23: FP8/FP8_MIXED/INT8/INT8_MIXED/NVFP4_MIXED all
+        # render-tested clean against the BF16 text-encoder baseline. Plain
+        # NVFP4 is the one exception -- severe full-image mosaic/noise
+        # corruption (worse than any other architecture's plain-NVFP4
+        # failure mode seen so far), see safetensors_quant._RENDER_VERIFIED_
+        # MIXED and this module's _RENDER_CONFIRMED_BAD docstrings.
+        assert support_level("qwen_image", True, "FP8") == SUPPORT_VERIFIED
+        assert support_level("qwen_image", True, "FP8_MIXED") == SUPPORT_VERIFIED
+        assert support_level("qwen_image", True, "INT8") == SUPPORT_VERIFIED
+        assert support_level("qwen_image", True, "INT8_MIXED") == SUPPORT_VERIFIED
+        assert support_level("qwen_image", True, "NVFP4_MIXED") == SUPPORT_VERIFIED
+        assert support_level("qwen_image", True, "NVFP4") == SUPPORT_BAD
 
     def test_hidream_mixed_verified_plain_unknown_after_gate_fix(self):
         # 2026-08-17: ff_i.gate.weight (MoE router) wasn't in
@@ -320,6 +371,17 @@ class TestTextEncoderSupport:
         # format that actually works).
         for family in ("ernie-image-pe", "clip-l", "clip-bigg", "qwen3-4b"):
             assert text_encoder_support_level(family, "F16") == SUPPORT_VERIFIED, family
+
+    def test_qwen25vl_safetensors_verified(self):
+        # Qwen2.5-VL-7B-Huihui-Abliterated, Qwen-Image-Edit-2511's text
+        # encoder, 2026-08-20 batch reviewed 2026-08-23: all 6 safetensors
+        # formats render-tested clean via a fixed-seed edit workflow (FP8
+        # diffusion model held constant), matching the unquantized BF16
+        # baseline. Unlike the GGUF cell (see test_qwen25vl_gguf_confirmed_bad
+        # below), these carry the full vision tower since they quantize the
+        # complete state dict directly.
+        for fmt in ("FP8", "FP8_MIXED", "INT8", "INT8_MIXED", "NVFP4", "NVFP4_MIXED"):
+            assert text_encoder_support_level("qwen2.5-vl-7b", fmt) == SUPPORT_VERIFIED, fmt
 
     def test_qwen25vl_gguf_confirmed_bad(self):
         # 2026-08-23: our GGUF Q4_K_M build for qwen2.5-vl-7b loads but

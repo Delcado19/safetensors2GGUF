@@ -5,18 +5,11 @@
         "matcher": "Bash",
         "hooks": [
           {
-            "type": "agent",
-            "if": "Bash(git commit*)",
-            "statusMessage": "Dokumentation wird geprüft und aktualisiert...",
-            "timeout": 120,
-            "prompt": "Ein git-Commit wurde versucht. Prüfe mit 'git diff --cached --name-only' welche Dateien gestagt sind. Ergänze fehlende Docstrings in öffentlichen Python-Funktionen/-Klassen, aktualisiere CHANGELOG.md (Einträge unter [Unreleased]), README.md bei API-Änderungen, AGENTS.md bei neuen Hooks. Stage alle Dokumentationsänderungen mit 'git add' nach. Wenn alles vollständig ist: {\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}}. Bei unbehebbaren Lücken: {\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Dokumentation unvollständig: <Details>\"}}"
-          },
-          {
             "type": "command",
             "if": "Bash(git commit*)",
             "statusMessage": "Tests werden geprüft...",
             "timeout": 300,
-            "command": "uv run pytest --tb=short -q --basetemp .pytest-tmp -p no:cacheprovider > .pytest-hook-last.log 2>&1; code=$?; if [ $code -eq 0 ] || [ $code -eq 5 ]; then echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}}'; else echo \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"PreToolUse\\\",\\\"permissionDecision\\\":\\\"deny\\\",\\\"permissionDecisionReason\\\":\\\"pytest exited $code - see .pytest-hook-last.log or rerun: uv run pytest\\\"}}\"; fi"
+            "command": "cmd=$(python -c \"import json,sys; print(json.load(sys.stdin).get('tool_input',{}).get('command',''))\"); case \"$cmd\" in git\\ commit*) : ;; *) echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}}'; exit 0 ;; esac; uv run pytest --tb=short -q --basetemp .pytest-tmp -p no:cacheprovider > .pytest-hook-last.log 2>&1; code=$?; if [ $code -eq 0 ] || [ $code -eq 5 ]; then echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}}'; else echo \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"PreToolUse\\\",\\\"permissionDecision\\\":\\\"deny\\\",\\\"permissionDecisionReason\\\":\\\"pytest exited $code - see .pytest-hook-last.log or rerun: uv run pytest\\\"}}\"; fi"
           }
         ]
       }
