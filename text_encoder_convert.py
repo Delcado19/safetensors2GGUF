@@ -509,7 +509,14 @@ def fetch_base_config_files(repo_id: str, dest_dir: Path, on_log=None) -> list[s
 # version of this fix stripped spiece_model unconditionally in
 # convert_safetensors.py, breaking every safetensors output of a self-
 # contained-tokenizer checkpoint (ComfyUI: `ValueError: invalid tokenizer`).
-_GGUF_INCOMPATIBLE_TENSOR_SUFFIXES = ("scaled_fp8", "spiece_model")
+_GGUF_INCOMPATIBLE_TENSOR_SUFFIXES = ("scaled_fp8", "spiece_model", "tekken_model")
+# "tekken_model" (FLUX.2 dev's mistral_3_small_flux2 encoder's embedded
+# Tekken tokenizer JSON) is the same load-bearing-but-GGUF-fatal case --
+# added defensively 2026-08-23 alongside dequantize.py's
+# _PASSTHROUGH_TENSOR_SUFFIXES fix, even though this family's GGUF path is
+# currently blocked earlier (family auto-detection fails outright, see
+# model_support.py's mistral-small-3.2-24b GGUF entry) so this never
+# actually gets exercised yet.
 
 
 def _copy_weights_for_gguf(weights_path: str, dst: Path) -> None:

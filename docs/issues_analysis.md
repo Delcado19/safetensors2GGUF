@@ -968,6 +968,54 @@ conventions, out of scope).
 
 ---
 
+## 23. FLUX.2 dev's Mistral text encoder failed to load with `json.decoder.JSONDecodeError`
+— a second sentinel-tensor byte-blob, same bug class as `spiece_model` (#18's era), new name
+
+**Symptom (2026-08-23):** loading a batch-built `mistral_3_small_flux2_fp8_mixed.safetensors`
+(FLUX.2 dev's text encoder, this tool's own FP8_MIXED output) in ComfyUI's `CLIPLoader`
+crashed:
+```
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+```
+raised inside `comfy/text_encoders/flux.py`'s `load_mistral_tokenizer()` ->
+`from_tekken_json()` (`comfy/text_encoders/bpe_tokenizer.py`), which calls `json.loads()`
+directly on a tensor's raw bytes.
+
+**Root cause:** `mistral_3_small_flux2_*.safetensors` embeds the raw Tekken tokenizer JSON
+as a top-level 1D `uint8` tensor named `tekken_model` — the same "self-contained tokenizer
+blob" pattern already documented for Comfy-Org's `spiece_model` (Wan/UMT5's SentencePiece
+model, see #18's era in `dequantize.py`'s `_PASSTHROUGH_TENSOR_SUFFIXES` docstring), just a
+different sentinel name this project had never encountered before this session. Verified
+directly: source `tekken_model` is `torch.uint8`, shape `(19399895,)`, starting bytes
+`b'{\n    "config": {...'` (valid JSON); the built FP8_MIXED output has the same key at
+`torch.float32` — every other tensor in `convert_to_safetensors()`'s main loop goes through
+`nan_to_num`/`quantize_tensor_st()`, both of which assume floating-point weight data, and
+neither `_PASSTHROUGH_TENSOR_SUFFIXES` (only covered `spiece_model`) nor any other guard
+exempted this new sentinel name. Affects **all 6 safetensors formats** built from this
+source before the fix (FP8/FP8_MIXED/INT8/INT8_MIXED/NVFP4/NVFP4_MIXED all share the same
+conversion path with no format-specific exemption), not just the one that happened to be
+tested first.
+
+**Fix:** added `"tekken_model"` to `dequantize.py`'s `_PASSTHROUGH_TENSOR_SUFFIXES` (now
+`("spiece_model", "tekken_model")`) — copied through byte-identical, same as `spiece_model`.
+Also added it defensively to `text_encoder_convert.py`'s `_GGUF_INCOMPATIBLE_TENSOR_SUFFIXES`
+for consistency, though this family's GGUF path is currently blocked earlier anyway (see
+the correction to this doc's earlier `mistral-small-3.2-24b` GGUF entry in `model_support.py`
+— `detect_text_encoder_family()` fails outright on FLUX.2's bespoke 30-layer trim before
+this stripping code would even run). Test added
+(`test_preserves_tekken_model_sentinel_tensor_byte_identical`, mirroring the existing
+`spiece_model` test). All 6 already-built `mistral_3_small_flux2_*.safetensors` files
+rebuilt after the fix.
+
+**How to apply:** any new text-encoder family with its own self-contained tokenizer
+convention (a raw tokenizer file embedded as a byte-blob tensor) needs its sentinel key name
+added to `_PASSTHROUGH_TENSOR_SUFFIXES` before a real batch run, not discovered after the
+fact by a ComfyUI load failure — check for suspiciously-named top-level `uint8`/`int8`
+tensors with no `.weight` suffix when onboarding a new family, the same way `keys_hiprec`
+gets checked proactively per [[feedback_check_keys_hiprec_first]].
+
+---
+
 Findings noted for future reference that did not lead to a code change, because the
 evidence didn't point at a defect in this tool's output.
 

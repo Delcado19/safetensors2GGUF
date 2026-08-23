@@ -144,13 +144,23 @@ _ALREADY_QUANTIZED_DTYPES: tuple = tuple(
 # Tensor-key suffixes for opaque, non-weight blobs that must survive a
 # conversion completely byte-identical (dtype included) -- never routed
 # through nan_to_num/quantize_tensor_st, both of which assume floating-point
-# weight data. Currently just Comfy-Org's "spiece_model" (a raw SentencePiece
-# tokenizer.model embedded as a 1D uint8 tensor, see _scan_quantized_layers()'s
-# docstring) -- found 2026-08-19 after an F16 "conversion" silently upcast it
-# to float16, which would have made SPieceTokenizer's protobuf parse fail on
-# load in ComfyUI (garbage bytes, not a missing-key crash like the earlier,
-# already-fixed unconditional-strip mistake).
-_PASSTHROUGH_TENSOR_SUFFIXES = ("spiece_model",)
+# weight data. "spiece_model": Comfy-Org's raw SentencePiece tokenizer.model
+# embedded as a 1D uint8 tensor, see _scan_quantized_layers()'s docstring --
+# found 2026-08-19 after an F16 "conversion" silently upcast it to float16,
+# which would have made SPieceTokenizer's protobuf parse fail on load in
+# ComfyUI (garbage bytes, not a missing-key crash like the earlier,
+# already-fixed unconditional-strip mistake). "tekken_model": the same
+# pattern for FLUX.2 dev's mistral_3_small_flux2 text encoder -- a raw
+# Tekken tokenizer JSON blob embedded as a 1D uint8 tensor (comfy/text_
+# encoders/flux.py's load_mistral_tokenizer() -> from_tekken_json() does
+# json.loads() on it directly). Found 2026-08-23: our FP8_MIXED build
+# upcast it to float32 like any other weight, corrupting the JSON bytes --
+# ComfyUI failed with json.decoder.JSONDecodeError: "Expecting value: line
+# 1 column 1 (char 0)" trying to parse the resulting garbage. All 6
+# safetensors formats built from the same source before this fix carry the
+# same corruption, not just FP8_MIXED (every one uses the same
+# convert_to_safetensors() pipeline with no passthrough exemption yet).
+_PASSTHROUGH_TENSOR_SUFFIXES = ("spiece_model", "tekken_model")
 
 
 def _scan_quantized_layers(state_dict) -> tuple[dict[str, str], set[str]]:

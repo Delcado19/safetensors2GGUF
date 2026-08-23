@@ -392,6 +392,20 @@ class TestTextEncoderSupport:
         # project's own code -- see docs/issues_analysis.md #22.
         assert text_encoder_support_level("qwen2.5-vl-7b", "GGUF") == SUPPORT_BAD
 
+    def test_mistral_small_gguf_confirmed_bad(self):
+        # 2026-08-23: FLUX.2 dev's mistral_3_small_flux2_*.safetensors is a
+        # bespoke-trimmed variant (30 transformer layers, no final norm/
+        # lm_head) that doesn't match this family's vendored 40-layer
+        # Mistral-Small-3.2-24B-Instruct-2506 config -- caught by
+        # detect_text_encoder_family() correctly returning None (layer-count
+        # signature mismatch) before wasting a conversion attempt. No known
+        # correct config exists yet (even city96/ComfyUI-GGUF#367 is an open
+        # feature request), so BAD, not UNKNOWN.
+        assert text_encoder_support_level("mistral-small-3.2-24b", "GGUF") == SUPPORT_BAD
+        reason = text_encoder_support_reason("mistral-small-3.2-24b", "GGUF")
+        assert reason is not None
+        assert "30 transformer layers" in reason
+
     def test_clip_families_quantized_safetensors_confirmed_bad(self):
         # Not a render defect either -- a genuine ComfyUI-side gap found
         # 2026-08-14 render-testing SDXL's clip_g: comfy/sd1_clip.py only

@@ -358,6 +358,44 @@ class TestAlreadyQuantizedGuard:
         assert torch.equal(out["spiece_model"], blob)
         assert "encoder.block.0.layer.0.SelfAttention.q.weight" in out
 
+    def test_preserves_tekken_model_sentinel_tensor_byte_identical(self, tmp_path):
+        # Regression, found 2026-08-23: comfy/text_encoders/flux.py's
+        # load_mistral_tokenizer() (FLUX.2 dev's mistral_3_small_flux2 text
+        # encoder) embeds the raw Tekken tokenizer JSON as a top-level 1D
+        # uint8 "tekken_model" tensor and calls json.loads() on it directly
+        # -- same sentinel pattern as "spiece_model" above, just not yet
+        # covered by _PASSTHROUGH_TENSOR_SUFFIXES. Without this fix, a real
+        # FP8_MIXED build upcast the JSON bytes to float32 like any other
+        # weight, and ComfyUI failed loading it with
+        # json.decoder.JSONDecodeError: "Expecting value: line 1 column 1
+        # (char 0)" on the resulting garbage.
+        # strip_prefixes=False, matching the real call path
+        # (convert_text_encoder_to_safetensors() always passes it, precisely
+        # because "model." is this family's genuine module path, not a
+        # diffusion-UNet wrapper) -- without it, convert.py's prefix-strip
+        # heuristic drops "tekken_model" entirely (it doesn't contain the
+        # "model." substring, unlike every real weight key here), a
+        # different bug this test isn't about.
+        src = tmp_path / "model.safetensors"
+        blob = torch.randint(0, 255, (19399895,), dtype=torch.uint8)
+        sd = {
+            "model.layers.0.self_attn.q_proj.weight": torch.randn(64, 64, dtype=torch.float32),
+            "tekken_model": blob,
+        }
+        save_file(sd, str(src))
+
+        from text_encoder_convert import _TEXT_ENCODER_MODEL_ARCH
+
+        dst, _ = convert_to_safetensors(
+            str(src), target_key="F16", overwrite=True, model_arch=_TEXT_ENCODER_MODEL_ARCH,
+            strip_prefixes=False,
+        )
+        out = load_file(dst)
+        assert "tekken_model" in out
+        assert out["tekken_model"].dtype == torch.uint8
+        assert torch.equal(out["tekken_model"], blob)
+        assert "model.layers.0.self_attn.q_proj.weight" in out
+
 
 class TestFp8FullPrecisionFlag:
     def test_fp8_layer_config_defaults_full_precision_matrix_mult_true(self, tmp_path):

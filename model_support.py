@@ -102,6 +102,21 @@ _TE_STRUCTURALLY_IMPOSSIBLE: dict[tuple[str, str], str] = {
         "this family's only real use case. Upstream tooling gap, not a "
         "failed/wrong render. docs/issues_analysis.md #22."
     ),
+    ("mistral-small-3.2-24b", "GGUF"): (
+        "Cannot be built for the FLUX.2 dev packaging of this encoder "
+        "(mistral_3_small_flux2_*.safetensors, 2026-08-23): it's a "
+        "bespoke-trimmed variant with only 30 transformer layers and no "
+        "final norm/lm_head tensor -- NOT the vendored 40-layer "
+        "Mistral-Small-3.2-24B-Instruct-2506 config this family's GGUF path "
+        "assumes. detect_text_encoder_family() correctly returns None (layer "
+        "count mismatch, not a bug), so no base_repo_id auto-detects; forcing "
+        "the vendored config would apply wrong hyperparameters. No known "
+        "correct config exists yet -- even upstream (city96/ComfyUI-GGUF#367) "
+        "text-encoder GGUF support for FLUX.2 is an open, unresolved feature "
+        "request. Unrelated to the actual (untrimmed) Mistral-Small-3.2-24B "
+        "checkpoint ERNIE-Image uses, which this family also covers and "
+        "isn't known to have this problem -- just not yet tested either."
+    ),
 }
 
 
@@ -713,6 +728,21 @@ _TE_RENDER_CONFIRMED_BAD: set[tuple[str, str]] = {
     # every Qwen-Image-Edit workflow feeds a reference image, so BAD is the
     # correct signal for this family's actual use case.
     ("qwen2.5-vl-7b", "GGUF"),
+    # mistral-small-3.2-24b GGUF: not a render defect -- conversion can't
+    # even start. FLUX.2 dev's mistral_3_small_flux2_*.safetensors is a
+    # bespoke-trimmed variant (30 transformer layers, no final norm/lm_head)
+    # that doesn't match this family's vendored 40-layer
+    # Mistral-Small-3.2-24B-Instruct-2506 config -- detect_text_encoder_
+    # family() correctly returns None (layer-count signature mismatch), and
+    # forcing the vendored repo ID would apply the wrong hyperparameters.
+    # Found 2026-08-23 sanity-checking before a batch conversion (caught
+    # before wasting a run, not from a crashed build). Even upstream
+    # (city96/ComfyUI-GGUF#367) has this as an open, unresolved feature
+    # request -- no known-correct config exists yet anywhere. See
+    # support_reason() for the full tooltip, including the caveat that this
+    # is specific to the FLUX.2 packaging, not necessarily the untrimmed
+    # checkpoint ERNIE-Image uses under the same family name.
+    ("mistral-small-3.2-24b", "GGUF"),
     # Also not a render defect in the usual sense -- a genuine ComfyUI-side
     # gap, found 2026-08-14 render-testing SDXL's clip_g: FP8 loaded without
     # error but rendered solid black, NVFP4 crashed outright ("mat1 and mat2
