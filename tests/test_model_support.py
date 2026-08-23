@@ -383,6 +383,18 @@ class TestTextEncoderSupport:
         for fmt in ("FP8", "FP8_MIXED", "INT8", "INT8_MIXED", "NVFP4", "NVFP4_MIXED"):
             assert text_encoder_support_level("qwen2.5-vl-7b", fmt) == SUPPORT_VERIFIED, fmt
 
+    def test_mistral_small_safetensors_verified_gguf_still_bad(self):
+        # mistral_3_small_flux2 (FLUX.2 dev's text encoder), 2026-08-23: all
+        # 6 safetensors formats render-tested clean against the fp4_mixed
+        # source baseline (FP8_MIXED diffusion model held constant). GGUF
+        # stays BAD (test_mistral_small_gguf_confirmed_bad above) -- the
+        # safetensors path quantizes the complete state dict directly and
+        # isn't affected by the 30-layer-trim/vendored-config mismatch that
+        # blocks GGUF.
+        for fmt in ("FP8", "FP8_MIXED", "INT8", "INT8_MIXED", "NVFP4", "NVFP4_MIXED"):
+            assert text_encoder_support_level("mistral-small-3.2-24b", fmt) == SUPPORT_VERIFIED, fmt
+        assert text_encoder_support_level("mistral-small-3.2-24b", "GGUF") == SUPPORT_BAD
+
     def test_qwen25vl_gguf_confirmed_bad(self):
         # 2026-08-23: our GGUF Q4_K_M build for qwen2.5-vl-7b loads but
         # crashes any image-conditioning workflow -- llama.cpp's plain

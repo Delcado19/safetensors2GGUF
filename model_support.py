@@ -682,6 +682,26 @@ _TE_RENDER_VERIFIED: set[tuple[str, str]] = {
     ("qwen2.5-vl-7b", "INT8_MIXED"),
     ("qwen2.5-vl-7b", "NVFP4"),
     ("qwen2.5-vl-7b", "NVFP4_MIXED"),
+    # mistral-small-3.2-24b (mistral_3_small_flux2, FLUX.2 dev's text
+    # encoder, 2026-08-23): all 6 safetensors formats render-tested clean
+    # via the fixed-seed edit workflow (FP8_MIXED diffusion model held
+    # constant, varying only the text-encoder format), matching the source
+    # fp4_mixed baseline's composition/identity/wounds/medallion exactly --
+    # no visible deviation on any format. Source was FLUX.2's bespoke
+    # 30-layer-trimmed checkpoint (see the GGUF entry below) -- these are
+    # the ONLY known-good render evidence for that specific packaging;
+    # unrelated to and don't imply anything about the untrimmed, standard
+    # Mistral-Small-3.2-24B-Instruct-2506 checkpoint ERNIE-Image uses under
+    # the same family name, still untested. This run is also what
+    # discovered and fixed the "tekken_model" sentinel-tensor corruption
+    # (docs/issues_analysis.md #23) -- every file here was rebuilt after
+    # that fix, not from the first (silently-broken) batch.
+    ("mistral-small-3.2-24b", "FP8"),
+    ("mistral-small-3.2-24b", "FP8_MIXED"),
+    ("mistral-small-3.2-24b", "INT8"),
+    ("mistral-small-3.2-24b", "INT8_MIXED"),
+    ("mistral-small-3.2-24b", "NVFP4"),
+    ("mistral-small-3.2-24b", "NVFP4_MIXED"),
 }
 
 # Mirrors _RENDER_CONFIRMED_BAD's role for diffusion models -- (family,

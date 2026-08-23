@@ -160,6 +160,18 @@ def filename_suffix_for(target_key: str) -> str:
 _RENDER_VERIFIED_MIXED: set[tuple[str, str]] = {
     ("lumina2", "INT8_MIXED"),
     ("lumina2", "FP8_MIXED"),
+    # FP8/FP8_MIXED/INT8/INT8_MIXED reinforced 2026-08-23 by a second,
+    # unrelated FLUX.2 checkpoint -- FLUX.2 [dev] (32B, source:
+    # Comfy-Org's flux2_dev_fp8mixed.safetensors), not the FLUX.2 [klein] 9B
+    # this evidence originally came from. Fixed-seed edit workflow (an
+    # 8-step LoRA was added partway through to keep runs from taking
+    # forever, held constant across this format sweep), FP8_MIXED source
+    # dequantized+requantized: FP8/INT8/INT8_MIXED matched the FP8_MIXED
+    # baseline's composition/identity/wounds/medallion exactly. Plain
+    # NVFP4/NVFP4_MIXED not yet tested on this checkpoint -- deferred after
+    # 3 OOM/kill incidents quantizing this 32B model on a 50GB-RAM system
+    # (see [[project_future_streaming_write_resume]]), still resting on the
+    # FLUX.2 [klein] 9B evidence alone.
     ("flux", "FP8"),
     ("flux", "FP8_MIXED"),
     ("flux", "INT8"),
