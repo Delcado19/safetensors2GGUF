@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import struct
 import sys
 
 import torch
@@ -40,6 +41,82 @@ _TARGET_TO_QUANT_FORMAT = {
     "NVFP4": "nvfp4", "NVFP4_MIXED": "nvfp4",
     "INT8": "int8_tensorwise", "INT8_MIXED": "int8_tensorwise",
 }
+
+
+def _iter_output_keys(state_dict, model_arch, quant_skip_keys):
+    """Yield (key, is_passthrough) from state_dict in order, applying the
+    same skip/passthrough/keys_ignore filtering convert_to_safetensors()'s
+    main loop always has -- factored out so the streaming writer's planning
+    pass (Pass 1) and quantizing pass (Pass 2) iterate identically. Both
+    passes MUST see the exact same keys in the exact same order, or Pass 2's
+    tensors won't line up with Pass 1's planned header (see convert_
+    to_safetensors()'s Pass 2 assert)."""
+    for key in state_dict.keys():
+        if key in quant_skip_keys:
+            continue
+        if key.endswith(_PASSTHROUGH_TENSOR_SUFFIXES):
+            yield key, True
+            continue
+        if any(x in key for x in model_arch.keys_ignore):
+            continue
+        yield key, False
+
+
+def _tensor_bytes(tensor: torch.Tensor) -> bytes:
+    """Raw little-endian bytes for one tensor, in safetensors' flat storage
+    convention. Reinterprets through a uint8 view instead of calling
+    tensor.numpy() directly -- numpy has no bfloat16/float8_e4m3fn/
+    float8_e5m2 support on most builds, and .numpy() raises for those
+    dtypes. torch.Tensor.view(dtype) is a pure reinterpret-cast (no data
+    copy beyond what .contiguous() already needs)."""
+    tensor = tensor.reshape(1) if tensor.dim() == 0 else tensor
+    return tensor.contiguous().view(torch.uint8).numpy().tobytes()
+
+
+def _build_header(
+    entries: list[tuple[str, str, tuple[int, ...]]], metadata: dict
+) -> tuple[dict, int]:
+    """Compute the safetensors JSON header (name -> dtype/shape/data_offsets)
+    and total data-section byte size, from a flat, ordered list of (name,
+    dtype, shape) tuples. Offsets are assigned in list order -- Pass 2
+    (convert_to_safetensors) MUST produce tensors in this same order for
+    the file to be valid; this function itself doesn't enforce that, the
+    assert in Pass 2 does."""
+    from safetensors_quant import _ST_DTYPE_BYTES
+
+    header: dict = {}
+    offset = 0
+    for name, dtype, shape in entries:
+        n_elems = 1
+        for d in shape:
+            n_elems *= d
+        size = n_elems * _ST_DTYPE_BYTES[dtype]
+        header[name] = {
+            "dtype": dtype,
+            "shape": list(shape),
+            "data_offsets": [offset, offset + size],
+        }
+        offset += size
+    if metadata:
+        header["__metadata__"] = metadata
+    return header, offset
+
+
+def _write_header(fh, header: dict) -> int:
+    """Write the safetensors 8-byte little-endian header-length prefix plus
+    the JSON header itself to an already-open binary file handle. Pads the
+    JSON body with trailing spaces to a multiple of 8 bytes, matching the
+    reference Rust safetensors serializer's convention (not required by the
+    format spec for correctness -- readers only ever consult the declared
+    length prefix -- but matched here for closest byte-level parity with
+    files this project's old save_file()-based writer produced). Returns
+    the number of header bytes written (prefix + JSON, informational)."""
+    body = json.dumps(header).encode("utf-8")
+    pad = (-len(body)) % 8
+    body += b" " * pad
+    fh.write(struct.pack("<Q", len(body)))
+    fh.write(body)
+    return 8 + len(body)
 
 
 def convert_to_safetensors(

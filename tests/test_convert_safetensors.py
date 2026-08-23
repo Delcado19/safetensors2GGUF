@@ -19,6 +19,71 @@ def _write_minimal_flux(tmp_path):
     return src
 
 
+class TestStreamingPrimitives:
+    def test_iter_output_keys_skips_quant_sidecars_and_ignored_keys(self):
+        import torch
+        from convert_safetensors import _iter_output_keys
+        from models.architectures import ModelTemplate
+
+        state_dict = {
+            "a.weight": torch.randn(4, 4),
+            "a.weight_scale": torch.randn(1),  # in quant_skip_keys
+            "spiece_model": torch.randint(0, 255, (10,), dtype=torch.uint8),
+            "ignored.weight": torch.randn(4, 4),
+        }
+        arch = ModelTemplate()
+        arch.keys_ignore = ["ignored"]
+        result = list(_iter_output_keys(state_dict, arch, quant_skip_keys={"a.weight_scale"}))
+        assert result == [("a.weight", False), ("spiece_model", True)]
+
+    def test_tensor_bytes_roundtrips_bfloat16(self):
+        import torch
+        from convert_safetensors import _tensor_bytes
+        t = torch.tensor([1.5, -2.25], dtype=torch.bfloat16)
+        raw = _tensor_bytes(t)
+        assert len(raw) == 4  # 2 elements * 2 bytes
+        rebuilt = torch.frombuffer(bytearray(raw), dtype=torch.bfloat16)
+        assert torch.equal(rebuilt, t)
+
+    def test_tensor_bytes_roundtrips_0dim_scalar(self):
+        import torch
+        from convert_safetensors import _tensor_bytes
+        t = torch.tensor(3.5, dtype=torch.float32)
+        raw = _tensor_bytes(t)
+        assert len(raw) == 4
+        rebuilt = torch.frombuffer(bytearray(raw), dtype=torch.float32).reshape(())
+        assert torch.equal(rebuilt, t)
+
+    def test_build_header_computes_sequential_offsets(self):
+        from convert_safetensors import _build_header
+        entries = [
+            ("a.weight", "F16", (4, 4)),       # 4*4*2 = 32 bytes
+            ("a.weight_scale", "F32", (1,)),   # 4 bytes
+        ]
+        header, total = _build_header(entries, {})
+        assert header["a.weight"]["data_offsets"] == [0, 32]
+        assert header["a.weight_scale"]["data_offsets"] == [32, 36]
+        assert total == 36
+
+    def test_build_header_includes_metadata(self):
+        from convert_safetensors import _build_header
+        header, _ = _build_header([("a.weight", "F16", (1,))], {"foo": "bar"})
+        assert header["__metadata__"] == {"foo": "bar"}
+
+    def test_write_header_roundtrips_via_safe_open(self, tmp_path):
+        import struct
+        from convert_safetensors import _build_header, _write_header
+        header, total = _build_header([("a.weight", "F16", (2,))], {"foo": "bar"})
+        path = tmp_path / "hdr_test.safetensors"
+        with open(path, "wb") as fh:
+            _write_header(fh, header)
+            fh.write(b"\x00" * total)  # dummy data section matching declared size
+        from safetensors import safe_open
+        with safe_open(str(path), framework="pt") as f:
+            assert f.metadata() == {"foo": "bar"}
+            assert "a.weight" in f.keys()
+
+
 class TestConvertToSafetensors:
     def test_writes_output_file(self, tmp_path):
         src = _write_minimal_flux(tmp_path)
