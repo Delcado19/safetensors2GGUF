@@ -14,18 +14,16 @@ import struct
 import sys
 
 import torch
-from safetensors.torch import save_file
 
-from convert import load_state_dict
+from convert import _TORCH_TO_ST_DTYPE, load_state_dict
 from dequantize import (
     _PASSTHROUGH_TENSOR_SUFFIXES,
     _scan_quantized_layers,
-    detect_quantized_weight,
+    dequantized_shape_of,
     dequantize_weight,
 )
 from models.architectures import detect_arch
-from safetensors_quant import filename_suffix_for, layer_key, quantize_tensor_st
-from safetensors_quant_int8 import CONVROT_GROUP_SIZE
+from safetensors_quant import filename_suffix_for, layer_key, plan_tensor_output, quantize_tensor_st
 
 # Float8 dtypes — resolved once at import time; empty tuple on older PyTorch builds.
 _FLOAT8_DTYPES: tuple = tuple(
@@ -240,100 +238,117 @@ def convert_to_safetensors(
     if os.path.isfile(dst_path) and not overwrite:
         raise OSError(f"Output exists and overwrite is disabled: {dst_path}")
 
-    out_tensors: dict[str, torch.Tensor] = {}
-    layer_formats: dict[str, dict] = {}
-    quant_format = _TARGET_TO_QUANT_FORMAT.get(target_key)
+    # --- Pass 1: plan every output tensor's (name, dtype, shape) and the
+    # full _quantization_metadata, from shape/dtype metadata alone -- no
+    # tensor data touched. Must use the exact same key set/order as Pass 2
+    # below (_iter_output_keys is the shared contract that guarantees this).
+    shape_of = getattr(state_dict, "shape_of", None)
+    dtype_of = getattr(state_dict, "dtype_of", None)
 
-    # Iterate state_dict.items() directly (not list(...)) — load_state_dict
-    # returns a lazy _LazyStateDict for .safetensors sources that streams one
-    # tensor at a time; materializing it into a list here would defeat that
-    # and reintroduce the >RAM OOM crash fixed in commit 72a49dc (review
-    # finding #3). len() is cheap — _LazyStateDict.__len__ reads the key map,
-    # not tensor data.
-    total = len(state_dict)
-    log_tensor_every = max(1, int(log_tensor_every or 1))
-    for idx, (key, data) in enumerate(state_dict.items()):
-        if cancel_event is not None and cancel_event.is_set():
-            raise RuntimeError("cancelled")
-        if on_progress:
-            on_progress(idx + 1, total, key)
-        if key in quant_skip_keys:
-            continue
-        if key.endswith(_PASSTHROUGH_TENSOR_SUFFIXES):
-            # Not a weight at all -- e.g. "spiece_model", a raw SentencePiece
-            # tokenizer blob some Comfy-Org checkpoints embed (see
-            # _scan_quantized_layers()'s docstring). Every other tensor below
-            # goes through nan_to_num/quantize_tensor_st, both of which
-            # assume floating-point weight data; either would corrupt or
-            # dtype-cast an opaque byte blob like this one into something
-            # SPieceTokenizer can no longer parse. Copy through completely
-            # unchanged -- same dtype, same bytes, no quantization.
-            out_tensors[key] = data
-            continue
-        if any(x in key for x in model_arch.keys_ignore):
+    def _shape_dtype(k):
+        if shape_of is not None:
+            return tuple(shape_of(k)), dtype_of(k)
+        t = state_dict[k]
+        return tuple(t.shape), t.dtype
+
+    entries: list[tuple[str, str, tuple]] = []
+    layer_formats: dict[str, dict] = {}
+
+    for key, is_passthrough in _iter_output_keys(state_dict, model_arch, quant_skip_keys):
+        shape, dtype = _shape_dtype(key)
+        if is_passthrough:
+            entries.append((key, _TORCH_TO_ST_DTYPE[dtype], shape))
             continue
 
         if key in quant_formats:
-            # Reconstruct the approximate float original before feeding this
-            # layer through the normal quantization path below — `data` here
-            # is still the raw on-disk quantized tensor (int8/float8/nvfp4
-            # packed uint8), never treated as a plain weight matrix.
-            data = dequantize_weight(state_dict, key, quant_formats[key], data)
+            shape = dequantized_shape_of(quant_formats[key], shape)
+            dtype = torch.float32
+        if _FLOAT8_DTYPES and dtype in _FLOAT8_DTYPES:
+            dtype = torch.float16
 
-        old_dtype = data.dtype
-
-        # Coerce dtypes that nan_to_num cannot handle:
-        #   float8   → float16  (nan_to_num rejects float8)
-        if _FLOAT8_DTYPES and data.dtype in _FLOAT8_DTYPES:
-            data = data.to(torch.float16)
-
-        data = torch.nan_to_num(data, nan=0.0, posinf=65504.0, neginf=-65504.0)
-        quantized = quantize_tensor_st(data, key, model_arch, target_key)
-        if (
-            log_tensor_every == 1
-            or idx == 0
-            or idx + 1 == total
-            or (idx + 1) % log_tensor_every == 0
-        ):
-            _log(f"  {key}  {old_dtype} -> {target_key}")
-        out_tensors.update(quantized)
-        if quant_format and len(quantized) > 1:
-            # ComfyUI's convert_old_quants() writes the comfy_quant sidecar as
-            # "{layer}.comfy_quant" where `layer` is the module prefix (no
-            # trailing "weight") — must match the scale-tensor naming in
-            # safetensors_quant.layer_key(), or the sidecar never lines up
-            # with the tensor ComfyUI's loader is inspecting.
-            layer_conf: dict = {"format": quant_format}
-            if quant_format == "int8_tensorwise":
-                # quantize_tensor_st silently falls back per-tensor between
-                # ConvRot (per-row weight_scale, ndim>1) and plain tensor-wise
-                # (scalar weight_scale) depending on in_features divisibility
-                # — the scale tensor's own shape is the single source of
-                # truth for which one actually happened for this layer, so
-                # read it back rather than threading a second return value
-                # through quantize_tensor_st just for this.
-                scale_t = quantized.get(f"{layer_key(key)}.weight_scale")
-                if scale_t is not None and scale_t.numel() > 1:
-                    layer_conf["convrot"] = True
-                    layer_conf["convrot_groupsize"] = CONVROT_GROUP_SIZE
-            elif quant_format == "float8_e4m3fn" and full_precision_fp8:
-                layer_conf["full_precision_matrix_mult"] = True
-            elif quant_format == "nvfp4" and full_precision_nvfp4:
-                layer_conf["full_precision_matrix_mult"] = True
+        out_entries, layer_conf = plan_tensor_output(
+            key, shape, dtype, model_arch, target_key,
+            full_precision_fp8, full_precision_nvfp4,
+        )
+        entries.extend(out_entries)
+        if layer_conf is not None:
             layer_formats[layer_key(key)] = layer_conf
 
-    # Same sentinel as the log-line guard above: omit rather than write the
-    # misleading literal string "invalid" into the output file's metadata
-    # for text encoders (no architecture detection applies to them).
     metadata = {} if model_arch.arch == "invalid" else {"comfy.gguf_source_arch": model_arch.arch}
     if layer_formats:
         metadata["_quantization_metadata"] = json.dumps(
             {"format_version": "1.0", "layers": layer_formats}
         )
 
-    _log(f"INFO:  Writing {len(out_tensors)} tensors → {dst_path}")
-    save_file(out_tensors, dst_path, metadata=metadata)
-    _log(f"INFO:  Done → {dst_path}")
+    header, _total_data_bytes = _build_header(entries, metadata)
+
+    _log(f"INFO:  Writing {len(entries)} tensors -> {dst_path}")
+
+    # --- Pass 2: re-run the REAL quantization per key, streaming each
+    # result's bytes to disk the instant it's produced instead of
+    # accumulating a dict -- this is the actual RAM fix. Tensors are
+    # written strictly in Pass 1's planned order (guaranteed by using the
+    # same _iter_output_keys + plan_tensor_output/quantize_tensor_st
+    # branching), so no seeking or offset lookup is needed, just sequential
+    # appends after the header.
+    total = len(state_dict)
+    log_tensor_every = max(1, int(log_tensor_every or 1))
+    entry_idx = 0
+    idx = 0
+    with open(dst_path, "wb") as fh:
+        _write_header(fh, header)
+
+        for key, is_passthrough in _iter_output_keys(state_dict, model_arch, quant_skip_keys):
+            if cancel_event is not None and cancel_event.is_set():
+                raise RuntimeError("cancelled")
+            if on_progress:
+                on_progress(idx + 1, total, key)
+            idx += 1
+
+            if is_passthrough:
+                data = state_dict[key]
+                exp_name, exp_dtype, exp_shape = entries[entry_idx]
+                entry_idx += 1
+                assert key == exp_name and tuple(data.shape) == exp_shape, (
+                    f"Streaming writer plan mismatch for passthrough {key!r}: "
+                    f"planned shape {exp_shape}, got {tuple(data.shape)}"
+                )
+                fh.write(_tensor_bytes(data))
+                continue
+
+            data = state_dict[key]
+            if key in quant_formats:
+                data = dequantize_weight(state_dict, key, quant_formats[key], data)
+            old_dtype = data.dtype
+            if _FLOAT8_DTYPES and data.dtype in _FLOAT8_DTYPES:
+                data = data.to(torch.float16)
+            data = torch.nan_to_num(data, nan=0.0, posinf=65504.0, neginf=-65504.0)
+            quantized = quantize_tensor_st(data, key, model_arch, target_key)
+            if (
+                log_tensor_every == 1
+                or idx == 1
+                or idx == total
+                or idx % log_tensor_every == 0
+            ):
+                _log(f"  {key}  {old_dtype} -> {target_key}")
+
+            for name, tensor in quantized.items():
+                exp_name, exp_dtype, exp_shape = entries[entry_idx]
+                entry_idx += 1
+                assert (
+                    name == exp_name
+                    and tuple(tensor.shape) == exp_shape
+                    and _TORCH_TO_ST_DTYPE[tensor.dtype] == exp_dtype
+                ), (
+                    f"Streaming writer plan mismatch for {name!r}: planned "
+                    f"{exp_dtype}/{exp_shape}, got real "
+                    f"{_TORCH_TO_ST_DTYPE[tensor.dtype]}/{tuple(tensor.shape)} -- "
+                    "Pass 1 (plan_tensor_output) and Pass 2 (quantize_tensor_st) "
+                    "have drifted apart"
+                )
+                fh.write(_tensor_bytes(tensor))
+
+    _log(f"INFO:  Done -> {dst_path}")
 
     # Quantization is supposed to shrink the file; scale/zero-point tensors
     # added per layer can outgrow the savings on already-small or oddly-shaped
