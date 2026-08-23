@@ -66,13 +66,28 @@ def quantize_int8_tensorwise(data: torch.Tensor, key: str) -> dict[str, torch.Te
     """Plain tensor-wise INT8: single scalar scale for the whole tensor.
 
     Returns {key: int8_tensor, f"{layer_key(key)}.weight_scale": float32 scalar}.
+
+    The scale must stay a true 0-dim scalar (not reshaped to (1,)):
+    comfy_kitchen's TensorWiseINT8Layout.requantize_kwargs() (int8.py) derives
+    "per_channel" from `params.scale.dim() > 0`, so a (1,)-shaped "scalar"
+    scale is misread as per-channel/ConvRot. Harmless for the normal matmul
+    path (which checks .numel() == 1, not .dim()), but comfy/ops.py's
+    low-VRAM "vbar" dynamic-requantize path (cast_bias_weight ->
+    resolve_cast_module_with_vbar -> post_cast, triggered under VRAM
+    pressure) calls requantize_from_float() using those kwargs, allocates a
+    fresh per-row [out_features, 1] scale, and then crashes copying it back
+    into the original (1,)-shaped buffer:
+    `RuntimeError: output with shape [1] doesn't match the broadcast shape
+    [640, 1]`. Found 2026-08-20 on a live SDXL INT8 render, only reproduces
+    under low-VRAM offload -- not caught by the ordinary render tests this
+    format was verified against.
     """
     amax = data.abs().max()
     scale = (amax.float() / 127.0).clamp(min=1e-30)
     q = (data.to(torch.float32) / scale).round().clamp(-128, 127).to(torch.int8)
     return {
         key: q,
-        f"{layer_key(key)}.weight_scale": scale.reshape(1),
+        f"{layer_key(key)}.weight_scale": scale,
     }
 
 

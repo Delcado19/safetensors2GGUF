@@ -792,7 +792,181 @@ immediately after each GGUF build instead of batching the whole side-car step to
 
 ---
 
-## Observations (not bugs)
+## 19. Plain INT8's tensor-wise scale was a `(1,)`-shaped tensor, not a true scalar —
+crashed ComfyUI's low-VRAM dynamic-requantize path
+
+**Symptom (2026-08-20):** a live SDXL `INT8`/`INT8_MIXED` render (the next architecture
+queued for testing after Wan) crashed with
+`RuntimeError: output with shape [1] doesn't match the broadcast shape [640, 1]`, deep in
+`comfy_kitchen`'s tensor-copy machinery (`comfy/ops.py`'s `cast_bias_weight` ->
+`resolve_cast_module_with_vbar` -> `post_cast` -> `orig.copy_(y)` ->
+`comfy_kitchen.tensor.base.py`'s `_handle_copy_`).
+
+**Root cause:** `safetensors_quant_int8.py`'s `quantize_int8_tensorwise()` wrote its
+per-tensor scale as `scale.reshape(1)` — a 1-element 1D tensor, `.dim() == 1`. Reading the
+installed `comfy_kitchen` package's `tensor/int8.py` directly:
+`TensorWiseINT8Layout.requantize_kwargs()` derives `"per_channel": bool(is_weight and
+(convrot or params.scale.dim() > 0))` — it uses `.dim() > 0`, not `.numel() > 1`, to
+detect ConvRot's per-row layout. Our `(1,)`-shaped "scalar" scale satisfies `dim() > 0`,
+so it's misread as per-channel. This is harmless for the ordinary matmul path
+(`_handle_int8_linear_tensorwise`/`_handle_int8_mm_tensorwise`, both of which correctly
+check `.numel() == 1`, not `.dim()`) — the bug only fires when `comfy/ops.py`'s low-VRAM
+"vbar" offload path calls `requantize_from_float()` under VRAM pressure (`want_requant`/
+`update_weight` in `post_cast`), which uses `requantize_kwargs()`'s (wrong) `per_channel`
+result to allocate a fresh `[out_features, 1]` per-row scale, then tries to copy it back
+into the original `(1,)`-shaped resident buffer. Explains why this was never caught by
+any of the render tests backing `wan`/`hidream`/`aura`/`flux`'s existing `INT8`/
+`INT8_MIXED` `✓ Verified` status — none of those test sessions happened to trigger a
+low-VRAM offload.
+
+**Fix:** `quantize_int8_tensorwise()` now writes `scale` directly (a genuine 0-dim
+tensor from `.abs().max()`, never reshaped) instead of `scale.reshape(1)` — matches
+`comfy_kitchen`'s own scalar convention and sidesteps the `dim() > 0` misdetection.
+`safetensors.torch.save_file`/`load_file` round-trip 0-dim tensors correctly (verified
+directly). ConvRot's per-row `[out_f, 1]` scale (`quantize_int8_convrot()`) is unaffected
+— it's supposed to be 2D. `dequantize_weight()`/`_scan_quantized_layers()`/
+`convert_safetensors.py`'s `.comfy_quant`-sidecar `convrot` flag all already keyed off
+`.numel()`, not `.dim()`, so no other code needed to change. Test added
+(`test_plain_int8_scale_is_a_true_scalar_not_reshaped`). 348 tests pass.
+
+**Not yet done:** every `INT8`/`INT8_MIXED` safetensors file already built and deployed
+before this fix (currently `wan`, `hidream`, `aura`, `flux` per `_RENDER_VERIFIED_MIXED`)
+still carries the old `(1,)`-shaped scale on disk and would hit the same crash under
+low-VRAM offload. Rebuilding them is a user decision (each is a multi-GB re-quantization),
+not done automatically as part of this fix.
+
+## 20. Plain NVFP4 crashed with `IndexError` on a genuine 0-dim scalar tensor —
+`quantize_tensor_st()`'s 1D-only guard didn't cover 0-dim
+
+**Symptom (2026-08-20):** the first real Qwen-Image-Edit-2511 batch conversion (source:
+Comfy-Org's official `fp8_scaled` repackage, dequantized via `_scan_quantized_layers`
+before requantizing) crashed partway through plain `NVFP4` with
+`IndexError: tuple index out of range` at `safetensors_quant_nvfp4.py`'s
+`if data.shape[-1] % GROUP_SIZE != 0:` — the source checkpoint carries a bare 0-dim
+scalar tensor, `__index_timestep_zero__`, whose `.shape` is an empty tuple.
+
+**Root cause:** `safetensors_quant.py`'s `quantize_tensor_st()` only special-cased
+`data.dim() == 1` (biases/norm weights) before dispatching to the format-specific
+quantizer; a true 0-dim scalar fell through that check and reached `quantize_nvfp4()`
+directly, which raises `IndexError` (not the `ValueError` the NVFP4 branch's
+`except ValueError` fallback catches) on an empty shape tuple. `FP8`/`INT8` happened to
+survive the same tensor only by accident — each has its own unrelated `dim()` check
+further down that also happens to catch 0-dim (FP8 has none — see below; INT8's
+`data.dim() != 2` routes it to the tensor-wise path, which works on any shape). This was
+the first architecture whose source checkpoint carried a genuine 0-dim metadata tensor;
+no prior architecture (Flux/SD3/AuraFlow/HiDream/Lumina2/Cosmos/SDXL/SD1/Wan) triggered
+this path.
+
+**Fix:** widened the guard from `data.dim() == 1` to `data.dim() <= 1` — a 0-dim scalar
+has the exact same "no accuracy or size benefit to scale-quantizing" rationale already
+documented for 1D tensors, so it belongs in the same unconditional F32 passthrough, not a
+per-format patch. Test added (`test_nvfp4_non_mixed_0dim_scalar_does_not_crash`).
+
+## 21. `.input_scale` activation-quant sidecars weren't in bug #18's dequant skip-set —
+crashed `llama-quantize.exe` on GGUF Q4_K_M
+
+**Symptom (2026-08-20):** the same Qwen-Image-Edit-2511 batch conversion's GGUF `Q4_K_M`
+step ran the F16-GGUF intermediate export cleanly, then `llama-quantize.exe` crashed with
+exit code `3221226505` (`0xC0000409`, `STATUS_STACK_BUFFER_OVERRUN`) partway through
+quantizing.
+
+**Root cause:** Comfy-Org's `fp8_scaled` repackage carries a per-layer `.input_scale`
+sidecar (a dynamic-activation-quantization scale used by the runtime FP8 compute kernel)
+alongside every `.weight_scale`, in addition to the already-handled `.weight_scale`
+family. `dequantize.py`'s `_scan_quantized_layers()` skip-set (added in bug #18's fix)
+only covered `.weight_scale`/`.weight_scale_2`/`.comfy_quant`/`.scale_weight`/
+`scaled_fp8` — `.input_scale` wasn't on that list, so ~1600 orphaned 0-dim `.input_scale`
+tensors (meaningless once the weight is dequantized back to float — they scaled a
+runtime *activation*, not this checkpoint's weights) were carried straight through into
+the GGUF writer, exactly the same crash class bug #18's own docstring already documents
+for un-skipped scale sidecars ("crashes llama-quantize with
+`GGML_ASSERT(n_dims >= 1 && n_dims <= 4)`" — here manifesting as a stack-buffer-overrun
+instead, likely from the sheer volume of unexpected 0-dim tensors rather than a single
+one). `convert_safetensors.py`'s safetensors-output formats (FP8/INT8/NVFP4_MIXED) built
+from the same source earlier in this session carry the same orphaned tensors but didn't
+crash — ComfyUI's safetensors loader silently ignores unrecognized extra keys; the
+external `llama-quantize.exe` binary does not.
+
+**Fix:** added `.input_scale` to `_scan_quantized_layers()`'s skip set. Test added
+(`test_input_scale_is_skipped_not_carried_through`). Formats already built earlier in
+this same batch run (FP8/INT8/INT8_MIXED/NVFP4_MIXED safetensors) still carry the inert
+extra tensors on disk — harmless (ComfyUI ignores them) but not rebuilt, since only the
+GGUF path actually crashed.
+
+**Correction (2026-08-20, same day) — this fix was necessary but not sufficient; GGUF
+`Q4_K_M` still crashes for `qwen_image` with the exact same `llama-quantize.exe` exit
+code (`0xC0000409`) after the `.input_scale` fix.** Root cause is architectural, not
+another leftover sidecar: `city96/ComfyUI-GGUF`'s `tools/lcpp.patch` — the patch that
+makes `llama-quantize` understand diffusion-model GGUFs at all (see
+`docs/building-llama-quantize.md`) — only adds 11 `llm_arch` enum values (FLUX, SD1,
+SDXL, SD3, AURA, LTXV, HYVID, WAN, HIDREAM, COSMOS, LUMINA2). `qwen_image` is not one of
+them — confirmed against the current patch on `main` (zero matches for "qwen") and
+against the still-open, unanswered upstream issue
+[city96/ComfyUI-GGUF#347](https://github.com/city96/ComfyUI-GGUF/issues/347) asking for
+exactly this. With an unrecognized `general.architecture` string, `llama-quantize`
+doesn't take the early-return path the patch adds for known image archs and instead runs
+into undefined behavior trying to process an MMDiT checkpoint as if it might be a
+text/LLM model — manifesting as the stack-buffer-overrun crash, not a clean error
+message.
+
+**Conclusion: GGUF `Q4_K_M` (and every other llama-quantize K-quant) is currently
+structurally unsupported for `qwen_image` with this tool's llama-quantize dependency —
+not a bug in this tool's own code, an upstream gap.** The `.input_scale` fix above is
+still correct and stays (a real, separate bug that would have hit any architecture
+carrying dynamic-FP8 activation scales, once one exists that the patch *does* support),
+but does not unblock Qwen-Image GGUF on its own. The only current workaround is a
+pre-quantized community GGUF built with different/unpublished tooling (e.g.
+`city96/Qwen-Image-gguf` on Hugging Face) — not reproducible with this project's public
+`llama-quantize` binary. No code change follows from this until upstream adds
+`qwen_image` support to the patch (tracked by watching #347) or this project builds its
+own patch extension — out of scope for now.
+
+## 22. Qwen2.5-VL-7B GGUF text-encoder crashes on any image-conditioning workflow —
+`llama.cpp`'s converter drops the vision tower entirely
+
+**Symptom (2026-08-23):** render-testing Qwen-Image-Edit-2511 (FP8 diffusion model +
+`qwen2.5_vl_7b_huihui_abliterated_q4_k_m.gguf` text encoder), `TextEncodeQwenImageEdit`
+crashed:
+```
+RuntimeError: mat1 and mat2 shapes cannot be multiplied (780x1280 and 3840x1280)
+```
+raised inside `comfy/text_encoders/qwen_vl.py`'s vision-tower forward pass
+(`self.qkv(hidden_states)`), reached via `llama.py:preprocess_embed` →
+`self.visual(image, grid)`.
+
+**Root cause:** `text_encoder_convert.py` shells out to plain `llama.cpp`'s
+`convert_hf_to_gguf.py` without `--mmproj`, so only the `Qwen2VLModel` (`TextModel`)
+class runs. Verified directly against the built file with `gguf.GGUFReader`: **0 of 339
+tensors** start with `visual.` — the entire vision tower is absent, versus 650
+`visual.*` tensors present in the equivalent NVFP4_MIXED safetensors build from the same
+source. `--mmproj` mode does export a vision tower (`Qwen2VLVisionModel` in
+`.llama.cpp/conversion/qwenvl.py`), but into a *separate* mmproj GGUF file using
+llama.cpp's own multimodal-runtime tensor names (`v.blk.N.attn_q/k/v.weight`, QKV
+pre-split) — a different naming scheme than ComfyUI-GGUF's `CLIPLoaderGGUF`, which
+expects the vision tower inline in the same file under ComfyUI's own names
+(`visual.blocks.N.attn.qkv.weight`, fused). Neither mode this tool's pipeline can drive
+produces a file `CLIPLoaderGGUF` can load correctly for image-conditioning use.
+
+With the vision tower missing, ComfyUI still constructs the `visual` submodule from its
+own Python architecture definition (independent of GGUF content) and loads whatever
+partial state the GGUF sidecar *does* provide; the resulting `qkv` weight ends up
+transposed relative to what `torch.nn.functional.linear` expects, producing the shape
+mismatch above rather than a clean "missing key" error.
+
+**Conclusion: GGUF text encoders for Qwen2.5-VL-7B (and any Qwen-VL-family model) are
+structurally broken for image-conditioning workflows — not a bug in this tool's own
+quantization code, a gap in what `llama.cpp`'s public converter can produce for
+ComfyUI-GGUF's loader.** Text-only encoding (no image input) was not tested and may
+still work, since only the language-model tower matters there — but that doesn't apply
+to Qwen-Image-**Edit**, which always feeds a reference image through the vision tower.
+**Practical guidance: use a safetensors format (FP8/INT8/NVFP4/etc.) for any Qwen-VL
+text encoder used in an edit/image-conditioning workflow; GGUF is only safe for
+pure-text Qwen-VL use, if that.** No code change made — same category as bug #21's
+correction (upstream tooling gap, not fixable inside this project's own quantization
+code without a from-scratch GGUF writer matching ComfyUI's exact key/layout
+conventions, out of scope).
+
+---
 
 Findings noted for future reference that did not lead to a code change, because the
 evidence didn't point at a defect in this tool's output.
@@ -828,3 +1002,25 @@ compositional deviation across all 14 format combinations tested.
 **Action:** none taken. Not used to change any format's support-level classification in
 `model_support.py`. Recorded here in case the same pattern reappears on another
 architecture or prompt and turns out to be systematic after all.
+
+### Wan 2.2 I2V test renders show ghosting/outfit deformation from ~frame 48 (~3s @16fps) onward, identically across every format including the baseline
+
+**Observation (2026-08-20):** reviewing the `wan` format-coverage renders (see #18's
+`Verified` entry) frame-by-frame beyond the blink-timing check, frames past ~48/81 show a
+translucent double-exposure "ghost" trailing the character's silhouette during the
+prompted head-turn ("looking around"), worsening by frame 60 into visible outfit
+deformation (backpack straps/color corrupted, shape distorted). Confirmed present
+identically in the `NVFP4_MIXED` baseline as well as `FP8`/`INT8`/`NVFP4`/etc. — same
+severity, same onset frame, across every format tested. Since the effect doesn't vary by
+format at all, it isn't a quantization defect: `_RENDER_VERIFIED_MIXED`'s `wan` entries
+stand as recorded (the formats are all equally faithful to whatever the diffusion model
+itself produces here).
+
+**Likely cause (not investigated further, out of scope for this task):** the "Format
+Testing" workflow's `KSamplerAdvanced` nodes use `steps=4, cfg=8` with no visible
+Lightning/speed LoRA in the workflow graph — 4 steps is very low for Wan 2.2 video
+diffusion outside a distilled/accelerated setup (which normally also runs `cfg=1`, not
+8). Fast prompted motion (a head turn) is a plausible trigger for exactly this kind of
+temporal-coherence breakdown under-sampled diffusion produces. Not fixed or reproduced
+against a corrected workflow — recorded so it isn't mistaken for a per-format artifact if
+someone reruns this test workflow later.

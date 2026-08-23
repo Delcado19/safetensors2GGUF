@@ -293,30 +293,42 @@ class TestTextEncoderSupport:
                 )
 
     def test_untested_family_stays_unknown_on_every_format(self):
-        # qwen2.5-vl-7b has no render-test evidence at all -- every cell
+        # ernie-image-pe has no render-test evidence at all -- every cell
         # UNKNOWN, except F16: that's always unconditionally VERIFIED (a
         # plain precision cast, same reasoning as the diffusion-model
         # table's F16/F16_MIXED columns) -- see test_f16_always_verified
         # below. (t5-xxl was this test's example until 2026-08-18, when it
         # gained real render-test evidence via HiDream-I1's T5-XXL encoder
-        # -- see _TE_RENDER_VERIFIED's docstring. clip-l/clip-bigg are NOT a
-        # good "untested" example here either -- every one of their
-        # quantized formats is now a confirmed structural impossibility,
-        # not merely untested -- see test_clip_families_gguf_confirmed_bad
-        # and test_clip_families_quantized_safetensors_confirmed_bad below.)
+        # -- see _TE_RENDER_VERIFIED's docstring. qwen2.5-vl-7b was this
+        # test's example until 2026-08-23, when its GGUF cell became a
+        # confirmed structural impossibility -- see
+        # docs/issues_analysis.md #22. clip-l/clip-bigg are NOT a good
+        # "untested" example here either -- every one of their quantized
+        # formats is now a confirmed structural impossibility, not merely
+        # untested -- see test_clip_families_gguf_confirmed_bad and
+        # test_clip_families_quantized_safetensors_confirmed_bad below.)
         for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
             if format_key == "F16":
                 continue
-            assert text_encoder_support_level("qwen2.5-vl-7b", format_key) == SUPPORT_UNKNOWN
+            assert text_encoder_support_level("ernie-image-pe", format_key) == SUPPORT_UNKNOWN
 
     def test_f16_always_verified(self):
         # Plain precision cast, never touches ComfyUI's quantized-compute
         # path -- unconditionally VERIFIED regardless of family, even ones
-        # with zero other evidence (qwen2.5-vl-7b) or every other format
+        # with zero other evidence (ernie-image-pe) or every other format
         # confirmed BAD (clip-l/clip-bigg, where F16 safetensors is the only
         # format that actually works).
-        for family in ("qwen2.5-vl-7b", "clip-l", "clip-bigg", "qwen3-4b"):
+        for family in ("ernie-image-pe", "clip-l", "clip-bigg", "qwen3-4b"):
             assert text_encoder_support_level(family, "F16") == SUPPORT_VERIFIED, family
+
+    def test_qwen25vl_gguf_confirmed_bad(self):
+        # 2026-08-23: our GGUF Q4_K_M build for qwen2.5-vl-7b loads but
+        # crashes any image-conditioning workflow -- llama.cpp's plain
+        # convert_hf_to_gguf.py (no --mmproj) drops the vision tower
+        # entirely (0/339 tensors start with "visual.", confirmed via
+        # gguf.GGUFReader). Upstream/tooling gap, not fixable in this
+        # project's own code -- see docs/issues_analysis.md #22.
+        assert text_encoder_support_level("qwen2.5-vl-7b", "GGUF") == SUPPORT_BAD
 
     def test_clip_families_quantized_safetensors_confirmed_bad(self):
         # Not a render defect either -- a genuine ComfyUI-side gap found

@@ -341,6 +341,20 @@ class TestQuantizeTensor1dNeverScaled:
         assert set(out.keys()) == {"block.bias"}
         assert out["block.bias"].dtype == torch.float32
 
+    def test_nvfp4_non_mixed_0dim_scalar_does_not_crash(self):
+        # Regression for a real Qwen-Image-Edit-2511 batch conversion crash
+        # (2026-08-20): a 0-dim scalar tensor (e.g. Comfy-Org's fp8_scaled
+        # repackage carries __index_timestep_zero__) has an empty shape
+        # tuple, so quantize_nvfp4()'s `data.shape[-1]` raised IndexError --
+        # uncaught (unlike the ValueError the NVFP4 branch handles), crashing
+        # the whole conversion partway through. Must be treated like a 1D
+        # tensor: no benefit to scale-quantizing a single value either way.
+        data = torch.tensor(0.0, dtype=torch.float32)
+        out = quantize_tensor_st(data, "__index_timestep_zero__", ModelFlux(), "NVFP4")
+        assert set(out.keys()) == {"__index_timestep_zero__"}
+        assert out["__index_timestep_zero__"].dtype == torch.float32
+        assert out["__index_timestep_zero__"].dim() == 0
+
     def test_fp8_non_mixed_1d_tensor_protected_even_with_f16_source(self):
         # is_hiprec_st gates its threshold/keys_hiprec logic on
         # old_dtype in (float32, bfloat16) — for a float16-sourced checkpoint

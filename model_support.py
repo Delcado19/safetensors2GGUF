@@ -103,6 +103,19 @@ _RENDER_CONFIRMED_BAD: set[tuple[str, str]] = {
     # writeup this classification is based on.
     ("lumina2", "NVFP4"),
     ("lumina2", "NVFP4_MIXED"),
+    # qwen_image GGUF (all K-quants): not a render defect -- conversion
+    # itself is structurally impossible. city96/ComfyUI-GGUF's lcpp.patch
+    # (the patch that makes llama-quantize understand diffusion-model GGUFs
+    # at all) has no `qwen_image` llm_arch entry -- confirmed 2026-08-20
+    # against the current patch on main (zero "qwen" matches) and the
+    # still-open upstream city96/ComfyUI-GGUF#347. llama-quantize.exe
+    # crashes with STATUS_STACK_BUFFER_OVERRUN on the unrecognized
+    # architecture string rather than a clean error. See
+    # docs/issues_analysis.md #21's correction. Same reasoning as clip-l/
+    # clip-bigg's GGUF entries in _TE_RENDER_CONFIRMED_BAD below: BAD (not
+    # UNKNOWN) so the table doesn't invite retesting something that can
+    # never succeed with this project's public llama-quantize dependency.
+    ("qwen_image", "GGUF"),
 }
 
 # (arch_key, format_key) pairs that HAVE been convert+load+render-tested but
@@ -263,6 +276,15 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
       #15's plain-INT8 corruption) — VERIFIED for flux (render-tested
       clean), and UNKNOWN for every other sensitive architecture, since the
       same class of risk hasn't actually been rendered there.
+      2026-08-20 caveat: every plain-INT8/INT8_MIXED render behind the
+      VERIFIED claims above (`wan`, `hidream`, `aura`, `flux`) used a build
+      from before `docs/issues_analysis.md` #19's fix (tensor-wise scale
+      written as a `(1,)`-shaped tensor instead of a true 0-dim scalar,
+      which crashes ComfyUI's low-VRAM dynamic-requantize path under VRAM
+      pressure — invisible to a render test that never triggers that path).
+      The VERIFIED classification describes output *correctness* when the
+      file loads, which the fix doesn't change; it does not mean every
+      already-deployed file is crash-safe under low VRAM until rebuilt.
     - NVFP4 / NVFP4_MIXED: VERIFIED for flux (2026-08-12 render test showed
       composition drift, root-caused 2026-08-13 to two bugs — missing
       keys_shape_critical entries and full_precision_matrix_mult never being
@@ -580,6 +602,24 @@ _TE_RENDER_CONFIRMED_BAD: set[tuple[str, str]] = {
     # never succeed -- BAD is the more useful signal of the four states here.
     ("clip-l", "GGUF"),
     ("clip-bigg", "GGUF"),
+    # qwen2.5-vl-7b GGUF: conversion succeeds and the file loads, but it's
+    # unusable for Qwen-Image-Edit's actual use case -- found 2026-08-23
+    # render-testing Qwen-Image-Edit-2511, crashed with "mat1 and mat2
+    # shapes cannot be multiplied (780x1280 and 3840x1280)" inside the
+    # vision tower's qkv layer. Root cause: text_encoder_convert.py drives
+    # plain llama.cpp's convert_hf_to_gguf.py without --mmproj, which only
+    # exports the language-model tower -- verified with gguf.GGUFReader
+    # that the built file has 0 of 339 tensors starting with "visual.",
+    # versus 650 present in the equivalent NVFP4_MIXED safetensors build.
+    # --mmproj mode would export a vision tower, but into a separate mmproj
+    # file using llama.cpp's own multimodal tensor naming, which ComfyUI-
+    # GGUF's CLIPLoaderGGUF can't consume either (expects the vision tower
+    # inline under ComfyUI's own key names). Upstream/tooling gap, not
+    # fixable in this project's own code -- see docs/issues_analysis.md #22.
+    # Text-only (no image input) use was not tested and might work, but
+    # every Qwen-Image-Edit workflow feeds a reference image, so BAD is the
+    # correct signal for this family's actual use case.
+    ("qwen2.5-vl-7b", "GGUF"),
     # Also not a render defect in the usual sense -- a genuine ComfyUI-side
     # gap, found 2026-08-14 render-testing SDXL's clip_g: FP8 loaded without
     # error but rendered solid black, NVFP4 crashed outright ("mat1 and mat2

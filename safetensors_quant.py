@@ -183,6 +183,15 @@ _RENDER_VERIFIED_MIXED: set[tuple[str, str]] = {
     # F16 baseline's composition/identity/outfit exactly -- SDXL has no
     # keys_hiprec (empty), so plain and *_MIXED behave identically here by
     # design, consistent with what was observed.
+    # Re-confirmed 2026-08-20 (same checkpoint, a different prompt): INT8/
+    # INT8_MIXED byte-identical renders matched the F16 baseline's
+    # composition/identity/outfit again (only cosmetic prop/color-grading
+    # variance). This same render session is what surfaced
+    # docs/issues_analysis.md #19 (plain INT8's tensor-wise scale crashing
+    # ComfyUI's low-VRAM path) -- a reliability bug the design-reasoning-
+    # based "no keys_hiprec -> automatically VERIFIED" fast path can't catch,
+    # since it only reasons about output correctness once a file loads, not
+    # about load-time crashes under VRAM pressure.
     ("sdxl", "FP8"),
     ("sdxl", "FP8_MIXED"),
     ("sdxl", "NVFP4"),
@@ -502,7 +511,17 @@ def quantize_tensor_st(
     # scale-quantizing tiny 1D tensors either way. Mirrors convert.py's
     # _quant_type_for, which always keeps 1D tensors at F32 regardless of
     # target_quant (review finding #2).
-    if data.dim() == 1:
+    #
+    # <= 1 (not == 1): also catches genuine 0-dim scalars, e.g. Qwen-Image-
+    # Edit-2511's Comfy-Org fp8_scaled repackage carries a bare
+    # `__index_timestep_zero__` scalar tensor. quantize_nvfp4() indexes
+    # data.shape[-1], which raises IndexError (not the ValueError the NVFP4
+    # branch below catches) on an empty shape tuple -- found 2026-08-20 when
+    # a real Qwen-Image-Edit-2511 NVFP4 batch conversion crashed outright
+    # partway through. FP8/INT8 happened to survive via their own unrelated
+    # dim() checks further down, but a 0-dim tensor has the same "no benefit
+    # to scale-quantizing" rationale as 1D, so the fix is here, not per-format.
+    if data.dim() <= 1:
         return {key: data.to(torch.float32)}
 
     # ComfyUI's MixedPrecisionOps (comfy/ops.py) only implements quantized

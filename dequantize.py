@@ -227,6 +227,19 @@ def _scan_quantized_layers(state_dict) -> tuple[dict[str, str], set[str]]:
         if key.endswith((
             ".weight_scale", ".weight_scale_2", ".comfy_quant", ".scale_weight",
             "scaled_fp8",
+            # Per-layer *activation* quantization scale from a dynamic FP8
+            # scheme (Comfy-Org's Qwen-Image-Edit-2511 fp8_scaled repackage
+            # carries one alongside every .weight_scale) -- meaningless once
+            # the weight is dequantized back to float, since it scaled a
+            # runtime activation tensor, not this checkpoint's weights.
+            # Missed by the original bug #18 fix (only .weight_scale-family
+            # sidecars were skipped): found 2026-08-20 when a real batch
+            # conversion's GGUF Q4_K_M step crashed llama-quantize.exe
+            # (STATUS_STACK_BUFFER_OVERRUN, 0xC0000409) on the ~1600 orphaned
+            # 0-dim .input_scale tensors carried straight through as GGUF
+            # tensors -- same crash class the docstring above already
+            # documents for un-skipped scale sidecars.
+            ".input_scale",
         ))
     }
     formats: dict[str, str] = {}

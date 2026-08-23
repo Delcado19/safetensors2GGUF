@@ -7,7 +7,7 @@ import json
 
 import torch
 
-from dequantize import detect_quantized_weight, dequantize_weight
+from dequantize import _scan_quantized_layers, detect_quantized_weight, dequantize_weight
 from safetensors_quant_fp8 import quantize_fp8_scaled
 from safetensors_quant_int8 import quantize_int8_convrot, quantize_int8_tensorwise
 
@@ -69,6 +69,17 @@ class TestDequantizeWeight:
         scale = sd["layer.weight_scale"].item()
         assert torch.allclose(restored, original, atol=scale * 1.5)
 
+    def test_plain_int8_scale_is_a_true_scalar_not_reshaped(self):
+        # Regression (2026-08-20): a (1,)-shaped "scalar" scale makes
+        # comfy_kitchen's TensorWiseINT8Layout.requantize_kwargs() derive
+        # per_channel=True from `scale.dim() > 0`, which crashes ComfyUI's
+        # low-VRAM dynamic-requantize path with a shape mismatch when
+        # loading. Must stay a genuine 0-dim tensor. ConvRot's per-row scale
+        # is unaffected -- it's supposed to be 2D (see the test below).
+        original = torch.randn(16, 16, dtype=torch.float32)
+        sd = quantize_int8_tensorwise(original, "layer.weight")
+        assert sd["layer.weight_scale"].dim() == 0
+
     def test_convrot_int8_round_trips_close(self):
         original = torch.randn(8, 256, dtype=torch.float32)
         sd = quantize_int8_convrot(original, "layer.weight")
@@ -107,3 +118,21 @@ class TestDequantizeWeight:
         import pytest
         with pytest.raises(ValueError, match="divisible"):
             dequantize_weight(sd, "layer.weight", "int8_tensorwise", sd["layer.weight"])
+
+
+class TestScanQuantizedLayersSkipsInputScale:
+    """Regression for a real Qwen-Image-Edit-2511 GGUF batch conversion crash
+    (2026-08-20): Comfy-Org's fp8_scaled repackage carries a per-layer
+    .input_scale (activation-quant scale) alongside every .weight_scale.
+    The original bug #18 fix only skipped .weight_scale-family sidecars, so
+    .input_scale tensors were carried straight through as orphaned 0-dim
+    GGUF tensors -- crashed llama-quantize.exe with STATUS_STACK_BUFFER_
+    OVERRUN (0xC0000409)."""
+
+    def test_input_scale_is_skipped_not_carried_through(self):
+        original = torch.randn(16, 16, dtype=torch.float32)
+        sd = quantize_fp8_scaled(original, "layer.weight")
+        sd["layer.input_scale"] = torch.tensor(1.0, dtype=torch.float32)
+        formats, skip = _scan_quantized_layers(sd)
+        assert "layer.input_scale" in skip
+        assert "layer.weight" in formats
