@@ -114,6 +114,30 @@ class TestTorchToStDtypeMap:
         assert _ST_DTYPE_BYTES["F8_E5M2"] == 1
 
 
+class TestIsHiprecShape:
+    def test_matches_is_hiprec_st_for_1d(self):
+        from safetensors_quant import _is_hiprec_shape, is_hiprec_st
+        from models.architectures import ModelFlux
+        import torch
+        data = torch.randn(64, dtype=torch.float32)
+        assert _is_hiprec_shape("some.bias", (64,), torch.float32, ModelFlux()) == \
+            is_hiprec_st("some.bias", data, ModelFlux(), torch.float32)
+
+    def test_matches_is_hiprec_st_for_keys_hiprec_match(self):
+        from safetensors_quant import _is_hiprec_shape, is_hiprec_st
+        from models.architectures import ModelLumina2
+        import torch
+        data = torch.randn(4096, 4096, dtype=torch.bfloat16)
+        assert _is_hiprec_shape("x_pad_token.weight", (4096, 4096), torch.bfloat16, ModelLumina2()) == \
+            is_hiprec_st("x_pad_token.weight", data, ModelLumina2(), torch.bfloat16)
+
+    def test_non_float_dtype_is_never_hiprec(self):
+        from safetensors_quant import _is_hiprec_shape
+        from models.architectures import ModelFlux
+        import torch
+        assert _is_hiprec_shape("any.weight", (4096, 4096), torch.int8, ModelFlux()) is False
+
+
 class TestHiprec:
     def test_1d_tensor_is_hiprec(self):
         data = torch.zeros(64, dtype=torch.float32)

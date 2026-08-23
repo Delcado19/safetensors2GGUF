@@ -478,29 +478,34 @@ _BASE_KEY = {
 }
 
 
-def is_hiprec_st(key: str, data: torch.Tensor, model_arch, old_dtype: torch.dtype) -> bool:
-    """Return True if ``key`` must stay high-precision (F32), mirroring
-    convert._quant_type_for's rule so 'mixed' safetensors output matches the
-    existing GGUF mixed-precision behaviour exactly."""
-    # F16 belongs in this gate too, not just F32/BF16 -- found 2026-08-18
-    # auditing aura_flow_0.3 (an F16-native checkpoint, unlike Flux/SD3/
-    # HiDream's BF16 sources this mechanism was validated against): with F16
-    # excluded, every 2D+ keys_hiprec entry (AdaLN modulation, embedders,
-    # etc.) was silently unprotected in every _MIXED format for this
-    # checkpoint, regardless of what keys_hiprec listed. Line 357 below keeps
-    # a hit at its ORIGINAL dtype (no forced F32 upcast), so including F16
-    # here just means "leave it at F16" -- no size regression, unlike a
-    # hypothetical forced-upcast path.
+def _is_hiprec_shape(
+    key: str, shape: tuple[int, ...], old_dtype: torch.dtype, model_arch
+) -> bool:
+    """Shape/dtype-only hiprec predicate -- the actual logic behind
+    is_hiprec_st(), extracted so the streaming writer's planning pass
+    (plan_tensor_output(), see below) can reuse it without a real tensor.
+    Never inspects tensor values, only dim()/numel(), both derivable from
+    a shape tuple -- see is_hiprec_st's docstring for the F16-dtype-gate
+    history this must not regress."""
     if old_dtype not in (torch.float32, torch.bfloat16, torch.float16):
         return False
-    n_dims = data.dim()
-    if n_dims == 1:
+    if len(shape) == 1:
         return True
-    if data.numel() <= QUANTIZATION_THRESHOLD:
+    numel = 1
+    for d in shape:
+        numel *= d
+    if numel <= QUANTIZATION_THRESHOLD:
         return True
     if any(x in key for x in model_arch.keys_hiprec):
         return True
     return False
+
+
+def is_hiprec_st(key: str, data: torch.Tensor, model_arch, old_dtype: torch.dtype) -> bool:
+    """Return True if ``key`` must stay high-precision (F32), mirroring
+    convert._quant_type_for's rule so 'mixed' safetensors output matches the
+    existing GGUF mixed-precision behaviour exactly."""
+    return _is_hiprec_shape(key, tuple(data.shape), old_dtype, model_arch)
 
 
 def quantize_tensor_st(
