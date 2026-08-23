@@ -529,3 +529,65 @@ class TestNvfp4FullPrecisionFlag:
             meta = json.loads(f.metadata()["_quantization_metadata"])
         layer_conf = next(iter(meta["layers"].values()))
         assert "full_precision_matrix_mult" not in layer_conf
+
+
+class TestStreamingWriterCorrectness:
+    def test_multi_tensor_multi_format_smoke(self, tmp_path):
+        # Exercises header/offset math across a mix of tensor shapes in one
+        # file -- 1D (bias), 2D non-block-aligned, 2D block-aligned
+        # (triggers ConvRot/NVFP4's real packing math, not just fallbacks),
+        # and >=3D (conv fallback) -- for every safetensors target format.
+        import torch
+        from safetensors.torch import save_file, load_file
+        from convert_safetensors import convert_to_safetensors
+
+        src = tmp_path / "model.safetensors"
+        sd = {
+            "double_blocks.0.img_attn.proj.weight": torch.randn(64, 512, dtype=torch.float32),
+            "double_blocks.0.img_attn.proj.bias": torch.randn(64, dtype=torch.float32),
+            "double_blocks.0.img_attn.qkv.weight": torch.randn(96, 100, dtype=torch.float32),
+            "conv_stem.weight": torch.randn(32, 4, 3, 3, dtype=torch.float32),
+        }
+        save_file(sd, str(src))
+
+        for target_key in ("F16", "FP8", "FP8_MIXED", "INT8", "INT8_MIXED", "NVFP4", "NVFP4_MIXED"):
+            dst, _ = convert_to_safetensors(
+                str(src), target_key=target_key, overwrite=True
+            )
+            out = load_file(dst)
+            assert "double_blocks.0.img_attn.proj.weight" in out
+            assert "double_blocks.0.img_attn.proj.bias" in out
+            assert "double_blocks.0.img_attn.qkv.weight" in out
+            assert "conv_stem.weight" in out
+            # Conv weight is always F16 regardless of target format (>=3D
+            # guard, quantize_tensor_st/plan_tensor_output's shared rule).
+            assert out["conv_stem.weight"].dtype == torch.float16
+
+    def test_plan_pass2_mismatch_raises(self, tmp_path, monkeypatch):
+        # Forces plan_tensor_output to disagree with the real quantize_
+        # tensor_st for one call, and confirms the streaming writer's
+        # safety assert catches it instead of silently writing misaligned
+        # bytes.
+        import torch
+        from safetensors.torch import save_file
+        import convert_safetensors as cs
+
+        src = tmp_path / "model.safetensors"
+        save_file(
+            {"double_blocks.0.img_attn.proj.weight": torch.randn(64, 64, dtype=torch.float32)},
+            str(src),
+        )
+
+        real_plan = cs.plan_tensor_output
+
+        def _wrong_plan(*args, **kwargs):
+            entries, conf = real_plan(*args, **kwargs)
+            # Corrupt the first entry's declared shape so it disagrees with
+            # what quantize_tensor_st will actually produce.
+            name, dtype, shape = entries[0]
+            entries[0] = (name, dtype, tuple(d + 1 for d in shape))
+            return entries, conf
+
+        monkeypatch.setattr(cs, "plan_tensor_output", _wrong_plan)
+        with pytest.raises(AssertionError, match="plan mismatch"):
+            cs.convert_to_safetensors(str(src), target_key="F16", overwrite=True)

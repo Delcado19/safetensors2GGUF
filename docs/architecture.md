@@ -158,10 +158,10 @@ convert_to_safetensors() in convert_safetensors.py
     │      pipeline below runs, instead of refusing outright. Only an
     │      int8/uint8 weight with NO recognizable scale sidecar still raises
     │      (unrecoverable — no scale to reconstruct magnitude from)
-    │  - Iterates state_dict.items() directly (never list()s it) so the
-    │      _LazyStateDict streaming from the GGUF pipeline still bounds peak
-    │      RAM to ~1 tensor; list()-ing here previously reintroduced the
-    │      >RAM OOM crash _LazyStateDict was built to fix
+    │  - Pass 1 iterates the shared _iter_output_keys() order and uses
+    │      plan_tensor_output() plus shape/dtype metadata to build the
+    │      safetensors header and _quantization_metadata without loading
+    │      tensor data
     │  - Filters keys_ignore
     │  - Coerces float8 source tensors → float16 before nan_to_num
     │      (nan_to_num has no float8 kernel)
@@ -191,12 +191,16 @@ quantize_tensor_st() in safetensors_quant.py       (per tensor)
     │      weight_scale (ComfyUI int8_tensorwise convention)
     │
     ▼
-save_file() with _quantization_metadata
+Streaming safetensors writer with _quantization_metadata
+    │  - Pass 2 reuses the exact same _iter_output_keys() order, runs the
+    │      real quantize_tensor_st() per tensor, asserts each emitted tensor
+    │      matches Pass 1's planned name/dtype/shape, then appends its raw
+    │      bytes directly after the already-written header. Peak output RAM
+    │      scales with one tensor instead of the full quantized model.
     │  - Per-layer {"format": "int8_tensorwise", "convrot": true,
     │      "convrot_groupsize": 256} JSON (convrot fields only present when
-    │      that tensor actually took the ConvRot path — detected from
-    │      weight_scale's shape: scalar = plain, per-row = convrot), written
-    │      only for layers that actually produced scale-tensor siblings
+    │      that tensor actually takes the ConvRot path), written only for
+    │      layers that actually produce scale-tensor siblings
     │  - FP8/FP8_MIXED layers additionally get "full_precision_matrix_mult":
     │      true by default (full_precision_fp8=True param on
     │      convert_to_safetensors()) — makes ComfyUI's
