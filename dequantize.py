@@ -28,6 +28,27 @@ from safetensors_quant import layer_key
 from safetensors_quant_int8 import CONVROT_GROUP_SIZE, _build_hadamard
 from safetensors_quant_nvfp4 import dequantize_nvfp4
 
+
+def dequantized_shape_of(fmt: str, packed_shape: tuple[int, ...]) -> tuple[int, ...]:
+    """Return the shape a ".weight" tensor of on-disk quant format ``fmt``
+    will have AFTER dequantize_weight() reconstructs it -- from shape alone,
+    no tensor data touched. Used by convert_safetensors.py's streaming
+    writer Pass 1 to plan already-quantized sources' post-dequant shape.
+
+    Only NVFP4 changes shape on disk (2 values packed per byte, halving the
+    last dimension -- see safetensors_quant_nvfp4.quantize_nvfp4's
+    `packed.reshape(*lead, last // 2)` and its inverse in
+    dequantize_nvfp4's `values.reshape(*lead, half * 2)`, which this
+    function's nvfp4 branch mirrors). FP8/INT8 weight+scale sidecars merge
+    back to the original shape unchanged.
+    """
+    if fmt == "nvfp4":
+        return (*packed_shape[:-1], packed_shape[-1] * 2)
+    if fmt in ("float8_e4m3fn", "int8_tensorwise"):
+        return tuple(packed_shape)
+    raise ValueError(f"Unsupported quantized format for shape inference: {fmt!r}")
+
+
 _FLOAT8_DTYPES: tuple = tuple(
     d for d in (
         getattr(torch, "float8_e4m3fn", None),

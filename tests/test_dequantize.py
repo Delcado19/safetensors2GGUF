@@ -5,11 +5,40 @@ from __future__ import annotations
 
 import json
 
+import pytest
 import torch
 
 from dequantize import _scan_quantized_layers, detect_quantized_weight, dequantize_weight
 from safetensors_quant_fp8 import quantize_fp8_scaled
 from safetensors_quant_int8 import quantize_int8_convrot, quantize_int8_tensorwise
+
+
+class TestDequantizedShapeOf:
+    def test_nvfp4_doubles_last_dim(self):
+        from dequantize import dequantized_shape_of
+        assert dequantized_shape_of("nvfp4", (64, 32)) == (64, 32 * 2)
+
+    def test_fp8_and_int8_unchanged(self):
+        from dequantize import dequantized_shape_of
+        assert dequantized_shape_of("float8_e4m3fn", (64, 64)) == (64, 64)
+        assert dequantized_shape_of("int8_tensorwise", (64, 64)) == (64, 64)
+
+    def test_unknown_format_raises(self):
+        from dequantize import dequantized_shape_of
+        with pytest.raises(ValueError):
+            dequantized_shape_of("bogus", (64, 64))
+
+    def test_matches_real_dequantize_nvfp4_shape(self):
+        # Cross-check against the real quantize/dequantize round trip rather
+        # than trusting the packing-math in isolation.
+        import torch
+        from dequantize import dequantized_shape_of
+        from safetensors_quant_nvfp4 import quantize_nvfp4, dequantize_nvfp4
+
+        data = torch.randn(64, 32, dtype=torch.float32)
+        packed = quantize_nvfp4(data, "layer.weight")
+        real = dequantize_nvfp4(packed, "layer.weight")
+        assert dequantized_shape_of("nvfp4", tuple(packed["layer.weight"].shape)) == tuple(real.shape)
 
 
 class TestDetectQuantizedWeight:
