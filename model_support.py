@@ -527,7 +527,7 @@ TEXT_ENCODER_FAMILY_DISPLAY_NAMES: dict[str, str] = {
     "qwen3-4b": "Qwen3 4B — Z-Image / FLUX.2 klein 4B (qwen3-4b)",
     "qwen3-8b": "Qwen3 8B — FLUX.2 klein 9B (qwen3-8b)",
     "qwen2.5-vl-7b": "Qwen2.5-VL 7B — Qwen-Image / Qwen-Image-Edit (qwen2.5-vl-7b)",
-    "mistral-small-3.2-24b": "Mistral Small 3.2 24B — FLUX.2 dev (mistral-small-3.2-24b)",
+    "mistral-small-3.2-24b": "Mistral Small 3.2 24B — FLUX.2 dev, ERNIE-Image (mistral-small-3.2-24b)",
     "ernie-image-pe": "Ministral3 Prompt-Enhancer — ERNIE-Image (ernie-image-pe)",
     "t5-xxl": "T5-XXL — FLUX.1 / FLUX.1 Kontext / HiDream-I1 (t5-xxl)",
     "clip-l": "CLIP-L — SDXL / FLUX.1 (clip-l)",
