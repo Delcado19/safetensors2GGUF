@@ -100,6 +100,20 @@ class TestFilenameSuffixFor:
             assert filename_suffix_for(key) == key
 
 
+class TestTorchToStDtypeMap:
+    def test_reverse_map_covers_every_st_dtype_map_entry(self):
+        from convert import _ST_DTYPE_MAP, _TORCH_TO_ST_DTYPE
+        for st_name, torch_dtype in _ST_DTYPE_MAP.items():
+            if torch_dtype is None:
+                continue  # float8 dtypes are None on old PyTorch builds
+            assert _TORCH_TO_ST_DTYPE[torch_dtype] == st_name
+
+    def test_f8_dtypes_have_byte_sizes(self):
+        from safetensors_quant import _ST_DTYPE_BYTES
+        assert _ST_DTYPE_BYTES["F8_E4M3"] == 1
+        assert _ST_DTYPE_BYTES["F8_E5M2"] == 1
+
+
 class TestHiprec:
     def test_1d_tensor_is_hiprec(self):
         data = torch.zeros(64, dtype=torch.float32)

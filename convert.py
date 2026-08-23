@@ -61,6 +61,16 @@ _ST_DTYPE_MAP: dict = {
     "BOOL":    torch.bool,
 }
 
+# Reverse of the above -- torch dtype -> safetensors header dtype string.
+# Used by the streaming safetensors writer (convert_safetensors.py) and
+# safetensors_quant.plan_tensor_output() to build header entries for
+# tensors that keep their original dtype (mixed-precision hiprec passthrough,
+# passthrough sentinel blobs) instead of one of quantize_tensor_st's own
+# fixed output dtypes.
+_TORCH_TO_ST_DTYPE: dict = {
+    v: k for k, v in _ST_DTYPE_MAP.items() if v is not None
+}
+
 
 def _read_safetensors_header(path: str) -> dict:
     """Return the JSON header of a safetensors file (no tensor data loaded)."""

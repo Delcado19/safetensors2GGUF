@@ -644,6 +644,7 @@ def quantize_tensor_st(
 
 _ST_DTYPE_BYTES: dict[str, int] = {
     "F32": 4, "F64": 8, "F16": 2, "BF16": 2,
+    "F8_E4M3": 1, "F8_E5M2": 1,
     "I64": 8, "I32": 4, "I16": 2, "I8": 1, "U8": 1, "BOOL": 1,
 }
 _CONVROT_GROUP_SIZE = 256  # must match safetensors_quant_int8.py's own constant
