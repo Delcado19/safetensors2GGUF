@@ -138,6 +138,113 @@ class TestIsHiprecShape:
         assert _is_hiprec_shape("any.weight", (4096, 4096), torch.int8, ModelFlux()) is False
 
 
+class TestPlanTensorOutput:
+    """plan_tensor_output() must predict exactly what quantize_tensor_st()
+    actually produces, for every branch. Each case below runs BOTH and
+    compares -- this is the real correctness proof, not the implementation
+    reading right."""
+
+    def _check(self, data, key, model_arch, target_key, **kw):
+        from safetensors_quant import plan_tensor_output, quantize_tensor_st
+        old_dtype = data.dtype
+        real = quantize_tensor_st(data, key, model_arch, target_key)
+        planned_entries, planned_layer_conf = plan_tensor_output(
+            key, tuple(data.shape), old_dtype, model_arch, target_key, **kw
+        )
+        assert list(real.keys()) == [name for name, _, _ in planned_entries]
+        from convert import _TORCH_TO_ST_DTYPE
+        for (name, st_dtype, shape), real_name in zip(planned_entries, real.keys()):
+            assert name == real_name
+            assert _TORCH_TO_ST_DTYPE[real[real_name].dtype] == st_dtype, (
+                f"{name}: planned dtype {st_dtype}, real {real[real_name].dtype}"
+            )
+            assert tuple(real[real_name].shape) == shape, (
+                f"{name}: planned shape {shape}, real {tuple(real[real_name].shape)}"
+            )
+        return planned_layer_conf
+
+    def test_f16(self):
+        import torch
+        from models.architectures import ModelFlux
+        data = torch.randn(64, 64, dtype=torch.float32)
+        conf = self._check(data, "some.weight", ModelFlux(), "F16")
+        assert conf is None
+
+    def test_1d_bias_stays_f32(self):
+        import torch
+        from models.architectures import ModelFlux
+        data = torch.randn(64, dtype=torch.float32)
+        conf = self._check(data, "some.bias", ModelFlux(), "FP8")
+        assert conf is None
+
+    def test_conv_weight_gte_3d_stays_f16(self):
+        import torch
+        from models.architectures import ModelSDXL
+        data = torch.randn(32, 4, 3, 3, dtype=torch.float32)
+        conf = self._check(data, "conv.weight", ModelSDXL(), "FP8")
+        assert conf is None
+
+    def test_mixed_hiprec_keeps_original_dtype(self):
+        import torch
+        from models.architectures import ModelLumina2
+        data = torch.randn(4096, 4096, dtype=torch.bfloat16)
+        conf = self._check(data, "x_pad_token.weight", ModelLumina2(), "FP8_MIXED")
+        assert conf is None
+
+    def test_fp8_plain(self):
+        import torch
+        from models.architectures import ModelFlux
+        data = torch.randn(256, 256, dtype=torch.float32)
+        conf = self._check(data, "some.weight", ModelFlux(), "FP8")
+        assert conf == {"format": "float8_e4m3fn", "full_precision_matrix_mult": True}
+
+    def test_fp8_shape_critical_stays_f16(self):
+        import torch
+        from models.architectures import ModelFlux
+        data = torch.randn(256, 256, dtype=torch.float32)
+        arch = ModelFlux()
+        key = arch.keys_shape_critical[0] if arch.keys_shape_critical else "txt_in.weight"
+        conf = self._check(data, key, arch, "FP8")
+        assert conf is None
+
+    def test_int8_tensorwise_odd_infeatures(self):
+        import torch
+        from models.architectures import ModelFlux
+        data = torch.randn(64, 100, dtype=torch.float32)  # 100 % 256 != 0
+        conf = self._check(data, "some.weight", ModelFlux(), "INT8")
+        assert conf == {"format": "int8_tensorwise"}
+
+    def test_int8_convrot(self):
+        import torch
+        from models.architectures import ModelFlux
+        data = torch.randn(64, 512, dtype=torch.float32)  # 512 % 256 == 0
+        conf = self._check(data, "some.weight", ModelFlux(), "INT8")
+        assert conf == {"format": "int8_tensorwise", "convrot": True, "convrot_groupsize": 256}
+
+    def test_nvfp4_plain(self):
+        import torch
+        from models.architectures import ModelFlux
+        data = torch.randn(64, 32, dtype=torch.float32)  # 32 % 16 == 0
+        conf = self._check(data, "some.weight", ModelFlux(), "NVFP4")
+        assert conf == {"format": "nvfp4", "full_precision_matrix_mult": True}
+
+    def test_nvfp4_non_block_aligned_falls_back_to_f16(self):
+        import torch
+        from models.architectures import ModelFlux
+        data = torch.randn(64, 20, dtype=torch.float32)  # 20 % 16 != 0
+        conf = self._check(data, "some.weight", ModelFlux(), "NVFP4")
+        assert conf is None
+
+    def test_full_precision_flags_off(self):
+        import torch
+        from models.architectures import ModelFlux
+        data = torch.randn(256, 256, dtype=torch.float32)
+        conf = self._check(
+            data, "some.weight", ModelFlux(), "FP8", full_precision_fp8=False
+        )
+        assert conf == {"format": "float8_e4m3fn"}
+
+
 class TestHiprec:
     def test_1d_tensor_is_hiprec(self):
         data = torch.zeros(64, dtype=torch.float32)

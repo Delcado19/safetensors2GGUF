@@ -508,6 +508,128 @@ def is_hiprec_st(key: str, data: torch.Tensor, model_arch, old_dtype: torch.dtyp
     return _is_hiprec_shape(key, tuple(data.shape), old_dtype, model_arch)
 
 
+def plan_tensor_output(
+    key: str,
+    shape: tuple[int, ...],
+    old_dtype: torch.dtype,
+    model_arch,
+    target_key: str,
+    full_precision_fp8: bool = True,
+    full_precision_nvfp4: bool = True,
+) -> tuple[list[tuple[str, str, tuple[int, ...]]], dict | None]:
+    """Plan quantize_tensor_st()'s output for one source tensor, purely from
+    shape/dtype metadata -- no tensor data touched, no quantization math run.
+
+    Mirrors quantize_tensor_st()'s branching exactly (same order: mixed+
+    hiprec passthrough, F16, <=1D, >=3D conv, then FP8/NVFP4/INT8-specific
+    shape_critical/shape-alignment fallbacks) and every real quantize_*
+    function's exact output tensor naming/dtype/shape (quantize_fp8_scaled,
+    quantize_int8_tensorwise/convrot, quantize_nvfp4) -- kept in sync by
+    tests.test_safetensors_quant.TestPlanTensorOutput, which cross-checks
+    this function's output against quantize_tensor_st()'s REAL output for
+    every branch, not just by code inspection.
+
+    Both estimate_safetensors_output_size() (byte-count only) and
+    convert_safetensors.py's streaming Pass 1 (exact header) build on this
+    single source of truth so they can't silently drift apart from each
+    other or from quantize_tensor_st().
+
+    Returns (entries, layer_conf):
+      entries: [(output_name, safetensors_dtype_string, output_shape), ...]
+        in the same order quantize_tensor_st()'s real output dict has.
+      layer_conf: the _quantization_metadata "layers" fragment for this
+        key (format/convrot/full_precision_matrix_mult), or None if this
+        key produces no scale sidecar (F16, 1D/hiprec passthrough, >=3D
+        conv fallback, or a shape_critical/alignment F16 fallback).
+    """
+    base = _BASE_KEY[target_key]
+    mixed = target_key in _MIXED_KEYS
+    from convert import _TORCH_TO_ST_DTYPE
+
+    if mixed and _is_hiprec_shape(key, shape, old_dtype, model_arch):
+        return [(key, _TORCH_TO_ST_DTYPE[old_dtype], tuple(shape))], None
+
+    if base == "F16":
+        return [(key, "F16", tuple(shape))], None
+
+    if len(shape) <= 1:
+        return [(key, "F32", tuple(shape))], None
+
+    if len(shape) >= 3:
+        return [(key, "F16", tuple(shape))], None
+
+    # From here on shape is always exactly 2D -- quantize_tensor_st's own
+    # <=1D and >=3D branches above already filtered everything else out.
+    prefix = layer_key(key)
+    shape_critical = any(
+        x in key for x in getattr(model_arch, "keys_shape_critical", [])
+    )
+
+    if base == "FP8":
+        if shape_critical:
+            return [(key, "F16", tuple(shape))], None
+        entries = [
+            (key, "F8_E4M3", tuple(shape)),
+            (f"{prefix}.weight_scale", "F32", (1,)),
+        ]
+        layer_conf = {"format": "float8_e4m3fn"}
+        if full_precision_fp8:
+            layer_conf["full_precision_matrix_mult"] = True
+        return entries, layer_conf
+
+    if base == "NVFP4":
+        if shape_critical or shape[-1] % 16 != 0:
+            return [(key, "F16", tuple(shape))], None
+        out_f, in_f = shape
+        k_blocks = in_f // 16
+        packed_shape = (out_f, in_f // 2)
+        # 2D weights are always swizzled to 128x4-tile alignment (see
+        # safetensors_quant_nvfp4._swizzle_block_scale) -- the >=3D branch
+        # above already guarantees shape is exactly 2D here, so the
+        # "higher-rank, unswizzled" case quantize_nvfp4() itself still
+        # defends against is unreachable via this call path; mirrored
+        # anyway for robustness against a future change to that filter.
+        if len(shape) == 2:
+            m_padded = -(-out_f // 128) * 128
+            k_padded = -(-k_blocks // 4) * 4
+            scale_shape = (m_padded, k_padded)
+        else:
+            scale_shape = (*shape[:-1], k_blocks)
+        entries = [
+            (key, "U8", packed_shape),
+            (f"{prefix}.weight_scale", "F8_E4M3", scale_shape),
+            (f"{prefix}.weight_scale_2", "F32", (1,)),
+        ]
+        layer_conf = {"format": "nvfp4"}
+        if full_precision_nvfp4:
+            layer_conf["full_precision_matrix_mult"] = True
+        return entries, layer_conf
+
+    if base == "INT8":
+        if shape_critical:
+            return [(key, "F16", tuple(shape))], None
+        out_f, in_f = shape
+        if in_f % _CONVROT_GROUP_SIZE == 0:
+            entries = [
+                (key, "I8", tuple(shape)),
+                (f"{prefix}.weight_scale", "F32", (out_f, 1)),
+            ]
+            layer_conf = {
+                "format": "int8_tensorwise",
+                "convrot": True,
+                "convrot_groupsize": _CONVROT_GROUP_SIZE,
+            }
+        else:
+            entries = [
+                (key, "I8", tuple(shape)),
+                (f"{prefix}.weight_scale", "F32", ()),
+            ]
+            layer_conf = {"format": "int8_tensorwise"}
+        return entries, layer_conf
+
+    raise ValueError(f"Unknown target_key: {target_key!r}")
+
+
 def quantize_tensor_st(
     data: torch.Tensor, key: str, model_arch, target_key: str
 ) -> dict[str, torch.Tensor]:
