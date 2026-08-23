@@ -805,9 +805,6 @@ def estimate_safetensors_output_size(path: str, target_key: str, model_arch) -> 
     base = _BASE_KEY.get(target_key)
     if base is None:
         return None
-    mixed = target_key in _MIXED_KEYS
-    hiprec_substrings = list(getattr(model_arch, "keys_hiprec", None) or [])
-    shape_critical_substrings = list(getattr(model_arch, "keys_shape_critical", None) or [])
 
     total = 0
     for name, meta in header.items():
@@ -816,75 +813,18 @@ def estimate_safetensors_output_size(path: str, target_key: str, model_arch) -> 
         shape = meta.get("shape")
         if not shape and shape != []:
             continue
-        n_elems = 1
-        for d in shape:
-            n_elems *= d
-        ndim = len(shape)
+        shape = tuple(shape)
         src_dtype = meta.get("dtype", "F16")
-        src_bytes = _ST_DTYPE_BYTES.get(src_dtype, 2)
+        from convert import _ST_DTYPE_MAP
+        old_dtype = _ST_DTYPE_MAP.get(src_dtype)
+        if old_dtype is None:
+            continue  # unrecognized/unsupported dtype in this header -- skip
 
-        # Mirrors is_hiprec_st(): F32/BF16/F16 sources are eligible (F16
-        # added 2026-08-18, see that function's comment), and 1D or
-        # <=QUANTIZATION_THRESHOLD-element tensors qualify unconditionally,
-        # not just via a keys_hiprec substring match.
-        is_hiprec = src_dtype in ("F32", "BF16", "F16") and (
-            ndim == 1 or n_elems <= QUANTIZATION_THRESHOLD
-            or any(s in name for s in hiprec_substrings)
-        )
-        if mixed and is_hiprec:
-            total += n_elems * src_bytes
-            continue
-
-        if base == "F16":
-            total += n_elems * 2
-            continue
-
-        if ndim == 1:
-            total += n_elems * 4  # F32 -- unconditional, matches quantize_tensor_st
-            continue
-
-        # Conv1d/2d/3d weights (>=3D): ComfyUI's MixedPrecisionOps has no
-        # quantized-loading Conv override (see quantize_tensor_st's matching
-        # ndim >= 3 guard) -- always F16 regardless of format/architecture.
-        if ndim >= 3:
-            total += n_elems * 2
-            continue
-
-        if base == "FP8":
-            total += n_elems * 1 + 4  # float8_e4m3fn + one F32 scale scalar
-            continue
-
-        if base == "NVFP4":
-            shape_critical = any(s in name for s in shape_critical_substrings)
-            block_ok = shape[-1] % 16 == 0
-            if shape_critical or not block_ok:
-                total += n_elems * 2  # F16 fallback (shape-critical or non-block-aligned)
-            else:
-                packed_bytes = n_elems // 2  # 2 elems/byte
-                k_blocks = shape[-1] // 16
-                if ndim == 2:
-                    # 2D weights go through _swizzle_block_scale: padded to
-                    # 128x4-tile alignment before storage, not the bare
-                    # (rows, k_blocks) shape -- can matter a lot for weights
-                    # with < 128 output features.
-                    m_padded = -(-shape[0] // 128) * 128
-                    k_padded = -(-k_blocks // 4) * 4
-                    scale_bytes = m_padded * k_padded
-                else:
-                    # Higher-rank tensors skip the swizzle (see quantize_nvfp4's
-                    # `if len(lead) == 1` guard) -- plain (rows, k_blocks) layout.
-                    scale_bytes = (n_elems // shape[-1]) * k_blocks
-                total += packed_bytes + scale_bytes + 4  # + one F32 global scale scalar
-            continue
-
-        if base == "INT8":
-            shape_critical = any(s in name for s in shape_critical_substrings)
-            if shape_critical:
-                total += n_elems * 2  # F16 fallback
-            elif ndim == 2 and shape[-1] % _CONVROT_GROUP_SIZE == 0:
-                total += n_elems * 1 + shape[0] * 4  # ConvRot: int8 + one F32 scale per row
-            else:
-                total += n_elems * 1 + 4  # tensor-wise: int8 + one F32 scale scalar
-            continue
+        entries, _ = plan_tensor_output(name, shape, old_dtype, model_arch, target_key)
+        for _, st_dtype, out_shape in entries:
+            n_elems = 1
+            for d in out_shape:
+                n_elems *= d
+            total += n_elems * _ST_DTYPE_BYTES.get(st_dtype, 2)
 
     return total
