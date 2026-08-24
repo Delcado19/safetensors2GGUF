@@ -322,6 +322,19 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
       encoder have ever actually been render-tested against this tool.
       Treat Flux.1-specific claims as UNKNOWN pending real evidence, not as
       covered by the FLUX.2 results above.
+      2026-08-24: got a second, independent GGUF data point -- this one
+      actually from FLUX.2 **dev** itself (32B, mistral-small-3.2-24b text
+      encoder, not the Klein 9B checkpoint above), Q4_K_M quantized from a
+      dequantized fp8_mixed source and render-tested with the tool's own
+      rebuilt nvfp4_mixed text encoder. Composition, identity, wound
+      pattern, armor, and medallion all matched the equivalent fp8_mixed-
+      diffusion render exactly; only a slight (expected) softening in
+      fine skin/beard detail from the more aggressive 4-bit quantization,
+      no corruption. Closes the one remaining untested cell in this
+      session's FLUX.2 dev format sweep (safetensors formats + this GGUF
+      quant were all render-tested that day; plain diffusion NVFP4/
+      NVFP4_MIXED still only carry single-seed evidence, see the
+      safetensors_quant.py entries below).
       2026-08-20 caveat: the "design reasoning" above implicitly assumed a
       plain (never-quantized) source checkpoint. `convert.py`'s GGUF path
       had no dequantization pre-pass for an already-quantized source until
