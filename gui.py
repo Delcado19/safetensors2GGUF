@@ -697,14 +697,11 @@ def apply_support_table_selection(evt: gr.SelectData):
 
 
 _SUPPORT_TABLE_LEGEND_HTML = """
-<div style="font-size: var(--type-small); color: var(--s2g-muted); margin-top: 8px;">
-  <strong style="color:var(--s2g-support-good);">✓ Verified</strong> — actually converted, loaded, and rendered correctly in ComfyUI with this tool's own output.
-  &nbsp;·&nbsp;
-  <strong style="color:var(--s2g-support-caution);">⚠ Caution</strong> — render-tested and shows some visible-but-tolerable difference from the uncompressed version (composition, identity, or fine detail may drift).
-  &nbsp;·&nbsp;
-  <strong style="color:var(--s2g-support-bad);">✗ Known issue</strong> — actually render-tested and confirmed to produce wrong/broken output.
-  &nbsp;·&nbsp;
-  <strong style="color:var(--s2g-muted);">? Unknown</strong> — this combination has never actually been rendered, no evidence either way.
+<div style="font-size: var(--type-small); color: var(--s2g-muted); margin-top: 8px; display: flex; flex-direction: column; gap: 4px;">
+  <div>&#9656; <strong style="color:var(--s2g-support-good);">&#10003; Verified</strong> &mdash; actually converted, loaded, and rendered correctly in ComfyUI with this tool's own output.</div>
+  <div>&#9656; <strong style="color:var(--s2g-support-caution);">&#9888; Caution</strong> &mdash; render-tested and shows some visible-but-tolerable difference from the uncompressed version (composition, identity, or fine detail may drift).</div>
+  <div>&#9656; <strong style="color:var(--s2g-support-bad);">&#10007; Known issue</strong> &mdash; actually render-tested and confirmed to produce wrong/broken output.</div>
+  <div>&#9656; <strong style="color:var(--s2g-muted);">? Unknown</strong> &mdash; this combination has never actually been rendered, no evidence either way.</div>
 </div>
 """
 
@@ -944,8 +941,19 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
 .browse-col button {
     width: 100% !important;
 }
+/* The primary action buttons (Convert/Download/Fix + Cancel) use Gradio's
+   `scale` prop, which sets inline flex-grow so the button stretches to fill
+   the row -- shrinking min-height/padding/font-size alone still leaves a
+   full-width bar that reads as "big". Cap them to their content width
+   instead so the row hugs its buttons like the Analyze/Extract pair does. */
 .action-row {
-    width: 100% !important;
+    width: auto !important;
+    justify-content: flex-start !important;
+}
+.action-row > button {
+    flex-grow: 0 !important;
+    width: auto !important;
+    min-width: 140px !important;
 }
 .path-input {
     min-width: 0 !important;
