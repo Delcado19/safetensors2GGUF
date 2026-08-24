@@ -49,10 +49,7 @@ from models.architectures import QUANTIZATION_THRESHOLD
 #   - F16/F16_MIXED and INT8/INT8_MIXED have no distinct external-naming
 #     convention beyond "fp16"/"int8" (case only) -- kept as-is.
 #
-# Size-savings percentages (mirrors quantize.py's ALL_QUANT_CHOICES pattern:
-# hand-written literals, not computed at runtime -- tests.test_safetensors_
-# quant.TestSafetensorsDtypeChoicesLabels checks they stay in sync with
-# _SIZE_RATIOS if that's ever recalibrated). Measured from an actual
+# Size ratios measured from an actual
 # reference conversion (HiDream-I1's llama-3.1-8b text encoder, 2026-08-19:
 # F16 16,060,556,312 bytes), the same one-reference-checkpoint approach
 # quantize.py's own GGUF ratios use.
@@ -69,24 +66,24 @@ from models.architectures import QUANTIZATION_THRESHOLD
 # blocks), but real on small/shallow models with an oversized embedding
 # table relative to total params (the exact "tiny/oddly-shaped model" case
 # convert_to_safetensors()'s own "Output is larger than the input" runtime
-# warning exists for -- see its docstring). Labels below therefore say
-# "usually" and defer to the GUI's own per-checkpoint "Estimated output"
-# size (estimate_safetensors_output_size(), architecture-aware) as the
-# actual answer once a real model is selected, not a substitute for it.
+# warning exists for -- see its docstring). Static table percentages therefore
+# stay approximate and defer to the GUI's per-checkpoint "Estimated output"
+# size (estimate_safetensors_output_size(), architecture-aware) as the actual
+# answer once a real model is selected, not a substitute for it.
 _SIZE_RATIOS: dict[str, float] = {
     "FP8": 0.5655, "FP8_MIXED": 0.5654,
     "INT8": 0.5658, "INT8_MIXED": 0.5658,
     "NVFP4": 0.3754, "NVFP4_MIXED": 0.3753,
 }
 SAFETENSORS_DTYPE_CHOICES: list[tuple[str, str]] = [
-    ("F16       — Half precision",                                                              "F16"),
-    ("F16 mixed — Half precision, hiprec tensors stay F32",                                      "F16_MIXED"),
-    ("FP8       — Scaled float8_e4m3fn, full-precision compute (safe) · ~43% smaller than F16",  "FP8"),
-    ("FP8 mixed — FP8, hiprec tensors stay F32 · usually ~43% smaller than F16",                 "FP8_MIXED"),
-    ("INT8      — Tensor-wise INT8, ConvRot-rotated where possible · ~43% smaller than F16",      "INT8"),
-    ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32 · usually ~43% smaller than F16 · recommended ★", "INT8_MIXED"),
-    ("NVFP4     — NVIDIA FP4, full-precision compute (safe) · needs Blackwell GPU · ~62% smaller than F16", "NVFP4"),
-    ("NVFP4 mixed — NVFP4, hiprec tensors stay F32 · needs Blackwell GPU · usually ~62% smaller than F16", "NVFP4_MIXED"),
+    ("f16 · half precision", "F16"),
+    ("f16 mix · half precision, hiprec stays F32", "F16_MIXED"),
+    ("fp8 · float8_e4m3fn scaled, full-precision compute", "FP8"),
+    ("fp8 mix · fp8, hiprec stays F32", "FP8_MIXED"),
+    ("int8 · tensorwise, ConvRot-rotated where possible", "INT8"),
+    ("int8 mix · int8/ConvRot, hiprec stays F32, recommended ★", "INT8_MIXED"),
+    ("nvfp4 · NVIDIA FP4, full-precision compute, needs Blackwell GPU", "NVFP4"),
+    ("nvfp4 mix · nvfp4, hiprec stays F32, needs Blackwell GPU", "NVFP4_MIXED"),
 ]
 
 # Output-filename suffix for each SAFETENSORS_DTYPE_CHOICES key. Deliberately

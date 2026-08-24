@@ -10,7 +10,7 @@ level for each (architecture, format) combination (support_level()).
 
 from __future__ import annotations
 
-from safetensors_quant import _RENDER_VERIFIED_MIXED
+from safetensors_quant import _RENDER_VERIFIED_MIXED, _SIZE_RATIOS
 
 # Public display name per models.architectures.*.arch key. Format:
 # "<public name(s)> (<arch key>)" -- the arch key always appears verbatim in
@@ -36,6 +36,19 @@ MODEL_DISPLAY_NAMES: dict[str, str] = {
     "lumina2": "Z-Image / Lumina-Image 2.0 Family (lumina2)",
 }
 
+def _format_header_label(format_key: str) -> str:
+    if format_key == "GGUF":
+        return "GGUF¹"
+    short = (
+        f"{format_key[:-len('_MIXED')].lower()} mix"
+        if format_key.endswith("_MIXED")
+        else format_key.lower()
+    )
+    if format_key in _SIZE_RATIOS:
+        return f"{short} ~{round((1 - _SIZE_RATIOS[format_key]) * 100)}%"
+    return short
+
+
 # (display label, format key) — GGUF first (collapses every K-quant level
 # into one column, per the user's own reasoning: if base F16 GGUF conversion
 # works for an architecture, K-quants apply uniformly on top of it via the
@@ -43,15 +56,15 @@ MODEL_DISPLAY_NAMES: dict[str, str] = {
 # format in SAFETENSORS_DTYPE_CHOICES order, then NVFP4 (implemented,
 # per-tool-capability, but never offered in the GUI dropdown).
 TABLE_FORMATS: list[tuple[str, str]] = [
-    ("GGUF", "GGUF"),
-    ("F16", "F16"),
-    ("F16 mixed", "F16_MIXED"),
-    ("FP8", "FP8"),
-    ("FP8 mixed", "FP8_MIXED"),
-    ("INT8", "INT8"),
-    ("INT8 mixed", "INT8_MIXED"),
-    ("NVFP4", "NVFP4"),
-    ("NVFP4 mixed", "NVFP4_MIXED"),
+    (_format_header_label("GGUF"), "GGUF"),
+    (_format_header_label("F16"), "F16"),
+    (_format_header_label("F16_MIXED"), "F16_MIXED"),
+    (_format_header_label("FP8"), "FP8"),
+    (_format_header_label("FP8_MIXED"), "FP8_MIXED"),
+    (_format_header_label("INT8"), "INT8"),
+    (_format_header_label("INT8_MIXED"), "INT8_MIXED"),
+    (_format_header_label("NVFP4"), "NVFP4"),
+    (_format_header_label("NVFP4_MIXED"), "NVFP4_MIXED"),
 ]
 
 SUPPORT_VERIFIED = "verified"
@@ -514,7 +527,7 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
 # outtypes, so there's no evidence to split this column the way there once
 # seemed to be (see below).
 TEXT_ENCODER_TABLE_FORMATS: list[tuple[str, str]] = [
-    ("GGUF", "GGUF"),
+    (_format_header_label("GGUF"), "GGUF"),
     # A plain precision cast (real float16, no quantization/compression), not
     # the GGUF-outtype "F16" collapsed into the column above -- corresponds
     # to TEXT_ENCODER_FORMAT_CHOICES' "F16_ST" dropdown key (routes to
@@ -526,13 +539,13 @@ TEXT_ENCODER_TABLE_FORMATS: list[tuple[str, str]] = [
     # anything works. See text_encoder_support_level()'s unconditional
     # SUPPORT_VERIFIED for this column, mirroring TABLE_FORMATS' own F16
     # column for diffusion models.
-    ("F16", "F16"),
-    ("FP8", "FP8"),
-    ("FP8 mixed", "FP8_MIXED"),
-    ("INT8", "INT8"),
-    ("INT8 mixed", "INT8_MIXED"),
-    ("NVFP4", "NVFP4"),
-    ("NVFP4 mixed", "NVFP4_MIXED"),
+    (_format_header_label("F16"), "F16"),
+    (_format_header_label("FP8"), "FP8"),
+    (_format_header_label("FP8_MIXED"), "FP8_MIXED"),
+    (_format_header_label("INT8"), "INT8"),
+    (_format_header_label("INT8_MIXED"), "INT8_MIXED"),
+    (_format_header_label("NVFP4"), "NVFP4"),
+    (_format_header_label("NVFP4_MIXED"), "NVFP4_MIXED"),
 ]
 
 # Display label per vendored family short name (text_encoder_configs/<name>/,
@@ -899,6 +912,7 @@ def build_text_encoder_support_table() -> list[dict]:
             row[format_key] = text_encoder_support_level(family, format_key)
             row[f"{format_key}__reason"] = text_encoder_support_reason(family, format_key)
         rows.append(row)
+    rows.sort(key=lambda r: r["display_name"])
     return rows
 
 
@@ -923,4 +937,5 @@ def build_support_table() -> list[dict]:
             row[format_key] = support_level(instance.arch, sensitive, format_key)
             row[f"{format_key}__reason"] = support_reason(instance.arch, format_key)
         rows.append(row)
+    rows.sort(key=lambda r: r["display_name"])
     return rows

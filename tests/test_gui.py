@@ -83,7 +83,7 @@ class TestLayoutParity:
         app = gui.build_app()
         markdown_values = _markdown_values(app)
         assert any(
-            "Safetensors / CKPT" in v and "GGUF" in v
+            "safetensors / CKPT" in v and "GGUF" in v
             for v in markdown_values
         ), "Convert tab is missing its description Markdown — tab width parity depends on it."
 
@@ -91,7 +91,7 @@ class TestLayoutParity:
         app = gui.build_app()
         markdown_values = _markdown_values(app)
         # Convert tab + Fix Pad Tokens + Fix 5D Tensors + Extract Components descriptions
-        assert any("Safetensors / CKPT" in v for v in markdown_values)
+        assert any("safetensors / CKPT" in v for v in markdown_values)
         assert any("x_pad_token" in v for v in markdown_values)
         assert any("Re-insert 5D tensors" in v for v in markdown_values)
         assert any("Analyze an **SDXL** checkpoint" in v for v in markdown_values)
@@ -313,6 +313,32 @@ def test_support_table_cell_html_uses_the_right_symbol():
     from model_support import SUPPORT_CAUTION, SUPPORT_VERIFIED
     assert "✓" in gui._support_table_cell_html(SUPPORT_VERIFIED)
     assert "⚠" in gui._support_table_cell_html(SUPPORT_CAUTION)
+
+
+def test_css_uses_self_hosted_fonts():
+    for filename in (
+        "NotoSans-Variable.woff2",
+        "JetBrainsMono-Regular.woff2",
+        "JetBrainsMono-Medium.woff2",
+    ):
+        assert (gui._FONTS_DIR / filename).is_file()
+        assert gui._font_file_url(filename) in gui.CSS
+    assert "fonts.googleapis.com" not in gui.CSS
+
+
+def test_css_uses_space_gray_palette_tokens():
+    for token in (
+        "--s2g-bg: #1c1c1e;",
+        "--s2g-surface: #2c2c2e;",
+        "--s2g-text: #f5f5f7;",
+        "--s2g-muted: #98989d;",
+        "--s2g-border: #3a3a3c;",
+        "--s2g-accent: #0a84ff;",
+        "--s2g-support-good: #30d158;",
+        "--s2g-support-caution: #ff9f0a;",
+        "--s2g-support-bad: #ff453a;",
+    ):
+        assert token in gui.CSS
 
 
 def test_apply_support_table_selection_gguf_column():

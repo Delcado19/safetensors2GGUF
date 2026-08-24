@@ -43,6 +43,17 @@ class TestTableFormats:
             "FP8", "FP8_MIXED", "NVFP4", "NVFP4_MIXED",
         }
 
+    def test_headers_include_percentages_from_safetensors_size_ratios(self):
+        from safetensors_quant import _SIZE_RATIOS
+
+        labels = {key: label for label, key in TABLE_FORMATS}
+        assert labels["GGUF"] == "GGUF¹"
+        assert labels["F16"] == "f16"
+        assert labels["F16_MIXED"] == "f16 mix"
+        for key, ratio in _SIZE_RATIOS.items():
+            short = f"{key[:-len('_MIXED')].lower()} mix" if key.endswith("_MIXED") else key.lower()
+            assert labels[key] == f"{short} ~{round((1 - ratio) * 100)}%"
+
 
 class TestSupportLevel:
     def test_gguf_always_verified(self):
@@ -335,6 +346,12 @@ class TestTextEncoderSupport:
         assert keys == {
             "GGUF", "F16", "FP8", "FP8_MIXED", "INT8", "INT8_MIXED", "NVFP4", "NVFP4_MIXED",
         }
+
+    def test_headers_match_diffusion_table_convention(self):
+        diffusion_labels = {key: label for label, key in TABLE_FORMATS}
+        text_encoder_labels = {key: label for label, key in TEXT_ENCODER_TABLE_FORMATS}
+        for key in text_encoder_labels:
+            assert text_encoder_labels[key] == diffusion_labels[key]
 
     def test_every_family_format_pair_has_a_support_level(self):
         for family in TEXT_ENCODER_FAMILY_DISPLAY_NAMES:

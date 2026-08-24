@@ -44,27 +44,19 @@ class TestFormatChoices:
         assert {"Q6_K", "Q5_K_M", "Q4_K_M", "Q4_K_S", "Q3_K_M", "Q2_K"} <= keys
         assert TEXT_ENCODER_SAFETENSORS_FORMATS <= keys
 
-    def test_size_savings_percentages_match_their_source_ratio_tables(self):
-        # Hand-written literals here mirror the two other dropdowns' own
-        # source-of-truth ratio tables -- quantize.py's SIZE_RATIOS for the
-        # GGUF entries (this tab reuses the diffusion-model tab's own
-        # percentages verbatim), safetensors_quant.py's _SIZE_RATIOS for the
-        # safetensors entries -- keeping all three dropdowns from silently
-        # drifting apart.
-        import re
-
-        from quantize import SIZE_RATIOS
-        from safetensors_quant import _SIZE_RATIOS
-
+    def test_labels_use_case_to_distinguish_gguf_and_safetensors(self):
+        gguf_keys = {"F32", "F16", "BF16", "Q8_0", "Q6_K", "Q5_K_M", "Q4_K_M", "Q4_K_S", "Q3_K_M", "Q2_K"}
         for label, key in TEXT_ENCODER_FORMAT_CHOICES:
-            match = re.search(r"(\d+)% smaller than F16", label)
-            if not match:
-                continue
-            ratios = SIZE_RATIOS if key in SIZE_RATIOS else _SIZE_RATIOS
-            expected = round((1 - ratios[key]) * 100)
-            assert int(match.group(1)) == expected, (
-                f"{key!r} label says {match.group(1)}% but its ratio table gives {expected}%"
-            )
+            token = label.split(" · ", 1)[0]
+            assert "(GGUF)" not in label
+            assert "(safetensors)" not in label
+            assert "[lq]" not in label
+            assert "%" not in label
+            if key in gguf_keys:
+                assert token == key
+            else:
+                assert token == token.lower()
+                assert "mixed" not in token
 
 
 class TestEnsureLlamaCpp:

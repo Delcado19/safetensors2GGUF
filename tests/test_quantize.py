@@ -30,36 +30,39 @@ from quantize import (
 # ---------------------------------------------------------------------------
 
 class TestAllQuantChoicesLabels:
-    def test_every_lq_and_python_choice_states_size_savings_except_baseline(self):
-        from quantize import ALL_QUANT_CHOICES
+    def test_labels_are_short_key_description_pairs(self):
         for label, key in ALL_QUANT_CHOICES:
-            if key in ("F16", "BF16"):
-                continue  # baseline / same size as baseline — no % figure
-            assert "smaller than F16" in label or "F16 size" in label, (
-                f"{key!r} label missing a size-savings figure: {label!r}"
-            )
+            assert label.startswith(f"{key} · "), (key, label)
+            assert "smaller than F16" not in label
+            assert "[lq]" not in label
 
     def test_q4_k_m_still_marked_recommended(self):
-        from quantize import ALL_QUANT_CHOICES
         label = next(text for text, key in ALL_QUANT_CHOICES if key == "Q4_K_M")
         assert "recommended" in label
 
-    def test_size_savings_percentages_match_size_ratios(self):
-        # ALL_QUANT_CHOICES' percentages are hand-written literals, not
-        # computed from SIZE_RATIOS -- this is the only thing keeping the two
-        # from silently drifting apart if SIZE_RATIOS is ever recalibrated.
-        import re
-
-        from quantize import ALL_QUANT_CHOICES, SIZE_RATIOS
-
+    def test_no_inline_size_percentages(self):
         for label, key in ALL_QUANT_CHOICES:
-            match = re.search(r"(\d+)% smaller than F16", label)
-            if not match:
-                continue
-            expected = round((1 - SIZE_RATIOS[key]) * 100)
-            assert int(match.group(1)) == expected, (
-                f"{key!r} label says {match.group(1)}% but SIZE_RATIOS gives {expected}%"
-            )
+            assert "%" not in label, f"{key!r} label still has inline size copy: {label!r}"
+
+    def test_gui_llama_quantize_footnote_is_derived_from_registry(self):
+        from gui import _llama_quantize_footnote
+
+        expected_keys = [key for _, key in ALL_QUANT_CHOICES if key in LLAMA_QUANT_KEYS]
+        footnote = _llama_quantize_footnote()
+        assert footnote == f"requires external llama-quantize: {', '.join(expected_keys)}"
+        assert set(expected_keys) == set(LLAMA_QUANT_KEYS)
+
+    def test_gui_gguf_size_footnote_is_derived_from_size_ratios(self):
+        from gui import _gguf_size_reduction_footnote
+
+        expected_parts = [
+            f"{key} ~{round((1 - SIZE_RATIOS[key]) * 100)}%"
+            for _, key in ALL_QUANT_CHOICES
+            if key in SIZE_RATIOS and key not in {"F32", "F16", "BF16"}
+        ]
+        assert _gguf_size_reduction_footnote() == (
+            f"▸ ¹ GGUF size reduction: {', '.join(expected_parts)}"
+        )
 
 
 class TestRegistry:
@@ -87,13 +90,11 @@ class TestRegistry:
         overlap = set(PYTHON_PRECISIONS) & LLAMA_QUANT_KEYS
         assert not overlap, f"Keys appear in both sets: {overlap}"
 
-    def test_lq_label_for_llama_types(self):
+    def test_llama_types_do_not_use_lq_label_marker(self):
         label_map = {k: lbl for lbl, k in ALL_QUANT_CHOICES}
         for key in LLAMA_QUANT_KEYS:
             if key in label_map:
-                assert "[lq]" in label_map[key], (
-                    f"llama-quantize type '{key}' is missing '[lq]' marker in its label"
-                )
+                assert "[lq]" not in label_map[key]
 
     def test_python_precisions_have_gguf_types(self):
         import gguf

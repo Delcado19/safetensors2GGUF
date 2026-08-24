@@ -63,28 +63,18 @@ class TestRegistry:
 
 
 class TestSafetensorsDtypeChoicesLabels:
-    def test_every_lossy_choice_states_size_savings_except_baseline(self):
+    def test_labels_are_lowercase_key_description_pairs(self):
         for label, key in SAFETENSORS_DTYPE_CHOICES:
-            if key in ("F16", "F16_MIXED"):
-                continue  # baseline / architecture-dependent -- no static % figure
-            assert "smaller than F16" in label, f"{key!r} label missing a size-savings figure: {label!r}"
+            token = label.split(" · ", 1)[0]
+            assert token == token.lower(), (key, label)
+            assert "mixed" not in token
+            assert "%" not in label
+            assert "smaller than F16" not in label
 
-    def test_size_savings_percentages_match_size_ratios(self):
-        # Mirrors test_quantize.py's TestAllQuantChoicesLabels: the labels'
-        # percentages are hand-written literals, this is what keeps them
-        # from silently drifting apart from _SIZE_RATIOS.
-        import re
-
-        from safetensors_quant import _SIZE_RATIOS
-
-        for label, key in SAFETENSORS_DTYPE_CHOICES:
-            match = re.search(r"(\d+)% smaller than F16", label)
-            if not match:
-                continue
-            expected = round((1 - _SIZE_RATIOS[key]) * 100)
-            assert int(match.group(1)) == expected, (
-                f"{key!r} label says {match.group(1)}% but _SIZE_RATIOS gives {expected}%"
-            )
+    def test_int8_mixed_still_marked_recommended(self):
+        label = next(text for text, key in SAFETENSORS_DTYPE_CHOICES if key == "INT8_MIXED")
+        assert "int8 mix ·" in label
+        assert "recommended" in label
 
 
 class TestFilenameSuffixFor:

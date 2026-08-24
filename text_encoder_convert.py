@@ -112,20 +112,20 @@ TEXT_ENCODER_OUTTYPES: list[tuple[str, str]] = [
 # list with no separator/disabled-option support (checked against the
 # installed gradio's Dropdown.__init__ signature, 2026-08-14) — a fake
 # separator entry would be selectable and error out downstream, so none is
-# added here; the "(GGUF)"/"(safetensors)" suffix on every label is the
-# grouping cue instead.
+# added here; GGUF keys stay uppercase and safetensors labels start lowercase
+# as the grouping cue instead.
 TEXT_ENCODER_FORMAT_CHOICES: list[tuple[str, str]] = [
     # ── GGUF ────────────────────────────────────────────────────────────
-    ("F32  — Full precision (GGUF)",              "F32"),
-    ("F16  — Half precision · standard (GGUF)",   "F16"),
-    ("BF16 — Brain float 16 (GGUF)",               "BF16"),
-    ("Q8_0 — 8-bit · very high quality · 43% smaller than F16 (GGUF)",   "Q8_0"),
-    ("Q6_K — 6-bit · very high quality · 56% smaller than F16 (GGUF)  [lq]", "Q6_K"),
-    ("Q5_K_M — 5-bit · high quality · 62% smaller than F16 (GGUF)  [lq]",    "Q5_K_M"),
-    ("Q4_K_M — 4-bit · recommended ★ · 67% smaller than F16 (GGUF)  [lq]",   "Q4_K_M"),
-    ("Q4_K_S — 4-bit small · 69% smaller than F16 (GGUF)  [lq]",             "Q4_K_S"),
-    ("Q3_K_M — 3-bit · moderate quality · 73% smaller than F16 (GGUF)  [lq]", "Q3_K_M"),
-    ("Q2_K  — 2-bit · smallest · 79% smaller than F16 (GGUF)  [lq]",         "Q2_K"),
+    ("F32 · full precision, 2× f16 size", "F32"),
+    ("F16 · half precision, standard", "F16"),
+    ("BF16 · brain float16", "BF16"),
+    ("Q8_0 · 8-bit", "Q8_0"),
+    ("Q6_K · 6-bit", "Q6_K"),
+    ("Q5_K_M · 5-bit", "Q5_K_M"),
+    ("Q4_K_M · 4-bit, recommended ★", "Q4_K_M"),
+    ("Q4_K_S · 4-bit, small", "Q4_K_S"),
+    ("Q3_K_M · 3-bit", "Q3_K_M"),
+    ("Q2_K · 2-bit", "Q2_K"),
     # ── Safetensors ─────────────────────────────────────────────────────
     # "F16_ST" (not "F16" -- already taken by the GGUF outtype above, and not
     # "F16_MIXED" -- see _TEXT_ENCODER_SAFETENSORS_TARGET_KEY's docstring for
@@ -143,13 +143,13 @@ TEXT_ENCODER_FORMAT_CHOICES: list[tuple[str, str]] = [
     # a mixed variant here would leave some tensors at their original BF16 --
     # exactly the thing this option exists to eliminate (see
     # _TEXT_ENCODER_SAFETENSORS_TARGET_KEY's docstring above).
-    ("F16 — Half precision (safetensors)",                     "F16_ST"),
-    ("FP8 — float8_e4m3fn scaled · ~43% smaller than F16 (safetensors)",               "FP8"),
-    ("FP8 mixed — FP8 scaled, hiprec tensors stay F32 · usually ~43% smaller than F16 (safetensors)", "FP8_MIXED"),
-    ("INT8 — Tensor-wise INT8, ConvRot-rotated · ~43% smaller than F16 (safetensors)", "INT8"),
-    ("INT8 mixed — INT8/ConvRot, hiprec tensors stay F32 · usually ~43% smaller than F16 (safetensors)", "INT8_MIXED"),
-    ("NVFP4 — NVIDIA FP4, needs Blackwell GPU · ~62% smaller than F16 (safetensors)",  "NVFP4"),
-    ("NVFP4 mixed — NVFP4, hiprec tensors stay F32 · needs Blackwell GPU · usually ~62% smaller than F16 (safetensors)", "NVFP4_MIXED"),
+    ("f16 · half precision", "F16_ST"),
+    ("fp8 · float8_e4m3fn scaled", "FP8"),
+    ("fp8 mix · fp8, hiprec stays F32", "FP8_MIXED"),
+    ("int8 · tensorwise, ConvRot-rotated where possible", "INT8"),
+    ("int8 mix · int8/ConvRot, hiprec stays F32", "INT8_MIXED"),
+    ("nvfp4 · NVIDIA FP4, needs Blackwell GPU", "NVFP4"),
+    ("nvfp4 mix · nvfp4, hiprec stays F32, needs Blackwell GPU", "NVFP4_MIXED"),
 ]
 
 

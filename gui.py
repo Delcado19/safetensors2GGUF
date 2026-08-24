@@ -477,6 +477,23 @@ def annotate_gguf_choices(src: str):
     return gr.update(choices=[tuple(c) for c in ALL_QUANT_CHOICES])
 
 
+def _llama_quantize_footnote() -> str:
+    keys = [key for _, key in ALL_QUANT_CHOICES if key in LLAMA_QUANT_KEYS]
+    return f"requires external llama-quantize: {', '.join(keys)}"
+
+
+def _gguf_size_reduction_footnote() -> str:
+    parts = [
+        f"{key} ~{round((1 - SIZE_RATIOS[key]) * 100)}%"
+        for _, key in ALL_QUANT_CHOICES
+        if key in SIZE_RATIOS and key not in {"F32", "F16", "BF16"}
+    ]
+    return f"▸ ¹ GGUF size reduction: {', '.join(parts)}"
+
+
+_SIZE_BASELINE_NOTE = "All size-reduction percentages below are relative to an FP16 baseline."
+
+
 # Every TEXT_ENCODER_FORMAT_CHOICES GGUF-family key (direct outtypes and
 # K-quants alike) collapses onto TEXT_ENCODER_TABLE_FORMATS' single "GGUF"
 # column -- mirrors annotate_gguf_choices' column_key parameter for the
@@ -698,71 +715,65 @@ _SUPPORT_TABLE_LEGEND_HTML = """
 
 CSS = """
 /* ── Design tokens ─────────────────────────────────────────────────────────
-   Named palette (not Gradio's stock hue presets) + a real type scale.
-   Light values live on :root; dark values re-declare the same names under
-   Gradio's own dark-mode selector (":root.dark, :root .dark" — Gradio toggles
-   a class, not prefers-color-scheme, so that's the selector that must match
-   to stay in sync with the rest of the UI, incl. a manual ?__theme override).
+   Dark Space Gray palette, self-hosted fonts, and a small type scale.
 */
+@font-face {
+    font-family: "Noto Sans";
+    src: url("__NOTO_SANS_FONT_URL__") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "JetBrains Mono";
+    src: url("__JETBRAINS_MONO_REGULAR_URL__") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "JetBrains Mono";
+    src: url("__JETBRAINS_MONO_MEDIUM_URL__") format("woff2");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
 :root {
-    color-scheme: light dark;
+    color-scheme: dark;
 
-    --s2g-bg: #f7f8fa;
-    --s2g-surface: #ffffff;
-    --s2g-line: #d9e0e7;
+    --s2g-bg: #1c1c1e;
+    --s2g-surface: #2c2c2e;
+    --s2g-border: #3a3a3c;
+    --s2g-line: var(--s2g-border);
 
-    --s2g-text: #111827;
-    --s2g-muted: #5f6b7a;
+    --s2g-text: #f5f5f7;
+    --s2g-muted: #98989d;
 
-    --s2g-accent: #0891b2;
-    --s2g-accent-2: #0f766e;
-    --s2g-accent-soft: rgba(8, 145, 178, 0.12);
-    --s2g-danger: #dc2626;
-    --s2g-warn: #b7791f;
-    --s2g-warn-soft: rgba(183, 121, 31, 0.12);
+    --s2g-accent: #0a84ff;
+    --s2g-accent-2: #0a84ff;
+    --s2g-accent-soft: rgba(10, 132, 255, 0.18);
+    --s2g-danger: #ff453a;
+    --s2g-warn: #ff9f0a;
+    --s2g-warn-soft: rgba(255, 159, 10, 0.18);
 
-    /* Support-table cell colors ONLY (verified/caution/bad symbols + legend) --
-       deliberately literal red/yellow/green rather than the teal --s2g-accent
-       used for general UI branding elsewhere, per explicit user request for
-       an unambiguous traffic-light scheme on these two tables specifically. */
-    --s2g-support-good: #16a34a;
-    --s2g-support-caution: #ca8a04;
-    --s2g-support-bad: #dc2626;
+    --s2g-support-good: #30d158;
+    --s2g-support-caution: #ff9f0a;
+    --s2g-support-bad: #ff453a;
 
-    --s2g-shadow: 0 16px 42px -28px rgba(15, 23, 42, 0.45);
+    --s2g-shadow: 0 20px 52px -30px rgba(0, 0, 0, 0.75);
 
-    --font-ui: "Segoe UI Variable", "Aptos", "Segoe UI", system-ui, sans-serif;
-    --font-mono: "Cascadia Mono", "JetBrains Mono", Consolas, ui-monospace, monospace;
+    --font-ui: "Noto Sans", -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "JetBrains Mono", "Cascadia Code", monospace;
 
     --type-display: 1.625rem;  /* app title */
     --type-body: 0.925rem;     /* intro / description text */
     --type-small: 0.8125rem;   /* subtitle, size-info, status */
+    --type-table-header: 1rem;
 
     /* Every Gradio block container (tabs, rows, columns, HTML, Group…) now
        inherits the page background — removes the "floating panel" look
        everywhere except .card, which gets its own explicit surface below. */
     --block-background-fill: var(--background-fill-primary);
-}
-:root.dark, :root .dark {
-    --s2g-bg: #0b0f14;
-    --s2g-surface: #111820;
-    --s2g-line: #26323f;
-
-    --s2g-text: #edf3f8;
-    --s2g-muted: #a7b3bf;
-
-    --s2g-accent: #22d3ee;
-    --s2g-accent-2: #2dd4bf;
-    --s2g-accent-soft: rgba(34, 211, 238, 0.14);
-    --s2g-danger: #f87171;
-    --s2g-warn: #f5b84b;
-    --s2g-warn-soft: rgba(245, 184, 75, 0.14);
-
-    --s2g-support-good: #4ade80;
-    --s2g-support-caution: #fbbf24;
-    --s2g-support-bad: #f87171;
-
-    --s2g-shadow: 0 20px 52px -30px rgba(0, 0, 0, 0.75);
 }
 :root {
     --background-fill-primary: var(--s2g-bg);
@@ -789,10 +800,8 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
 }
 
 /* ── App header / banner ─────────────────────────────────────────────────
-   A technical "compiler console" surface, not a marketing gradient: subtle
-   blueprint grid + a hex-cell motif (matching the ⬡ tab icons), CSS-only
-   (no images/SVG files), tinted with the accent tokens above so it tracks
-   light/dark automatically. */
+   A technical "compiler console" surface with a subtle blueprint grid and
+   hex-cell motif (matching the ⬡ tab icons). */
 #app-header {
     position: relative;
     overflow: hidden;
@@ -834,7 +843,7 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
     max-width: 760px; margin: 0 0 6px 0;
     color: var(--s2g-text);
     font-size: var(--type-display); font-weight: 700; line-height: 1.15;
-    letter-spacing: -0.018em;
+    letter-spacing: 0;
 }
 #app-sub {
     max-width: 780px; margin: 0;
@@ -852,6 +861,29 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
     margin-bottom: 12px !important;
 }
 .intro p { margin: 0 !important; font-size: var(--type-body); color: var(--s2g-muted); }
+.intro ul {
+    list-style: none !important;
+    margin: 6px 0 0 !important;
+    padding: 0 !important;
+}
+.intro li {
+    margin: 2px 0 !important;
+    padding-left: 1.05em !important;
+    position: relative !important;
+    color: var(--s2g-muted);
+    font-size: var(--type-body);
+    font-weight: 400;
+}
+.intro li::before {
+    content: "▸";
+    position: absolute;
+    left: 0;
+    color: var(--s2g-muted);
+    font-weight: 400;
+}
+.intro p {
+    font-weight: 400 !important;
+}
 
 /* ── Per-architecture format recommendation badge (Convert -> Safetensors) ─ */
 .fmt-hint { min-height: 0 !important; }
@@ -868,7 +900,7 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
 .block:has(> .form.card), .block:has(> .card) {
     border: none !important;
     box-shadow: none !important;
-    background: transparent !important;
+    background: var(--s2g-surface) !important;
     padding: 0 !important;
 }
 
@@ -912,6 +944,9 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
 .browse-col button {
     width: 100% !important;
 }
+.action-row {
+    width: 100% !important;
+}
 .path-input {
     min-width: 0 !important;
 }
@@ -923,6 +958,44 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
 
 /* ── Size estimate ──────────────────────────────────────────────────────── */
 #size-info { font-size: var(--type-small); color: var(--s2g-muted); padding-top: 8px; }
+
+select, option, .support-matrix th:not(:first-child), .support-matrix td:not(:first-child) {
+    font-family: var(--font-mono) !important;
+    text-align: center !important;
+}
+/* The header row is a real <table><thead><th> (Gradio centers it correctly
+   via .cell-wrap/.header-content flex containers, confirmed working) -- but
+   the BODY rows are a completely separate virtualized-scroll implementation
+   (.virtual-body > .virtual-row > .body-cell > .cell-wrap > span.wrap),
+   never actual <td> elements, so every ".support-matrix td" rule above/below
+   silently matched nothing there. Found by walking the real elementFromPoint
+   ancestor chain at the checkmark's painted screen position after DOM
+   queries and photographing the rendered page kept disagreeing -- the
+   innermost span.wrap is a plain `display:block` element (not flex) with
+   `text-align:left`, so it just needs text-align:center, no justify-content
+   involved. font-family is set here too since the old td-based mono-font
+   rule never reached these cells either (harmless either way, but keeps the
+   percentage/symbol columns visually consistent with the header). */
+.support-matrix .body-cell:not(:first-child) .wrap {
+    text-align: center !important;
+    font-family: var(--font-mono) !important;
+}
+.support-matrix th:first-child, .support-matrix td:first-child,
+.support-matrix .body-cell:first-child .wrap {
+    font-family: var(--font-ui) !important;
+    text-align: left !important;
+}
+.support-matrix th {
+    font-size: var(--type-table-header) !important;
+    font-weight: 600 !important;
+    vertical-align: middle !important;
+}
+.support-matrix th:not(:first-child) {
+    min-width: 90px;
+}
+.support-matrix th:first-child, .support-matrix td:first-child {
+    min-width: 220px;
+}
 
 /* ── Status textbox: Gradio default styling, no custom border colour ─────── */
 #conv-status, #pad-status, #fix-status, #extract-status, #st-status {
@@ -939,19 +1012,42 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
 }
 
 /* ── Action buttons ─────────────────────────────────────────────────────── */
-#convert-btn, #fix-pad-btn, #fix-5d-btn, #extract-btn, #st-convert-btn {
-    min-height: 44px !important; font-size: 1em !important; font-weight: 600 !important;
+button, .gr-button {
+    min-height: 34px !important;
+    padding: 6px 14px !important;
+    font-size: var(--type-small) !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--s2g-border) !important;
+    background: var(--s2g-surface) !important;
+    color: var(--s2g-text) !important;
+    box-shadow: none !important;
+}
+button:hover, .gr-button:hover {
+    filter: brightness(1.12);
+}
+button.primary, .gr-button.primary, button[class*="primary"], .gr-button[class*="primary"] {
+    background: var(--s2g-accent) !important;
+    border-color: var(--s2g-accent) !important;
+    color: #fff !important;
+}
+button.stop, .gr-button.stop, button[class*="stop"], .gr-button[class*="stop"] {
+    background: var(--s2g-danger) !important;
+    border-color: var(--s2g-danger) !important;
+    color: #fff !important;
+}
+#convert-btn, #fix-pad-btn, #fix-5d-btn, #extract-btn, #st-convert-btn, #te-convert-btn, #hf-download-btn {
+    min-height: 34px !important; font-size: var(--type-small) !important; font-weight: 600 !important;
     transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1) !important;
 }
-#convert-btn:active, #fix-pad-btn:active, #fix-5d-btn:active, #extract-btn:active, #st-convert-btn:active {
+#convert-btn:active, #fix-pad-btn:active, #fix-5d-btn:active, #extract-btn:active, #st-convert-btn:active, #te-convert-btn:active, #hf-download-btn:active {
     transform: scale(0.98);
 }
-#cancel-btn, #st-cancel-btn { min-height: 44px !important; }
-#cancel-btn button, #cancel-btn, #st-cancel-btn button, #st-cancel-btn {
+#cancel-btn, #st-cancel-btn, #te-cancel-btn, #hf-cancel-btn { min-height: 34px !important; }
+#cancel-btn button, #cancel-btn, #st-cancel-btn button, #st-cancel-btn, #te-cancel-btn button, #te-cancel-btn, #hf-cancel-btn button, #hf-cancel-btn {
     background: var(--s2g-danger) !important; border-color: var(--s2g-danger) !important; color: #fff !important;
     border-radius: 8px !important;
 }
-#cancel-btn button:hover, #cancel-btn:hover, #st-cancel-btn button:hover, #st-cancel-btn:hover { filter: brightness(0.9); }
+#cancel-btn button:hover, #cancel-btn:hover, #st-cancel-btn button:hover, #st-cancel-btn:hover, #te-cancel-btn button:hover, #te-cancel-btn:hover, #hf-cancel-btn button:hover, #hf-cancel-btn:hover { filter: brightness(0.92); }
 
 /* ── Log areas ──────────────────────────────────────────────────────────── */
 #conv-log textarea, #pad-log textarea, #fix-log textarea, #extract-log textarea, #st-log textarea {
@@ -973,26 +1069,41 @@ def _load_header_logo_data_uri() -> str:
         return ""
 
 
-CSS = CSS.replace("__HEADER_LOGO_DATA_URI__", _load_header_logo_data_uri())
+_FONTS_DIR = Path(__file__).parent / "assets" / "fonts"
+
+
+def _font_file_url(filename: str) -> str:
+    """Serve local font files through Gradio's file route; launch() allows
+    the assets/fonts directory below. The route lives at /gradio_api/file=
+    (gradio.route_utils.API_PREFIX), not bare /file= -- the latter 404s
+    silently (generic FastAPI "no route matched", not even reaching Gradio's
+    own allowed_paths check), which is why every font request failed and the
+    browser fell back to a system monospace font whose glyph metrics don't
+    match JetBrains Mono's, throwing off checkmark centering that measured
+    correctly in the DOM but never matched what was actually painted."""
+    return "/gradio_api/file=" + (_FONTS_DIR / filename).as_posix()
+
+
+CSS = (
+    CSS.replace("__HEADER_LOGO_DATA_URI__", _load_header_logo_data_uri())
+    .replace("__NOTO_SANS_FONT_URL__", _font_file_url("NotoSans-Variable.woff2"))
+    .replace("__JETBRAINS_MONO_REGULAR_URL__", _font_file_url("JetBrainsMono-Regular.woff2"))
+    .replace("__JETBRAINS_MONO_MEDIUM_URL__", _font_file_url("JetBrainsMono-Medium.woff2"))
+)
 
 _THEME = gr.themes.Default(
     primary_hue="cyan",
     secondary_hue="teal",
     neutral_hue="zinc",
-    # Segoe UI Variable / Aptos are Windows-native (no CDN fetch needed, matches
-    # the app's telemetry-off / no-outbound-requests-at-startup policy above);
-    # both fall back to Inter-equivalent system stacks where unavailable.
-    font=["Segoe UI Variable", "Aptos", "Segoe UI", "system-ui", "sans-serif"],
-    font_mono=["Cascadia Mono", "JetBrains Mono", "Consolas", "ui-monospace", "monospace"],
+    # Local @font-face rules above keep startup network-free; theme stacks mirror them.
+    font=["Noto Sans", "-apple-system", "Segoe UI", "sans-serif"],
+    font_mono=["JetBrains Mono", "Cascadia Code", "monospace"],
 )
 
 _HEADER_HTML = """
 <div id="app-header">
   <div id="app-title">⬡ safetensors → GGUF</div>
-  <div id="app-sub">Convert model checkpoints to GGUF &nbsp;·&nbsp;
-    <strong>llama.cpp</strong> / <strong>ComfyUI-GGUF</strong> &nbsp;·&nbsp;
-    Types marked <strong>[lq]</strong> require the llama-quantize binary.
-  </div>
+  <div id="app-sub">Convert model checkpoints to GGUF.</div>
 </div>
 """
 
@@ -1749,6 +1860,8 @@ def build_app() -> gr.Blocks:
     """Construct and return the Gradio Blocks application."""
     default_exe = str(find_exe() or "")
     default_exe_info = llama_quantize_info(default_exe)
+    llama_quantize_footnote = _llama_quantize_footnote()
+    gguf_size_footnote = _gguf_size_reduction_footnote()
 
     with gr.Blocks(title="safetensors → GGUF") as app:
         gr.HTML(_HEADER_HTML)
@@ -1758,10 +1871,12 @@ def build_app() -> gr.Blocks:
             # ── Convert → GGUF ─────────────────────────────────────────────
             with gr.Tab("⬡ Convert → GGUF", id=0):
                 gr.Markdown(
-                    "Convert a **Safetensors / CKPT** model checkpoint to **GGUF**.  "
-                    "Python-native precisions write directly; K-quants run a 2-step "
-                    "pipeline via the bundled `llama-quantize` binary.  5D-tensor and "
-                    "pad-token fixes are chained automatically when needed.",
+                    "Convert a **safetensors / CKPT** model checkpoint to **GGUF**.\n\n"
+                    "- Compatible with llama.cpp / ComfyUI-GGUF.\n"
+                    "- Python-native precisions write directly.\n"
+                    "- K-quants run a 2-step pipeline via `llama-quantize`.\n"
+                    "- 5D-tensor and pad-token fixes are chained automatically when needed.\n"
+                    f"- {llama_quantize_footnote}",
                     elem_classes=["intro"],
                 )
                 with gr.Column(elem_classes=["card"]):
@@ -1800,7 +1915,7 @@ def build_app() -> gr.Blocks:
                                 lines=1,
                                 max_lines=1,
                                 interactive=False,
-                                info="Required for [lq] types. Auto-detected from Easy-Install, LLAMA_QUANTIZE_PATH, or PATH.",
+                                info="Required for K-quants. Auto-detected from Easy-Install, LLAMA_QUANTIZE_PATH, or PATH.",
                             )
                         with gr.Column(scale=0, min_width=124, elem_classes=["browse-col"]):
                             browse_llama_btn = gr.Button("Browse", size="sm")
@@ -1823,7 +1938,7 @@ def build_app() -> gr.Blocks:
                         keep_intermediate = gr.Checkbox(label="Keep F16 intermediate", value=False)
                         overwrite_conv = gr.Checkbox(label="Overwrite existing output", value=False)
 
-                with gr.Row():
+                with gr.Row(elem_classes=["action-row"]):
                     convert_btn = gr.Button("▶  Convert", variant="primary", scale=5, elem_id="convert-btn")
                     cancel_btn  = gr.Button("✕",          variant="stop",    scale=1, elem_id="cancel-btn")
 
@@ -1839,22 +1954,15 @@ def build_app() -> gr.Blocks:
             # ── Convert → Safetensors ──────────────────────────────────────
             with gr.Tab("⬢ Convert → Safetensors", id=1):
                 gr.Markdown(
-                    "Convert a **Safetensors / CKPT** model checkpoint to a quantized "
-                    "**Safetensors** file — no GGUF, no llama-quantize. INT8 uses "
-                    "ComfyUI's `int8_tensorwise` convention (per-layer `weight_scale`), "
-                    "rotating each weight with a block-Hadamard transform (ConvRot) "
-                    "before quantizing where the input dimension allows it — loads "
-                    "natively in ComfyUI without the GGUF loader node. FP8 writes the "
-                    "same \"scaled fp8_e4m3fn\" convention already common on Civitai/"
-                    "HuggingFace and defaults to `full_precision_matrix_mult=true`, "
-                    "which makes ComfyUI skip its dynamic activation-quantization "
-                    "compute path entirely. NVFP4 (NVIDIA's own 4-bit float, needs a "
-                    "Blackwell GPU — not the same algorithm as bitsandbytes' NF4) gets "
-                    "the same `full_precision_nvfp4` safe-mode default. MXFP8 is still "
-                    "not offered: ComfyUI dynamically quantizes *activations* too for "
-                    "that format, which produced visibly wrong output on Lumina2/"
-                    "Z-Image in our testing — INT8 only quantizes weights, avoiding "
-                    "that entirely (docs/issues_analysis.md #15, #16, #17).",
+                    "Convert a **safetensors / CKPT** model checkpoint to a quantized "
+                    "**safetensors** file.\n\n"
+                    "- No GGUF and no llama-quantize.\n"
+                    "- int8 uses ComfyUI's `int8_tensorwise` convention with per-layer `weight_scale`.\n"
+                    "- ConvRot rotates weights before int8 quantization when input dimensions allow it.\n"
+                    "- fp8 writes the common scaled `fp8_e4m3fn` format and sets `full_precision_matrix_mult=true`.\n"
+                    "- nvfp4 is NVIDIA's 4-bit float, needs a Blackwell GPU, is not bitsandbytes NF4, and uses `full_precision_nvfp4` safe mode.\n"
+                    "- Microscaling MXFP8 (a distinct block-scaled fp8 variant, unrelated to fp8/fp8 mix above) is not offered: ComfyUI dynamically quantizes activations for it too, which produced visibly wrong output in testing (Lumina2/Z-Image).\n"
+                    "- These files load natively in ComfyUI without the GGUF loader node.",
                     elem_classes=["intro"],
                 )
                 with gr.Column(elem_classes=["card"]):
@@ -1888,7 +1996,7 @@ def build_app() -> gr.Blocks:
                 st_format_info = gr.Markdown("", elem_id="st-format-info", elem_classes=["fmt-hint"])
                 st_size_info = gr.Markdown("", elem_id="size-info")
 
-                with gr.Row():
+                with gr.Row(elem_classes=["action-row"]):
                     st_convert_btn = gr.Button("▶  Convert", variant="primary", scale=5, elem_id="st-convert-btn")
                     st_cancel_btn  = gr.Button("✕",          variant="stop",    scale=1, elem_id="st-cancel-btn")
 
@@ -1936,22 +2044,14 @@ def build_app() -> gr.Blocks:
             # ── Convert Text Encoder ─────────────────────────────────────────
             with gr.Tab("✎ Convert Text Encoder", id=2):
                 gr.Markdown(
-                    "Convert a **bare single-file text-encoder checkpoint** (Qwen3, "
-                    "Mistral, T5/UMT5, …) to GGUF or quantized safetensors.\n\n"
-                    "**GGUF formats** (F32/F16/BF16/Q8_0/K-quants) need the base "
-                    "model's `config.json`/tokenizer files — downloaded automatically "
-                    "from the HuggingFace repo ID you provide (the **original base "
-                    "model's** repo, not the fine-tune's, which usually doesn't have "
-                    "one). Runs `convert_hf_to_gguf.py` from an auto-cloned llama.cpp "
-                    "checkout (first run downloads it, needs `git` + internet). "
-                    "K-quants (Q6_K…Q2_K) additionally build a **plain** llama-quantize "
-                    "from that checkout via `cmake` on first use — needs `cmake` + a "
-                    "C++ compiler. This is deliberately a different binary than the "
-                    "City96-patched one used for diffusion models (see "
-                    "docs/building-llama-quantize.md) — that patch isn't safe for LLM/text GGUFs.\n\n"
-                    "**FP8/NVFP4 formats** write a quantized `.safetensors` file "
-                    "instead — no base repo ID, no HuggingFace download, no llama.cpp "
-                    "involved at all.",
+                    "Convert a **bare single-file text-encoder checkpoint** to GGUF or quantized safetensors.\n\n"
+                    "- Supports Qwen3, Mistral, T5/UMT5, CLIP, and the vendored families this tool can fingerprint.\n"
+                    "- GGUF formats need the original base model's `config.json` and tokenizer files, not the fine-tune repo.\n"
+                    "- GGUF uses `convert_hf_to_gguf.py` from an auto-cloned llama.cpp checkout; first run needs `git` and internet.\n"
+                    "- K-quants build a plain llama-quantize via `cmake` on first use; needs `cmake` and a C++ compiler.\n"
+                    "- This is not the City96-patched diffusion-model binary; that patch is unsafe for LLM/text GGUFs.\n"
+                    f"- {llama_quantize_footnote}\n"
+                    "- FP8/NVFP4 formats write `.safetensors` instead: no base repo ID, HuggingFace download, or llama.cpp.",
                     elem_classes=["intro"],
                 )
                 with gr.Column(elem_classes=["card"]):
@@ -1984,7 +2084,7 @@ def build_app() -> gr.Blocks:
                     )
                 te_size_info = gr.Markdown("", elem_id="size-info")
 
-                with gr.Row():
+                with gr.Row(elem_classes=["action-row"]):
                     te_convert_btn = gr.Button("▶  Convert", variant="primary", scale=5, elem_id="te-convert-btn")
                     te_cancel_btn  = gr.Button("✕",          variant="stop",    scale=1, elem_id="te-cancel-btn")
 
@@ -2109,109 +2209,101 @@ def build_app() -> gr.Blocks:
 
             # ── Extract Components ─────────────────────────────────────────
             with gr.Tab("▤ Extract Components", id=5):
-                gr.Markdown(
-                    "Analyze an **SDXL** checkpoint for embedded VAE, CLIP-L, and CLIP-G "
-                    "components, compare them with local standard files when present, "
-                    "then export selected components to the ComfyUI models folder.",
-                    elem_classes=["intro"],
-                )
-                with gr.Column(elem_classes=["card"]):
-                    with gr.Row(equal_height=False):
-                        with gr.Column(scale=5, elem_classes=["path-input"]):
-                            extract_src = gr.Textbox(
-                                label="Source checkpoint",
-                                placeholder="SDXL .safetensors checkpoint",
-                                lines=1, max_lines=1,
-                            )
-                        with gr.Column(scale=0, min_width=124, elem_classes=["browse-col"]):
-                            browse_extract_src_btn = gr.Button("Browse", size="sm")
-                    with gr.Row(equal_height=False):
-                        with gr.Column(scale=5, elem_classes=["path-input"]):
-                            extract_root = gr.Textbox(
-                                label="ComfyUI models root",
-                                placeholder="Auto-detected from source path",
-                                lines=1, max_lines=1,
-                            )
-                        with gr.Column(scale=0, min_width=124, elem_classes=["browse-col"]):
-                            browse_extract_root_btn = gr.Button("Browse", size="sm")
-                    with gr.Row():
-                        extract_vae = gr.Checkbox(label="VAE", value=False)
-                        extract_clip_l = gr.Checkbox(label="CLIP-L", value=True)
-                        extract_clip_g = gr.Checkbox(label="CLIP-G", value=True)
-                    overwrite_extract = gr.Checkbox(label="Overwrite existing output", value=False)
-
-                with gr.Row():
-                    analyze_components_btn = gr.Button("Analyze", variant="secondary", scale=1)
-                    extract_components_btn = gr.Button(
-                        "▶  Extract Selected",
-                        variant="primary",
-                        scale=2,
-                        elem_id="extract-btn",
-                    )
-
-                extract_status = gr.Textbox(
-                    value="Ready", show_label=False, interactive=False,
-                    lines=1, max_lines=1, elem_id="extract-status",
-                )
-                extract_log = gr.Textbox(
-                    label="Analysis / Log", lines=10, max_lines=12,
-                    interactive=False, autoscroll=False, elem_id="extract-log",
-                )
-
-                gr.Markdown(
-                    "**Diffusion model (UNet)** — the components above only "
-                    "cover VAE/CLIP; the checkpoint's diffusion model itself "
-                    "is extracted here, run through the same GGUF or "
-                    "Safetensors conversion as the Convert tabs, and written "
-                    "to `diffusion_models/` (load with **UNETLoader**, not "
-                    "CheckpointLoader).",
-                    elem_classes=["intro"],
-                )
-                with gr.Column(elem_classes=["card"]):
-                    with gr.Row(equal_height=False):
-                        extract_gguf_quant = gr.Dropdown(
-                            choices=ALL_QUANT_CHOICES, value="Q4_K_M",
-                            label="GGUF quantization", scale=3,
+                with gr.Row(equal_height=False):
+                    with gr.Column(scale=1):
+                        gr.Markdown(
+                            "Analyze an **SDXL** checkpoint for embedded VAE, CLIP-L, and CLIP-G "
+                            "components, compare them with local standard files when present, "
+                            "then export selected components to the ComfyUI models folder.",
+                            elem_classes=["intro"],
                         )
-                        extract_gguf_btn = gr.Button("▶  Extract as GGUF", scale=2)
-                    with gr.Row(equal_height=False):
-                        extract_st_fmt = gr.Dropdown(
-                            choices=SAFETENSORS_DTYPE_CHOICES, value="INT8_MIXED",
-                            label="Safetensors format", scale=3,
-                        )
-                        extract_st_btn = gr.Button("▶  Extract as Safetensors", scale=2)
+                        with gr.Column(elem_classes=["card"]):
+                            with gr.Row(equal_height=False):
+                                with gr.Column(scale=5, elem_classes=["path-input"]):
+                                    extract_src = gr.Textbox(
+                                        label="Source checkpoint",
+                                        placeholder="SDXL .safetensors checkpoint",
+                                        lines=1, max_lines=1,
+                                    )
+                                with gr.Column(scale=0, min_width=124, elem_classes=["browse-col"]):
+                                    browse_extract_src_btn = gr.Button("Browse", size="sm")
+                            with gr.Row(equal_height=False):
+                                with gr.Column(scale=5, elem_classes=["path-input"]):
+                                    extract_root = gr.Textbox(
+                                        label="ComfyUI models root",
+                                        placeholder="Auto-detected from source path",
+                                        lines=1, max_lines=1,
+                                    )
+                                with gr.Column(scale=0, min_width=124, elem_classes=["browse-col"]):
+                                    browse_extract_root_btn = gr.Button("Browse", size="sm")
+                            with gr.Row():
+                                extract_vae = gr.Checkbox(label="VAE", value=False)
+                                extract_clip_l = gr.Checkbox(label="CLIP-L", value=True)
+                                extract_clip_g = gr.Checkbox(label="CLIP-G", value=True)
+                            overwrite_extract = gr.Checkbox(label="Overwrite existing output", value=False)
 
-                extract_diffusion_status = gr.Textbox(
-                    value="Ready", show_label=False, interactive=False,
-                    lines=1, max_lines=1, elem_id="extract-diffusion-status",
-                )
-                extract_diffusion_log = gr.Textbox(
-                    label="Log", lines=10, max_lines=10,
-                    interactive=False, autoscroll=False, elem_id="extract-diffusion-log",
-                )
+                        with gr.Row(elem_classes=["action-row"]):
+                            analyze_components_btn = gr.Button("Analyze", variant="secondary", scale=1)
+                            extract_components_btn = gr.Button(
+                                "▶  Extract Selected",
+                                variant="primary",
+                                scale=2,
+                                elem_id="extract-btn",
+                            )
+
+                        extract_status = gr.Textbox(
+                            value="Ready", show_label=False, interactive=False,
+                            lines=1, max_lines=1, elem_id="extract-status",
+                        )
+                        extract_log = gr.Textbox(
+                            label="Analysis / Log", lines=10, max_lines=12,
+                            interactive=False, autoscroll=False, elem_id="extract-log",
+                        )
+
+                    with gr.Column(scale=1):
+                        gr.Markdown(
+                            "**Diffusion model (UNet)** — the components above only "
+                            "cover VAE/CLIP; the checkpoint's diffusion model itself "
+                            "is extracted here, run through the same GGUF or "
+                            "safetensors conversion as the Convert tabs, and written "
+                            "to `diffusion_models/` (load with **UNETLoader**, not "
+                            "CheckpointLoader).",
+                            elem_classes=["intro"],
+                        )
+                        with gr.Column(elem_classes=["card"]):
+                            with gr.Row(equal_height=False):
+                                extract_gguf_quant = gr.Dropdown(
+                                    choices=ALL_QUANT_CHOICES, value="Q4_K_M",
+                                    label="GGUF quantization", scale=3,
+                                )
+                                extract_gguf_btn = gr.Button("▶  Extract as GGUF", scale=2)
+                            with gr.Row(equal_height=False):
+                                extract_st_fmt = gr.Dropdown(
+                                    choices=SAFETENSORS_DTYPE_CHOICES, value="INT8_MIXED",
+                                    label="Safetensors format", scale=3,
+                                )
+                                extract_st_btn = gr.Button("▶  Extract as Safetensors", scale=2)
+
+                        extract_diffusion_status = gr.Textbox(
+                            value="Ready", show_label=False, interactive=False,
+                            lines=1, max_lines=1, elem_id="extract-diffusion-status",
+                        )
+                        extract_diffusion_log = gr.Textbox(
+                            label="Log", lines=10, max_lines=10,
+                            interactive=False, autoscroll=False, elem_id="extract-diffusion-log",
+                        )
 
             # ── Download from HuggingFace ────────────────────────────────────
             with gr.Tab("⇩ Download from HF", id=7):
                 gr.Markdown(
                     "Download a model repo from HuggingFace and merge it into a "
-                    "**single .safetensors file** — even if the repo ships it split "
-                    "across multiple shards (`model-00001-of-0000N.safetensors`, "
-                    "…). The shards are downloaded to a throwaway temp folder and "
-                    "deleted once merged; only the merged file is left behind, "
-                    "ready to feed into the Convert tabs above. If the repo ships "
-                    "more than one checkpoint side by side (e.g. an old and a "
-                    "\"V2\" variant, each in its own subfolder), Download will "
-                    "list the available subfolders instead of guessing — pick "
-                    "one and re-run. Cancelling or an error leaves the partial "
-                    "shards in place (same repo ID + subfolder), so clicking "
-                    "Download again resumes instead of starting over — cancel "
-                    "only takes effect between shards, not mid-transfer. If a "
-                    "downloaded text encoder renders garbled/noisy output "
-                    "despite loading without errors, the checkpoint's weights "
-                    "may just be numerically unstable in its native BF16 — "
-                    "try converting it to **F16** on the Convert Text Encoder "
-                    "tab (a precision cast, not quantization) before assuming "
-                    "the download is broken.",
+                    "**single .safetensors file**.\n\n"
+                    "- Split shards (`model-00001-of-0000N.safetensors`, …) are merged automatically.\n"
+                    "- Shards download to a throwaway temp folder; only the merged file remains.\n"
+                    "- Multiple checkpoint variants in separate subfolders are listed instead of guessed; pick one and re-run.\n"
+                    "- Cancelling or an error leaves partial shards in place; re-running the same repo ID/subfolder resumes instead of restarting.\n"
+                    "- Cancel only takes effect between shards, not mid-transfer.\n"
+                    "- Garbled/noisy output from a downloaded text encoder despite loading fine may mean BF16 numerical instability; try converting to F16 on the Convert Text Encoder tab first.",
                     elem_classes=["intro"],
                 )
                 with gr.Column(elem_classes=["card"]):
@@ -2236,7 +2328,7 @@ def build_app() -> gr.Blocks:
                             browse_hf_dest_btn = gr.Button("Browse", size="sm")
                     overwrite_hf = gr.Checkbox(label="Overwrite existing output", value=False)
 
-                with gr.Row():
+                with gr.Row(elem_classes=["action-row"]):
                     hf_download_btn = gr.Button("▶  Download", variant="primary", scale=5, elem_id="hf-download-btn")
                     hf_cancel_btn   = gr.Button("✕",           variant="stop",    scale=1, elem_id="hf-cancel-btn")
 
@@ -2263,7 +2355,9 @@ def build_app() -> gr.Blocks:
                 gr.Markdown(
                     "Which quantization formats this tool supports for each "
                     "detectable architecture. Click a cell to jump to the "
-                    "matching Convert tab with that format pre-selected.",
+                    "matching Convert tab with that format pre-selected.\n\n"
+                    f"{_SIZE_BASELINE_NOTE}\n\n"
+                    f"{gguf_size_footnote}",
                     elem_classes=["intro"],
                 )
                 support_table = gr.Dataframe(
@@ -2273,6 +2367,8 @@ def build_app() -> gr.Blocks:
                     value=_support_table_rows_for_dataframe(),
                     interactive=False,
                     wrap=True,
+                    max_height=900,
+                    elem_classes=["support-matrix"],
                 )
                 gr.HTML(_SUPPORT_TABLE_LEGEND_HTML)
                 gr.Markdown(
@@ -2289,6 +2385,8 @@ def build_app() -> gr.Blocks:
                     value=_text_encoder_support_rows_for_dataframe(),
                     interactive=False,
                     wrap=True,
+                    max_height=600,
+                    elem_classes=["support-matrix"],
                 )
                 gr.HTML(_SUPPORT_TABLE_LEGEND_HTML)
 
@@ -2393,4 +2491,9 @@ if __name__ == "__main__":
         theme=_THEME,
         css=CSS,
         head=_SCROLL_BLOCK_HEAD,
+        # str, not Path: Gradio matches this against the request path as a
+        # plain string, and Path's Windows str() uses backslashes while the
+        # /file= URLs above are built with .as_posix() (forward slashes) --
+        # a Path here silently never matches, 404-ing every font request.
+        allowed_paths=[str(_FONTS_DIR)],
     )

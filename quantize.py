@@ -44,21 +44,17 @@ LLAMA_QUANT_KEYS: frozenset[str] = frozenset({
 
 # Ordered choices for the UI dropdown: (display label, key)
 # Covers the types that are practical for ComfyUI-GGUF diffusion models.
-# Size-savings percentages are hand-computed from SIZE_RATIOS below (1 -
-# ratio, rounded to the nearest percent) as string literals, not derived at
-# runtime -- tests.test_quantize.TestAllQuantChoicesLabels checks they stay
-# in sync if SIZE_RATIOS is ever recalibrated.
 ALL_QUANT_CHOICES: list[tuple[str, str]] = [
-    ("F32  — Full precision · 2× F16 size",                                  "F32"),
-    ("F16  — Half precision · standard",                                     "F16"),
-    ("BF16 — Brain float 16 · same size as F16",                             "BF16"),
-    ("Q8_0 — 8-bit · very high quality · 43% smaller than F16",              "Q8_0"),
-    ("Q6_K — 6-bit · very high quality · 56% smaller than F16  [lq]",        "Q6_K"),
-    ("Q5_K_M — 5-bit · high quality · 62% smaller than F16  [lq]",           "Q5_K_M"),
-    ("Q4_K_M — 4-bit · recommended ★ · 67% smaller than F16  [lq]",          "Q4_K_M"),
-    ("Q4_K_S — 4-bit small · 69% smaller than F16  [lq]",                    "Q4_K_S"),
-    ("Q3_K_M — 3-bit · moderate quality · 73% smaller than F16  [lq]",       "Q3_K_M"),
-    ("Q2_K  — 2-bit · smallest · 79% smaller than F16  [lq]",                "Q2_K"),
+    ("F32 · full precision, 2× f16 size", "F32"),
+    ("F16 · half precision, standard", "F16"),
+    ("BF16 · brain float16", "BF16"),
+    ("Q8_0 · 8-bit", "Q8_0"),
+    ("Q6_K · 6-bit", "Q6_K"),
+    ("Q5_K_M · 5-bit", "Q5_K_M"),
+    ("Q4_K_M · 4-bit, recommended ★", "Q4_K_M"),
+    ("Q4_K_S · 4-bit, small", "Q4_K_S"),
+    ("Q3_K_M · 3-bit", "Q3_K_M"),
+    ("Q2_K · 2-bit", "Q2_K"),
 ]
 
 # ── File-level size ratios (used as fallback for non-safetensors sources) ──────
