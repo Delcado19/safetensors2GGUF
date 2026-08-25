@@ -949,6 +949,11 @@ html, body { overflow-anchor: none !important; scroll-behavior: auto !important;
 .action-row {
     width: auto !important;
     justify-content: flex-start !important;
+    /* Sits outside .card as a sibling, so it starts flush with the card's
+       outer border by default -- 31px matches the card's own 18px padding
+       plus Gradio's ~13px built-in label/input inset, so the button row
+       lines up under "Source model" etc. instead of sitting further left. */
+    margin-left: 31px !important;
 }
 .action-row > button {
     flex-grow: 0 !important;
@@ -1020,18 +1025,23 @@ select, option, .support-matrix th:not(:first-child), .support-matrix td:not(:fi
 }
 
 /* ── Action buttons ─────────────────────────────────────────────────────── */
+/* Secondary/neutral buttons (Browse, Analyze, Detect llama-quantize, Extract
+   as GGUF/Safetensors, ...) get an accent-tinted outline instead of a flat
+   surface-colored fill -- a gray-on-dark button was nearly invisible
+   against the rest of the dark UI. */
 button, .gr-button {
     min-height: 34px !important;
     padding: 6px 14px !important;
     font-size: var(--type-small) !important;
+    font-weight: 600 !important;
     border-radius: 8px !important;
-    border: 1px solid var(--s2g-border) !important;
-    background: var(--s2g-surface) !important;
-    color: var(--s2g-text) !important;
+    border: 1px solid var(--s2g-accent) !important;
+    background: var(--s2g-accent-soft) !important;
+    color: var(--s2g-accent) !important;
     box-shadow: none !important;
 }
 button:hover, .gr-button:hover {
-    filter: brightness(1.12);
+    filter: brightness(1.25);
 }
 button.primary, .gr-button.primary, button[class*="primary"], .gr-button[class*="primary"] {
     background: var(--s2g-accent) !important;
@@ -2163,7 +2173,8 @@ def build_app() -> gr.Blocks:
                     )
                     overwrite_fix_pad = gr.Checkbox(label="Overwrite existing output", value=False)
 
-                fix_pad_btn = gr.Button("▶  Fix Pad Tokens", variant="primary", elem_id="fix-pad-btn")
+                with gr.Row(elem_classes=["action-row"]):
+                    fix_pad_btn = gr.Button("▶  Fix Pad Tokens", variant="primary", elem_id="fix-pad-btn")
 
                 fix_pad_status = gr.Textbox(
                     value="Ready", show_label=False, interactive=False,
@@ -2204,7 +2215,8 @@ def build_app() -> gr.Blocks:
                     )
                     overwrite_fix = gr.Checkbox(label="Overwrite existing output", value=False)
 
-                fix_btn = gr.Button("▶  Fix 5D Tensors", variant="primary", elem_id="fix-5d-btn")
+                with gr.Row(elem_classes=["action-row"]):
+                    fix_btn = gr.Button("▶  Fix 5D Tensors", variant="primary", elem_id="fix-5d-btn")
 
                 fix_status = gr.Textbox(
                     value="Ready", show_label=False, interactive=False,
