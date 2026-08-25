@@ -71,7 +71,6 @@ class TestStreamingPrimitives:
         assert header["__metadata__"] == {"foo": "bar"}
 
     def test_write_header_roundtrips_via_safe_open(self, tmp_path):
-        import struct
         from convert_safetensors import _build_header, _write_header
         header, total = _build_header([("a.weight", "F16", (2,))], {"foo": "bar"})
         path = tmp_path / "hdr_test.safetensors"

@@ -18,7 +18,6 @@ from models.architectures import (
     ModelHyVid,
     ModelLTXV,
     ModelLumina2,
-    CosmosPredict2,
     ModelQwenImage,
     ModelSD1,
     ModelSD3,
