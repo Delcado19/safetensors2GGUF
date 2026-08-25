@@ -78,6 +78,14 @@ class TestSupportLevel:
         assert row["GGUF"] == SUPPORT_BAD
         assert row["GGUF__reason"] == support_reason("qwen_image", "GGUF")
 
+    def test_gguf_bad_for_safetensors_only_new_architectures(self):
+        for arch_key in ("ernie_image", "krea2"):
+            assert support_level(arch_key, True, "GGUF") == SUPPORT_BAD
+            assert support_reason(arch_key, "GGUF") is not None
+            row = next(r for r in build_support_table() if r["arch"] == arch_key)
+            assert row["GGUF"] == SUPPORT_BAD
+            assert row["GGUF__reason"] == support_reason(arch_key, "GGUF")
+
     def test_gguf_reason_none_when_not_structurally_impossible(self):
         assert support_reason("qwen_image", "NVFP4") is None
         assert support_reason("lumina2", "GGUF") is None
@@ -339,6 +347,15 @@ class TestBuildSupportTable:
         sdxl_row = next(r for r in rows if r["arch"] == "sdxl")
         assert sdxl_row["INT8"] == SUPPORT_VERIFIED
         assert sdxl_row["INT8_MIXED"] == SUPPORT_VERIFIED
+
+    def test_new_safetensors_only_rows_are_unknown_until_render_tested(self):
+        rows = build_support_table()
+        for arch_key in ("ernie_image", "krea2"):
+            row = next(r for r in rows if r["arch"] == arch_key)
+            for _, format_key in TABLE_FORMATS:
+                if format_key == "GGUF":
+                    continue
+                assert row[format_key] == SUPPORT_UNKNOWN
 
 class TestTextEncoderSupport:
     def test_covers_gguf_and_safetensors_formats(self):

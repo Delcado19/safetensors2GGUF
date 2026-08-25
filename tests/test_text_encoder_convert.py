@@ -409,6 +409,24 @@ class TestDetectTextEncoderFamily:
         })
         assert detect_text_encoder_family(state_dict) == "qwen3-4b"
 
+    def test_rejects_qwen3_vl_4b_collision(self):
+        from text_encoder_convert import detect_text_encoder_family
+
+        state_dict = {"model.language_model.embed_tokens.weight": _FakeTensor((151936, 2560))}
+        state_dict.update({
+            f"model.language_model.layers.{i}.self_attn.q_proj.weight": _FakeTensor((2560, 2560))
+            for i in range(36)
+        })
+        state_dict["model.visual.patch_embed.proj.weight"] = _FakeTensor((1280, 3, 14, 14))
+
+        try:
+            family = detect_text_encoder_family(state_dict)
+        except RuntimeError as exc:
+            assert "Qwen3-VL-4B" in str(exc)
+            assert "not the text-only qwen3-4b" in str(exc)
+        else:
+            assert family != "qwen3-4b"
+
     def test_distinguishes_ministral3_pe_from_mistral_small_24b(self):
         # These were the two families whose base repo ID ambiguity (both live
         # under different subfolders of baidu/ERNIE-Image / share Llama-style

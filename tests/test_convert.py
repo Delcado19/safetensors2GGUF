@@ -1,6 +1,7 @@
 """Tests for conversion logic and architecture detection."""
 
 import os
+from unittest.mock import patch
 
 import gguf
 import numpy as np
@@ -10,9 +11,11 @@ import torch
 from models.architectures import (
     CosmosPredict2,
     ModelAura,
+    ModelErnieImage,
     ModelFlux,
     ModelHiDream,
     ModelHyVid,
+    ModelKrea2,
     ModelLTXV,
     ModelLumina2,
     ModelQwenImage,
@@ -58,6 +61,22 @@ class TestDetectArch:
         }
         assert detect_arch(sd).arch == "lumina2"
 
+    def test_ernie_image(self):
+        sd = {
+            "adaLN_modulation.1.weight": torch.zeros(1),
+            "layers.0.mlp.linear_fc2.weight": torch.zeros(1),
+            "x_embedder.proj.weight": torch.zeros(1),
+        }
+        assert detect_arch(sd).arch == "ernie_image"
+
+    def test_krea2(self):
+        sd = {
+            "first.weight": torch.zeros(1),
+            "blocks.0.attn.wq.weight": torch.zeros(1),
+            "txtfusion.projector.weight": torch.zeros(1),
+        }
+        assert detect_arch(sd).arch == "krea2"
+
     def test_qwen_image(self):
         # Qwen-Image / Qwen-Image-Edit: must match before Flux/SD3 would
         # falsely trigger their banned-key guard on the shared norm_added_k
@@ -90,7 +109,7 @@ class TestShapeFix:
     @pytest.mark.parametrize("cls", [
         ModelFlux, ModelSD3, ModelAura, ModelHiDream,
         CosmosPredict2, ModelLTXV, ModelHyVid, ModelWan, ModelLumina2,
-        ModelQwenImage,
+        ModelQwenImage, ModelErnieImage, ModelKrea2,
     ])
     def test_shape_fix_disabled(self, cls):
         assert cls().shape_fix is False
@@ -126,6 +145,36 @@ class TestQuantType:
         data = torch.zeros(64, 64)
         qtype = _quant_type_for(data, "x_pad_token", ModelLumina2(), torch.bfloat16)
         assert qtype == gguf.GGMLQuantizationType.F32
+
+
+class TestGgufUnsupportedArch:
+    def test_convert_file_rejects_ernie_image_before_writer(self, tmp_path):
+        from convert import convert_file
+
+        sd = {
+            "adaLN_modulation.1.weight": torch.zeros(1),
+            "layers.0.mlp.linear_fc2.weight": torch.zeros(1),
+            "x_embedder.proj.weight": torch.zeros(1),
+        }
+        with patch("convert.load_state_dict", return_value=sd), \
+             patch("convert.gguf.GGUFWriter") as mock_writer, \
+             pytest.raises(RuntimeError, match="ERNIE-Image GGUF is unsupported"):
+            convert_file(str(tmp_path / "model.safetensors"), interact=False)
+        mock_writer.assert_not_called()
+
+    def test_convert_file_rejects_krea2_before_writer(self, tmp_path):
+        from convert import convert_file
+
+        sd = {
+            "first.weight": torch.zeros(1),
+            "blocks.0.attn.wq.weight": torch.zeros(1),
+            "txtfusion.projector.weight": torch.zeros(1),
+        }
+        with patch("convert.load_state_dict", return_value=sd), \
+             patch("convert.gguf.GGUFWriter") as mock_writer, \
+             pytest.raises(RuntimeError, match="Krea 2 GGUF is unsupported"):
+            convert_file(str(tmp_path / "model.safetensors"), interact=False)
+        mock_writer.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

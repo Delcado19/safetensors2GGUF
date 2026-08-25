@@ -395,6 +395,7 @@ _FAMILY_SIGNATURES = {
 
 _LAYER_IDX_RE = re.compile(r"\.(?:layers|block)\.(\d+)\.")
 _EMBED_KEY_SUFFIXES = ("embed_tokens.weight", "token_embedding.weight", "shared.weight")
+_VISION_TOWER_KEY_PREFIXES = ("model.visual.", "visual.")
 
 # Families whose GGUF conversion is not just untested but structurally
 # impossible with this tool's llama.cpp-based pipeline: convert_hf_to_gguf.py
@@ -438,7 +439,14 @@ def detect_text_encoder_family(state_dict) -> str | None:
     shape_of = getattr(state_dict, "shape_of", None)
     vocab_size, hidden_size = shape_of(embed_key) if shape_of else tuple(state_dict[embed_key].shape)
     num_layers = len({int(m.group(1)) for k in keys if (m := _LAYER_IDX_RE.search(k))})
-    return _FAMILY_SIGNATURES.get((hidden_size, num_layers, vocab_size))
+    family = _FAMILY_SIGNATURES.get((hidden_size, num_layers, vocab_size))
+    if family == "qwen3-4b" and any(k.startswith(_VISION_TOWER_KEY_PREFIXES) for k in keys):
+        raise RuntimeError(
+            "Unsupported Qwen3-VL-4B vision-language text encoder detected: "
+            "this is not the text-only qwen3-4b family, and Krea 2's text "
+            "encoder is not wired for quantization yet."
+        )
+    return family
 
 
 def _copy_vendored_family(short_name: str, dest_dir: Path, on_log=None) -> list[str]:

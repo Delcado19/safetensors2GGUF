@@ -367,6 +367,50 @@ class ModelLumina2(ModelTemplate):
     keys_shape_critical = ["cap_embedder.1.weight", "x_pad_token", "cap_pad_token"]
 
 
+class ModelErnieImage(ModelTemplate):
+    arch = "ernie_image"
+    keys_detect = [
+        (
+            "adaLN_modulation.1.weight",
+            "layers.0.mlp.linear_fc2.weight",
+            "x_embedder.proj.weight",
+        )
+    ]
+    keys_hiprec = [
+        "x_embedder",
+        "text_proj",
+        "time_embedding",
+        "adaLN_modulation",
+        "final_norm",
+        "final_linear",
+        "self_attention.norm",
+    ]
+    # ERNIE-Image's observed tensor list has no learned positional/register/class
+    # embedding; RoPE is computed at runtime, so there is no raw-shape tensor to pin.
+    keys_shape_critical = []
+
+
+class ModelKrea2(ModelTemplate):
+    arch = "krea2"
+    keys_detect = [
+        ("first.weight", "blocks.0.attn.wq.weight", "txtfusion.projector.weight"),
+    ]
+    keys_hiprec = [
+        "first.",
+        "last.",
+        "tmlp.",
+        "tproj.",
+        "txtmlp.",
+        "txtfusion.",
+        ".mod.lin",
+        ".qknorm.",
+    ]
+    keys_shape_critical = [
+        "first.weight",
+        "txtfusion.projector.weight",
+    ]
+
+
 arch_list = [
     # ModelQwenImage must precede ModelFlux/ModelSD3 — Qwen-Image shares
     # transformer_blocks.0.attn.norm_added_k.weight and add_q_proj.weight
@@ -384,6 +428,8 @@ arch_list = [
     ModelSDXL,
     ModelSD1,
     ModelLumina2,
+    ModelErnieImage,
+    ModelKrea2,
 ]
 
 

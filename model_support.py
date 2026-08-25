@@ -22,6 +22,8 @@ from safetensors_quant import _RENDER_VERIFIED_MIXED, _SIZE_RATIOS
 # project's own editorial choices, not values ComfyUI or any upstream
 # project defines -- review and correct freely.
 MODEL_DISPLAY_NAMES: dict[str, str] = {
+    "ernie_image": "ERNIE-Image (ernie_image)",
+    "krea2": "Krea 2 (krea2)",
     "qwen_image": "Qwen-Image Family (qwen_image)",
     "flux": "Flux Family (flux)",
     "sd3": "Stable Diffusion 3 / 3.5 (sd3)",
@@ -86,6 +88,15 @@ SUPPORT_SYMBOL: dict[str, str] = {
 # support_reason()/text_encoder_support_reason() surface this text as a
 # tooltip so the difference is visible without reading source comments.
 _STRUCTURALLY_IMPOSSIBLE: dict[tuple[str, str], str] = {
+    ("ernie_image", "GGUF"): (
+        "No GGUF build exists with this project's tooling -- city96/ComfyUI-GGUF's "
+        "lcpp.patch has no ernie_image llm_arch entry. Safetensors only."
+    ),
+    ("krea2", "GGUF"): (
+        "No GGUF build exists with this project's targeted tooling -- Krea 2 "
+        "requires an unofficial city96/ComfyUI-GGUF fork/PR (#459), not the "
+        "lcpp.patch version used here. Safetensors only."
+    ),
     ("qwen_image", "GGUF"): (
         "No GGUF build exists or can exist with this project's tooling -- "
         "city96/ComfyUI-GGUF's lcpp.patch (needed to make llama-quantize "
@@ -150,6 +161,10 @@ def text_encoder_support_reason(family: str, format_key: str) -> str | None:
 # analogy". Kept separate from CAUTION (see support_level()'s docstring) so
 # the table distinguishes "confirmed broken" from "merely unverified".
 _RENDER_CONFIRMED_BAD: set[tuple[str, str]] = {
+    # Safetensors-only new DiTs: no matching llm_arch in this project's
+    # targeted City96 lcpp.patch path (Krea 2 only exists in an unofficial PR).
+    ("ernie_image", "GGUF"),
+    ("krea2", "GGUF"),
     # Plain INT8 on lumina2's keys_hiprec-sensitive tensors: the corruption
     # that motivated adding INT8_MIXED's protection list in the first place
     # (docs/issues_analysis.md #15).
@@ -257,6 +272,8 @@ _RENDER_TESTED_DRIFT: set[tuple[str, str]] = {
     ("aura", "NVFP4"),
 }
 
+_UNTESTED_SAFETENSORS_ARCHES: frozenset[str] = frozenset({"ernie_image", "krea2"})
+
 
 def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) -> str:
     """Return SUPPORT_VERIFIED / SUPPORT_CAUTION / SUPPORT_BAD / SUPPORT_UNKNOWN
@@ -278,9 +295,9 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
     earlier for the same reason.
 
     - GGUF: always VERIFIED, EXCEPT an architecture explicitly listed in
-      _RENDER_CONFIRMED_BAD for "GGUF" -- currently only `qwen_image`, where
-      no build is even possible (city96/ComfyUI-GGUF's lcpp.patch has no
-      qwen_image llm_arch entry, docs/issues_analysis.md #21's correction).
+      _RENDER_CONFIRMED_BAD for "GGUF" because no build is possible with
+      this project's targeted City96 lcpp.patch path (`qwen_image`,
+      `ernie_image`, `krea2`).
       This exception was added 2026-08-23 after the blanket-VERIFIED
       reasoning below silently overrode an already-added
       ("qwen_image", "GGUF") _RENDER_CONFIRMED_BAD entry -- the format_key
@@ -349,11 +366,12 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
       reasoning too: one I2V render with both HIGH- and LOW-noise
       `UnetLoaderGGUF` loaded (`wan22_i2v_14b_{HIGH,LOW}-Q4_K_M.gguf`)
       matched the safetensors-format renders' composition/pose exactly.
-    - F16 / F16_MIXED: always VERIFIED. This is a precision cast, not
-      compressed-representation quantization with a runtime scale lookup —
-      it never touches ComfyUI's quantized-compute code path
-      (MixedPrecisionOps) at all, so it carries none of the
-      architecture-dependent risk INT8/FP8/NVFP4 do. Same 2026-08-13
+    - F16 / F16_MIXED: always VERIFIED for established architectures. This
+      is a precision cast, not compressed-representation quantization with a
+      runtime scale lookup, so it normally carries none of the
+      architecture-dependent risk INT8/FP8/NVFP4 do. New scaffolding-only
+      architectures (`ernie_image`, `krea2`) stay UNKNOWN until any real
+      safetensors render evidence exists. Same 2026-08-13
       render-test as GGUF's note above also covered lumina2's GGUF F16
       (direct, unquantized) and safetensors F16_MIXED -- both matched the
       baseline cleanly, backing this design-reasoning conclusion with actual
@@ -498,6 +516,8 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
         if (arch_key, format_key) in _RENDER_CONFIRMED_BAD:
             return SUPPORT_BAD
         return SUPPORT_VERIFIED
+    if arch_key in _UNTESTED_SAFETENSORS_ARCHES:
+        return SUPPORT_UNKNOWN
     if format_key in ("F16", "F16_MIXED"):
         return SUPPORT_VERIFIED
     if format_key in ("FP8", "FP8_MIXED"):

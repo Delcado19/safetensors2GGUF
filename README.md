@@ -4,14 +4,15 @@
 Converts Safetensors / CKPT diffusion model checkpoints to **GGUF** for use with
 **llama.cpp** and **ComfyUI-GGUF**, or to a quantized **Safetensors** file that
 ComfyUI can load natively without the GGUF loader node. Also converts bare
-single-file **text-encoder** checkpoints (Qwen3, T5/UMT5, Mistral, …) to GGUF.
+single-file **text-encoder** checkpoints (Qwen3, T5/UMT5, Mistral, …) to GGUF
+or quantized safetensors.
 
 - **GGUF output** — direct Python quantization (F32 / F16 / BF16 / Q8_0) and
   K-quant quantization via a bundled `llama-quantize` binary (Q6_K, Q5_K_M,
   Q4_K_M, Q4_K_S, Q3_K_M, Q2_K).
-- **Safetensors output** — F16, scaled FP8, and ComfyUI-compatible tensor-wise
-  INT8 (ConvRot-rotated where possible), each with a "mixed" variant that
-  keeps critical layers at F32.
+- **Safetensors output** — F16, scaled FP8, ComfyUI-compatible tensor-wise
+  INT8 (ConvRot-rotated where possible), and NVFP4, each with a "mixed"
+  variant that keeps critical layers at F32.
 - **Model Support tab** — a read-only table showing which quantization
   formats are verified/caution/unknown for each detectable architecture;
   click a cell to jump to the matching Convert tab with that format
@@ -41,6 +42,8 @@ and cancel button is included for all three pipelines.
 | Lumina 2 | Diffusers |
 | Z-Image (Turbo / Base) | Diffusers (shares `lumina2` arch tag) |
 | Qwen-Image / Qwen-Image-Edit (incl. 2511) | Diffusers |
+| ERNIE-Image | Safetensors only (`ernie_image`; GGUF unsupported) |
+| Krea 2 | Safetensors only (`krea2`; GGUF unsupported) |
 
 ## Installation
 

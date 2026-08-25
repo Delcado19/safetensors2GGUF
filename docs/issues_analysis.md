@@ -1016,6 +1016,34 @@ gets checked proactively per [[feedback_check_keys_hiprec_first]].
 
 ---
 
+## 24. Krea 2's Qwen3-VL-4B text encoder collides with text-only qwen3-4b shape detection
+
+**Symptom (2026-08-25):** `detect_text_encoder_family()` would classify a Krea 2
+`Qwen3-VL-4B-Instruct` text encoder as `qwen3-4b` because both language towers share
+the same `(hidden_size=2560, layers=36, vocab=151936)` signature.
+
+**Root cause:** the signature table only used embedding/layer/vocab shape. Krea 2's
+checkpoint also carries `model.visual.*` vision-tower tensors, which the text-only
+Qwen3-4B checkpoints used by Z-Image / FLUX.2 klein do not.
+
+**Fix:** `detect_text_encoder_family()` now rejects the `(2560, 36, 151936)` match when
+vision-tower keys are present, raising a clear unsupported Qwen3-VL-4B error instead of
+silently routing through `qwen3-4b` conventions. The Krea 2 DiT safetensors path is
+detected separately as `krea2`; the Krea 2 text encoder remains unsupported here.
+
+---
+
+## 25. ERNIE-Image and Krea 2 DiTs are safetensors-only in this project
+
+`ModelErnieImage` and `ModelKrea2` are wired for native safetensors quantization, but
+`convert.py` rejects GGUF conversion for both after detection. ERNIE-Image has no
+`llm_arch` entry in city96/ComfyUI-GGUF's `lcpp.patch`; Krea 2 requires an unofficial
+city96 fork/PR (#459), not the patch version this project targets. `model_support.py`
+therefore marks their GGUF cells as `✗` and every safetensors format as `? Unknown`
+until real render tests exist.
+
+---
+
 Findings noted for future reference that did not lead to a code change, because the
 evidence didn't point at a defect in this tool's output.
 

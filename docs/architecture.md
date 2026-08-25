@@ -64,6 +64,7 @@ class ModelTemplate:
     keys_hiprec = []       # Tensors that require F32
     keys_ignore = []       # Tensors to skip
     keys_unsqueeze = []    # 1D tensors reshaped to [1, D] before writing
+    keys_shape_critical = []  # Tensors whose on-disk shape must stay intact
 ```
 
 ### Detection Logic
@@ -96,6 +97,12 @@ this, `ModelQwenImage` is placed before `ModelFlux` and `ModelSD3` in
 (`time_text_embed.timestep_embedder.linear_2.weight` +
 `transformer_blocks.0.attn.norm_added_q.weight` +
 `transformer_blocks.0.img_mlp.net.0.proj.weight`) match first.
+
+`ModelErnieImage` (`ernie_image`) and `ModelKrea2` (`krea2`) are detected for
+the safetensors output path only. `convert.py` rejects their GGUF conversion
+after detection: ERNIE-Image has no `llm_arch` in city96/ComfyUI-GGUF's
+`lcpp.patch`, and Krea 2 support depends on an unofficial fork/PR (#459) that
+is not part of this project's target patch.
 
 ## 5D Tensor Handling
 
@@ -356,7 +363,7 @@ backends:
   original subprocess pipeline below — no DiT architecture-detection involved.
 - **K-quants** (Q6_K…Q2_K): `convert_text_encoder_kquant()` runs the F16 GGUF
   pipeline to a temp intermediate, then a second llama-quantize pass (see below).
-- **Safetensors** (FP8/FP8_MIXED/NVFP4/NVFP4_MIXED): `convert_text_encoder_to_safetensors()`
+- **Safetensors** (F16/FP8/INT8/NVFP4 and `_MIXED` variants): `convert_text_encoder_to_safetensors()`
   reuses `convert_safetensors.convert_to_safetensors()` with
   `_TEXT_ENCODER_MODEL_ARCH`, a `models.architectures.ModelTemplate()`
   instance (text encoders aren't in `arch_list`) — the only place this
@@ -472,7 +479,7 @@ assuming the same generic path as Qwen/T5-style text encoders.
 | CLIP | SDXL CLIP-L, SDXL CLIP-G | `CLIPTextModel`, `CLIPTextModelWithProjection` | Extract or load CLIP-only weights, map keys, preserve projection tensors |
 | T5 | FLUX.1, FLUX.1 Kontext | `T5EncoderModel` | HF-to-GGUF path for T5-style encoder weights and tokenizer |
 | Qwen2.5-VL 7B | Qwen-Image, Qwen-Image-Edit | `Qwen2_5_VLForConditionalGeneration` / ComfyUI `qwen_2.5_vl_7b_fp8_scaled.safetensors` | Multimodal Qwen-VL path; preserve paired mmproj handling for GGUF |
-| Qwen3 4B | Z-Image, Z-Image-Turbo, FLUX.2 [klein] 4B | `Qwen3Model`, `Qwen3ForCausalLM` | HF-to-GGUF path; preserve Qwen tokenizer/chat-template assumptions |
+| Qwen3 4B | Z-Image, Z-Image-Turbo, FLUX.2 [klein] 4B | `Qwen3Model`, `Qwen3ForCausalLM` | HF-to-GGUF path; reject Qwen3-VL collisions with vision-tower tensors |
 | Qwen3 8B | FLUX.2 [klein] 9B | Qwen3 8B text encoder files in ComfyUI layout | Same Qwen path, but keep model-pair compatibility checks |
 | Mistral / Ministral3 | ERNIE-Image, ERNIE-Image-Turbo, FLUX.2 [dev] | `Mistral3Model`, `Ministral3ForCausalLM`, Mistral Small 3.2 24B | Separate Mistral-family detection and conversion path |
 
@@ -533,17 +540,25 @@ index + 1), then looks that triple up in `_FAMILY_SIGNATURES`:
 | (768, 12, 49408) | clip-l |
 | (1280, 32, 49408) | clip-bigg |
 | (4096, 24, 32128) | t5-xxl |
+| (4096, 24, 256384) | umt5-xxl |
 | (2560, 36, 151936) | qwen3-4b |
 | (4096, 36, 151936) | qwen3-8b |
 | (3584, 28, 152064) | qwen2.5-vl-7b |
 | (5120, 40, 131072) | mistral-small-3.2-24b |
 | (3072, 26, 131072) | ernie-image-pe |
+| (4096, 32, 128256) | llama-3.1-8b |
 
 These triples were verified unique against each family's real `config.json`
 (source of the numbers above), and in particular resolve the Ministral3
 (ERNIE-Image prompt-enhancer) vs. Mistral-Small-3.2-24B ambiguity that made
 `baidu/ERNIE-Image` unsuitable as a `_VENDORED_REPOS` key — the two are
 distinguishable by shape even though their key names alone are not.
+
+One signature is intentionally guarded by key prefix as well as shape:
+`Qwen3-VL-4B-Instruct` (Krea 2's text encoder) has the same
+`(2560, 36, 151936)` language-tower shape as text-only `qwen3-4b`, but also
+carries `model.visual.*` tensors. That collision is rejected because the Krea
+2 text encoder is not wired here yet; only the Krea 2 DiT safetensors path is.
 
 For a `_LazyStateDict` (the safetensors loading path), shape is read via its
 `shape_of()` accessor straight from the safetensors header — no tensor data

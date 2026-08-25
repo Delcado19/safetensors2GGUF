@@ -13,6 +13,7 @@ from safetensors_quant import (
 )
 from models.architectures import (
     ModelAura,
+    ModelKrea2,
     ModelFlux,
     ModelHiDream,
     ModelHyVid,
@@ -261,6 +262,15 @@ class TestHiprec:
         data = torch.zeros(64, 64, dtype=torch.float16)
         assert is_hiprec_st("x_pad_token", data, ModelLumina2(), torch.float16)
 
+    def test_krea2_txtfusion_prefix_covers_nested_blocks(self):
+        data = torch.zeros(64, 64, dtype=torch.bfloat16)
+        assert is_hiprec_st(
+            "txtfusion.refiner_blocks.0.attn.wq.weight",
+            data,
+            ModelKrea2(),
+            torch.bfloat16,
+        )
+
 
 class TestQuantizeTensorF16:
     def test_f16_plain_casts_dtype(self):
@@ -439,6 +449,8 @@ class TestQuantizeTensorNvfp4:
             # no attribute 'quant_config'") -- model_detection.py reads its raw
             # .shape[1] for adm_in_channels, halved on-disk by NVFP4 packing.
             (ModelSDXL(), "label_emb.0.0.weight"),
+            (ModelKrea2(), "first.weight"),
+            (ModelKrea2(), "txtfusion.projector.weight"),
             # ff_i.gate.weight/img_emb.emb_pos: added 2026-08-17 after a live
             # ComfyUI crash loading plain NVFP4 hidream_i1_dev ("size
             # mismatch ... [4, 1280] ... [4, 2560]") -- not a shape-inference

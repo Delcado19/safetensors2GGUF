@@ -240,6 +240,22 @@ class TestDynamicDropdownAnnotation:
         from quantize import ALL_QUANT_CHOICES
         assert update["choices"] == [tuple(c) for c in ALL_QUANT_CHOICES]
 
+    def test_annotate_gguf_choices_marks_safetensors_only_arch_bad(self, tmp_path):
+        import torch
+        from safetensors.torch import save_file
+
+        src = tmp_path / "krea2.safetensors"
+        save_file(
+            {
+                "first.weight": torch.randn(8, 8),
+                "blocks.0.attn.wq.weight": torch.randn(8, 8),
+                "txtfusion.projector.weight": torch.randn(1, 12),
+            },
+            str(src),
+        )
+        update = gui.annotate_gguf_choices(str(src))
+        assert all(label.startswith("✗") for label, _ in update["choices"])
+
     def test_annotate_text_encoder_choices_marks_clip_gguf_bad(self):
         # clip-bigg + GGUF is structurally impossible (no CLIPModel converter
         # in llama.cpp), confirmed via the manually-typed base_repo_id path

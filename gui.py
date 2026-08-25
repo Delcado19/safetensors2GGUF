@@ -467,14 +467,8 @@ def annotate_safetensors_choices(src: str):
 
 def annotate_gguf_choices(src: str):
     """Dropdown-annotation for the Convert -> GGUF quant dropdown. Every
-    ALL_QUANT_CHOICES key maps to the table's single "GGUF" column, and
-    model_support.support_level() always returns SUPPORT_VERIFIED for it
-    unconditionally (no per-architecture GGUF branch exists) — so this is
-    guaranteed to never mark anything today. Skips architecture detection
-    entirely rather than paying a full checkpoint load (torch.load() for
-    .ckpt/.pt/.bin/.pth sources) for a result that can't change; revisit if
-    support_level() ever grows an architecture-specific GGUF case."""
-    return gr.update(choices=[tuple(c) for c in ALL_QUANT_CHOICES])
+    ALL_QUANT_CHOICES key maps to the table's single "GGUF" column."""
+    return _annotate_choices_for_arch(_detected_arch_or_none(src), ALL_QUANT_CHOICES, "GGUF")
 
 
 def _llama_quantize_footnote() -> str:

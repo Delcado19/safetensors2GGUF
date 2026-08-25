@@ -1,7 +1,9 @@
 """Convert safetensors/ckpt model files to GGUF format.
 
 Supports FLUX, SD3, SDXL, SD1, HiDream, HunyuanVideo, Wan, LTXV, Cosmos,
-AuraFlow, and Lumina2 architectures.
+AuraFlow, and Lumina2 architectures. Safetensors-only architectures may be
+detected by models.architectures but are rejected here if City96's GGUF patch
+has no llm_arch entry for them.
 
 Usage:
     python convert.py --src model.safetensors [--dst model.gguf]
@@ -28,6 +30,25 @@ from models.architectures import (
 from dequantize import _scan_quantized_layers, dequantize_weight
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
+
+_GGUF_UNSUPPORTED_ARCHITECTURES: dict[str, str] = {
+    "ernie_image": (
+        "ERNIE-Image GGUF is unsupported: city96/ComfyUI-GGUF's lcpp.patch "
+        "has no ernie_image llm_arch entry. Use safetensors output instead."
+    ),
+    "krea2": (
+        "Krea 2 GGUF is unsupported in this project: it needs an unofficial "
+        "city96/ComfyUI-GGUF fork/PR (#459), not the lcpp.patch version this "
+        "tool targets. Use safetensors output instead."
+    ),
+}
+
+
+def _reject_if_gguf_unsupported(model_arch) -> None:
+    reason = _GGUF_UNSUPPORTED_ARCHITECTURES.get(model_arch.arch)
+    if reason:
+        raise RuntimeError(reason)
 
 
 class ConversionCancelled(Exception):
@@ -452,6 +473,7 @@ def convert_file(
     state_dict = load_state_dict(path)
     model_arch = detect_arch(state_dict)
     _info(f"Architecture: {model_arch.arch}")
+    _reject_if_gguf_unsupported(model_arch)
 
     # Determine GGUF file type from target_quant or dominant source dtype
     if target_quant is not None and target_quant in _QUANT_FTYPE:
