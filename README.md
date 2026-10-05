@@ -318,6 +318,13 @@ weights, retained-precision weights and scale overhead, and flags savings below
 no storage saving: both store eight bits per weight. See
 [the measured size audit](docs/quantization-size-audit.md).
 
+Native **INT4 ConvRot** has also passed a full SDXL test with classic/dynamic
+offload and LoRA: 2.00 GiB versus 4.78 GiB source UNet weights. This experimental
+checkpoint was packed using installed Kitchen directly; INT4 is not yet a GUI
+output choice. See [the validation report](docs/int4-convrot-validation.md) for
+packing/version details and visible quantization differences.
+
+
 **Naming vs. the community:** `FP8`/`FP8_MIXED` write files named
 `<model>-fp8_e4m3fn_scaled(_mixed).safetensors` — the same "scaled fp8"
 convention Civitai/Comfy-Org releases use, so you can tell at a glance it's

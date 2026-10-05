@@ -6,6 +6,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Verified
+- Native INT4 ConvRot SDXL prototype: nine successful ComfyUI renders with
+  model-only/full LoRA, classic CPU offload and dynamic VRAM offload. Observed
+  1,769 INT4 requantizations with preserved layout/packed dimensions. File size
+  2.00 GiB versus 4.78 GiB source UNet weights (58.22% smaller); visible output
+  differences remain. Converted checkpoint retained in Downloads; temporary
+  test server, links and artifacts cleaned. See docs/int4-convrot-validation.md.
+
+
 ### Quantization size corrections
 - Share source-aware planning between the streaming writer and GUI size estimates;
   account for reconstructed weights, stripped prefixes and consumed scale metadata.

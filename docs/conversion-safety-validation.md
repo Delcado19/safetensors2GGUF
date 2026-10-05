@@ -80,3 +80,12 @@ profile limits and Kitchen packing parity are recorded in
 [the quantization size audit](quantization-size-audit.md#implemented-corrections-and-runtime-evidence-2026-10-05).
 The temporary ComfyUI model junction was removed after the queue became idle;
 original checkpoints and the user's Downloads GGUF were preserved.
+
+
+## INT4 ConvRot full-model validation (2026-10-05)
+
+The SDXL prototype passed nine normal, LoRA and forced-offload comparisons.
+Classic offload reported the entire 2,045.49 MiB UNet offloaded; dynamic offload
+recorded 1,769 successful native INT4 requantizations. Model size, SHA-256,
+packing details, prompt IDs, visual findings and completed cleanup are recorded
+in [the INT4 validation report](int4-convrot-validation.md).
