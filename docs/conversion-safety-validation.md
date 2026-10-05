@@ -41,6 +41,31 @@ with the Easy-Install llama-quantize build 3962 (c8c07d658), using eight threads
   Python conversion process and at least 33.27 GiB for llama-quantize. Sampling
   was incomplete; these are not a measured whole-pipeline peak RAM bound.
 
-The output and conversion logs/report were saved in the requested Downloads
-directory; temporary intermediates were removed. Live Hub downloads and ComfyUI
-rendering were not tested; model support/quality classifications remain unchanged.
+The output was saved in the requested Downloads directory; conversion logs,
+reports and temporary intermediates were subsequently removed. Live Hub downloads were not
+tested; model support/quality classifications remain unchanged.
+
+## Qwen Image Edit 2511 GGUF render smoke test
+
+The exact converted Downloads file completed a real edit on the existing local
+ComfyUI 0.38.0 server (Python 3.12.10, PyTorch 2.9.1+cu130, RTX 5080 16 GB).
+A temporary same-volume hard link and model-directory junction exposed the file
+without copying or changing it; the temporary registration was removed afterward.
+
+- Prompt ID: `a1d7aafd-a85a-47d9-9e1f-94fe7d1645f5`; status: success.
+- Input: the installed `Cat.jpeg`, resized to 512 x 512.
+- Edit: add a realistic bright red knitted hat while retaining the cat and background.
+- Qwen Edit Plus conditioning, installed Qwen2.5-VL abliterated FP8 text encoder,
+  installed Qwen VAE; no LoRA. Euler/simple, 20 steps, CFG 3, shift 3.1,
+  denoise 1, seed 1212121.
+- Server execution: 84.39 seconds, including approximately 70.8 seconds sampling.
+- Model loaded successfully: 1,094 F32, 580 Q4_K, 232 Q6_K and 28 Q5_K tensors;
+  approximately 1,212.74 MB initially offloaded to CPU. No execution errors.
+- Output: a decoded and visually inspected 512 x 512 PNG showing the requested
+  red knitted hat, recognizable cat, green eyes and gray background. The test
+  image and API prompt, history and report JSONs were removed from Downloads
+  at the user's request after validation; the converted GGUF was retained.
+
+This proves one end-to-end edit with this converted file and installed components.
+It is not a same-seed comparison against the source checkpoint, and does not
+establish general quality equivalence or change the model-support ratings.
