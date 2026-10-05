@@ -47,6 +47,27 @@ and cancel button is included for all three pipelines.
 
 ## Installation
 
+### New React workbench (preview)
+
+The local React/Vite/FastAPI workbench currently supports diffusion-model GGUF
+and quantized safetensors conversion, local file browsing, estimates, progress,
+cancellation and session history. Python dependencies and launch use **uv**:
+
+```bash
+uv sync --frozen
+cd frontend
+npm ci
+npm run build
+cd ..
+uv run python web_api.py
+```
+
+Open http://127.0.0.1:8765. Node/npm is needed for the frontend build, not normal
+operation. The classic `uv run python gui.py` interface still provides the other
+tools. See [migration scope and validation](docs/web-workbench.md).
+
+### Python environment
+
 ```bash
 git clone https://github.com/Delcado19/safetensors2GGUF.git
 cd safetensors2GGUF

@@ -1,0 +1,1017 @@
+import { StrictMode, useEffect, useRef, useState } from "react";
+import { createRoot } from "react-dom/client";
+import {
+  ArrowDown,
+  ArrowRight,
+  ArrowUp,
+  Box,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  CircleHelp,
+  Clock3,
+  FileBox,
+  Folder,
+  FolderOpen,
+  Layers3,
+  Moon,
+  Play,
+  RefreshCw,
+  Settings2,
+  ShieldCheck,
+  Square,
+  Sun,
+  X,
+} from "lucide-react";
+import "./styles.css";
+
+type Container = "gguf" | "safetensors";
+type Config = {
+  token: string;
+  formats: Record<Container, [string, string][]>;
+  executable: string;
+  home: string;
+};
+type Job = {
+  id: string;
+  status: string;
+  progress: number;
+  phase: string;
+  output: string;
+  error: string;
+  logs: string[];
+  source: string;
+  format: string;
+  started: number;
+  finished: number | null;
+};
+type Inspection = {
+  architecture: string;
+  source_bytes: number;
+  estimated_bytes: number | null;
+  destination: string;
+};
+type Listing = {
+  path: string;
+  parent: string;
+  truncated: boolean;
+  entries: { name: string; path: string; directory: boolean; size: number }[];
+};
+const terminal = (job: Job) =>
+  ["succeeded", "failed", "cancelled"].includes(job.status);
+const bytes = (value: number) =>
+  value >= 2 ** 30
+    ? `${(value / 2 ** 30).toFixed(2)} GiB`
+    : value >= 2 ** 20
+      ? `${(value / 2 ** 20).toFixed(1)} MiB`
+      : `${(value / 1024).toFixed(1)} KiB`;
+const filename = (path: string) => path.split(/[\\/]/).pop() || path;
+
+function App() {
+  const [config, setConfig] = useState<Config>();
+  const [error, setError] = useState("");
+  const [view, setView] = useState<"convert" | "activity" | "guide">("convert");
+  const [light, setLight] = useState(
+    () => localStorage.getItem("workbench-theme") === "light",
+  );
+  const [source, setSource] = useState("");
+  const [destination, setDestination] = useState("");
+  const [container, setContainer] = useState<Container>("gguf");
+  const [format, setFormat] = useState("Q4_K_M");
+  const [profile, setProfile] = useState("auto");
+  const [executable, setExecutable] = useState("");
+  const [threads, setThreads] = useState(0);
+  const [overwrite, setOverwrite] = useState(false);
+  const [keepIntermediate, setKeepIntermediate] = useState(false);
+  const [inspection, setInspection] = useState<Inspection>();
+  const [inspecting, setInspecting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [job, setJob] = useState<Job>();
+  const [history, setHistory] = useState<Job[]>([]);
+  const [picker, setPicker] = useState<"source" | "destination" | null>(null);
+  const [listing, setListing] = useState<Listing>();
+  const [folderPath, setFolderPath] = useState("");
+  const [browsing, setBrowsing] = useState(false);
+  const [pickerError, setPickerError] = useState("");
+  const dialog = useRef<HTMLDialogElement>(null);
+  const browseVersion = useRef(0);
+  const inspectVersion = useRef(0);
+  const active = !!job && !terminal(job);
+
+  async function api<T>(
+    path: string,
+    body?: unknown,
+    signal?: AbortSignal,
+  ): Promise<T> {
+    const response = await fetch(`/api/${path}`, {
+      method: body === undefined ? "GET" : "POST",
+      signal,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Workbench-Token": config?.token || "",
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
+    if (!response.ok) {
+      const result = await response.json();
+      throw new Error(
+        typeof result.detail === "string"
+          ? result.detail
+          : "Please check your input.",
+      );
+    }
+    return response.json();
+  }
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/config", { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok)
+          throw new Error("Could not connect to the workbench.");
+        return response.json();
+      })
+      .then((result: Config) => {
+        setConfig(result);
+        setExecutable(result.executable);
+      })
+      .catch((reason) => {
+        if (reason.name !== "AbortError") setError(reason.message);
+      });
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = light ? "light" : "dark";
+    localStorage.setItem("workbench-theme", light ? "light" : "dark");
+  }, [light]);
+
+  // Changes invalidate estimates immediately; no stale response may replace them.
+  useEffect(() => {
+    inspectVersion.current++;
+    setInspection(undefined);
+    setInspecting(false);
+  }, [source, destination, format, container, profile, overwrite]);
+
+  useEffect(() => {
+    if (!config) return;
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = async () => {
+      try {
+        const jobs = await api<Job[]>("jobs", undefined, controller.signal);
+        setHistory(jobs);
+        setJob((current) =>
+          current
+            ? jobs.find((item) => item.id === current.id) || current
+            : jobs.find((item) => !terminal(item)),
+        );
+      } catch (reason) {
+        if (!controller.signal.aborted) setError((reason as Error).message);
+      } finally {
+        if (!controller.signal.aborted) timer = setTimeout(poll, 800);
+      }
+    };
+    poll();
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [config]);
+
+  useEffect(() => {
+    if (picker) dialog.current?.showModal();
+    else dialog.current?.close();
+  }, [picker]);
+
+  function parameters() {
+    return {
+      source,
+      destination,
+      container,
+      format,
+      precision_profile: profile,
+      executable,
+      threads,
+      overwrite,
+      keep_intermediate: keepIntermediate,
+    };
+  }
+
+  async function inspect() {
+    const version = ++inspectVersion.current;
+    setInspecting(true);
+    setError("");
+    try {
+      const result = await api<Inspection>("inspect", parameters());
+      if (version === inspectVersion.current) setInspection(result);
+    } catch (reason) {
+      if (version === inspectVersion.current)
+        setError((reason as Error).message);
+    } finally {
+      if (version === inspectVersion.current) setInspecting(false);
+    }
+  }
+
+  async function start() {
+    setSubmitting(true);
+    setError("");
+    try {
+      setJob(await api<Job>("jobs", parameters()));
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function browse(path: string, target = picker) {
+    const version = ++browseVersion.current;
+    setFolderPath(path);
+    setBrowsing(true);
+    setPickerError("");
+    try {
+      const result = await api<Listing>(
+        `files?path=${encodeURIComponent(path)}&directories_only=${target === "destination"}`,
+      );
+      if (version === browseVersion.current) {
+        setListing(result);
+        // Preserve typing while the directory request is in flight.
+        setFolderPath((current) => current === path ? result.path : current);
+      }
+    } catch (reason) {
+      if (version === browseVersion.current)
+        setPickerError((reason as Error).message);
+    } finally {
+      if (version === browseVersion.current) setBrowsing(false);
+    }
+  }
+
+  function openPicker(target: "source" | "destination") {
+    setPicker(target);
+    setListing(undefined);
+    const current = target === "source" ? source : destination;
+    const parent = current.replace(/[\\/][^\\/]*$/, "");
+    browse(parent && parent !== current ? parent : config?.home || "", target);
+  }
+
+  const saving =
+    inspection?.estimated_bytes != null
+      ? 1 - inspection.estimated_bytes / inspection.source_bytes
+      : null;
+  const statusText = !job
+    ? "Ready when you are"
+    : job.status === "succeeded"
+      ? "Your model is ready"
+      : job.status === "failed"
+        ? "Something needs attention"
+        : job.status === "cancelled"
+          ? "Conversion cancelled"
+          : job.phase;
+  return (
+    <div className="app-shell">
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
+      <aside className="sidebar">
+        <a
+          href="#"
+          className="brand"
+          onClick={(event) => {
+            event.preventDefault();
+            setView("convert");
+          }}
+          aria-label="safetensors home"
+        >
+          <span className="brand-mark">
+            <Layers3 size={23} />
+          </span>
+          <span>
+            safetensors<span className="brand-sub">MODEL WORKBENCH</span>
+          </span>
+        </a>
+        <div className="nav-label">WORKSPACE</div>
+        <nav aria-label="Main navigation">
+          <button
+            className={view === "convert" ? "nav-item selected" : "nav-item"}
+            onClick={() => setView("convert")}
+            aria-current={view === "convert" ? "page" : undefined}
+          >
+            <Box size={18} />
+            Convert model
+            <ChevronRight size={15} />
+          </button>
+          <button
+            className={view === "activity" ? "nav-item selected" : "nav-item"}
+            onClick={() => setView("activity")}
+            aria-current={view === "activity" ? "page" : undefined}
+          >
+            <Clock3 size={18} />
+            Activity{active && <span className="activity-dot" />}
+          </button>
+          <button
+            className={view === "guide" ? "nav-item selected" : "nav-item"}
+            onClick={() => setView("guide")}
+            aria-current={view === "guide" ? "page" : undefined}
+          >
+            <CircleHelp size={18} />
+            Format guide
+          </button>
+        </nav>
+        <div className="sidebar-bottom">
+          <div className="local-note">
+            <ShieldCheck size={18} />
+            <div>
+              Local by design<span>Your models stay on this machine.</span>
+            </div>
+          </div>
+          <button className="theme-button" onClick={() => setLight(!light)}>
+            {light ? <Moon size={17} /> : <Sun size={17} />}{" "}
+            {light ? "Dark appearance" : "Light appearance"}
+          </button>
+          <span className="version">safetensors2GGUF · Preview</span>
+        </div>
+      </aside>
+      <div className="workspace">
+        <header className="topbar">
+          <span>
+            Workspace <ChevronRight size={13} />{" "}
+            <strong>
+              {view === "convert"
+                ? "Convert model"
+                : view === "activity"
+                  ? "Activity"
+                  : "Format guide"}
+            </strong>
+          </span>
+          <span className="connection">
+            <span className={config ? "online-dot" : "offline-dot"} />
+            {config ? "Local engine connected" : "Connecting to engine"}
+          </span>
+        </header>
+        <main id="main" tabIndex={-1}>
+          <div className="page-heading">
+            <div>
+              <span className="eyebrow">LESS WEIGHT. MORE POSSIBILITY.</span>
+              <h1>
+                {view === "convert"
+                  ? "Make room for bigger ideas."
+                  : view === "activity"
+                    ? "Every conversion, in view."
+                    : "Find the right balance."}
+              </h1>
+              <p>
+                {view === "convert"
+                  ? "Bring your model. Choose a format. Keep creating."
+                  : view === "activity"
+                    ? "Your recent jobs, progress, and results in this session."
+                    : "Storage, precision, and compatibility — without the guesswork."}
+              </p>
+            </div>
+            <span className="heading-symbol" aria-hidden="true">
+              <Layers3 size={52} strokeWidth={1} />
+            </span>
+          </div>
+          {error && (
+            <div className="error-banner" role="alert">
+              <CircleHelp size={18} />
+              <span>{error}</span>
+              <button aria-label="Dismiss error" onClick={() => setError("")}>
+                <X size={17} />
+              </button>
+            </div>
+          )}
+          {view === "convert" && (
+            <div className="work-grid">
+              <section
+                className="conversion-panel"
+                aria-labelledby="conversion-title"
+              >
+                <div className="panel-heading">
+                  <h2 id="conversion-title">New conversion</h2>
+                  <span className="tag">DIFFUSION MODEL</span>
+                </div>
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    start();
+                  }}
+                >
+                  <fieldset disabled={active || submitting}>
+                    <legend className="section-label">
+                      <span>01</span>Source model
+                    </legend>
+                    <div
+                      className={"source-box" + (source ? " has-source" : "")}
+                    >
+                      <FileBox size={32} strokeWidth={1.4} />
+                      <div>
+                        <strong>
+                          {source
+                            ? filename(source)
+                            : "Give your model a new shape"}
+                        </strong>
+                        <p>
+                          {source
+                            ? "Local file selected · no upload needed"
+                            : "Select a safetensors or checkpoint file from your computer."}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="secondary small"
+                        disabled={!config}
+                        onClick={() => openPicker("source")}
+                      >
+                        <FolderOpen size={16} />
+                        Browse files
+                      </button>
+                    </div>
+                    <label className="field-label" htmlFor="source">
+                      Source path
+                    </label>
+                    <input
+                      id="source"
+                      required
+                      value={source}
+                      onChange={(event) => setSource(event.target.value)}
+                      placeholder="/models/your-model.safetensors"
+                      spellCheck={false}
+                    />
+                  </fieldset>
+                  <fieldset disabled={active || submitting}>
+                    <legend className="section-label">
+                      <span>02</span>Output & precision
+                    </legend>
+                    <div
+                      className="container-options"
+                      role="group"
+                      aria-label="Output container"
+                    >
+                      <button
+                        type="button"
+                        aria-pressed={container === "gguf"}
+                        className={
+                          container === "gguf"
+                            ? "container-option chosen"
+                            : "container-option"
+                        }
+                        onClick={() => {
+                          setContainer("gguf");
+                          setFormat("Q4_K_M");
+                        }}
+                      >
+                        <Box size={20} />
+                        <strong>GGUF</strong>
+                        <span>For ComfyUI-GGUF</span>
+                        {container === "gguf" && <Check size={15} />}
+                      </button>
+                      <button
+                        type="button"
+                        aria-pressed={container === "safetensors"}
+                        className={
+                          container === "safetensors"
+                            ? "container-option chosen"
+                            : "container-option"
+                        }
+                        onClick={() => {
+                          setContainer("safetensors");
+                          setFormat("FP8_MIXED");
+                        }}
+                      >
+                        <Layers3 size={20} />
+                        <strong>Safetensors</strong>
+                        <span>Native ComfyUI loading</span>
+                        {container === "safetensors" && <Check size={15} />}
+                      </button>
+                    </div>
+                    <label className="field-label" htmlFor="format">
+                      Quantization
+                    </label>
+                    <select
+                      id="format"
+                      value={format}
+                      onChange={(event) => setFormat(event.target.value)}
+                    >
+                      {(config?.formats[container] || [[format, format]]).map(
+                        ([label, key]) => (
+                          <option key={key} value={key}>
+                            {label}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                    {container === "safetensors" && (
+                      <>
+                        <label className="field-label" htmlFor="profile">
+                          Precision profile
+                        </label>
+                        <select
+                          id="profile"
+                          value={profile}
+                          onChange={(event) => setProfile(event.target.value)}
+                        >
+                          <option value="auto">Automatic · source-aware</option>
+                          <option value="conservative">Conservative</option>
+                          <option value="qwen_edit_2511">
+                            Qwen Image Edit 2511
+                          </option>
+                          <option value="z_image_turbo">
+                            Z-Image Turbo · experimental
+                          </option>
+                        </select>
+                      </>
+                    )}
+                    <div className="field-row">
+                      <label className="field-label" htmlFor="destination">
+                        Save to
+                      </label>
+                      <button
+                        type="button"
+                        className="text-button"
+                        disabled={!config}
+                        onClick={() => openPicker("destination")}
+                      >
+                        <Folder size={14} />
+                        Choose folder
+                      </button>
+                    </div>
+                    <input
+                      id="destination"
+                      value={destination}
+                      onChange={(event) => setDestination(event.target.value)}
+                      placeholder="Next to source · automatic filename"
+                      spellCheck={false}
+                    />
+                    <p className="field-hint">
+                      A file path or folder. Your original model is preserved.
+                    </p>
+                    <details className="advanced">
+                      <summary>
+                        <Settings2 size={16} />
+                        Advanced settings
+                        <ChevronRight size={15} />
+                      </summary>
+                      <div className="advanced-content">
+                        {container === "gguf" && (
+                          <>
+                            <label className="field-label" htmlFor="executable">
+                              llama-quantize executable
+                            </label>
+                            <input
+                              id="executable"
+                              value={executable}
+                              onChange={(event) =>
+                                setExecutable(event.target.value)
+                              }
+                              placeholder="Auto-detected when available"
+                            />
+                            <label className="field-label" htmlFor="threads">
+                              CPU threads · 0 means automatic
+                            </label>
+                            <input
+                              id="threads"
+                              type="number"
+                              min="0"
+                              max="1024"
+                              value={threads}
+                              onChange={(event) =>
+                                setThreads(Number(event.target.value))
+                              }
+                            />
+                            <label className="checkbox">
+                              <input
+                                type="checkbox"
+                                checked={keepIntermediate}
+                                onChange={(event) =>
+                                  setKeepIntermediate(event.target.checked)
+                                }
+                              />
+                              Keep intermediate F16 file
+                            </label>
+                          </>
+                        )}
+                        <label className="checkbox">
+                          <input
+                            type="checkbox"
+                            checked={overwrite}
+                            onChange={(event) =>
+                              setOverwrite(event.target.checked)
+                            }
+                          />
+                          Replace an existing output file
+                        </label>
+                      </div>
+                    </details>
+                  </fieldset>
+                  <div className="form-actions">
+                    <span>
+                      <ShieldCheck size={15} />
+                      Original stays untouched
+                    </span>
+                    <button
+                      className="primary"
+                      disabled={
+                        !source.trim() || !config || active || submitting
+                      }
+                      type="submit"
+                    >
+                      {submitting
+                        ? "Starting…"
+                        : active
+                          ? "Conversion running"
+                          : "Convert model"}
+                      <ArrowRight size={17} />
+                    </button>
+                  </div>
+                </form>
+              </section>
+              <aside className="inspector">
+                <section className="preview-panel">
+                  <div className="panel-heading">
+                    <h2>At a glance</h2>
+                    <span className="tiny-label">OUTPUT PREVIEW</span>
+                  </div>
+                  <div className="preview-art" aria-hidden="true">
+                    <div className="model-cube source-cube">
+                      <Layers3 size={36} />
+                    </div>
+                    <ArrowRight size={19} />
+                    <div className="model-cube output-cube">
+                      <Box size={30} />
+                    </div>
+                    <div className="art-labels">
+                      <span>Original</span>
+                      <span>
+                        {container === "gguf" ? "GGUF" : "Safetensors"}
+                      </span>
+                    </div>
+                  </div>
+                  <dl className="preview-details">
+                    <div>
+                      <dt>Format</dt>
+                      <dd>{format.replace("_MIXED", " · mixed")}</dd>
+                    </div>
+                    <div>
+                      <dt>Architecture</dt>
+                      <dd>{inspection?.architecture || "Not inspected yet"}</dd>
+                    </div>
+                    <div>
+                      <dt>Source size</dt>
+                      <dd>
+                        {inspection ? bytes(inspection.source_bytes) : "—"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Estimated output</dt>
+                      <dd>
+                        {inspection?.estimated_bytes != null
+                          ? bytes(inspection.estimated_bytes)
+                          : "—"}
+                      </dd>
+                    </div>
+                  </dl>
+                  {saving != null && (
+                    <div
+                      className={saving > 0.05 ? "saving" : "saving caution"}
+                    >
+                      <ArrowDown size={16} />
+                      {saving > 0
+                        ? `${(saving * 100).toFixed(1)}% estimated storage saved`
+                        : "No estimated storage saving"}
+                    </div>
+                  )}
+                  <button
+                    className="secondary inspect-button"
+                    disabled={
+                      !source.trim() ||
+                      !config ||
+                      inspecting ||
+                      active ||
+                      submitting
+                    }
+                    onClick={inspect}
+                  >
+                    <RefreshCw size={15} />
+                    {inspecting
+                      ? "Inspecting model…"
+                      : inspection
+                        ? "Refresh estimate"
+                        : "Inspect & estimate"}
+                  </button>
+                  <p className="preview-note">
+                    Estimates depend on source precision and retained tensors.
+                    Actual file size can differ.
+                  </p>
+                </section>
+                <section
+                  className={"job-panel " + (job?.status || "")}
+                  aria-label="Conversion status"
+                >
+                  <div className="job-icon">
+                    {job?.status === "succeeded" ? (
+                      <CheckCircle2 size={22} />
+                    ) : active ? (
+                      <Play size={20} />
+                    ) : (
+                      <Clock3 size={21} />
+                    )}
+                  </div>
+                  <h2 aria-live="polite">{statusText}</h2>
+                  <p>
+                    {!job
+                      ? "Progress and your result will appear here."
+                      : job.status === "succeeded"
+                        ? "Published safely. Ready for your next workflow."
+                        : active
+                          ? "Working in the background. You can keep browsing."
+                          : job.error || "Your original model is safe."}
+                  </p>
+                  {job && (
+                    <>
+                      <div
+                        className="progress-track"
+                        role="progressbar"
+                        aria-label="Conversion progress"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Math.round(job.progress * 100)}
+                      >
+                        <span
+                          style={{ transform: `scaleX(${job.progress})` }}
+                        />
+                      </div>
+                      <div className="progress-caption">
+                        <span>{job.format}</span>
+                        <strong>{Math.round(job.progress * 100)}%</strong>
+                      </div>
+                      {job.output && (
+                        <div className="output-path">
+                          <Check size={14} />
+                          <span>{job.output}</span>
+                        </div>
+                      )}
+                      {active && (
+                        <button
+                          className="secondary cancel-button"
+                          disabled={job.status === "cancelling"}
+                          onClick={async () => {
+                            try {
+                              setJob(
+                                await api<Job>(`jobs/${job.id}/cancel`, {}),
+                              );
+                            } catch (reason) {
+                              setError((reason as Error).message);
+                            }
+                          }}
+                        >
+                          <Square size={13} />
+                          {job.status === "cancelling"
+                            ? "Stopping safely…"
+                            : "Cancel conversion"}
+                        </button>
+                      )}
+                      <details className="job-log">
+                        <summary>View technical log</summary>
+                        <pre>
+                          {job.logs.join("\n") ||
+                            "Waiting for the first update…"}
+                        </pre>
+                      </details>
+                    </>
+                  )}
+                </section>
+              </aside>
+            </div>
+          )}
+          {view === "activity" && (
+            <section className="activity-panel">
+              <div className="panel-heading">
+                <h2>Recent conversions</h2>
+                <span className="tiny-label">THIS SESSION</span>
+              </div>
+              {!history.length ? (
+                <div className="empty-state">
+                  <Clock3 size={38} strokeWidth={1.2} />
+                  <h2>A fresh start.</h2>
+                  <p>Your conversions will appear here once you start a job.</p>
+                  <button
+                    className="secondary"
+                    onClick={() => setView("convert")}
+                  >
+                    Convert your first model
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
+              ) : (
+                history.map((item) => (
+                  <button
+                    className="history-item"
+                    key={item.id}
+                    onClick={() => {
+                      setJob(item);
+                      setView("convert");
+                    }}
+                  >
+                    <FileBox size={23} />
+                    <span>
+                      <strong>{filename(item.source)}</strong>
+                      <small>
+                        {item.format} ·{" "}
+                        {new Date(item.started * 1000).toLocaleTimeString()}
+                      </small>
+                    </span>
+                    <span className={"status-tag " + item.status}>
+                      {item.status}
+                    </span>
+                    <ChevronRight size={17} />
+                  </button>
+                ))
+              )}
+              <p className="session-note">
+                History is kept in memory. Restarting the engine clears this
+                list; output files remain.
+              </p>
+            </section>
+          )}
+          {view === "guide" && (
+            <section className="guide-panel">
+              <div className="guide-feature">
+                <Box size={32} />
+                <h2>GGUF</h2>
+                <p>
+                  Use with the ComfyUI-GGUF loader. Q4_K_M is a practical
+                  starting point; higher-bit formats retain more precision.
+                  K-quants require llama-quantize.
+                </p>
+              </div>
+              <div className="guide-feature">
+                <Layers3 size={32} />
+                <h2>Safetensors</h2>
+                <p>
+                  Load with ComfyUI's native model loader. Mixed formats
+                  preserve sensitive tensors at higher precision. FP8 and INT8
+                  may offer little saving when the source is already FP8.
+                </p>
+              </div>
+              <div className="guide-callout">
+                <ShieldCheck size={22} />
+                <div>
+                  <h2>Compatibility is model-specific.</h2>
+                  <p>
+                    Lower precision can change images. NVFP4 has specific
+                    hardware requirements; INT4 ConvRot remains experimental and
+                    is not offered here. Check the repository's model-support
+                    documentation before choosing a format.
+                  </p>
+                  <a
+                    href="https://github.com/Delcado19/safetensors2GGUF#supported-models"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Read model support
+                    <ArrowRight size={15} />
+                  </a>
+                </div>
+              </div>
+              <div className="guide-callout">
+                <Settings2 size={22} />
+                <div>
+                  <h2>More tools remain in the classic interface.</h2>
+                  <p>
+                    Text encoders, checkpoint extraction, repair tools and
+                    Hugging Face downloads are still available through gui.py
+                    while migration continues.
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
+          <footer className="page-footer">
+            <span>Built for your next creation.</span>
+            <span>Local processing · ComfyUI workflows</span>
+          </footer>
+        </main>
+      </div>
+      <dialog
+        ref={dialog}
+        onCancel={() => setPicker(null)}
+        onClose={() => setPicker(null)}
+        className="file-dialog"
+        aria-labelledby="picker-title"
+      >
+        <div className="dialog-heading">
+          <div>
+            <span className="eyebrow">ON THIS MACHINE</span>
+            <h2 id="picker-title">
+              {picker === "destination"
+                ? "Choose an output folder"
+                : "Choose your source model"}
+            </h2>
+          </div>
+          <button
+            aria-label="Close file browser"
+            onClick={() => setPicker(null)}
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <form
+          className="folder-address"
+          onSubmit={(event) => {
+            event.preventDefault();
+            browse(folderPath);
+          }}
+        >
+          <button
+            type="button"
+            aria-label="Parent directory"
+            disabled={browsing || !listing}
+            onClick={() => browse(listing!.parent)}
+          >
+            <ArrowUp size={18} />
+          </button>
+          <label className="sr-only" htmlFor="folder-path">
+            Folder path
+          </label>
+          <input
+            id="folder-path"
+            value={folderPath}
+            onChange={(event) => setFolderPath(event.target.value)}
+            placeholder="Enter a local folder path"
+          />
+          <button className="secondary" type="submit" disabled={browsing}>
+            Go
+          </button>
+        </form>
+        {pickerError && (
+          <p role="alert" className="picker-error">
+            {pickerError}
+          </p>
+        )}
+        <div className="file-list" aria-busy={browsing}>
+          {browsing ? (
+            <p className="file-empty">Reading folder…</p>
+          ) : (
+            listing?.entries.map((entry) => (
+              <button
+                className="file-entry"
+                key={entry.path}
+                onClick={() => {
+                  if (entry.directory) browse(entry.path);
+                  else {
+                    setSource(entry.path);
+                    setPicker(null);
+                  }
+                }}
+              >
+                {entry.directory ? <Folder size={19} /> : <FileBox size={19} />}
+                <span>{entry.name}</span>
+                <small>
+                  {entry.directory ? (
+                    <ChevronRight size={15} />
+                  ) : (
+                    bytes(entry.size)
+                  )}
+                </small>
+              </button>
+            ))
+          )}
+          {!browsing && listing?.entries.length === 0 && (
+            <p className="file-empty">
+              {picker === "destination"
+                ? "No subfolders. You can select this folder."
+                : "No model files in this folder."}
+            </p>
+          )}
+        </div>
+        <div className="dialog-footer">
+          <span>
+            {listing?.truncated
+              ? "First 1,000 entries shown. Enter a more specific folder."
+              : "Files stay local. Nothing is uploaded."}
+          </span>
+          {picker === "destination" && (
+            <button
+              className="primary"
+              disabled={!listing || browsing}
+              onClick={() => {
+                setDestination(listing!.path + "/");
+                setPicker(null);
+              }}
+            >
+              Use this folder
+              <Check size={16} />
+            </button>
+          )}
+        </div>
+      </dialog>
+    </div>
+  );
+}
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+);

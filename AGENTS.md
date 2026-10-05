@@ -92,6 +92,7 @@ The CI workflow runs on `windows-latest` and mirrors the local validation gates:
 1. `uv sync --dev --frozen`
 2. `uv run pytest --tb=short -q --basetemp .pytest-tmp -p no:cacheprovider`
 3. `uv run ruff check .`
+4. Node 22: `npm ci` and `npm run build` in `frontend` (TypeScript and Vite).
 
 ---
 

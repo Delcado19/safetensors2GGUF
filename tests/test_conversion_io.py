@@ -115,7 +115,7 @@ def test_gguf_write_failure_preserves_existing_output(tmp_path):
 def test_gui_refuses_existing_final_output_before_conversion(tmp_path, quant_key):
     destination = tmp_path / "output.gguf"
     destination.write_bytes(b"original")
-    with patch("gui.convert_file") as convert:
+    with patch("conversion_service.convert_file") as convert:
         with pytest.raises(OSError, match="overwrite is disabled"):
             gui._pipeline("source.safetensors", str(destination), quant_key, "", 0, False, False, queue.Queue())
     convert.assert_not_called()
@@ -126,7 +126,7 @@ def test_gui_refuses_existing_final_output_before_conversion(tmp_path, quant_key
 def test_gui_forwards_overwrite_for_direct_gguf(tmp_path, overwrite):
     destination = str(tmp_path / "output.gguf")
     arch = SimpleNamespace(arch="flux", fix_path=destination + ".5d.safetensors")
-    with patch("gui.convert_file", return_value=(destination, arch)) as convert:
+    with patch("conversion_service.convert_file", return_value=(destination, arch)) as convert:
         assert gui._pipeline("source.safetensors", destination, "F16", "", 0, False, overwrite, queue.Queue()) == destination
     assert convert.call_args.kwargs["overwrite"] is overwrite
 
@@ -252,7 +252,7 @@ def test_wan_pipeline_uses_only_current_jobs_5d_tensors(tmp_path, monkeypatch):
     def fake_quantize(src, dst, *args, **kwargs):
         shutil.copyfile(src, dst)
 
-    with patch("gui.run_quantize", side_effect=fake_quantize):
+    with patch("conversion_service.run_quantize", side_effect=fake_quantize):
         result = gui._pipeline(
             str(source), str(destination), "Q4_K_M", "", 0, False, False, queue.Queue(),
         )

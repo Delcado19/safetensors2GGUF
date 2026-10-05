@@ -6,6 +6,21 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### React workbench preview
+- Add: Local React/TypeScript/Vite and FastAPI workbench for GGUF and quantized
+  safetensors conversion, file browsing, source inspection, job progress,
+  cooperative cancellation and bounded session history.
+- Add: Responsive light/dark design with keyboard focus, native dialog navigation,
+  reduced motion/transparency and immediate pointer feedback.
+- Change: Extract the existing GGUF pipeline/output resolution into a shared
+  frontend-independent service; classic Gradio functionality remains available.
+- Add: API security/lifecycle and actual small-model conversion regression tests;
+  uv-based setup and migration documentation.
+
+- Add: Frontend CI build and repeatable Chromium conversion/responsive smoke check.
+- Fix: Relative typography scales with text preferences; coarse pointers retain
+  44 px targets and session configuration is served without caching.
+
 ### Verified
 - Native INT4 ConvRot SDXL prototype: nine successful ComfyUI renders with
   model-only/full LoRA, classic CPU offload and dynamic VRAM offload. Observed
