@@ -108,10 +108,26 @@ The UI provides:
   every K-quant level collapsed into one cell)
 - **Download from HF tab** — enter a HuggingFace repo ID and a target folder,
   click Download. Multi-shard checkpoints (`model-00001-of-0000N.safetensors`,
-  …) are downloaded into a throwaway temp folder, merged into one tensor dict,
-  and written out as a single `<repo-name>.safetensors` file — the shards are
+  …) are downloaded into a resumable staging folder and streamed one
+  tensor at a time into a single `<repo-name>.safetensors` file — the shards are
   deleted afterwards, so the target folder only ever ends up with the one
   merged file the Convert tabs expect as input
+
+## Output Safety
+
+The conversion and GGUF repair paths write a temporary file next to the chosen
+output and publish it only after successful completion. Cancellation, converter
+errors, or write failures preserve an existing output. An empty output is
+rejected even if an external converter exits successfully. Keep enough free space
+for the new file while the previous output still exists. Source and destination
+must be different files, including hard-link aliases.
+
+All conversion tabs honor **Overwrite existing output** (off by default),
+including the Text Encoder tab. Python callers of `run_quantize()` and the
+`convert_text_encoder*()` functions must pass `overwrite=True` explicitly to
+replace an existing output. External conversion processes can be cancelled
+even while they produce no log output; network downloads, initial tool builds,
+and individual tensor operations still finish their current blocking step.
 
 ## Quantization Levels
 
@@ -228,8 +244,17 @@ uv run python convert.py --src model.safetensors
 llama-quantize.exe model-F16.gguf model-Q8_0.gguf Q8_0
 
 # 3. Insert 5D tensors
-uv run python fix_5d_tensors.py --src model-Q8_0.gguf --dst model-Q8_0-fixed.gguf
+uv run python fix_5d_tensors.py --src model-Q8_0.gguf --dst model-Q8_0-fixed.gguf --fix "path-to-sidecar-printed-by-convert.safetensors"
 ```
+
+Each conversion writes its own `<output>.<job-id>.5d.safetensors` side-car,
+containing only that conversion's tensors. Unique names also preserve the
+companion of an earlier successful output when a replacement conversion fails.
+When quantizing manually, pass the side-car from the first step explicitly
+with `--fix`, as above. Auto-detection uses the basename recorded in GGUF
+metadata first. Without that metadata it tries `<src>.5d.safetensors`, then
+the legacy `fix_5d_tensors_<arch>.safetensors` name. The GUI passes the current
+job's side-car explicitly and uses unique F16 intermediate filenames.
 
 ## Benchmarking llama-quantize
 

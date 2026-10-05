@@ -18,6 +18,8 @@ import gguf
 import numpy as np
 import torch
 from tqdm import tqdm
+from conversion_io import atomic_output, validate_output
+from convert import ConversionCancelled
 from safetensors.torch import load_file
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -51,16 +53,18 @@ def _add_5d_tensor(writer, key, data, on_log=None):
         tqdm.write(msg)
 
 
-def fix_5d_tensors(src_path, dst_path, fix_path=None, overwrite=False, on_progress=None, on_log=None):
+def fix_5d_tensors(src_path, dst_path, fix_path=None, overwrite=False, on_progress=None, on_log=None, cancel_event=None):
     """Insert 5D tensors from fix_path into src GGUF and write to dst_path.
 
     Args:
         src_path: Quantized source GGUF file.
         dst_path: Output GGUF path.
-        fix_path: Side-car safetensors file. Auto-detected when None.
+        fix_path: Side-car safetensors file. Defaults to the GGUF metadata
+            basename, then <src>.5d.safetensors or the legacy architecture name.
         overwrite: Skip output existence check.
         on_progress: Callback(idx, total, key) for each tensor copied.
         on_log: Callback(msg) for informational messages. Uses logging when None.
+        cancel_event: Optional threading.Event; aborts without replacing the output.
 
     Returns:
         List of inserted tensor keys.
@@ -80,7 +84,16 @@ def fix_5d_tensors(src_path, dst_path, fix_path=None, overwrite=False, on_progre
     _info(f"Source arch: '{arch}'  file_type: {file_type}")
 
     if fix_path is None:
-        fix_path = f"./fix_5d_tensors_{arch}.safetensors"
+        sidecar = reader.get_field("comfy.gguf.5d_sidecar")
+        if sidecar is not None:
+            name = str(sidecar.parts[sidecar.data[-1]], encoding="utf-8")
+            # The metadata stores a basename, so moving both files still works.
+            fix_path = os.path.join(os.path.dirname(src_path), os.path.basename(name))
+        else:
+            fix_path = str(src_path) + ".5d.safetensors"
+            if not os.path.isfile(fix_path):
+                # Legacy manually exported side-cars remain supported.
+                fix_path = f"./fix_5d_tensors_{arch}.safetensors"
     if not os.path.isfile(fix_path):
         raise FileNotFoundError(f"5D tensor fix file not found: {fix_path}")
 
@@ -88,8 +101,8 @@ def fix_5d_tensors(src_path, dst_path, fix_path=None, overwrite=False, on_progre
     fix_sd = {k: v.clone() for k, v in load_file(fix_path).items()}
     _info(f"5D tensors to insert: {list(fix_sd.keys())}")
 
-    if os.path.isfile(dst_path) and not overwrite:
-        raise OSError(f"Output exists, use --overwrite: {dst_path}")
+    validate_output(src_path, dst_path, overwrite)
+    validate_output(fix_path, dst_path, overwrite)
 
     writer = gguf.GGUFWriter(path=None, arch=arch)
     writer.add_quantization_version(gguf.GGML_QUANT_VERSION)
@@ -102,6 +115,8 @@ def fix_5d_tensors(src_path, dst_path, fix_path=None, overwrite=False, on_progre
     iter_tensors = tqdm(all_tensors, desc="Copying tensors") if on_progress is None else all_tensors
 
     for idx, tensor in enumerate(iter_tensors):
+        if cancel_event is not None and cancel_event.is_set():
+            raise ConversionCancelled()
         if on_progress is not None:
             on_progress(idx + 1, total, tensor.name)
         writer.add_tensor(tensor.name, tensor.data, raw_dtype=tensor.tensor_type)
@@ -114,14 +129,22 @@ def fix_5d_tensors(src_path, dst_path, fix_path=None, overwrite=False, on_progre
 
     # Insert any remaining 5D tensors not yet placed
     for key, data in fix_sd.items():
+        if cancel_event is not None and cancel_event.is_set():
+            raise ConversionCancelled()
         if key not in inserted:
             _add_5d_tensor(writer, key, data, on_log=on_log)
             inserted.append(key)
 
-    writer.write_header_to_file(path=dst_path)
-    writer.write_kv_data_to_file()
-    writer.write_tensors_to_file(progress=on_log is None)
-    writer.close()
+    with atomic_output(dst_path, overwrite) as temporary:
+        try:
+            writer.write_header_to_file(path=temporary)
+            writer.write_kv_data_to_file()
+            writer.write_tensors_to_file(progress=on_log is None)
+        finally:
+            # Release the Windows handle before temporary-file cleanup.
+            writer.close()
+        if cancel_event is not None and cancel_event.is_set():
+            raise ConversionCancelled()
 
     _info(f"Written: {dst_path}  (inserted {len(inserted)} 5D tensors)")
     return inserted
@@ -133,7 +156,7 @@ def _parse_args():
     )
     parser.add_argument("--src", required=True, help="Source GGUF (quantized)")
     parser.add_argument("--dst", required=True, help="Output GGUF path")
-    parser.add_argument("--fix", help="Side-car safetensors (default: fix_5d_tensors_<arch>.safetensors)")
+    parser.add_argument("--fix", help="Side-car safetensors (default: GGUF side-car metadata, then legacy filenames)")
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
     if not os.path.isfile(args.src):

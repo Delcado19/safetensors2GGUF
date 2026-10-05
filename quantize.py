@@ -13,6 +13,8 @@ import os
 import re
 import struct
 import subprocess
+from contextlib import closing
+from conversion_io import atomic_output, iter_process_output, validate_output
 import tempfile
 import time
 from dataclasses import dataclass
@@ -278,6 +280,7 @@ def run_quantize(
     on_log=None,
     nthreads: int | None = None,
     cancel_event=None,
+    overwrite: bool = False,
 ) -> None:
     """Run llama-quantize and stream its output through the callbacks.
 
@@ -289,6 +292,7 @@ def run_quantize(
         on_progress: Callback(idx, total, desc) fired on each progress line.
         on_log: Callback(msg) fired for every output line.
         nthreads: Optional thread count forwarded to llama-quantize.
+        overwrite: Replace an existing destination only on success (default False).
         cancel_event: Optional threading.Event; terminates the subprocess and raises
             ConversionCancelled when set.
 
@@ -303,6 +307,7 @@ def run_quantize(
             "llama-quantize.exe not found — set the path in Advanced settings."
         )
 
+    validate_output(src, dst, overwrite)
     cmd = [str(exe), str(src), str(dst), quant_type]
     if nthreads:
         cmd.append(str(nthreads))
@@ -313,35 +318,23 @@ def run_quantize(
 
     _emit(f"INFO:  $ {' '.join(cmd)}")
 
-    proc = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        bufsize=1,
-    )
-
-    for line in proc.stdout:
-        if cancel_event is not None and cancel_event.is_set():
-            proc.terminate()
-            proc.wait()
-            raise ConversionCancelled()
-
-        line = line.rstrip()
-        if not line:
-            continue
-        _emit(line)
-        m = _PROGRESS_RE.search(line)
-        if m and on_progress:
-            on_progress(int(m.group(1)), int(m.group(2)), line[:72])
-
-    proc.wait()
-    if proc.returncode not in (0, -15):  # -15 = SIGTERM from terminate()
-        raise RuntimeError(
-            f"llama-quantize exited with code {proc.returncode}"
+    with atomic_output(dst, overwrite) as temporary:
+        cmd[2] = temporary
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding="utf-8", errors="replace", bufsize=1,
         )
+        with closing(iter_process_output(proc, cancel_event, ConversionCancelled)) as lines:
+            for line in lines:
+                line = line.rstrip()
+                if not line:
+                    continue
+                _emit(line)
+                m = _PROGRESS_RE.search(line)
+                if m and on_progress:
+                    on_progress(int(m.group(1)), int(m.group(2)), line[:72])
+        if proc.returncode != 0:
+            raise RuntimeError(f"llama-quantize exited with code {proc.returncode}")
 
 
 def benchmark_quantize_binary(

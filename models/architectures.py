@@ -1,9 +1,9 @@
 """Model architecture definitions and detection logic for safetensors-to-GGUF conversion."""
 
-import os
 import torch
 from tqdm import tqdm
-from safetensors.torch import load_file, save_file
+from safetensors.torch import save_file
+from conversion_io import atomic_output
 
 QUANTIZATION_THRESHOLD = 1024
 REARRANGE_THRESHOLD = 512
@@ -225,17 +225,19 @@ class ModelHyVid(ModelTemplate):
     def handle_nd_tensor(self, key, data):
         """Write 5D tensor to a side-car safetensors file for later re-insertion.
 
-        Appends to an existing fix file so models with multiple 5D tensors
-        (e.g. Wan VACE) don't crash on the second occurrence.
+        Accumulates only this instance's tensors (Issue #291: multiple 5D
+        tensors). Never reads an earlier checkpoint's side-car. convert_file
+        sets a unique fix_path and defers publication until the main output is
+        ready; direct callers retain the legacy name and immediate export.
         """
-        path = f"./fix_5d_tensors_{self.arch}.safetensors"
-        existing = {}
-        if os.path.isfile(path):
-            # Clone to release the mmap before overwriting the file (Windows)
-            existing = {k: v.clone() for k, v in load_file(path).items()}
-        existing[key] = torch.from_numpy(data)
-        save_file(existing, path)
-        tqdm.write(f"5D tensor exported for manual fix: {key} {data.shape}")
+        path = getattr(self, "fix_path", f"./fix_5d_tensors_{self.arch}.safetensors")
+        if not hasattr(self, "_nd_tensors"):
+            self._nd_tensors = {}
+        self._nd_tensors[key] = torch.from_numpy(data).clone()
+        if not getattr(self, "_defer_nd_write", False):
+            with atomic_output(path, overwrite=True) as temporary:
+                save_file(self._nd_tensors, temporary)
+        tqdm.write(f"5D tensor prepared for side-car export: {key} {data.shape}")
 
 
 class ModelWan(ModelHyVid):

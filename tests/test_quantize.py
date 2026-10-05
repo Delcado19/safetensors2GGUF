@@ -214,12 +214,20 @@ def _mock_proc(lines: list[str], returncode: int = 0) -> MagicMock:
     return proc
 
 
+def _fake_popen(proc):
+    def start(cmd, **kwargs):
+        # The real binary writes to the transactional path passed in argv.
+        Path(cmd[2]).write_bytes(b"quantized output")
+        return proc
+    return start
+
+
 class TestRunQuantize:
     def test_raises_file_not_found_when_exe_missing(self, tmp_path):
         with pytest.raises(FileNotFoundError, match="not found"):
-            run_quantize("src.gguf", "dst.gguf", "Q4_K_M", exe=tmp_path / "nope.exe")
+            run_quantize("src.gguf", str(tmp_path / "dst.gguf"), "Q4_K_M", exe=tmp_path / "nope.exe")
 
-    def test_raises_file_not_found_when_exe_none_and_default_missing(self):
+    def test_raises_file_not_found_when_exe_none_and_default_missing(self, tmp_path):
         with (
             patch.dict("os.environ", {}, clear=True),
             patch("quantize.DEFAULT_EASY_INSTALL_ROOT", Path("/nonexistent/ComfyUI-Easy-Install")),
@@ -227,20 +235,22 @@ class TestRunQuantize:
             patch("shutil.which", return_value=None),
         ):
             with pytest.raises(FileNotFoundError):
-                run_quantize("src.gguf", "dst.gguf", "Q4_K_M")
+                run_quantize("src.gguf", str(tmp_path / "dst.gguf"), "Q4_K_M")
 
     def test_calls_subprocess_with_correct_args(self, tmp_path):
         fake_exe = tmp_path / "llama-quantize.exe"
         fake_exe.touch()
         proc = _mock_proc(["[  1/  5] layer\n"])
 
-        with patch("quantize.subprocess.Popen", return_value=proc) as mock_popen:
-            run_quantize("src.gguf", "dst.gguf", "Q4_K_M", exe=fake_exe)
+        with patch("quantize.subprocess.Popen", side_effect=_fake_popen(proc)) as mock_popen:
+            run_quantize("src.gguf", str(tmp_path / "dst.gguf"), "Q4_K_M", exe=fake_exe)
 
         cmd = mock_popen.call_args[0][0]
         assert str(fake_exe) in cmd
         assert "src.gguf" in cmd
-        assert "dst.gguf" in cmd
+        assert Path(cmd[2]).parent == tmp_path
+        assert Path(cmd[2]).name.startswith(".dst.gguf.")
+        assert (tmp_path / "dst.gguf").is_file()
         assert "Q4_K_M" in cmd
 
     def test_appends_nthreads_when_given(self, tmp_path):
@@ -248,8 +258,8 @@ class TestRunQuantize:
         fake_exe.touch()
         proc = _mock_proc([])
 
-        with patch("quantize.subprocess.Popen", return_value=proc) as mock_popen:
-            run_quantize("src.gguf", "dst.gguf", "Q6_K", exe=fake_exe, nthreads=8)
+        with patch("quantize.subprocess.Popen", side_effect=_fake_popen(proc)) as mock_popen:
+            run_quantize("src.gguf", str(tmp_path / "dst.gguf"), "Q6_K", exe=fake_exe, nthreads=8)
 
         cmd = mock_popen.call_args[0][0]
         assert "8" in cmd
@@ -266,9 +276,9 @@ class TestRunQuantize:
         proc = _mock_proc(lines)
         calls: list[tuple[int, int]] = []
 
-        with patch("quantize.subprocess.Popen", return_value=proc):
+        with patch("quantize.subprocess.Popen", side_effect=_fake_popen(proc)):
             run_quantize(
-                "src.gguf", "dst.gguf", "Q4_K_M",
+                "src.gguf", str(tmp_path / "dst.gguf"), "Q4_K_M",
                 exe=fake_exe,
                 on_progress=lambda idx, total, desc: calls.append((idx, total)),
             )
@@ -282,9 +292,9 @@ class TestRunQuantize:
         proc = _mock_proc(lines)
         logged: list[str] = []
 
-        with patch("quantize.subprocess.Popen", return_value=proc):
+        with patch("quantize.subprocess.Popen", side_effect=_fake_popen(proc)):
             run_quantize(
-                "src.gguf", "dst.gguf", "Q4_K_M",
+                "src.gguf", str(tmp_path / "dst.gguf"), "Q4_K_M",
                 exe=fake_exe,
                 on_log=logged.append,
             )
@@ -300,17 +310,17 @@ class TestRunQuantize:
         fake_exe.touch()
         proc = _mock_proc([], returncode=1)
 
-        with patch("quantize.subprocess.Popen", return_value=proc):
+        with patch("quantize.subprocess.Popen", side_effect=_fake_popen(proc)):
             with pytest.raises(RuntimeError, match="code 1"):
-                run_quantize("src.gguf", "dst.gguf", "Q4_K_M", exe=fake_exe)
+                run_quantize("src.gguf", str(tmp_path / "dst.gguf"), "Q4_K_M", exe=fake_exe)
 
     def test_uses_bufsize_1_for_line_buffering(self, tmp_path):
         fake_exe = tmp_path / "llama-quantize.exe"
         fake_exe.touch()
         proc = _mock_proc([])
 
-        with patch("quantize.subprocess.Popen", return_value=proc) as mock_popen:
-            run_quantize("src.gguf", "dst.gguf", "Q4_K_M", exe=fake_exe)
+        with patch("quantize.subprocess.Popen", side_effect=_fake_popen(proc)) as mock_popen:
+            run_quantize("src.gguf", str(tmp_path / "dst.gguf"), "Q4_K_M", exe=fake_exe)
 
         kwargs = mock_popen.call_args[1]
         assert kwargs.get("bufsize") == 1, "bufsize=1 required to avoid buffering delay"

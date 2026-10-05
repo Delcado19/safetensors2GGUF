@@ -15,6 +15,7 @@ import sys
 
 import torch
 
+from conversion_io import atomic_output, validate_output
 from convert import _TORCH_TO_ST_DTYPE, load_state_dict
 from dequantize import (
     _PASSTHROUGH_TENSOR_SUFFIXES,
@@ -193,6 +194,9 @@ def convert_to_safetensors(
             text-encoder architecture detection on the output file. Callers
             for text-encoder sources must pass False.
 
+    The destination is published atomically after success. Cancellation or
+    failure preserves any previous output; source/destination aliases are rejected.
+
     Returns:
         (dst_path, model_arch)
     """
@@ -235,8 +239,7 @@ def convert_to_safetensors(
         # _FILENAME_SUFFIX comment. Every other key's suffix is unchanged.
         dst_path = f"{os.path.splitext(path)[0]}-{filename_suffix_for(target_key)}.safetensors"
 
-    if os.path.isfile(dst_path) and not overwrite:
-        raise OSError(f"Output exists and overwrite is disabled: {dst_path}")
+    validate_output(path, dst_path, overwrite)
 
     # --- Pass 1: plan every output tensor's (name, dtype, shape) and the
     # full _quantization_metadata, from shape/dtype metadata alone -- no
@@ -295,58 +298,62 @@ def convert_to_safetensors(
     log_tensor_every = max(1, int(log_tensor_every or 1))
     entry_idx = 0
     idx = 0
-    with open(dst_path, "wb") as fh:
-        _write_header(fh, header)
+    # Preserve the previous output on cancellation, quantization errors or disk failures.
+    with atomic_output(dst_path, overwrite) as temporary:
+        with open(temporary, "wb") as fh:
+            _write_header(fh, header)
 
-        for key, is_passthrough in _iter_output_keys(state_dict, model_arch, quant_skip_keys):
-            if cancel_event is not None and cancel_event.is_set():
-                raise RuntimeError("cancelled")
-            if on_progress:
-                on_progress(idx + 1, total, key)
-            idx += 1
+            for key, is_passthrough in _iter_output_keys(state_dict, model_arch, quant_skip_keys):
+                if cancel_event is not None and cancel_event.is_set():
+                    raise RuntimeError("cancelled")
+                if on_progress:
+                    on_progress(idx + 1, total, key)
+                idx += 1
 
-            if is_passthrough:
+                if is_passthrough:
+                    data = state_dict[key]
+                    exp_name, exp_dtype, exp_shape = entries[entry_idx]
+                    entry_idx += 1
+                    assert key == exp_name and tuple(data.shape) == exp_shape, (
+                        f"Streaming writer plan mismatch for passthrough {key!r}: "
+                        f"planned shape {exp_shape}, got {tuple(data.shape)}"
+                    )
+                    fh.write(_tensor_bytes(data))
+                    continue
+
                 data = state_dict[key]
-                exp_name, exp_dtype, exp_shape = entries[entry_idx]
-                entry_idx += 1
-                assert key == exp_name and tuple(data.shape) == exp_shape, (
-                    f"Streaming writer plan mismatch for passthrough {key!r}: "
-                    f"planned shape {exp_shape}, got {tuple(data.shape)}"
-                )
-                fh.write(_tensor_bytes(data))
-                continue
+                if key in quant_formats:
+                    data = dequantize_weight(state_dict, key, quant_formats[key], data)
+                old_dtype = data.dtype
+                if _FLOAT8_DTYPES and data.dtype in _FLOAT8_DTYPES:
+                    data = data.to(torch.float16)
+                data = torch.nan_to_num(data, nan=0.0, posinf=65504.0, neginf=-65504.0)
+                quantized = quantize_tensor_st(data, key, model_arch, target_key)
+                if (
+                    log_tensor_every == 1
+                    or idx == 1
+                    or idx == total
+                    or idx % log_tensor_every == 0
+                ):
+                    _log(f"  {key}  {old_dtype} -> {target_key}")
 
-            data = state_dict[key]
-            if key in quant_formats:
-                data = dequantize_weight(state_dict, key, quant_formats[key], data)
-            old_dtype = data.dtype
-            if _FLOAT8_DTYPES and data.dtype in _FLOAT8_DTYPES:
-                data = data.to(torch.float16)
-            data = torch.nan_to_num(data, nan=0.0, posinf=65504.0, neginf=-65504.0)
-            quantized = quantize_tensor_st(data, key, model_arch, target_key)
-            if (
-                log_tensor_every == 1
-                or idx == 1
-                or idx == total
-                or idx % log_tensor_every == 0
-            ):
-                _log(f"  {key}  {old_dtype} -> {target_key}")
-
-            for name, tensor in quantized.items():
-                exp_name, exp_dtype, exp_shape = entries[entry_idx]
-                entry_idx += 1
-                assert (
-                    name == exp_name
-                    and tuple(tensor.shape) == exp_shape
-                    and _TORCH_TO_ST_DTYPE[tensor.dtype] == exp_dtype
-                ), (
-                    f"Streaming writer plan mismatch for {name!r}: planned "
-                    f"{exp_dtype}/{exp_shape}, got real "
-                    f"{_TORCH_TO_ST_DTYPE[tensor.dtype]}/{tuple(tensor.shape)} -- "
-                    "Pass 1 (plan_tensor_output) and Pass 2 (quantize_tensor_st) "
-                    "have drifted apart"
-                )
-                fh.write(_tensor_bytes(tensor))
+                for name, tensor in quantized.items():
+                    exp_name, exp_dtype, exp_shape = entries[entry_idx]
+                    entry_idx += 1
+                    assert (
+                        name == exp_name
+                        and tuple(tensor.shape) == exp_shape
+                        and _TORCH_TO_ST_DTYPE[tensor.dtype] == exp_dtype
+                    ), (
+                        f"Streaming writer plan mismatch for {name!r}: planned "
+                        f"{exp_dtype}/{exp_shape}, got real "
+                        f"{_TORCH_TO_ST_DTYPE[tensor.dtype]}/{tuple(tensor.shape)} -- "
+                        "Pass 1 (plan_tensor_output) and Pass 2 (quantize_tensor_st) "
+                        "have drifted apart"
+                    )
+                    fh.write(_tensor_bytes(tensor))
+        if cancel_event is not None and cancel_event.is_set():
+            raise RuntimeError("cancelled")
 
     _log(f"INFO:  Done -> {dst_path}")
 

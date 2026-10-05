@@ -15,6 +15,8 @@ import logging
 import gguf
 import numpy as np
 from tqdm import tqdm
+from conversion_io import atomic_output, validate_output
+from convert import ConversionCancelled
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
@@ -35,7 +37,7 @@ def _read_file_type(reader):
     return gguf.LlamaFileType(int(field.parts[field.data[-1]].flat[0]))
 
 
-def fix_pad_tokens(src_path, dst_path, overwrite=False, on_progress=None, on_log=None):
+def fix_pad_tokens(src_path, dst_path, overwrite=False, on_progress=None, on_log=None, cancel_event=None):
     """Rewrite a Lumina2 GGUF correcting 1D pad token shapes to [1, D].
 
     Args:
@@ -44,9 +46,10 @@ def fix_pad_tokens(src_path, dst_path, overwrite=False, on_progress=None, on_log
         overwrite: Skip output existence check.
         on_progress: Callback(idx, total, key) per tensor.
         on_log: Callback(msg) for informational messages. Uses logging when None.
+        cancel_event: Optional threading.Event; aborts without replacing the output.
 
     Returns:
-        List of tensor names that were reshaped.
+        Path to the repaired GGUF file.
     """
     def _info(msg):
         if on_log:
@@ -56,8 +59,7 @@ def fix_pad_tokens(src_path, dst_path, overwrite=False, on_progress=None, on_log
 
     if not os.path.isfile(src_path):
         raise FileNotFoundError(f"Source GGUF not found: {src_path}")
-    if os.path.isfile(dst_path) and not overwrite:
-        raise OSError(f"Output exists, use --overwrite: {dst_path}")
+    validate_output(src_path, dst_path, overwrite)
 
     reader = gguf.GGUFReader(src_path)
     arch = _read_arch(reader)
@@ -75,6 +77,8 @@ def fix_pad_tokens(src_path, dst_path, overwrite=False, on_progress=None, on_log
     iter_tensors = tqdm(all_tensors, desc="Copying tensors") if on_progress is None else all_tensors
 
     for idx, tensor in enumerate(iter_tensors):
+        if cancel_event is not None and cancel_event.is_set():
+            raise ConversionCancelled()
         if on_progress is not None:
             on_progress(idx + 1, total, tensor.name)
 
@@ -91,10 +95,16 @@ def fix_pad_tokens(src_path, dst_path, overwrite=False, on_progress=None, on_log
     if not fixed:
         _info("No pad tokens needed reshaping — GGUF may already be correct.")
 
-    writer.write_header_to_file(path=dst_path)
-    writer.write_kv_data_to_file()
-    writer.write_tensors_to_file(progress=on_log is None)
-    writer.close()
+    with atomic_output(dst_path, overwrite) as temporary:
+        try:
+            writer.write_header_to_file(path=temporary)
+            writer.write_kv_data_to_file()
+            writer.write_tensors_to_file(progress=on_log is None)
+        finally:
+            # Release the Windows handle before temporary-file cleanup.
+            writer.close()
+        if cancel_event is not None and cancel_event.is_set():
+            raise ConversionCancelled()
 
     _info(f"Written: {dst_path}  (reshaped: {fixed})")
     return dst_path

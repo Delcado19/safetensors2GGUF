@@ -14,11 +14,13 @@ import json
 import struct
 import logging
 import argparse
+import uuid
 
 import gguf
 import torch
 from tqdm import tqdm
 from safetensors import safe_open
+from safetensors.torch import save_file
 
 from models.architectures import (
     detect_arch,
@@ -28,6 +30,7 @@ from models.architectures import (
     REARRANGE_THRESHOLD,
 )
 from dequantize import _scan_quantized_layers, dequantize_weight
+from conversion_io import atomic_output, validate_output
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
@@ -461,6 +464,11 @@ def convert_file(
             reporting progress for each tensor.
         apply_unsqueeze: Reshape architecture-specific 1D tensors to [1, D].
 
+    Output publication is atomic; cancellation or write failure preserves an
+    existing destination. Source/destination aliases are rejected. 5D tensors
+    are exported to <dst_path>.<job-id>.5d.safetensors; model_arch.fix_path
+    exposes it and the GGUF records its basename for automatic discovery.
+
     Returns:
         (dst_path, model_arch)
     """
@@ -500,9 +508,14 @@ def convert_file(
     if os.path.isfile(dst_path) and not overwrite:
         if interact:
             input(f"Output exists: {dst_path}\nPress Enter to overwrite or Ctrl-C to abort.")
+            overwrite = True
         else:
             raise OSError(f"Output exists and overwrite is disabled: {dst_path}")
 
+    validate_output(path, dst_path, overwrite=True)
+    # A checkpoint-specific side-car prevents stale 5D tensors from another model.
+    model_arch.fix_path = f"{dst_path}.{uuid.uuid4().hex}.5d.safetensors"
+    model_arch._defer_nd_write = True
     _info(f"Output: {dst_path}  [{ftype_name}]")
 
     # use_temp_file=True spills converted tensors to a tempfile-backed
@@ -528,14 +541,36 @@ def convert_file(
         del state_dict
         raise
 
-    _info("Writing GGUF file…")
-    writer.write_header_to_file(path=dst_path)
-    writer.write_kv_data_to_file()
-    writer.write_tensors_to_file(progress=on_log is None)
-    writer.close()
+    if getattr(model_arch, "_nd_tensors", None):
+        writer.add_string("comfy.gguf.5d_sidecar", os.path.basename(model_arch.fix_path))
 
-    fix_path = f"./fix_5d_tensors_{model_arch.arch}.safetensors"
-    if os.path.isfile(fix_path):
+    _info("Writing GGUF file…")
+    sidecar_published = False
+    try:
+        with atomic_output(dst_path, overwrite) as temporary:
+            try:
+                writer.write_header_to_file(path=temporary)
+                writer.write_kv_data_to_file()
+                writer.write_tensors_to_file(progress=on_log is None)
+            finally:
+                # Close before atomic_output removes/replaces the file (Windows).
+                writer.close()
+            if cancel_event is not None and cancel_event.is_set():
+                raise ConversionCancelled()
+            if getattr(model_arch, "_nd_tensors", None):
+                # Never replace an earlier successful conversion's companion file.
+                with atomic_output(model_arch.fix_path) as sidecar:
+                    save_file(model_arch._nd_tensors, sidecar)
+                sidecar_published = True
+                if cancel_event is not None and cancel_event.is_set():
+                    raise ConversionCancelled()
+    except BaseException:
+        if sidecar_published:
+            os.unlink(model_arch.fix_path)
+        raise
+
+    fix_path = model_arch.fix_path
+    if getattr(model_arch, "_nd_tensors", None):
         _info(
             f"5D tensor fix file found: '{fix_path}'. "
             "Run Fix 5D Tensors after quantization with llama-quantize."

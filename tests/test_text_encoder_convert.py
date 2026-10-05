@@ -334,7 +334,12 @@ class TestConvertTextEncoder:
              patch("text_encoder_convert.subprocess.Popen") as mock_popen:
             mock_proc = mock_popen.return_value
             mock_proc.stdout = iter(["INFO: done\n"])
-            mock_proc.wait.return_value = 0
+            def finish(**kwargs):
+                cmd = mock_popen.call_args.args[0]
+                Path(cmd[cmd.index("--outfile") + 1]).write_bytes(b"GGUF output")
+                return 0
+
+            mock_proc.wait.side_effect = finish
             mock_proc.returncode = 0
 
             out = convert_text_encoder(
@@ -372,7 +377,12 @@ class TestConvertTextEncoder:
              patch("text_encoder_convert.subprocess.Popen") as mock_popen:
             mock_proc = mock_popen.return_value
             mock_proc.stdout = iter(["INFO: done\n"])
-            mock_proc.wait.return_value = 0
+            def finish(**kwargs):
+                cmd = mock_popen.call_args.args[0]
+                Path(cmd[cmd.index("--outfile") + 1]).write_bytes(b"GGUF output")
+                return 0
+
+            mock_proc.wait.side_effect = finish
             mock_proc.returncode = 0
 
             convert_text_encoder(str(weights), dst_path=str(tmp_path / "out.gguf"))

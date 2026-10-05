@@ -31,6 +31,8 @@ import os
 import re
 import shutil
 import subprocess
+from contextlib import closing
+from conversion_io import atomic_output, iter_process_output, validate_output
 import sys
 import tempfile
 from pathlib import Path
@@ -554,8 +556,12 @@ def convert_text_encoder(
     outtype: str = "f16",
     on_log=None,
     cancel_event=None,
+    overwrite: bool = False,
 ) -> str:
     """Convert a bare single-file text-encoder checkpoint to GGUF.
+
+    Existing output requires overwrite=True. Publish only on success; reject
+    source aliases and cancel even when the external converter is silent.
 
     Fetches config.json/tokenizer files for the base model, assembles a temp
     HF-style model directory with the local weights, then runs
@@ -583,6 +589,11 @@ def convert_text_encoder(
                 enc = sys.stdout.encoding or "ascii"
                 print(msg.encode(enc, errors="replace").decode(enc))
 
+    if dst_path is None:
+        dst_path = f"{weights_path.rsplit('.', 1)[0]}-{outtype}.gguf"
+
+    validate_output(weights_path, dst_path, overwrite)
+
     if base_repo_id and base_repo_id.strip():
         _reject_if_gguf_unsupported(_VENDORED_REPOS.get(base_repo_id.strip()))
     else:
@@ -600,41 +611,35 @@ def convert_text_encoder(
     # rejected CLIP family fails fast instead of triggering a clone first.
     script = find_convert_script()
 
-    if dst_path is None:
-        dst_path = f"{weights_path.rsplit('.', 1)[0]}-{outtype}.gguf"
+    with atomic_output(dst_path, overwrite) as temporary:
+        with tempfile.TemporaryDirectory(prefix="s2g_text_encoder_") as tmpdir:
+            tmp_path = Path(tmpdir)
+            if base_repo_id and base_repo_id.strip():
+                _log(f"INFO:  Fetching config/tokenizer for {base_repo_id}…")
+                fetch_base_config_files(base_repo_id.strip(), tmp_path, on_log=_log)
+            else:
+                _log(f"INFO:  Auto-detected base model family: {family}")
+                _copy_vendored_family(family, tmp_path, on_log=_log)
 
-    with tempfile.TemporaryDirectory(prefix="s2g_text_encoder_") as tmpdir:
-        tmp_path = Path(tmpdir)
-        if base_repo_id and base_repo_id.strip():
-            _log(f"INFO:  Fetching config/tokenizer for {base_repo_id}…")
-            fetch_base_config_files(base_repo_id.strip(), tmp_path, on_log=_log)
-        else:
-            _log(f"INFO:  Auto-detected base model family: {family}")
-            _copy_vendored_family(family, tmp_path, on_log=_log)
+            weights_dst = tmp_path / "model.safetensors"
+            _copy_weights_for_gguf(weights_path, weights_dst)
 
-        weights_dst = tmp_path / "model.safetensors"
-        _copy_weights_for_gguf(weights_path, weights_dst)
+            cmd = [
+                sys.executable, str(script), str(tmp_path),
+                "--outfile", temporary,
+                "--outtype", outtype,
+            ]
+            _log(f"INFO:  $ {' '.join(cmd)}")
 
-        cmd = [
-            sys.executable, str(script), str(tmp_path),
-            "--outfile", dst_path,
-            "--outtype", outtype,
-        ]
-        _log(f"INFO:  $ {' '.join(cmd)}")
-
-        proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            text=True, encoding="utf-8", errors="replace", bufsize=1,
-        )
-        for line in proc.stdout:
-            if cancel_event is not None and cancel_event.is_set():
-                proc.terminate()
-                proc.wait()
-                raise RuntimeError("cancelled")
-            _log(line.rstrip())
-        proc.wait()
-        if proc.returncode != 0:
-            raise RuntimeError(f"convert_hf_to_gguf.py exited with code {proc.returncode}")
+            proc = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True, encoding="utf-8", errors="replace", bufsize=1,
+            )
+            with closing(iter_process_output(proc, cancel_event)) as lines:
+                for line in lines:
+                    _log(line.rstrip())
+            if proc.returncode != 0:
+                raise RuntimeError(f"convert_hf_to_gguf.py exited with code {proc.returncode}")
 
     return dst_path
 
@@ -646,8 +651,12 @@ def convert_text_encoder_kquant(
     quant_key: str = "Q4_K_M",
     on_log=None,
     cancel_event=None,
+    overwrite: bool = False,
 ) -> str:
     """Convert a text-encoder checkpoint to a K-quant GGUF (e.g. Q4_K_M).
+
+    Existing output requires overwrite=True. Publish only on success; reject
+    source aliases and cancel even when the external converter is silent.
 
     Two-pass: convert_text_encoder() produces an F16 intermediate, then a
     plain (unpatched) llama-quantize — built via ensure_plain_llama_quantize,
@@ -671,6 +680,7 @@ def convert_text_encoder_kquant(
     if dst_path is None:
         dst_path = f"{weights_path.rsplit('.', 1)[0]}-{quant_key}.gguf"
 
+    validate_output(weights_path, dst_path, overwrite)
     with tempfile.TemporaryDirectory(prefix="s2g_te_kquant_") as tmpdir:
         intermediate = str(Path(tmpdir) / "intermediate-f16.gguf")
         convert_text_encoder(
@@ -682,7 +692,7 @@ def convert_text_encoder_kquant(
         _log(f"INFO:  Quantizing to {quant_key} with plain llama-quantize…")
         run_quantize(
             intermediate, dst_path, quant_key, exe=exe,
-            on_log=on_log, cancel_event=cancel_event,
+            on_log=on_log, cancel_event=cancel_event, overwrite=overwrite,
         )
 
     return dst_path
@@ -749,6 +759,7 @@ def convert_text_encoder_to_safetensors(
     target_key: str = "FP8",
     on_log=None,
     cancel_event=None,
+    overwrite: bool = False,
 ) -> str:
     """Convert a text-encoder checkpoint to a quantized .safetensors file
     (FP8/FP8_MIXED/INT8/INT8_MIXED/NVFP4/NVFP4_MIXED).
@@ -761,6 +772,8 @@ def convert_text_encoder_to_safetensors(
     below) — an earlier version of this docstring claimed otherwise; a live
     ComfyUI test with NVFP4 on a real Qwen3-4B checkpoint proved that wrong.
 
+    Existing output requires overwrite=True and remains intact on failure.
+
     strip_prefixes=False: convert_to_safetensors()'s default "model."-prefix
     stripping assumes that prefix wraps a diffusion UNet inside a larger
     checkpoint. A standalone text-encoder file has no such wrapper -- "model."
@@ -771,7 +784,7 @@ def convert_text_encoder_to_safetensors(
     class at load time.
     """
     dst, _ = convert_to_safetensors(
-        weights_path, dst_path=dst_path, target_key=target_key, overwrite=True,
+        weights_path, dst_path=dst_path, target_key=target_key, overwrite=overwrite,
         on_log=on_log, cancel_event=cancel_event, model_arch=_TEXT_ENCODER_MODEL_ARCH,
         strip_prefixes=False,
     )
@@ -785,29 +798,33 @@ def convert_text_encoder_any(
     format_key: str,
     on_log=None,
     cancel_event=None,
+    overwrite: bool = False,
 ) -> str:
     """Dispatch to the right text-encoder conversion backend for format_key.
 
-    format_key is one of TEXT_ENCODER_FORMAT_CHOICES' keys: a GGUF direct
-    outtype (F32/F16/BF16/Q8_0), a GGUF K-quant (Q6_K..Q2_K, LLAMA_QUANT_KEYS),
-    or a safetensors-quant format (TEXT_ENCODER_SAFETENSORS_FORMATS —
-    base_repo_id is ignored for these, no HF download needed).
+    format_key is one of TEXT_ENCODER_FORMAT_CHOICES' keys: a direct GGUF
+    outtype (F32/F16/BF16/Q8_0), a GGUF K-quant (LLAMA_QUANT_KEYS), or a
+    safetensors format (TEXT_ENCODER_SAFETENSORS_FORMATS). base_repo_id is
+    ignored for safetensors formats; they need no HF download.
+
+    overwrite is forwarded to the final output backend (default False).
+    Intermediate files never require overwrite permission.
     """
     if format_key in TEXT_ENCODER_SAFETENSORS_FORMATS:
         real_target_key = _TEXT_ENCODER_SAFETENSORS_TARGET_KEY.get(format_key, format_key)
         return convert_text_encoder_to_safetensors(
             weights_path, dst_path=dst_path, target_key=real_target_key,
-            on_log=on_log, cancel_event=cancel_event,
+            on_log=on_log, cancel_event=cancel_event, overwrite=overwrite,
         )
     if format_key in LLAMA_QUANT_KEYS:
         return convert_text_encoder_kquant(
             weights_path, base_repo_id, dst_path=dst_path, quant_key=format_key,
-            on_log=on_log, cancel_event=cancel_event,
+            on_log=on_log, cancel_event=cancel_event, overwrite=overwrite,
         )
     outtype = _GGUF_DIRECT_OUTTYPES.get(format_key)
     if outtype is None:
         raise ValueError(f"Unknown text-encoder format: {format_key!r}")
     return convert_text_encoder(
         weights_path, base_repo_id, dst_path=dst_path, outtype=outtype,
-        on_log=on_log, cancel_event=cancel_event,
+        on_log=on_log, cancel_event=cancel_event, overwrite=overwrite,
     )

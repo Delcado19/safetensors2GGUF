@@ -7,6 +7,7 @@ import html
 import os
 import queue
 import threading
+import uuid
 from pathlib import Path
 from typing import Generator
 
@@ -24,6 +25,7 @@ from component_extract import (
     format_component_analysis,
 )
 from convert import ConversionCancelled, convert_file, load_state_dict
+from conversion_io import validate_output
 from convert_safetensors import convert_to_safetensors
 from fix_5d_tensors import fix_5d_tensors as _fix_5d
 from fix_pad_tokens import fix_pad_tokens as _fix_pad
@@ -1364,6 +1366,9 @@ def _pipeline(
     exe = exe_path.strip() or None
     nthreads = int(nthreads or 0) or None
 
+    # Check the final output before doing expensive work; honor the GUI checkbox.
+    final_dst = _resolve_dst(src, dst_raw, quant_key) or str(_strip_model_suffix(src)) + f"-{quant_key}.gguf"
+    validate_output(src, final_dst, overwrite)
     is_kquant = quant_key in LLAMA_QUANT_KEYS
     # Total-step count for k-quants is 2 normally, 3 if a 5D side-car exists.
     # We only know needs_fix after step 1, so step 1 shows "1/2+" as a hint.
@@ -1375,24 +1380,22 @@ def _pipeline(
 
     if is_kquant:
         target_qt, _ = PYTHON_PRECISIONS["F16"]
-        # Resolve the final destination first so the intermediate lands next to it
-        final_dst = _resolve_dst(src, dst_raw, quant_key)
-        if final_dst:
-            intermediate = str(Path(final_dst).parent / (_strip_model_suffix(src).name + "-F16-tmp.gguf"))
-        else:
-            intermediate = str(_strip_model_suffix(src)) + "-F16-tmp.gguf"
+        # Unique intermediate and side-car names isolate concurrent conversions.
+        intermediate = str(Path(final_dst).parent / (
+            _strip_model_suffix(src).name + f"-F16-tmp-{uuid.uuid4().hex}.gguf"
+        ))
         step1_dst: str | None = intermediate
     else:
         target_qt, _ = PYTHON_PRECISIONS[quant_key]
         intermediate = None
-        step1_dst = _resolve_dst(src, dst_raw, quant_key)
+        step1_dst = final_dst
 
     def _prog1(idx, total, key):
         _frac((idx / total * step1_scale) if total else 0.0, f"{step1_label} Tensor {idx}/{total}")
 
     _, arch = convert_file(
         src, step1_dst,
-        interact=False, overwrite=True,
+        interact=False, overwrite=False if is_kquant else overwrite,
         on_progress=_prog1, on_log=_log,
         target_quant=target_qt, cancel_event=cancel_event,
         log_tensor_every=GUI_TENSOR_LOG_EVERY,
@@ -1406,28 +1409,26 @@ def _pipeline(
         )
 
     if not is_kquant:
-        fix_path = Path(f"fix_5d_tensors_{arch.arch}.safetensors")
-        if fix_path.is_file():
+        fix_path = Path(arch.fix_path)
+        if getattr(arch, "_nd_tensors", None):
             _log(
                 f"INFO:  5D tensor side-car found: {fix_path}. "
                 "Use the 'Fix 5D Tensors' tab to insert them after llama-quantize."
             )
-        # step1_dst is already resolved; fall back to source dir if None (auto-generated)
-        return step1_dst or str(_strip_model_suffix(src)) + f"-{quant_key}.gguf"
+        return final_dst
 
     # ── Step 2: llama-quantize ───────────────────────────────────────────────
-    fix_path = Path(f"fix_5d_tensors_{arch.arch}.safetensors")
-    needs_fix = fix_path.is_file()
+    fix_path = Path(arch.fix_path)
+    needs_fix = bool(getattr(arch, "_nd_tensors", None))
     # llama-quantize collapses [1, D] pad token shapes back to [D]; re-apply fix afterwards
     needs_pad_fix = bool(getattr(arch, 'keys_unsqueeze', None))
     total_steps = 2 + (1 if needs_fix else 0) + (1 if needs_pad_fix else 0)
     step2_end = 0.85 if needs_fix or needs_pad_fix else 0.95
+    if needs_fix:
+        fixed_dst = str(Path(final_dst).with_suffix("")) + "-fixed.gguf"
+        validate_output(final_dst, fixed_dst, overwrite)
 
     _log(f"INFO:  [2/{total_steps}] Quantizing to {quant_key} via llama-quantize…")
-
-    # final_dst was already resolved above for the K-quant branch
-    if not final_dst:
-        final_dst = str(_strip_model_suffix(src)) + f"-{quant_key}.gguf"
 
     def _prog2(idx, total, key):
         _frac(0.45 + (idx / total * (step2_end - 0.45)) if total else 0.45, f"[2/{total_steps}] {idx}/{total}")
@@ -1435,7 +1436,7 @@ def _pipeline(
     run_quantize(
         intermediate, final_dst, quant_key,
         exe=exe, on_progress=_prog2, on_log=_log,
-        nthreads=nthreads, cancel_event=cancel_event,
+        nthreads=nthreads, cancel_event=cancel_event, overwrite=overwrite,
     )
 
     if not keep_intermediate and intermediate:
@@ -1452,13 +1453,13 @@ def _pipeline(
     if needs_fix:
         step3_end = 0.92 if needs_pad_fix else 1.0
         _log(f"INFO:  [{current_step}/{total_steps}] Auto-fixing 5D tensors from {fix_path}…")
-        fixed_dst = result_path.replace(".gguf", "-fixed.gguf")
+        fixed_dst = str(Path(result_path).with_suffix("")) + "-fixed.gguf"
 
         def _prog3(idx, total, key):
             _frac(step2_end + (idx / total * (step3_end - step2_end)) if total else step2_end,
                   f"[{current_step}/{total_steps}] Tensor {idx}/{total}")
 
-        _fix_5d(result_path, fixed_dst, fix_path=str(fix_path), overwrite=True, on_progress=_prog3, on_log=_log)
+        _fix_5d(result_path, fixed_dst, fix_path=str(fix_path), overwrite=overwrite, on_progress=_prog3, on_log=_log, cancel_event=cancel_event)
         _log(f"INFO:  5D tensors inserted → {fixed_dst}")
         result_path = fixed_dst
         current_step += 1
@@ -1467,7 +1468,7 @@ def _pipeline(
     if needs_pad_fix:
         _log(f"INFO:  [{current_step}/{total_steps}] Re-fixing pad token shapes ([1, D] collapsed by llama-quantize)…")
         padfix_tmp = result_path + ".padfix.tmp"
-        _fix_pad(result_path, padfix_tmp, overwrite=True, on_log=_log)
+        _fix_pad(result_path, padfix_tmp, overwrite=True, on_log=_log, cancel_event=cancel_event)
         Path(padfix_tmp).replace(Path(result_path))
 
     return result_path
@@ -1591,6 +1592,7 @@ def run_te_convert(
     repo_id: str,
     dst: str,
     format_key: str,
+    overwrite: bool = False,
 ) -> Generator[tuple[str, str], None, None]:
     """Run convert_text_encoder_any in a background thread and stream (log_text, status_text).
 
@@ -1631,7 +1633,7 @@ def run_te_convert(
                 dst_path=_resolve_dst_te(src.strip(), dst, format_key),
                 format_key=format_key,
                 on_log=lambda msg: q.put(("log", msg)),
-                cancel_event=cancel_event,
+                cancel_event=cancel_event, overwrite=overwrite,
             )
             result["out"] = out_path
         except RuntimeError as exc:
@@ -2094,6 +2096,7 @@ def build_app() -> gr.Blocks:
                     te_format = gr.Dropdown(
                         choices=TEXT_ENCODER_FORMAT_CHOICES, value="F16", label="Format",
                     )
+                    overwrite_te = gr.Checkbox(label="Overwrite existing output", value=False)
                 te_size_info = gr.Markdown("", elem_id="size-info")
 
                 with gr.Row(elem_classes=["action-row"]):
@@ -2136,7 +2139,7 @@ def build_app() -> gr.Blocks:
                 )
                 te_convert_event = te_convert_btn.click(
                     fn=run_te_convert,
-                    inputs=[te_src_path, te_base_repo, te_dst_path, te_format],
+                    inputs=[te_src_path, te_base_repo, te_dst_path, te_format, overwrite_te],
                     outputs=[te_log, te_status],
                     show_progress="hidden",
                 )

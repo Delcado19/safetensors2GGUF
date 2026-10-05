@@ -1,6 +1,9 @@
 import os
 import shutil
+import threading
+import weakref
 
+import pytest
 import torch
 from safetensors.torch import save_file
 
@@ -160,3 +163,88 @@ def test_subfolder_scopes_download_to_one_variant(tmp_path, monkeypatch):
     from safetensors import safe_open
     with safe_open(out_path, framework="pt") as f:
         assert torch.equal(f.get_tensor("model.embed_tokens.weight"), torch.ones(2, 2))
+
+
+def test_merge_streams_mixed_dtypes_without_retaining_tensors(tmp_path, monkeypatch):
+    tensors = {
+        "a.half": torch.ones(2, 3, dtype=torch.float16),
+        "z.float": torch.arange(6, dtype=torch.float32),
+        "scalar": torch.tensor(7, dtype=torch.int64),
+    }
+    shard = tmp_path / "shard.safetensors"
+    save_file(tensors, str(shard))
+    repo_id = "someorg/streamed"
+    _FAKE_HUB[repo_id] = {"model.safetensors": str(shard)}
+    monkeypatch.setattr(hf_download, "HfApi", lambda: _FakeHfApi(["model.safetensors"]))
+    monkeypatch.setattr(hf_download, "hf_hub_download", _fake_hf_hub_download)
+    real_open = hf_download.safe_open
+    references = []
+
+    class TrackedShard:
+        def __init__(self, *args, **kwargs):
+            self.reader = real_open(*args, **kwargs)
+
+        def __enter__(self):
+            self.reader.__enter__()
+            return self
+
+        def __exit__(self, *args):
+            return self.reader.__exit__(*args)
+
+        def get_tensor(self, key):
+            # A merged tensor dict would keep earlier wrappers alive here.
+            assert all(ref() is None for ref in references)
+            tensor = self.reader.get_tensor(key)
+            references.append(weakref.ref(tensor))
+            return tensor
+
+    monkeypatch.setattr(hf_download, "safe_open", TrackedShard)
+    output = hf_download.download_repo_as_single_safetensors(repo_id, tmp_path / "out")
+    from safetensors.torch import load_file
+    actual = load_file(output)
+    for key, tensor in tensors.items():
+        assert actual[key].dtype == tensor.dtype
+        assert torch.equal(actual[key], tensor)
+    assert len(references) == len(tensors)
+
+
+def test_merge_cancel_preserves_previous_output_and_resume_files(tmp_path, monkeypatch):
+    shard = tmp_path / "shard.safetensors"
+    save_file({"weight": torch.ones(2, 2)}, str(shard))
+    repo_id = "someorg/streamed"
+    _FAKE_HUB[repo_id] = {"model.safetensors": str(shard)}
+    monkeypatch.setattr(hf_download, "HfApi", lambda: _FakeHfApi(["model.safetensors"]))
+    monkeypatch.setattr(hf_download, "hf_hub_download", _fake_hf_hub_download)
+    dest = tmp_path / "out"
+    dest.mkdir()
+    output = dest / "streamed.safetensors"
+    output.write_bytes(b"original")
+    cancel = threading.Event()
+
+    def progress(idx, total, message):
+        if message.startswith("merging"):
+            cancel.set()
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        hf_download.download_repo_as_single_safetensors(
+            repo_id, dest, overwrite=True, cancel_event=cancel, on_progress=progress,
+        )
+    assert output.read_bytes() == b"original"
+    assert (dest / ".hf_download_someorg_streamed").is_dir()
+    assert not list(dest.glob(".streamed.safetensors.*"))
+
+
+def test_duplicate_shard_keys_preserve_previous_output(tmp_path, monkeypatch):
+    shard = tmp_path / "shard.safetensors"
+    save_file({"weight": torch.ones(2, 2)}, str(shard))
+    repo_id = "someorg/duplicates"
+    _FAKE_HUB[repo_id] = {"a.safetensors": str(shard), "b.safetensors": str(shard)}
+    monkeypatch.setattr(hf_download, "HfApi", lambda: _FakeHfApi(["a.safetensors", "b.safetensors"]))
+    monkeypatch.setattr(hf_download, "hf_hub_download", _fake_hf_hub_download)
+    dest = tmp_path / "out"
+    dest.mkdir()
+    output = dest / "duplicates.safetensors"
+    output.write_bytes(b"original")
+    with pytest.raises(RuntimeError, match="Duplicate tensor key"):
+        hf_download.download_repo_as_single_safetensors(repo_id, dest, overwrite=True)
+    assert output.read_bytes() == b"original"

@@ -112,10 +112,40 @@ occasionally contain 5D tensors (e.g. RoPE frequencies).
 **Two-step process:**
 
 1. `convert.py`: The 5D tensor is **not** written to the GGUF file; instead it is
-   offloaded to `fix_5d_tensors_<arch>.safetensors`.
+   offloaded to `<output>.<job-id>.5d.safetensors`. The architecture instance
+   accumulates
+   only its own 5D tensors; it never imports an earlier model's side-car.
+   Publication is deferred until the GGUF is ready. Its metadata stores only
+   the companion's basename, so moving both files together remains supported.
+   `model_arch.fix_path` exposes the path to the GUI. Direct calls to
+   `handle_nd_tensor()` without `fix_path` retain the legacy filename.
 
 2. `fix_5d_tensors.py`: Reads the fully quantized GGUF file and inserts the
-   offloaded tensor as F32.
+   offloaded tensor as F32. The GUI passes the current job's side-car explicitly;
+   CLI auto-detection uses the GGUF's `comfy.gguf.5d_sidecar` basename first,
+   then `<src>.5d.safetensors` or the legacy architecture
+   name. For a manually quantized file, pass the F16 conversion's side-car
+   explicitly with `--fix`. K-quant GUI intermediates have unique filenames.
+
+## Output Transactions and Cancellation
+
+`conversion_io.py` provides the shared file-publication and process-output
+helpers used by converters, the HF merger, and GGUF repair tools. Writers use a
+sibling temporary file; overwrite uses `os.replace`, while no-overwrite uses
+`os.link` to avoid clobbering a destination created by another job after the
+initial existence check. Publication therefore requires same-filesystem atomic
+replacement or hard-link support. File handles close before cleanup on Windows.
+Source aliases (including hard links) and empty output files are rejected.
+The GGUF pipeline records a unique 5D companion basename before publishing
+the main file; failed main-file publication removes the new companion and
+never changes a previous conversion's companion.
+
+Subprocess stdout is read by a thread while the caller polls cancellation,
+including after stdout closes but before the process exits. Cancellation and
+callback failures terminate and reap the child, escalating to kill if necessary.
+The HF merger plans from headers, then serializes one tensor at a time using
+the existing safetensors writer primitives; shard files remain available for
+resume on failure and are removed only after successful publication.
 
 ## SDXL Component Extraction
 
