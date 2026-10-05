@@ -4,13 +4,10 @@ convention, with an optional offline Hadamard rotation (ConvRot).
 Format reference: Comfy-Org/ComfyUI comfy/quant_ops.py QUANT_ALGOS["int8_tensorwise"]
 (comfy_kitchen.tensor.int8.TensorWiseINT8Layout) and comfy/ops.py
 _load_quantized_weight_body. Unlike FP8/NVFP4/MXFP8 (QUANT_ALGOS["quantize_input"]
-left at its True default), int8_tensorwise sets "quantize_input": False — ComfyUI
-never dynamically quantizes *activations* for this format, only weights.
-Activation quantization is inherently lossy in a way no weight-side keys_hiprec
-list can compensate for — the likely root cause of the FP8/NVFP4 pose/identity
-corruption this format was added to avoid (see docs/issues_analysis.md #15,
-including its Correction note: this is NOT attributable to a specific ComfyUI
-shape-handling bug — that citation was wrong and has been retracted).
+left at its True default), int8_tensorwise sets "quantize_input": False to skip
+ComfyUI's input wrapper. Kitchen's native int8_linear still dynamically quantizes
+activations and applies online ConvRot. A dequantized full-precision matmul path
+is distinct from that native path; see docs/quantization-size-audit.md.
 
 Plain (no rotation): single absmax scalar scale per whole tensor.
 ConvRot: weight is rotated with a block-diagonal Hadamard matrix (each
@@ -18,8 +15,8 @@ ConvRot: weight is rotated with a block-diagonal Hadamard matrix (each
 rotation) before quantizing row-wise — this smears outlier magnitudes across
 a group before rounding, the standard technique for keeping 8-bit (and lower)
 quantization error low on activation-outlier-heavy transformer weights
-(QuaRot/SpinQuant lineage). ComfyUI's kernel un-rotates on load, so the model
-sees the original basis again; only the on-disk weight is rotated.
+(QuaRot/SpinQuant lineage). Native inference rotates activations to match;
+dequantized inference un-rotates the weights to recover the original basis.
 """
 
 from __future__ import annotations

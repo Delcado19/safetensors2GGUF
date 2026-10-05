@@ -288,13 +288,18 @@ when you want ComfyUI-compatible weights without the GGUF container format.
 | Key | Format | Backend | Notes |
 |---|---|---|---|
 | `F16` | Half precision | Python | Standard default, smallest non-quantized size |
-| `F16_MIXED` | Half precision, high-precision tensors stay F32 | Python | Matches GGUF K-quant behavior for critical layers |
+| `F16_MIXED` | Half precision, protected tensors retain their dtype | Python | Preserves protected source tensors |
 | `FP8` | Scaled float8_e4m3fn (ComfyUI convention) | Python | Full-precision compute by default (`full_precision_matrix_mult`) — see below |
-| `FP8_MIXED` | FP8, high-precision tensors stay F32 | Python | Same full-precision-compute default as `FP8` |
-| `INT8` | int8_tensorwise, ConvRot-rotated where possible (ComfyUI convention) | Python | Per-layer `weight_scale`; weight-only quantization, no runtime activation quant |
-| `INT8_MIXED` | INT8/ConvRot, high-precision tensors stay F32 | Python | Aggressive 8-bit quantization with protection |
+| `FP8_MIXED` | FP8, protected tensors retain their dtype | Python | Same full-precision-compute default as `FP8` |
+| `INT8` | int8_tensorwise, ConvRot-rotated where possible (ComfyUI convention) | Python | Per-layer `weight_scale`; native Kitchen kernels dynamically quantize activations |
+| `INT8_MIXED` | INT8/ConvRot, protected tensors retain their dtype | Python | Aggressive 8-bit quantization with protection |
 | `NVFP4` | NVIDIA FP4, block-scaled | Python | Full-precision compute by default (`full_precision_nvfp4`); needs a Blackwell GPU (RTX 50-series/B200) to run — see below |
-| `NVFP4_MIXED` | NVFP4, high-precision tensors stay F32 | Python | Same full-precision-compute default as `NVFP4` |
+| `NVFP4_MIXED` | NVFP4, protected tensors retain their dtype | Python | Same full-precision-compute default as `NVFP4` |
+
+Already-quantized weights are reconstructed as F32 before mixed protection is
+applied. Keeping them unquantized can make mixed output larger than the source;
+the current size estimate also undercounts this case. See the measured examples
+and implementation priorities in [the size audit](docs/quantization-size-audit.md).
 
 **Naming vs. the community:** `FP8`/`FP8_MIXED` write files named
 `<model>-fp8_e4m3fn_scaled(_mixed).safetensors` — the same "scaled fp8"
@@ -334,10 +339,13 @@ inference time (`QUANT_ALGOS["quantize_input"]` defaults `True`), which
 produced visibly wrong output (black bars, wrong poses/identities, full-image
 noise) on Lumina2/Z-Image checkpoints even after this tool's own on-disk data
 was verified byte-correct — activation quantization is inherently lossy in a
-way no weight-side protection list can compensate for. `int8_tensorwise` is
-one of only two `QUANT_ALGOS` entries ComfyUI marks `"quantize_input": False`
-— weight-only quantization, activations always stay full precision, avoiding
-that lossy path entirely. See [docs/issues_analysis.md](docs/issues_analysis.md)
+way no weight-side protection list can compensate for. ComfyUI marks
+`int8_tensorwise` with `"quantize_input": False`
+— this skips the ComfyUI input wrapper, but Kitchen's native INT8 kernel still
+quantizes activations dynamically. It does not guarantee full-precision
+activations. See [docs/quantization-size-audit.md](docs/quantization-size-audit.md)
+for the source-aware size findings and runtime checks, and
+[docs/issues_analysis.md](docs/issues_analysis.md)
 #15 (including its Correction note — an earlier draft of this investigation
 misattributed the corruption to a specific ComfyUI GitHub issue that turned
 out to be a performance-only bug; that citation has been retracted).
