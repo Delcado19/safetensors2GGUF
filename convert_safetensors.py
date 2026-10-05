@@ -23,8 +23,11 @@ from dequantize import (
     dequantized_shape_of,
     dequantize_weight,
 )
-from models.architectures import detect_arch
-from safetensors_quant import filename_suffix_for, layer_key, plan_tensor_output, quantize_tensor_st
+from models.architectures import detect_arch, select_precision_profile
+from safetensors_quant import (
+    _is_hiprec_shape, filename_suffix_for, is_hiprec_st, layer_key,
+    plan_tensor_output, quantize_tensor_st,
+)
 
 # Float8 dtypes — resolved once at import time; empty tuple on older PyTorch builds.
 _FLOAT8_DTYPES: tuple = tuple(
@@ -118,6 +121,51 @@ def _write_header(fh, header: dict) -> int:
     return 8 + len(body)
 
 
+def plan_safetensors_output(state_dict, model_arch, target_key, quant_formats, quant_skip_keys,
+                            full_precision_fp8=True, full_precision_nvfp4=True):
+    """Return ordered header entries and layer configs for logical source tensors.
+
+    Reconstructed protected weights use BF16 storage, matching the write pass;
+    genuine source precision is preserved. Shape/dtype metadata avoids loading
+    model weights during size estimation.
+    """
+    shape_of = getattr(state_dict, "shape_of", None)
+    dtype_of = getattr(state_dict, "dtype_of", None)
+
+    def _shape_dtype(k):
+        if shape_of is not None:
+            return tuple(shape_of(k)), dtype_of(k)
+        t = state_dict[k]
+        return tuple(t.shape), t.dtype
+
+    entries: list[tuple[str, str, tuple]] = []
+    layer_formats: dict[str, dict] = {}
+
+    for key, is_passthrough in _iter_output_keys(state_dict, model_arch, quant_skip_keys):
+        shape, dtype = _shape_dtype(key)
+        if is_passthrough:
+            entries.append((key, _TORCH_TO_ST_DTYPE[dtype], shape))
+            continue
+
+        if key in quant_formats:
+            shape = dequantized_shape_of(quant_formats[key], shape)
+            dtype = torch.float32
+            if target_key.endswith("_MIXED") and _is_hiprec_shape(key, shape, dtype, model_arch):
+                dtype = torch.bfloat16
+        if _FLOAT8_DTYPES and dtype in _FLOAT8_DTYPES:
+            dtype = torch.float16
+
+        out_entries, layer_conf = plan_tensor_output(
+            key, shape, dtype, model_arch, target_key,
+            full_precision_fp8, full_precision_nvfp4,
+        )
+        entries.extend(out_entries)
+        if layer_conf is not None:
+            layer_formats[layer_key(key)] = layer_conf
+
+    return entries, layer_formats
+
+
 def convert_to_safetensors(
     path,
     dst_path=None,
@@ -131,6 +179,7 @@ def convert_to_safetensors(
     full_precision_fp8=True,
     full_precision_nvfp4=True,
     strip_prefixes=True,
+    precision_profile="auto",
 ):
     """Convert a model checkpoint to a quantized .safetensors file.
 
@@ -180,11 +229,15 @@ def convert_to_safetensors(
             output directly and was simply never setting the flag for nvfp4.
             Verified by reading comfy/ops.py's actual source (a local
             ComfyUI-Easy-Install checkout, comfy_kitchen 0.2.30) — NOT
-            yet render-tested in ComfyUI. lumina2 was previously
+            originally not render-tested in ComfyUI. lumina2 was previously
             _RENDER_CONFIRMED_BAD for NVFP4/NVFP4_MIXED and flux was CAUTION
             (visible composition drift) under the OLD writer that never set
             this flag; both need re-testing against this fix before either
-            model_support.py table changes.
+            model_support.py table changes. The narrower Turbo profile now has
+            two successful full-model renders (docs/quantization-size-audit.md);
+            conservative Base output was not re-tested in that comparison.
+        precision_profile: auto, conservative, qwen_edit_2511 or z_image_turbo.
+            Auto recognizes the Qwen 2511 marker; Turbo requires explicit selection.
         strip_prefixes: Passed through to ``load_state_dict()``. Diffusion
             checkpoints often wrap the UNet in a "model."/"model.diffusion_model."
             prefix that must be stripped for architecture detection and clean
@@ -225,6 +278,7 @@ def convert_to_safetensors(
         )
     if model_arch is None:
         model_arch = detect_arch(state_dict)
+    model_arch = select_precision_profile(state_dict, model_arch, precision_profile)
     # ModelTemplate's own base-class default ("invalid") is the deliberate
     # sentinel text_encoder_convert.py passes for text encoders (no
     # per-architecture detection applies to them, see models/architectures.py) --
@@ -245,39 +299,13 @@ def convert_to_safetensors(
     # full _quantization_metadata, from shape/dtype metadata alone -- no
     # tensor data touched. Must use the exact same key set/order as Pass 2
     # below (_iter_output_keys is the shared contract that guarantees this).
-    shape_of = getattr(state_dict, "shape_of", None)
-    dtype_of = getattr(state_dict, "dtype_of", None)
-
-    def _shape_dtype(k):
-        if shape_of is not None:
-            return tuple(shape_of(k)), dtype_of(k)
-        t = state_dict[k]
-        return tuple(t.shape), t.dtype
-
-    entries: list[tuple[str, str, tuple]] = []
-    layer_formats: dict[str, dict] = {}
-
-    for key, is_passthrough in _iter_output_keys(state_dict, model_arch, quant_skip_keys):
-        shape, dtype = _shape_dtype(key)
-        if is_passthrough:
-            entries.append((key, _TORCH_TO_ST_DTYPE[dtype], shape))
-            continue
-
-        if key in quant_formats:
-            shape = dequantized_shape_of(quant_formats[key], shape)
-            dtype = torch.float32
-        if _FLOAT8_DTYPES and dtype in _FLOAT8_DTYPES:
-            dtype = torch.float16
-
-        out_entries, layer_conf = plan_tensor_output(
-            key, shape, dtype, model_arch, target_key,
-            full_precision_fp8, full_precision_nvfp4,
-        )
-        entries.extend(out_entries)
-        if layer_conf is not None:
-            layer_formats[layer_key(key)] = layer_conf
+    entries, layer_formats = plan_safetensors_output(
+        state_dict, model_arch, target_key, quant_formats, quant_skip_keys,
+        full_precision_fp8, full_precision_nvfp4,
+    )
 
     metadata = {} if model_arch.arch == "invalid" else {"comfy.gguf_source_arch": model_arch.arch}
+    metadata["comfy.quant_precision_profile"] = model_arch.precision_profile
     if layer_formats:
         metadata["_quantization_metadata"] = json.dumps(
             {"format_version": "1.0", "layers": layer_formats}
@@ -324,6 +352,9 @@ def convert_to_safetensors(
                 data = state_dict[key]
                 if key in quant_formats:
                     data = dequantize_weight(state_dict, key, quant_formats[key], data)
+                    # Reconstructed low precision does not justify storing protected weights as F32.
+                    if target_key.endswith("_MIXED") and is_hiprec_st(key, data, model_arch, data.dtype):
+                        data = data.to(torch.bfloat16)
                 old_dtype = data.dtype
                 if _FLOAT8_DTYPES and data.dtype in _FLOAT8_DTYPES:
                     data = data.to(torch.float16)

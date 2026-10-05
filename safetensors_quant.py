@@ -10,7 +10,6 @@ for the ComfyUI-compatibility research this format registry is based on
 
 from __future__ import annotations
 
-import json
 import struct
 
 import torch
@@ -77,13 +76,13 @@ _SIZE_RATIOS: dict[str, float] = {
 }
 SAFETENSORS_DTYPE_CHOICES: list[tuple[str, str]] = [
     ("f16 · half precision", "F16"),
-    ("f16 mix · half precision, hiprec stays F32", "F16_MIXED"),
+    ("f16 mix · half precision, protected weights retain source precision", "F16_MIXED"),
     ("fp8 · float8_e4m3fn scaled, full-precision compute", "FP8"),
-    ("fp8 mix · fp8, hiprec stays F32", "FP8_MIXED"),
+    ("fp8 mix · fp8, protected weights retain source precision", "FP8_MIXED"),
     ("int8 · tensorwise, ConvRot-rotated where possible", "INT8"),
-    ("int8 mix · int8/ConvRot, hiprec stays F32, recommended ★", "INT8_MIXED"),
+    ("int8 mix · int8/ConvRot, protected weights retain source precision, recommended ★", "INT8_MIXED"),
     ("nvfp4 · NVIDIA FP4, full-precision compute, needs Blackwell GPU", "NVFP4"),
-    ("nvfp4 mix · nvfp4, hiprec stays F32, needs Blackwell GPU", "NVFP4_MIXED"),
+    ("nvfp4 mix · nvfp4, protected weights retain source precision, needs Blackwell GPU", "NVFP4_MIXED"),
 ]
 
 # Output-filename suffix for each SAFETENSORS_DTYPE_CHOICES key. Deliberately
@@ -499,9 +498,9 @@ def _is_hiprec_shape(
 
 
 def is_hiprec_st(key: str, data: torch.Tensor, model_arch, old_dtype: torch.dtype) -> bool:
-    """Return True if ``key`` must stay high-precision (F32), mirroring
+    """Return True if ``key`` must retain its source precision, mirroring
     convert._quant_type_for's rule so 'mixed' safetensors output matches the
-    existing GGUF mixed-precision behaviour exactly."""
+    GGUF protected-layer selection (storage dtype is backend-specific)."""
     return _is_hiprec_shape(key, tuple(data.shape), old_dtype, model_arch)
 
 
@@ -641,7 +640,7 @@ def quantize_tensor_st(
 
     if mixed and is_hiprec_st(key, data, model_arch, old_dtype):
         # Keep the tensor's ORIGINAL dtype, not a forced F32 upcast: is_hiprec_st
-        # only ever returns True when old_dtype is already float32 or bfloat16
+        # only ever returns True when old_dtype is float32, bfloat16 or float16
         # (its own gate), so this is a no-op for float32 sources but avoids
         # doubling every bfloat16 hiprec tensor's on-disk size for zero
         # precision benefit — ComfyUI casts every loaded weight to its own
@@ -774,54 +773,46 @@ _ST_DTYPE_BYTES: dict[str, int] = {
 _CONVROT_GROUP_SIZE = 256  # must match safetensors_quant_int8.py's own constant
 
 
-def estimate_safetensors_output_size(path: str, target_key: str, model_arch) -> int | None:
-    """Estimate quantize_tensor_st()'s output size in bytes by analysing the
-    safetensors header (no tensor data loaded) -- the safetensors-output
-    equivalent of quantize.py's _estimate_from_safetensors() for GGUF.
+def safetensors_output_size_breakdown(path: str, target_key: str, model_arch,
+                                     precision_profile="auto", strip_prefixes=True) -> dict | None:
+    """Return payload byte counts, including source dequantization and filtering.
 
-    Replicates quantize_tensor_st's exact per-tensor branching (is_hiprec_st's
-    1D/small/keys_hiprec gate, the >=3D Conv1d/2d/3d fallback, keys_shape_critical
-    fallback, NVFP4's last-dim%16 and INT8 ConvRot's last-dim%256 shape
-    requirements) rather than GGUF's simpler unconditional "1D always F32"
-    rule -- necessary because the *_MIXED variants' size depends on
-    model_arch.keys_hiprec, which GGUF output doesn't have an analogous
-    per-format dependency on.
-
-    Returns None if the file can't be read as a safetensors header.
+    Returns total, quantized, scales and retained byte counts, or None for
+    unreadable/unsupported sources or invalid profiles. Header bytes are excluded.
+    Uses the streaming writer's header plan without materializing model weights.
+    Text encoders must disable diffusion prefix stripping, just as conversion does.
     """
+    from convert import load_state_dict
+    from convert_safetensors import _build_header, plan_safetensors_output
+    from dequantize import _scan_quantized_layers
+    from models.architectures import select_precision_profile
+
+    if not str(path).lower().endswith(".safetensors"):
+        return None
     try:
-        with open(path, "rb") as fh:
-            raw_len = fh.read(8)
-            if len(raw_len) < 8:
-                return None
-            header_len = struct.unpack("<Q", raw_len)[0]
-            header = json.loads(fh.read(header_len).decode("utf-8", errors="replace"))
-    except (OSError, ValueError, json.JSONDecodeError):
+        state_dict = load_state_dict(path, strip_prefixes=strip_prefixes)
+        model_arch = select_precision_profile(state_dict, model_arch, precision_profile)
+        formats, skip = _scan_quantized_layers(state_dict)
+        entries, layers = plan_safetensors_output(state_dict, model_arch, target_key, formats, skip)
+        total = _build_header(entries, {})[1]
+        quantized = scales = 0
+        for name, dtype, shape in entries:
+            size = _ST_DTYPE_BYTES[dtype]
+            for dimension in shape:
+                size *= dimension
+            if layer_key(name) in layers:
+                quantized += size
+            elif name.endswith((".weight_scale", ".weight_scale_2")):
+                scales += size
+        return {"total": total, "quantized": quantized, "scales": scales,
+                "retained": total - quantized - scales}
+    except (OSError, ValueError, KeyError, RuntimeError, struct.error):
         return None
 
-    base = _BASE_KEY.get(target_key)
-    if base is None:
-        return None
 
-    total = 0
-    for name, meta in header.items():
-        if name == "__metadata__":
-            continue
-        shape = meta.get("shape")
-        if not shape and shape != []:
-            continue
-        shape = tuple(shape)
-        src_dtype = meta.get("dtype", "F16")
-        from convert import _ST_DTYPE_MAP
-        old_dtype = _ST_DTYPE_MAP.get(src_dtype)
-        if old_dtype is None:
-            continue  # unrecognized/unsupported dtype in this header -- skip
-
-        entries, _ = plan_tensor_output(name, shape, old_dtype, model_arch, target_key)
-        for _, st_dtype, out_shape in entries:
-            n_elems = 1
-            for d in out_shape:
-                n_elems *= d
-            total += n_elems * _ST_DTYPE_BYTES.get(st_dtype, 2)
-
-    return total
+def estimate_safetensors_output_size(path: str, target_key: str, model_arch,
+                                     precision_profile="auto", strip_prefixes=True) -> int | None:
+    """Return planned payload bytes, excluding the small JSON header."""
+    breakdown = safetensors_output_size_breakdown(path, target_key, model_arch,
+                                                 precision_profile, strip_prefixes)
+    return breakdown["total"] if breakdown is not None else None

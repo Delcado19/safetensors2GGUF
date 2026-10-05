@@ -59,6 +59,13 @@ def _rotate_weight(weight: torch.Tensor, h: torch.Tensor, group_size: int) -> to
     return rotated.reshape(out_f, in_f)
 
 
+def _quantize_with_scale(data, scale):
+    """Match Kitchen's weight-dtype division, guarding scales that underflow in FP16."""
+    math_scale = scale.to(data.dtype)
+    math_scale = torch.where(math_scale == 0, torch.finfo(data.dtype).tiny, math_scale)
+    return (data / math_scale).round().clamp(-128, 127).to(torch.int8)
+
+
 def quantize_int8_tensorwise(data: torch.Tensor, key: str) -> dict[str, torch.Tensor]:
     """Plain tensor-wise INT8: single scalar scale for the whole tensor.
 
@@ -81,7 +88,7 @@ def quantize_int8_tensorwise(data: torch.Tensor, key: str) -> dict[str, torch.Te
     """
     amax = data.abs().max()
     scale = (amax.float() / 127.0).clamp(min=1e-30)
-    q = (data.to(torch.float32) / scale).round().clamp(-128, 127).to(torch.int8)
+    q = _quantize_with_scale(data, scale)
     return {
         key: q,
         f"{layer_key(key)}.weight_scale": scale,
@@ -106,7 +113,7 @@ def quantize_int8_convrot(
 
     abs_max = rotated.abs().amax(dim=-1, keepdim=True)
     scale = (abs_max.float() / 127.0).clamp(min=1e-30)
-    q = (rotated.to(torch.float32) / scale).round().clamp(-128, 127).to(torch.int8)
+    q = _quantize_with_scale(rotated, scale)
     return {
         key: q,
         # [out_f, 1] — must stay 2D so ComfyUI's `q.float() * scale` broadcasts

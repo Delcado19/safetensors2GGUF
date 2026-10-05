@@ -32,10 +32,16 @@ _FP8_MAX = 448.0
 
 
 def _nearest_e2m1_index(x: torch.Tensor) -> torch.Tensor:
-    """Map float values (already divided by the block scale) to the nearest
-    of the 16 E2M1 codebook entries; returns int64 indices 0..15."""
-    diffs = (x.unsqueeze(-1) - _KVALUES.to(x.device)).abs()
-    return diffs.argmin(dim=-1)
+    """Encode E2M1 with Kitchen's nearest-even ties and signed zero.
+
+    Bucket boundaries avoid the previous sixteenfold temporary allocation.
+    """
+    boundaries = x.new_tensor([0.25, 0.75, 1.25, 1.75, 2.5, 3.5, 5.0])
+    magnitude = x.abs().contiguous()
+    indices = torch.bucketize(magnitude, boundaries)
+    ties = magnitude == boundaries[indices.clamp(max=6)]
+    indices += (ties & (indices % 2 == 1)).to(indices.dtype)
+    return indices + torch.signbit(x).to(indices.dtype) * 8
 
 
 def _round_up(x: int, multiple: int) -> int:

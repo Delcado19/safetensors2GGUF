@@ -56,7 +56,7 @@ from quantize import (
 )
 from safetensors_quant import (
     SAFETENSORS_DTYPE_CHOICES,
-    estimate_safetensors_output_size,
+    safetensors_output_size_breakdown,
     filename_suffix_for,
     format_recommendation,
 )
@@ -318,7 +318,7 @@ def update_size_estimate(src: str, quant_key: str) -> str:
     return line
 
 
-def _safetensors_size_estimate_line(model_arch, src: str, target_key: str) -> str:
+def _safetensors_size_estimate_line(model_arch, src: str, target_key: str, precision_profile="auto", strip_prefixes=True) -> str:
     """Return a Markdown string with the estimated safetensors-quant output
     size, or "" if the architecture couldn't be detected or the source can't
     be read as a safetensors header — same fail-quiet convention as
@@ -330,9 +330,10 @@ def _safetensors_size_estimate_line(model_arch, src: str, target_key: str) -> st
     src = (src or "").strip()
     if not src or not os.path.isfile(src):
         return ""
-    est = estimate_safetensors_output_size(src, target_key, model_arch)
-    if est is None:
+    breakdown = safetensors_output_size_breakdown(src, target_key, model_arch, precision_profile, strip_prefixes)
+    if breakdown is None:
         return ""
+    est = breakdown["total"]
     src_bytes = os.path.getsize(src)
     line = f"Estimated output: **{_fmt_size(est)}**"
     if src_bytes > 0 and est < src_bytes:
@@ -340,15 +341,21 @@ def _safetensors_size_estimate_line(model_arch, src: str, target_key: str) -> st
         line += f" &nbsp;·&nbsp; {pct:.0f}% smaller than source ({_fmt_size(src_bytes)})"
     elif src_bytes > 0 and est > src_bytes:
         line += f" &nbsp;·&nbsp; source: {_fmt_size(src_bytes)}"
+    if est:
+        line += (f" | quantized weights: {breakdown['quantized'] / est:.0%}, "
+                 f"retained precision: {breakdown['retained'] / est:.0%}, "
+                 f"scales: {_fmt_size(breakdown['scales'])}")
+    if src_bytes and est >= src_bytes * 0.95:
+        line += " **Little or no storage saving; consider a 4-bit target.**"
     return line
 
 
-def update_safetensors_size_estimate(src: str, target_key: str) -> str:
+def update_safetensors_size_estimate(src: str, target_key: str, precision_profile="auto") -> str:
     """Safetensors-tab equivalent of update_size_estimate() — wired to
     st_format_dropdown's own .change() (target_key changed, src unchanged);
     st_src_path's .change() uses the combined
     update_format_recommendation_choices_and_size() below instead."""
-    return _safetensors_size_estimate_line(_detected_arch_or_none(src), src, target_key)
+    return _safetensors_size_estimate_line(_detected_arch_or_none(src), src, target_key, precision_profile)
 
 
 def update_text_encoder_size_estimate(src: str, format_key: str) -> str:
@@ -375,7 +382,7 @@ def update_text_encoder_size_estimate(src: str, format_key: str) -> str:
         return ""
     if format_key in TEXT_ENCODER_SAFETENSORS_FORMATS:
         real_target_key = _TEXT_ENCODER_SAFETENSORS_TARGET_KEY.get(format_key, format_key)
-        return _safetensors_size_estimate_line(_TEXT_ENCODER_MODEL_ARCH, src, real_target_key)
+        return _safetensors_size_estimate_line(_TEXT_ENCODER_MODEL_ARCH, src, real_target_key, strip_prefixes=False)
     ratio = SIZE_RATIOS.get(format_key)
     if ratio is None:
         return ""
@@ -555,7 +562,7 @@ def annotate_text_encoder_choices(src: str, base_repo_id: str):
     return gr.update(choices=out)
 
 
-def update_format_recommendation_choices_and_size(src: str, target_key: str):
+def update_format_recommendation_choices_and_size(src: str, target_key: str, precision_profile="auto"):
     """Combined st_src_path.change() handler: detects the architecture once
     and drives the format-recommendation hint, the format-dropdown ⚠
     annotations, and the size estimate — instead of separate handlers each
@@ -565,7 +572,7 @@ def update_format_recommendation_choices_and_size(src: str, target_key: str):
     return (
         _format_recommendation_update(model_arch, target_key),
         _annotate_choices_for_arch(model_arch, SAFETENSORS_DTYPE_CHOICES),
-        _safetensors_size_estimate_line(model_arch, src, target_key),
+        _safetensors_size_estimate_line(model_arch, src, target_key, precision_profile),
     )
 
 
@@ -1530,6 +1537,7 @@ def run_st_convert(
     dst: str,
     fmt: str,
     overwrite: bool,
+    precision_profile: str = "auto",
 ) -> Generator[tuple[str, str], None, None]:
     """Run convert_to_safetensors in a background thread and stream (log_text, status_text).
 
@@ -1563,6 +1571,7 @@ def run_st_convert(
                 on_log=lambda msg: q.put(("log", msg)),
                 cancel_event=cancel_event,
                 log_tensor_every=GUI_TENSOR_LOG_EVERY,
+                precision_profile=precision_profile,
             )
             result["out"] = out_path
         except RuntimeError as exc:
@@ -2001,7 +2010,7 @@ def build_app() -> gr.Blocks:
                     st_format_dropdown = gr.Dropdown(
                         choices=SAFETENSORS_DTYPE_CHOICES,
                         # Default to the mixed variant, not plain "INT8": mixed
-                        # keeps hiprec tensors at F32 for extra safety margin,
+                        # preserves source precision for protected tensors,
                         # and is the recommended default (review finding #2).
                         value="INT8_MIXED",
                         label="Output format",
@@ -2009,6 +2018,15 @@ def build_app() -> gr.Blocks:
                     overwrite_st = gr.Checkbox(label="Overwrite existing output", value=False)
                 st_format_info = gr.Markdown("", elem_id="st-format-info", elem_classes=["fmt-hint"])
                 st_size_info = gr.Markdown("", elem_id="size-info")
+                st_profile = gr.Dropdown(
+                    choices=[("Auto (Qwen 2511 marker, otherwise conservative)", "auto"),
+                             ("Conservative", "conservative"),
+                             ("Qwen Image Edit 2511", "qwen_edit_2511"),
+                             ("Z-Image Turbo (experimental, explicit variant)", "z_image_turbo")],
+                    value="auto", label="Mixed precision protection profile",
+                )
+                st_profile.change(update_safetensors_size_estimate,
+                                  inputs=[st_src_path, st_format_dropdown, st_profile], outputs=st_size_info)
 
                 with gr.Row(elem_classes=["action-row"]):
                     st_convert_btn = gr.Button("▶  Convert", variant="primary", scale=5, elem_id="st-convert-btn")
@@ -2034,7 +2052,7 @@ def build_app() -> gr.Blocks:
                 )
                 st_src_path.change(
                     update_format_recommendation_choices_and_size,
-                    inputs=[st_src_path, st_format_dropdown],
+                    inputs=[st_src_path, st_format_dropdown, st_profile],
                     outputs=[st_format_info, st_format_dropdown, st_size_info],
                 )
                 st_format_dropdown.change(
@@ -2044,12 +2062,12 @@ def build_app() -> gr.Blocks:
                 )
                 st_format_dropdown.change(
                     update_safetensors_size_estimate,
-                    inputs=[st_src_path, st_format_dropdown],
+                    inputs=[st_src_path, st_format_dropdown, st_profile],
                     outputs=st_size_info,
                 )
                 st_convert_event = st_convert_btn.click(
                     fn=run_st_convert,
-                    inputs=[st_src_path, st_dst_path, st_format_dropdown, overwrite_st],
+                    inputs=[st_src_path, st_dst_path, st_format_dropdown, overwrite_st, st_profile],
                     outputs=[st_log, st_status],
                     show_progress="hidden",
                 )

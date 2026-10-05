@@ -12,7 +12,7 @@ or quantized safetensors.
   Q4_K_M, Q4_K_S, Q3_K_M, Q2_K).
 - **Safetensors output** — F16, scaled FP8, ComfyUI-compatible tensor-wise
   INT8 (ConvRot-rotated where possible), and NVFP4, each with a "mixed"
-  variant that keeps critical layers at F32.
+  variant that preserves critical layers at their source precision.
 - **Model Support tab** — a read-only table showing which quantization
   formats are verified/caution/unknown for each detectable architecture;
   click a cell to jump to the matching Convert tab with that format
@@ -296,10 +296,27 @@ when you want ComfyUI-compatible weights without the GGUF container format.
 | `NVFP4` | NVIDIA FP4, block-scaled | Python | Full-precision compute by default (`full_precision_nvfp4`); needs a Blackwell GPU (RTX 50-series/B200) to run — see below |
 | `NVFP4_MIXED` | NVFP4, protected tensors retain their dtype | Python | Same full-precision-compute default as `NVFP4` |
 
-Already-quantized weights are reconstructed as F32 before mixed protection is
-applied. Keeping them unquantized can make mixed output larger than the source;
-the current size estimate also undercounts this case. See the measured examples
-and implementation priorities in [the size audit](docs/quantization-size-audit.md).
+Already-quantized weights are reconstructed for quantization math. Mixed output
+stores reconstructed protected weights as BF16; genuinely F32/F16/BF16 source
+weights retain their dtype. This avoids expanding low-precision source weights
+to F32 without recovering precision.
+
+The **Mixed precision protection profile** selector distinguishes Qwen Image
+Edit 2511 (automatically recognized by its checkpoint marker) from the broader
+conservative Qwen policy. Only the first transformer block's image modulation
+is protected in the 2511 profile. Z-Image Turbo requires explicit selection;
+automatic selection retains the conservative Base-compatible policy because
+both variants share architecture signatures. The Turbo profile remains experimental across formats: its NVFP4 output passed
+two fixed-seed full-model renders, but the narrower FP8/INT8 policies have not
+yet received equivalent full-model validation. Use conservative protection for
+unknown variants.
+
+Size estimates use the writer's source-aware plan, remove consumed quantization
+sidecars, and include the effective reconstructed dtype. The UI shows quantized
+weights, retained-precision weights and scale overhead, and flags savings below
+5%. Estimates exclude the small JSON header. FP8 to INT8 still offers essentially
+no storage saving: both store eight bits per weight. See
+[the measured size audit](docs/quantization-size-audit.md).
 
 **Naming vs. the community:** `FP8`/`FP8_MIXED` write files named
 `<model>-fp8_e4m3fn_scaled(_mixed).safetensors` — the same "scaled fp8"

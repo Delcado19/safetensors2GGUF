@@ -7,6 +7,7 @@ import queue
 import subprocess
 import tempfile
 import threading
+import time
 
 
 def validate_output(src, dst, overwrite=False):
@@ -45,7 +46,16 @@ def atomic_output(dst, overwrite=False):
         else:
             os.link(temporary, destination)
     finally:
-        Path(temporary).unlink(missing_ok=True)
+        # Windows can briefly lock a completed large checkpoint after
+        # publication. Retry only sharing violations; preserve other I/O errors.
+        for attempt in range(11):
+            try:
+                Path(temporary).unlink(missing_ok=True)
+                break
+            except OSError as exc:
+                if getattr(exc, "winerror", None) not in (32, 33) or attempt == 10:
+                    raise
+                time.sleep(0.1)
 
 
 def iter_process_output(proc, cancel_event=None, cancel_error=None):

@@ -1,5 +1,6 @@
 """Model architecture definitions and detection logic for safetensors-to-GGUF conversion."""
 
+import copy
 import torch
 from tqdm import tqdm
 from safetensors.torch import save_file
@@ -469,3 +470,30 @@ def detect_arch(state_dict):
         "use the 'Convert Text Encoder' tab instead -- this list only covers "
         "diffusion-model UNet/DiT architectures."
     )
+
+
+def select_precision_profile(state_dict, model_arch, profile="auto"):
+    """Return an independent safetensors policy; ambiguous variants stay conservative.
+
+    Qwen Edit 2511 has an explicit checkpoint marker. Z-Image Base and Turbo
+    share tensor signatures, so Turbo requires an explicit caller selection.
+    GGUF architecture detection and existing class-level policies stay intact.
+    """
+    selected = copy.copy(model_arch)
+    is_qwen_2511 = model_arch.arch == "qwen_image" and "__index_timestep_zero__" in state_dict
+    if profile == "auto":
+        profile = "qwen_edit_2511" if is_qwen_2511 else "conservative"
+    if profile == "qwen_edit_2511":
+        if not is_qwen_2511:
+            raise ValueError("Qwen Edit 2511 profile requires its checkpoint variant marker")
+        # Official Comfy Quants 2511 recipe protects image modulation in block
+        # zero, rather than every block (the broader scope belongs to 2512).
+        selected.keys_hiprec = [x for x in model_arch.keys_hiprec if x != "img_mod.1"] + ["transformer_blocks.0.img_mod.1"]
+    elif profile == "z_image_turbo":
+        if model_arch.arch != "lumina2":
+            raise ValueError("Z-Image Turbo profile requires a Lumina2/Z-Image checkpoint")
+        selected.keys_hiprec = [x for x in model_arch.keys_hiprec if x not in ("attention", "adaLN_modulation")]
+    elif profile != "conservative":
+        raise ValueError(f"Unknown precision profile: {profile}")
+    selected.precision_profile = profile
+    return selected

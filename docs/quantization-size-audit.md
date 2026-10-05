@@ -153,3 +153,91 @@ checks establish loader/kernel interoperability, not full-model image quality.
 Do not remove convolution or raw-parameter fallbacks merely to make outputs
 smaller. Their ComfyUI loading behavior must be checked independently. Do not
 equate native loader support, finite small-layer output, and visual equivalence.
+
+
+## Implemented corrections and runtime evidence (2026-10-05)
+
+The historical measurements above describe the old writer. The current writer
+and GUI now share a source-aware plan. Consumed source scale/metadata tensors
+are removed, prefixes are normalized consistently, and packed source shapes are
+expanded before planning. Protected reconstructed weights are stored as BF16;
+genuine F32/F16/BF16 tensors retain their precision. Estimates exclude JSON
+header bytes and expose quantized/retained payload shares plus scale overhead.
+
+Qwen Edit 2511's marker selects the narrower policy automatically: only block
+zero's image modulation remains protected, following the official Comfy Quants
+2511 recipe linked above. Unmarked Qwen variants retain conservative protection.
+Z-Image Base/Turbo cannot be distinguished by the common tensor signatures;
+Turbo requires an explicit selection, and auto remains conservative.
+
+| Source / target | Old planned output (GiB) | New output (GiB) | Measurement |
+|---|---:|---:|---|
+| Qwen 2511 FP8 mixed | 28.648 | 19.133 | New source-aware payload plan |
+| Qwen 2511 INT8 mixed | 28.664 | 19.154 | Actual file: 20,566,767,496 bytes |
+| Qwen 2511 NVFP4 mixed | 21.726 | 10.851 | Actual file: 11,651,454,724 bytes |
+| Z-Image Turbo NVFP4 mixed | 6.727 | 4.200 | Actual file: 4,509,509,064 bytes |
+
+Qwen NVFP4 is 43.0% smaller than the installed FP8 source (19.044 GiB).
+Its new payload estimate is exactly 11,650,909,724 bytes; the remaining 545,000
+bytes are the JSON header. INT8 output remains 0.58% larger than this FP8 source:
+fixing mixed precision overhead cannot halve weights that already use eight bits.
+The UI explicitly flags savings below 5%.
+
+### Numerical and native-loader checks
+
+With installed Kitchen 0.2.36, INT8 ConvRot quantized codes and scales matched
+exactly for all 32,768 tested weights at F32, BF16 and F16. NVFP4 packed bytes and
+block scales also matched for the tested tensors. INT8 now divides in the source
+dtype with an underflow guard; NVFP4 encodes nearest-even ties and signed zero.
+The encoder uses bucket boundaries instead of allocating sixteen candidate
+differences per value. Six ComfyUI MixedPrecisionOps CUDA forwards passed
+(FP8, INT8, NVFP4, each with full-precision matmul enabled and disabled).
+These small checks establish packing/kernel compatibility, not universal model
+quality or calibration equivalence to community checkpoints.
+
+### Full-model fixed-seed comparison
+
+Existing ComfyUI 0.38.0, Torch 2.9.1+cu130, Kitchen 0.2.36, RTX 5080 16 GiB.
+All ten prompts completed successfully. Preview outputs, workflows and complete
+API histories are retained locally in ignored `.pytest-quant-runtime-tmp/`;
+no generated files were placed in Downloads. Source checkpoints were preserved.
+
+Qwen: seed 1212121, 512x512, 20 Euler/simple steps, CFG 3, shift 3.1, denoise 1,
+identical source FP8 text encoder and VAE, no LoRA. Two reference images (`Cat.jpeg`
+and `Dog.jpeg`) requested a red knitted hat and a blue scarf respectively.
+
+| Diffusion format | Cat prompt ID | Dog prompt ID |
+|---|---|---|
+| Original FP8 | `de528a38-6c1f-4e6e-b05d-18126749b5b3` | `c65d23e5-e118-4a47-ab4b-d1c30f7f75b4` |
+| New NVFP4 mixed | `6381c758-fb04-4015-8ec5-b797f3da7568` | `578c885e-b57f-4726-8fa3-5105b162ccab` |
+| New INT8 mixed / ConvRot | `702bbe3d-4a3d-4f8e-b85b-610a3c5e3858` | `f0385f04-86c6-4741-8d4e-bdf6a492f46f` |
+
+Visual inspection: both edits were applied, subject and framing remained close
+to the source renders. NVFP4 changed fine details (eyes, whiskers and scarf);
+INT8 also showed small detail deviations. This is limited smoke-test evidence,
+not a general claim of lossless output or LoRA compatibility.
+
+Z-Image Turbo: seed 1212121, 512x512, nine Euler/simple steps, CFG 1, shift 3,
+Vanilla Qwen3-4B text encoder and standard `ae.safetensors` VAE. Two text prompts
+requested the same cat/hat and dog/scarf subjects.
+
+| Diffusion format | Cat prompt ID | Dog prompt ID |
+|---|---|---|
+| Original BF16 | `82d8585b-68b8-4e0b-981b-382a2a41755b` | `8cdc40fc-83bd-471f-acdb-751b170c3ba2` |
+| New NVFP4 mixed / Turbo profile | `2ae753b7-a4fd-4e3e-a215-188b4aa7643d` | `4ebe3008-fe24-43fe-8fdc-e5f651e2a185` |
+
+Visual inspection: correct recognizable subjects, accessories and colors; hat,
+facial details and slight framing differences remained. FP8/INT8 with the narrower
+Turbo profile still lack equivalent full-model evidence, so the selectable
+Turbo profile stays explicitly experimental rather than changing Base defaults.
+
+Native INT4 ConvRot remains an evaluated candidate, not an offered target:
+only the earlier small native CUDA forward is validated. Full-model packed-shape
+handling, LoRA and forced offload/requantization must pass before release. No
+new dependency or unsupported INT4 file format was added.
+
+A transient Windows sharing violation occurred while unlinking Qwen NVFP4's
+completed temporary hardlink. The final file had already been published; its
+header, offsets and full payload were verified before rendering, and the leftover
+link was removed. Atomic-output cleanup now retries only Windows sharing
+violations for up to one second and still propagates other errors.

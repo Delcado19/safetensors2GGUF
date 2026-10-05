@@ -69,3 +69,14 @@ without copying or changing it; the temporary registration was removed afterward
 This proves one end-to-end edit with this converted file and installed components.
 It is not a same-seed comparison against the source checkpoint, and does not
 establish general quality equivalence or change the model-support ratings.
+
+
+## Source-aware mixed quantization validation (2026-10-05)
+
+443 tests pass; Ruff and GUI construction pass. Ten additional fixed-seed
+ComfyUI renders compare Qwen 2511 INT8/NVFP4 mixed against its FP8 source and
+Z-Image Turbo NVFP4 mixed against BF16. Sizes, exact prompt IDs, visual findings,
+profile limits and Kitchen packing parity are recorded in
+[the quantization size audit](quantization-size-audit.md#implemented-corrections-and-runtime-evidence-2026-10-05).
+The temporary ComfyUI model junction was removed after the queue became idle;
+original checkpoints and the user's Downloads GGUF were preserved.
