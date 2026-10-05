@@ -233,6 +233,12 @@ including Q/K/V split and `text_projection` transposition.
 
 ### 5D Tensor Post-processing (HunyuanVideo / Wan)
 
+Qwen Image Edit 2511 also uses this companion-file workflow for its empty
+`__index_timestep_zero__` variant marker. Native llama-quantize rejects empty
+dimensions, so conversion exports the marker and Fix 5D Tensors restores it
+after quantization. The GUI runs this step automatically; CLI users must use
+the printed companion path with `--fix`, as in the example below.
+
 The Web UI applies this automatically after llama-quantize — no manual step
 needed there.  For manual CLI workflows:
 

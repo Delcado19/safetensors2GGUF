@@ -182,6 +182,25 @@ class TestGgufUnsupportedArch:
 # ---------------------------------------------------------------------------
 
 class TestNanToNum:
+    def test_qwen_2511_empty_marker_uses_companion(self, tmp_path):
+        """Native intermediates omit the marker; final GGUF restores its empty shape."""
+        from convert import convert_file
+        from fix_5d_tensors import fix_5d_tensors
+        from safetensors.torch import save_file, load_file
+
+        source = tmp_path / "qwen.safetensors"
+        tensors = {key: torch.zeros(2) for key in ModelQwenImage.keys_detect[0]}
+        tensors["__index_timestep_zero__"] = torch.empty(0)
+        save_file(tensors, str(source))
+        intermediate, arch = convert_file(str(source), str(tmp_path / "intermediate.gguf"), interact=False)
+        assert "__index_timestep_zero__" not in {t.name for t in gguf.GGUFReader(intermediate).tensors}
+        assert load_file(arch.fix_path)["__index_timestep_zero__"].shape == (0,)
+        final = str(tmp_path / "final.gguf")
+        fix_5d_tensors(intermediate, final, fix_path=arch.fix_path)
+        marker = next(t for t in gguf.GGUFReader(final).tensors if t.name == "__index_timestep_zero__")
+        assert tuple(marker.shape) == (0,)
+        assert marker.data.size == 0
+
     def _run_handle(self, tensor_dict, model_arch, tmp_path):
         """Helper: write tensors via handle_tensors, return dst path."""
         dst = str(tmp_path / "out.gguf")

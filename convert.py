@@ -354,6 +354,15 @@ def handle_tensors(
         if key in quant_skip_keys:
             continue
 
+        if model_arch.arch == "qwen_image" and key == "__index_timestep_zero__" and data.numel() == 0:
+            # Qwen Edit 2511 detection needs this empty buffer, but llama-quantize
+            # rejects zero-length dimensions. Reuse the companion/reinsertion
+            # path so the final GGUF retains the exact marker and buffer shape.
+            if not hasattr(model_arch, "_nd_tensors"):
+                model_arch._nd_tensors = {}
+            model_arch._nd_tensors[key] = data.clone()
+            continue
+
         if key in quant_formats:
             # Reconstruct the approximate float original from its scale
             # sidecar before the normal dtype coercion/GGUF path below.
@@ -468,6 +477,8 @@ def convert_file(
     existing destination. Source/destination aliases are rejected. 5D tensors
     are exported to <dst_path>.<job-id>.5d.safetensors; model_arch.fix_path
     exposes it and the GGUF records its basename for automatic discovery.
+    The empty Qwen Edit 2511 variant marker uses the same companion path;
+    reinsert it after native quantization to preserve variant detection.
 
     Returns:
         (dst_path, model_arch)
