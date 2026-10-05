@@ -49,9 +49,11 @@ and cancel button is included for all three pipelines.
 
 ### New React workbench (preview)
 
-The local React/Vite/FastAPI workbench currently supports diffusion-model GGUF
-and quantized safetensors conversion, local file browsing, estimates, progress,
-cancellation and session history. Python dependencies and launch use **uv**:
+The local React/Vite/FastAPI workbench supports diffusion-model and text-encoder
+GGUF/safetensors conversion, local file browsing, inspection, progress,
+cancellation and session history. Choose **Model type ? Text encoder** for
+encoder weights; its formats and advanced settings follow the separate encoder
+backend. Known incompatible ComfyUI family/format combinations are rejected. Python dependencies and launch use **uv**:
 
 ```bash
 uv sync --frozen

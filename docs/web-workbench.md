@@ -1,8 +1,8 @@
 # React workbench migration
 
-The first migration milestone adds a local React/TypeScript/Vite frontend and
-FastAPI backend. Both diffusion conversion workflows (GGUF and quantized
-safetensors) use the existing conversion algorithms and atomic output writers.
+The React/TypeScript/Vite frontend and FastAPI backend now cover diffusion
+models and text encoders. All conversion workflows use the existing algorithms
+and atomic output writers.
 The classic Gradio frontend remains available during migration.
 
 ## Run with uv
@@ -37,10 +37,35 @@ changing the development API port).
   native modal focus management, reduced motion/transparency and contrast support.
 - Advanced executable, thread, intermediate-file and overwrite settings.
 
-Text-encoder conversion, component extraction, repair tools, Hugging Face
-downloads, and the interactive support matrix remain in `uv run python gui.py`.
+Component extraction, repair tools, Hugging Face downloads, and the interactive
+support matrix remain in `uv run python gui.py`.
 They are the next migration milestones, not removed functionality. INT4 ConvRot
 is still excluded from the production format registry.
+
+## Text-encoder workflow
+
+Select **Model type ? Text encoder**, then choose GGUF or safetensors. Format
+choices come from `TEXT_ENCODER_FORMAT_CHOICES`, not the diffusion registry.
+F16 safetensors (`F16_ST` in the API) casts every tensor, including BF16 norms.
+Native safetensors outputs retain genuine `model.*` keys and protect embedding,
+position/projection and relative-attention tables using the existing encoder
+architecture contract. Load them with native ComfyUI `CLIPLoader`; GGUF uses
+`CLIPLoaderGGUF`.
+
+GGUF auto-detects bundled base families. An optional original-base repo ID in
+Advanced supplies tokenizer/config files for other families. The first run may
+clone llama.cpp; K-quants use the existing plain llama-quantize builder (CMake
+and C++ compiler required). The diffusion executable/settings do not apply.
+Known incompatible combinations (including CLIP GGUF) are rejected before
+external work. Known manual base overrides must agree with detected weights.
+Unverified combinations are labeled as such; passing file conversion does not
+establish ComfyUI render quality.
+
+Safetensors estimates preserve encoder prefixes and protected tables. Encoder
+GGUF size estimates are unavailable: the diffusion writer's assumptions do not
+match llama.cpp. Encoder backends expose logs but no percentage callback, so
+running jobs show **Working**, with an indeterminate accessible progress bar,
+and completion shows 100%. Progress has no simulated timers or animations.
 
 ## Runtime and access contract
 
@@ -100,11 +125,17 @@ runtime success is claimed from cross-platform source code alone.
 
 ### Verified milestone results
 
-On Windows, all 447 Python tests and Ruff pass, and TypeScript/Vite build
+On Windows, all 451 Python tests and Ruff pass, and TypeScript/Vite build
 successfully. Chromium verifies a real synthetic FP8_MIXED conversion, file
 selection, activity, format guide, both themes, 1440/768/390 px viewports,
 Escape/focus restoration, reduced-motion mode and actual 200% input text scaling.
-No browser page errors were observed. CI also builds the frontend with Node 22.
+The second milestone also verifies an actual synthetic text-encoder F16
+safetensors conversion through Chromium, plus FP8_MIXED/F16_ST writer behavior
+through the API (original prefixes and embedding values). GGUF API dispatch and
+cancellation are tested with a mocked encoder worker; existing encoder tests
+cover its converter contract. No new end-to-end llama.cpp conversion or ComfyUI
+render was performed for this UI migration. No browser page errors were observed.
+CI also builds the frontend with Node 22.
 
 With the API already running, replay the browser check with:
 
@@ -120,10 +151,9 @@ browser verification, not a complete screen-reader or assistive-technology audit
 
 ## Next milestones
 
-1. Text-encoder conversion with its distinct prefix and model-family contracts.
-2. Extraction, repair and Hugging Face workflows with explicit job adapters.
-3. Interactive compatibility matrix and release packaging.
-4. Linux runtime verification before replacing the classic launcher by default.
+1. Extraction, repair and Hugging Face workflows with explicit job adapters.
+2. Interactive compatibility matrix and release packaging.
+3. Linux runtime verification before replacing the classic launcher by default.
 
 References: [Vite backend integration](https://vite.dev/guide/backend-integration.html),
 [FastAPI CORS/origin model](https://fastapi.tiangolo.com/tutorial/cors/),

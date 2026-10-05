@@ -24,7 +24,7 @@ from component_extract import (
     format_component_analysis,
 )
 from convert import ConversionCancelled, load_state_dict
-from conversion_service import _auto_dst, _pipeline, _resolve_dst_st, _strip_model_suffix
+from conversion_service import _auto_dst, _pipeline, _resolve_dst_st, _resolve_dst_te, _strip_model_suffix
 from convert_safetensors import convert_to_safetensors
 from fix_5d_tensors import fix_5d_tensors as _fix_5d
 from fix_pad_tokens import fix_pad_tokens as _fix_pad
@@ -54,7 +54,6 @@ from quantize import (
 from safetensors_quant import (
     SAFETENSORS_DTYPE_CHOICES,
     safetensors_output_size_breakdown,
-    filename_suffix_for,
     format_recommendation,
 )
 from text_encoder_convert import (
@@ -1218,40 +1217,6 @@ def _stream(
 # Path helpers
 # ──────────────────────────────────────────────────────────────────────────────
 
-def _resolve_dst_te(src: str, dst: str | None, format_key: str) -> str | None:
-    """Resolve the user-supplied Text Encoder output path; mirrors _resolve_dst_st.
-
-    Unlike the GGUF/Safetensors tabs, this tab's format dropdown mixes GGUF
-    outtypes/K-quants and safetensors-quant formats, so the extension isn't
-    fixed the way it is for those two -- picked here from
-    TEXT_ENCODER_SAFETENSORS_FORMATS instead. Without this resolution step, a
-    bare directory path (typed by hand, no browse dialog previously existed
-    to produce a full file path -- see browse_and_set_dst_te) got passed
-    straight through to convert_text_encoder_any()/llama-quantize, which
-    can't open a directory as an output file (confirmed 2026-08-18: aura_t5
-    K-quant conversion failed with a bare "ios_base::failbit set: iostream
-    stream error" instead of a clear message).
-    """
-    if not dst:
-        return None
-    dst = dst.strip()
-    if not dst:
-        return None
-
-    ext = ".safetensors" if format_key in TEXT_ENCODER_SAFETENSORS_FORMATS else ".gguf"
-    suffix = filename_suffix_for(format_key)
-
-    if dst.endswith(("/", "\\")) or Path(dst).is_dir():
-        stem = _strip_model_suffix(src)
-        return str(Path(dst) / f"{stem.name}-{suffix}{ext}")
-
-    if "{ftype}" in dst:
-        resolved = dst.replace("{ftype}", suffix)
-        if not resolved.endswith((".gguf", ".safetensors")):
-            resolved += ext
-        return resolved
-
-    return dst
 
 
 def browse_and_set_dst_te(src: str) -> str:

@@ -5,6 +5,7 @@ Writes small synthetic models and screenshots under the ignored
 """
 import argparse
 import json
+import uuid
 from pathlib import Path
 
 import torch
@@ -40,7 +41,7 @@ def main():
         assert page.locator('#source').input_value() == str(source)
         page.get_by_role('button', name='Safetensors Native ComfyUI loading').click()
         # Test reruns explicitly authorize replacement of this owned artifact.
-        output = root / 'qwen-ui-output.safetensors'
+        output = root / f'qwen-ui-output-{uuid.uuid4().hex}.safetensors'
         page.locator('#destination').fill(str(output))
         page.get_by_text('Advanced settings', exact=True).click()
         page.get_by_label('Replace an existing output file').check()
@@ -74,8 +75,35 @@ def main():
         enlarged_size = page.locator('#source').evaluate('(node) => parseFloat(getComputedStyle(node).fontSize)')
         assert enlarged_size >= original_size * 1.99
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+
+        # Text encoders keep genuine model.* paths instead of diffusion stripping.
+        encoder = root / 'text-encoder-ui.safetensors'
+        save_file({'model.embed_tokens.weight': torch.ones(32, 128, dtype=torch.bfloat16),
+                   'model.layers.0.self_attn.q_proj.weight': torch.randn(128, 128, dtype=torch.bfloat16)}, str(encoder))
+        page.goto(args.url)
+        page.get_by_text('Local engine connected').wait_for()
+        page.get_by_label('Model type').select_option('text_encoder')
+        assert page.locator('#format').input_value() == 'F16'
+        page.get_by_label('Source path').fill(str(encoder))
+        page.get_by_role('button', name='Safetensors Native CLIPLoader').click()
+        page.get_by_label('Quantization').select_option('F16_ST')
+        encoder_output = root / f'text-encoder-f16-{uuid.uuid4().hex}.safetensors'
+        page.locator('#destination').fill(str(encoder_output))
+        page.get_by_role('button', name='Inspect & estimate').click()
+        page.get_by_text('Unknown family', exact=True).wait_for()
+        with page.expect_response(lambda response: response.url.endswith('/api/jobs') and response.request.method == 'POST') as started:
+            page.get_by_role('button', name='Convert model', exact=True).last.click()
+        assert started.value.status == 202
+        page.get_by_role('heading', name='Your model is ready').wait_for(timeout=30000)
+        assert encoder_output.is_file()
+        page.evaluate('scrollTo(0, 0)')
+        page.screenshot(path=str(root / 'text-encoder-desktop.png'), full_page=True)
+        page.set_viewport_size({'width': 390, 'height': 844})
+        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+        page.screenshot(path=str(root / 'text-encoder-mobile.png'), full_page=True)
         assert not errors, errors
         print(json.dumps({'browser': 'Chromium', 'conversion': 'FP8_MIXED succeeded',
+                          'text_encoder': 'F16_ST succeeded',
                           'viewport_checks': [1440, 768, 390], 'page_errors': errors,
                           'artifacts': str(root)}))
         browser.close()

@@ -29,6 +29,7 @@ type Container = "gguf" | "safetensors";
 type Config = {
   token: string;
   formats: Record<Container, [string, string][]>;
+  text_encoder_formats: Record<Container, [string, string][]>;
   executable: string;
   home: string;
 };
@@ -44,12 +45,16 @@ type Job = {
   format: string;
   started: number;
   finished: number | null;
+  model_kind: "diffusion" | "text_encoder";
+  indeterminate: boolean;
 };
 type Inspection = {
   architecture: string;
   source_bytes: number;
   estimated_bytes: number | null;
   destination: string;
+  support?: string;
+  support_reason?: string | null;
 };
 type Listing = {
   path: string;
@@ -65,6 +70,8 @@ const bytes = (value: number) =>
     : value >= 2 ** 20
       ? `${(value / 2 ** 20).toFixed(1)} MiB`
       : `${(value / 1024).toFixed(1)} KiB`;
+const formatName = (key: string) =>
+  key === "F16_ST" ? "F16" : key.replace("_MIXED", " ? mixed");
 const filename = (path: string) => path.split(/[\\/]/).pop() || path;
 
 function App() {
@@ -75,6 +82,10 @@ function App() {
     () => localStorage.getItem("workbench-theme") === "light",
   );
   const [source, setSource] = useState("");
+  const [modelKind, setModelKind] = useState<"diffusion" | "text_encoder">(
+    "diffusion",
+  );
+  const [baseRepo, setBaseRepo] = useState("");
   const [destination, setDestination] = useState("");
   const [container, setContainer] = useState<Container>("gguf");
   const [format, setFormat] = useState("Q4_K_M");
@@ -151,7 +162,16 @@ function App() {
     inspectVersion.current++;
     setInspection(undefined);
     setInspecting(false);
-  }, [source, destination, format, container, profile, overwrite]);
+  }, [
+    source,
+    destination,
+    format,
+    container,
+    profile,
+    overwrite,
+    modelKind,
+    baseRepo,
+  ]);
 
   useEffect(() => {
     if (!config) return;
@@ -187,14 +207,17 @@ function App() {
   function parameters() {
     return {
       source,
+      model_kind: modelKind,
+      base_repo_id:
+        modelKind === "text_encoder" && container === "gguf" ? baseRepo : "",
       destination,
       container,
       format,
-      precision_profile: profile,
-      executable,
-      threads,
+      precision_profile: modelKind === "diffusion" ? profile : "auto",
+      executable: modelKind === "diffusion" ? executable : "",
+      threads: modelKind === "diffusion" ? threads : 0,
       overwrite,
-      keep_intermediate: keepIntermediate,
+      keep_intermediate: modelKind === "diffusion" && keepIntermediate,
     };
   }
 
@@ -237,7 +260,7 @@ function App() {
       if (version === browseVersion.current) {
         setListing(result);
         // Preserve typing while the directory request is in flight.
-        setFolderPath((current) => current === path ? result.path : current);
+        setFolderPath((current) => (current === path ? result.path : current));
       }
     } catch (reason) {
       if (version === browseVersion.current)
@@ -389,7 +412,11 @@ function App() {
               >
                 <div className="panel-heading">
                   <h2 id="conversion-title">New conversion</h2>
-                  <span className="tag">DIFFUSION MODEL</span>
+                  <span className="tag">
+                    {modelKind === "diffusion"
+                      ? "DIFFUSION MODEL"
+                      : "TEXT ENCODER"}
+                  </span>
                 </div>
                 <form
                   onSubmit={(event) => {
@@ -401,6 +428,28 @@ function App() {
                     <legend className="section-label">
                       <span>01</span>Source model
                     </legend>
+                    <label className="field-label" htmlFor="model-kind">
+                      Model type
+                    </label>
+                    <select
+                      id="model-kind"
+                      value={modelKind}
+                      onChange={(event) => {
+                        const kind = event.target.value as
+                          "diffusion" | "text_encoder";
+                        setModelKind(kind);
+                        setFormat(
+                          container === "gguf"
+                            ? kind === "text_encoder"
+                              ? "F16"
+                              : "Q4_K_M"
+                            : "FP8_MIXED",
+                        );
+                      }}
+                    >
+                      <option value="diffusion">Diffusion model</option>
+                      <option value="text_encoder">Text encoder</option>
+                    </select>
                     <div
                       className={"source-box" + (source ? " has-source" : "")}
                     >
@@ -458,12 +507,18 @@ function App() {
                         }
                         onClick={() => {
                           setContainer("gguf");
-                          setFormat("Q4_K_M");
+                          setFormat(
+                            modelKind === "text_encoder" ? "F16" : "Q4_K_M",
+                          );
                         }}
                       >
                         <Box size={20} />
                         <strong>GGUF</strong>
-                        <span>For ComfyUI-GGUF</span>
+                        <span>
+                          {modelKind === "text_encoder"
+                            ? "CLIPLoaderGGUF"
+                            : "For ComfyUI-GGUF"}
+                        </span>
                         {container === "gguf" && <Check size={15} />}
                       </button>
                       <button
@@ -481,7 +536,11 @@ function App() {
                       >
                         <Layers3 size={20} />
                         <strong>Safetensors</strong>
-                        <span>Native ComfyUI loading</span>
+                        <span>
+                          {modelKind === "text_encoder"
+                            ? "Native CLIPLoader"
+                            : "Native ComfyUI loading"}
+                        </span>
                         {container === "safetensors" && <Check size={15} />}
                       </button>
                     </div>
@@ -493,35 +552,54 @@ function App() {
                       value={format}
                       onChange={(event) => setFormat(event.target.value)}
                     >
-                      {(config?.formats[container] || [[format, format]]).map(
-                        ([label, key]) => (
-                          <option key={key} value={key}>
-                            {label}
-                          </option>
-                        ),
-                      )}
+                      {(
+                        (modelKind === "text_encoder"
+                          ? config?.text_encoder_formats[container]
+                          : config?.formats[container]) || [[format, format]]
+                      ).map(([label, key]) => (
+                        <option key={key} value={key}>
+                          {label}
+                        </option>
+                      ))}
                     </select>
-                    {container === "safetensors" && (
-                      <>
-                        <label className="field-label" htmlFor="profile">
-                          Precision profile
-                        </label>
-                        <select
-                          id="profile"
-                          value={profile}
-                          onChange={(event) => setProfile(event.target.value)}
-                        >
-                          <option value="auto">Automatic · source-aware</option>
-                          <option value="conservative">Conservative</option>
-                          <option value="qwen_edit_2511">
-                            Qwen Image Edit 2511
-                          </option>
-                          <option value="z_image_turbo">
-                            Z-Image Turbo · experimental
-                          </option>
-                        </select>
-                      </>
+                    {modelKind === "text_encoder" && (
+                      <div className="encoder-note">
+                        <strong>
+                          {container === "gguf"
+                            ? "Original base model, correct tokenizer."
+                            : "Local conversion, original tensor names."}
+                        </strong>
+                        <p>
+                          {container === "gguf"
+                            ? "Auto-detected families use bundled tokenizer files. First use may download llama.cpp; K-quants need CMake and a C++ compiler. CLIP-L/bigG require safetensors."
+                            : "No tokenizer download or llama.cpp needed. Use ComfyUI’s native CLIPLoader. Compatibility depends on the encoder family; inspect before converting."}
+                        </p>
+                      </div>
                     )}
+                    {container === "safetensors" &&
+                      modelKind === "diffusion" && (
+                        <>
+                          <label className="field-label" htmlFor="profile">
+                            Precision profile
+                          </label>
+                          <select
+                            id="profile"
+                            value={profile}
+                            onChange={(event) => setProfile(event.target.value)}
+                          >
+                            <option value="auto">
+                              Automatic · source-aware
+                            </option>
+                            <option value="conservative">Conservative</option>
+                            <option value="qwen_edit_2511">
+                              Qwen Image Edit 2511
+                            </option>
+                            <option value="z_image_turbo">
+                              Z-Image Turbo · experimental
+                            </option>
+                          </select>
+                        </>
+                      )}
                     <div className="field-row">
                       <label className="field-label" htmlFor="destination">
                         Save to
@@ -553,7 +631,32 @@ function App() {
                         <ChevronRight size={15} />
                       </summary>
                       <div className="advanced-content">
-                        {container === "gguf" && (
+                        {container === "gguf" &&
+                          modelKind === "text_encoder" && (
+                            <>
+                              <label
+                                className="field-label"
+                                htmlFor="base-repo"
+                              >
+                                Original base model repo ID · optional
+                              </label>
+                              <input
+                                id="base-repo"
+                                value={baseRepo}
+                                onChange={(event) =>
+                                  setBaseRepo(event.target.value)
+                                }
+                                placeholder="Automatic · e.g. Qwen/Qwen3-8B"
+                                spellCheck={false}
+                              />
+                              <p className="field-hint">
+                                Use the original base model, not the fine-tune
+                                repository. An unbundled repo downloads config
+                                and tokenizer files.
+                              </p>
+                            </>
+                          )}
+                        {container === "gguf" && modelKind === "diffusion" && (
                           <>
                             <label className="field-label" htmlFor="executable">
                               llama-quantize executable
@@ -671,6 +774,19 @@ function App() {
                       </dd>
                     </div>
                   </dl>
+                  {inspection?.support && (
+                    <p className="encoder-note" role="status">
+                      <strong>
+                        ComfyUI compatibility · {inspection.support}
+                      </strong>
+                      <span>
+                        {inspection.support_reason ||
+                          (inspection.support === "unknown"
+                            ? "This family/format has no confirmed render result. Validate it in your workflow."
+                            : "Based on the project’s existing compatibility evidence.")}
+                      </span>
+                    </p>
+                  )}
                   {saving != null && (
                     <div
                       className={saving > 0.05 ? "saving" : "saving caution"}
@@ -700,6 +816,9 @@ function App() {
                         : "Inspect & estimate"}
                   </button>
                   <p className="preview-note">
+                    {modelKind === "text_encoder" &&
+                      container === "gguf" &&
+                      "GGUF size estimation is unavailable for this encoder path. "}
                     Estimates depend on source precision and retained tensors.
                     Actual file size can differ.
                   </p>
@@ -735,15 +854,28 @@ function App() {
                         aria-label="Conversion progress"
                         aria-valuemin={0}
                         aria-valuemax={100}
-                        aria-valuenow={Math.round(job.progress * 100)}
+                        aria-valuenow={
+                          job.indeterminate
+                            ? undefined
+                            : Math.round(job.progress * 100)
+                        }
+                        aria-valuetext={
+                          job.indeterminate
+                            ? "Working; see technical log"
+                            : undefined
+                        }
                       >
                         <span
                           style={{ transform: `scaleX(${job.progress})` }}
                         />
                       </div>
                       <div className="progress-caption">
-                        <span>{job.format}</span>
-                        <strong>{Math.round(job.progress * 100)}%</strong>
+                        <span>{formatName(job.format)}</span>
+                        <strong>
+                          {job.indeterminate
+                            ? "Working"
+                            : `${Math.round(job.progress * 100)}%`}
+                        </strong>
                       </div>
                       {job.output && (
                         <div className="output-path">
@@ -817,7 +949,7 @@ function App() {
                     <span>
                       <strong>{filename(item.source)}</strong>
                       <small>
-                        {item.format} ·{" "}
+                        {formatName(item.format)} ·{" "}
                         {new Date(item.started * 1000).toLocaleTimeString()}
                       </small>
                     </span>
@@ -879,9 +1011,9 @@ function App() {
                 <div>
                   <h2>More tools remain in the classic interface.</h2>
                   <p>
-                    Text encoders, checkpoint extraction, repair tools and
-                    Hugging Face downloads are still available through gui.py
-                    while migration continues.
+                    Checkpoint extraction, repair tools and Hugging Face
+                    downloads are still available through gui.py while migration
+                    continues.
                   </p>
                 </div>
               </div>

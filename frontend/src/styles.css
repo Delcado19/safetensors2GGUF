@@ -953,6 +953,21 @@ input[type="checkbox"] {
 .skip-link:focus {
   transform: none;
 }
+.encoder-note {
+  margin: 16px 0;
+  padding: 12px 14px;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 0.85714rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.encoder-note strong {
+  display: block;
+  color: var(--text);
+  margin-bottom: 5px;
+}
 /* Motion serves pointer feedback only. Navigation, keyboard actions, logs and
    progress values remain immediate; no transition may delay functional data. */
 @media (hover: hover) and (pointer: fine) {
@@ -1209,5 +1224,8 @@ input[type="checkbox"] {
 
 /* Compact desktop actions retain full touch targets on coarse pointers. */
 @media (pointer: coarse) {
-  button, summary { min-height: 44px; }
+  button,
+  summary {
+    min-height: 44px;
+  }
 }

@@ -30,8 +30,14 @@ from convert import ConversionCancelled, load_state_dict
 from conversion_io import validate_output
 from convert_safetensors import convert_to_safetensors
 from models.architectures import detect_arch
+from model_support import SUPPORT_BAD, text_encoder_support_level, text_encoder_support_reason
 from quantize import ALL_QUANT_CHOICES, LLAMA_QUANT_KEYS, estimate_output_size, find_exe
 from safetensors_quant import SAFETENSORS_DTYPE_CHOICES, filename_suffix_for, safetensors_output_size_breakdown
+from text_encoder_convert import (
+    TEXT_ENCODER_FORMAT_CHOICES, TEXT_ENCODER_SAFETENSORS_FORMATS,
+    _TEXT_ENCODER_MODEL_ARCH, _TEXT_ENCODER_SAFETENSORS_TARGET_KEY,
+    _VENDORED_REPOS, convert_text_encoder_any, detect_text_encoder_family,
+)
 
 MODEL_SUFFIXES = {'.safetensors', '.ckpt', '.pt', '.pth', '.bin', '.gguf'}
 DIST = Path(__file__).parent / 'frontend' / 'dist'
@@ -41,6 +47,8 @@ class ConversionRequest(BaseModel):
     """Validated local conversion parameters; format keys come from the registry."""
 
     model_config = ConfigDict(extra='forbid')
+    model_kind: Literal['diffusion', 'text_encoder'] = 'diffusion'
+    base_repo_id: str = Field(default='', max_length=256)
     source: str = Field(min_length=1, max_length=4096)
     destination: str = Field(default='', max_length=4096)
     container: Literal['gguf', 'safetensors'] = 'gguf'
@@ -77,6 +85,8 @@ class Job:
                     'phase': self.phase, 'output': self.output, 'error': self.error,
                     'logs': list(self.logs), 'source': self.parameters.source,
                     'format': self.parameters.format, 'started': self.started,
+                    'model_kind': self.parameters.model_kind,
+                    'indeterminate': self.parameters.model_kind == 'text_encoder' and self.status in {'queued', 'running', 'cancelling'},
                     'finished': self.finished}
 
     def emit(self, event):
@@ -99,7 +109,12 @@ class Job:
         try:
             if self.cancel.is_set():
                 raise ConversionCancelled('cancelled')
-            if params.container == 'gguf':
+            if params.model_kind == 'text_encoder':
+                output = convert_text_encoder_any(
+                    params.source, params.base_repo_id, params.destination, params.format,
+                    on_log=lambda message: self.emit(('log', message)),
+                    cancel_event=self.cancel, overwrite=params.overwrite)
+            elif params.container == 'gguf':
                 # The shared pipeline only needs queue.put; no polling thread.
                 output = _pipeline(params.source, params.destination, params.format,
                                    params.executable, params.threads, params.keep_intermediate,
@@ -164,6 +179,10 @@ def create_app() -> FastAPI:
         """Return process-local configuration without caching the session token."""
         response.headers['Cache-Control'] = 'no-store'
         return {'token': token, 'formats': {'gguf': ALL_QUANT_CHOICES, 'safetensors': SAFETENSORS_DTYPE_CHOICES},
+                'text_encoder_formats': {
+                    container: [(label, key) for label, key in TEXT_ENCODER_FORMAT_CHOICES
+                                if (key in TEXT_ENCODER_SAFETENSORS_FORMATS) == (container == 'safetensors')]
+                    for container in ('gguf', 'safetensors')},
                 'executable': str(find_exe() or ''), 'home': str(Path.home()),
                 'platform': os.name, 'history_persistent': False}
 
@@ -196,10 +215,19 @@ def create_app() -> FastAPI:
         if not source.is_file() or source.suffix.lower() not in MODEL_SUFFIXES - {'.gguf'}:
             raise HTTPException(400, 'Choose an existing safetensors or checkpoint source')
         params.source = str(source.resolve())
-        choices = ALL_QUANT_CHOICES if params.container == 'gguf' else SAFETENSORS_DTYPE_CHOICES
+        choices = TEXT_ENCODER_FORMAT_CHOICES if params.model_kind == 'text_encoder' else (
+            ALL_QUANT_CHOICES if params.container == 'gguf' else SAFETENSORS_DTYPE_CHOICES)
         if params.format not in {key for _, key in choices}:
             raise HTTPException(400, 'Unsupported quantization format')
-        if params.container == 'gguf':
+        if params.model_kind == 'text_encoder':
+            if (params.format in TEXT_ENCODER_SAFETENSORS_FORMATS) != (params.container == 'safetensors'):
+                raise HTTPException(400, 'Text-encoder format does not match the output container')
+            if params.precision_profile != 'auto' or params.executable or params.threads or params.keep_intermediate:
+                raise HTTPException(400, 'Diffusion advanced settings do not apply to text encoders')
+            from conversion_service import _resolve_dst_te
+            params.destination = _resolve_dst_te(params.source, params.destination, params.format) or (
+                str(_strip_model_suffix(params.source)) + f'-{filename_suffix_for(params.format)}.{params.container}')
+        elif params.container == 'gguf':
             from conversion_service import _resolve_dst
             params.destination = _resolve_dst(params.source, params.destination, params.format) or (
                 str(_strip_model_suffix(params.source)) + f'-{params.format}.gguf')
@@ -212,11 +240,39 @@ def create_app() -> FastAPI:
             raise HTTPException(400, str(exc)) from exc
         return params
 
+    def text_encoder_details(params):
+        """Inspect original prefixes and reject known ComfyUI-incompatible outputs offline."""
+        detected = detect_text_encoder_family(load_state_dict(params.source, strip_prefixes=False))
+        manual = _VENDORED_REPOS.get(params.base_repo_id.strip()) if params.container == 'gguf' else None
+        if manual and detected and manual != detected:
+            raise ValueError(f'Base model override ({manual}) does not match detected weights ({detected}).')
+        family = manual or detected
+        key = ('GGUF' if params.container == 'gguf' else
+               _TEXT_ENCODER_SAFETENSORS_TARGET_KEY.get(params.format, params.format))
+        support = text_encoder_support_level(family, key) if family else 'unknown'
+        reason = text_encoder_support_reason(family, key) if family else None
+        if support == SUPPORT_BAD:
+            raise ValueError((reason or f'{family} is not supported in {params.format} by ComfyUI.') +
+                             ' Choose F16 safetensors or a supported format.')
+        if params.container == 'gguf' and not family and not params.base_repo_id.strip():
+            raise ValueError('Unknown text-encoder family. Enter the original base model repo ID or use safetensors.')
+        return detected or family or 'Unknown family', support, reason
+
     @app.post('/api/inspect', dependencies=protected)
     def inspect(params: ConversionRequest):
         """Detect architecture and calculate source-aware payload estimates."""
         params = resolve(params)
         try:
+            if params.model_kind == 'text_encoder':
+                family, support, reason = text_encoder_details(params)
+                # llama.cpp has a different writer: do not apply diffusion GGUF estimates.
+                breakdown = (safetensors_output_size_breakdown(
+                    params.source, _TEXT_ENCODER_SAFETENSORS_TARGET_KEY.get(params.format, params.format),
+                    _TEXT_ENCODER_MODEL_ARCH, strip_prefixes=False)
+                    if params.container == 'safetensors' else None)
+                return {'architecture': family, 'source_bytes': Path(params.source).stat().st_size,
+                        'estimated_bytes': breakdown['total'] if breakdown else None,
+                        'destination': params.destination, 'support': support, 'support_reason': reason}
             arch = detect_arch(load_state_dict(params.source))
             if params.container == 'gguf':
                 size = estimate_output_size(params.source, params.format)
@@ -234,7 +290,14 @@ def create_app() -> FastAPI:
     def start(params: ConversionRequest):
         """Start one conversion, rejecting concurrent jobs to bound memory."""
         params = resolve(params)
-        if params.container == 'gguf' and params.format in LLAMA_QUANT_KEYS:
+        if params.model_kind == 'text_encoder':
+            try:
+                text_encoder_details(params)
+            except Exception as exc:
+                # Invalid checkpoint headers must surface as input errors,
+                # including format-specific exceptions from safetensors/torch.
+                raise HTTPException(400, str(exc)) from exc
+        if params.model_kind == 'diffusion' and params.container == 'gguf' and params.format in LLAMA_QUANT_KEYS:
             executable = Path(params.executable) if params.executable else find_exe()
             if not executable or not Path(executable).is_file():
                 raise HTTPException(400, 'This format requires llama-quantize. Set its path in Advanced.')

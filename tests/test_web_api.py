@@ -6,6 +6,7 @@ import pytest
 import torch
 from fastapi.testclient import TestClient
 from safetensors.torch import save_file
+from safetensors import safe_open
 
 import web_api
 
@@ -103,3 +104,86 @@ def test_single_worker_cancellation_and_failure(tmp_path, monkeypatch):
     monkeypatch.setattr(web_api, 'convert_to_safetensors', fail)
     failed = client.post('/api/jobs', json=params).json()['id']
     assert _wait(client, failed)['error'] == 'deliberate failure'
+
+
+@pytest.mark.parametrize('format_key', ['FP8_MIXED', 'F16_ST'])
+def test_text_encoder_real_writer_preserves_prefix_and_embedding(tmp_path, format_key):
+    """Native CLIPLoader needs original module paths and unpacked embedding tables."""
+    source = tmp_path / 'encoder.safetensors'
+    embedding = torch.randn(32, 128, dtype=torch.bfloat16)
+    save_file({'model.embed_tokens.weight': embedding,
+               'model.layers.0.self_attn.q_proj.weight': torch.randn(128, 128, dtype=torch.bfloat16),
+               'model.layers.0.input_layernorm.weight': torch.ones(128, dtype=torch.bfloat16)}, str(source))
+    client = _client()
+    params = {'model_kind': 'text_encoder', 'source': str(source),
+              'destination': str(tmp_path), 'container': 'safetensors', 'format': format_key}
+    inspection = client.post('/api/inspect', json=params)
+    assert inspection.status_code == 200, inspection.text
+    assert inspection.json()['estimated_bytes'] > 0
+    assert inspection.json()['architecture'] == 'Unknown family'
+    started = client.post('/api/jobs', json=params)
+    assert started.status_code == 202, started.text
+    state = _wait(client, started.json()['id'])
+    assert state['status'] == 'succeeded', state
+    assert state['model_kind'] == 'text_encoder' and not state['indeterminate']
+    with safe_open(state['output'], framework='pt') as result:
+        assert 'model.layers.0.self_attn.q_proj.weight' in result.keys()
+        preserved = result.get_tensor('model.embed_tokens.weight')
+        assert preserved.shape == embedding.shape
+        assert torch.equal(preserved.float(), embedding.float())
+        if format_key == 'F16_ST':
+            assert all(result.get_tensor(key).dtype == torch.float16 for key in result.keys())
+    assert client.post('/api/jobs', json=params).status_code == 400
+    assert client.post('/api/jobs', json={**params, 'destination': str(source)}).status_code == 400
+    assert client.post('/api/jobs', json={**params, 'container': 'gguf'}).status_code == 400
+    assert client.post('/api/jobs', json={**params, 'executable': 'diffusion.exe'}).status_code == 400
+
+
+def test_text_encoder_gguf_dispatch_and_offline_guards(tmp_path, monkeypatch):
+    """GGUF uses the text backend; reject incompatible families before external work."""
+    client = _client()
+    source = _source(tmp_path)
+    params = {'model_kind': 'text_encoder', 'source': str(source),
+              'destination': str(tmp_path / 'encoder-{ftype}'), 'container': 'gguf', 'format': 'F16'}
+    assert client.post('/api/jobs', json=params).status_code == 400  # Unknown family without override.
+    monkeypatch.setattr(web_api, 'detect_text_encoder_family', lambda state: 'clip-l')
+    for route in ('inspect', 'jobs'):
+        rejected = client.post(f'/api/{route}', json=params)
+        assert rejected.status_code == 400 and 'safetensors' in rejected.json()['detail']
+    # Detectable overrides must agree with the checkpoint, not change its identity.
+    assert client.post('/api/jobs', json={**params, 'base_repo_id': 'Qwen/Qwen3-8B'}).status_code == 400
+    monkeypatch.setattr(web_api, 'detect_text_encoder_family', lambda state: 'qwen3-8b')
+    inspected = client.post('/api/inspect', json=params)
+    assert inspected.status_code == 200
+    assert inspected.json()['estimated_bytes'] is None
+    entered = threading.Event()
+
+    def blocked(weights, repo, destination, format_key, *, on_log, cancel_event, overwrite):
+        assert weights == str(source) and repo == '' and format_key == 'F16'
+        assert destination.endswith('encoder-F16.gguf') and not overwrite
+        on_log('Text encoder conversion started')
+        entered.set()
+        assert cancel_event.wait(5)
+        raise RuntimeError('cancelled')
+
+    monkeypatch.setattr(web_api, 'convert_text_encoder_any', blocked)
+    started = client.post('/api/jobs', json=params)
+    assert started.status_code == 202, started.text
+    job_id = started.json()['id']
+    assert entered.wait(5)
+    assert client.get(f'/api/jobs/{job_id}').json()['indeterminate']
+    assert client.post('/api/jobs', json=params).status_code == 409
+    client.post(f'/api/jobs/{job_id}/cancel', json={})
+    assert _wait(client, job_id)['status'] == 'cancelled'
+    assert not (tmp_path / 'encoder-F16.gguf').exists()
+
+
+def test_text_encoder_invalid_checkpoint_returns_input_error(tmp_path):
+    """Malformed headers do not escape preflight as an internal server failure."""
+    source = tmp_path / 'broken.safetensors'
+    source.write_bytes(b'not a checkpoint')
+    params = {'model_kind': 'text_encoder', 'source': str(source),
+              'container': 'safetensors', 'format': 'F16_ST'}
+    client = _client()
+    assert client.post('/api/jobs', json=params).status_code == 400
+    assert client.post('/api/inspect', json=params).status_code == 400

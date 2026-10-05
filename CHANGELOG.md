@@ -6,6 +6,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Text encoders in the React workbench
+- Add: Text-encoder mode with separate GGUF/safetensors format registries,
+  original-base repo override, loader guidance and shared job cancellation/history.
+- Add: Offline family/support preflight that rejects known ComfyUI-incompatible
+  combinations, mismatched known base overrides and malformed checkpoints.
+- Change: Reuse the classic output-path helper and existing encoder writers,
+  preserving native model prefixes and protected embedding tables; GGUF size
+  estimates stay unavailable rather than applying diffusion assumptions.
+- Add: Actual FP8/F16 safetensors API tests, GGUF adapter/cancellation checks and
+  real text-encoder F16 conversion in the responsive Chromium smoke test.
+
+
 ### React workbench preview
 - Add: Local React/TypeScript/Vite and FastAPI workbench for GGUF and quantized
   safetensors conversion, file browsing, source inspection, job progress,
