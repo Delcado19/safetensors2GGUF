@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Fix: Show usable-but-visible Qwen-Image-Edit-2511 NVFP4/INT8 mixed and Qwen3
+  8B GGUF drift as caution instead of letting older clean samples hide it.
+- Add: Concrete drift details/test scope, profile-dependent Z-Image Turbo evidence,
+  and AuraFlow/UMT5 observations in compatibility cells; quantization math unchanged.
+
 - Fix: Center compatibility format column headings over their cell contents.
 
 ### Compatibility matrix in the React workbench

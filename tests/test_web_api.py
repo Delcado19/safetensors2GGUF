@@ -60,6 +60,16 @@ def test_support_matrix_uses_shared_classifications_and_reasons():
     clip = next(row for row in data['text_encoder']['rows'] if row['family'] == 'clip-l')
     assert clip['GGUF'] == 'bad' and clip['GGUF__reason']
     assert clip['F16'] == 'verified'
+    qwen = next(row for row in data['diffusion']['rows'] if row['arch'] == 'qwen_image')
+    assert qwen['NVFP4_MIXED'] == 'caution' and 'whiskers' in qwen['NVFP4_MIXED__reason']
+    assert qwen['INT8_MIXED'] == 'caution' and 'small visible detail' in qwen['INT8_MIXED__reason']
+    lumina = next(row for row in data['diffusion']['rows'] if row['arch'] == 'lumina2')
+    assert lumina['NVFP4_MIXED'] == 'bad'
+    assert lumina['NVFP4_MIXED__scope'] == 'Profile-dependent drift'
+    assert 'z_image_turbo' in lumina['NVFP4_MIXED__reason']
+    assert 'default-policy' in lumina['NVFP4_MIXED__reason']
+    qwen_encoder = next(row for row in data['text_encoder']['rows'] if row['family'] == 'qwen3-8b')
+    assert qwen_encoder['GGUF'] == 'caution' and 'Q5_K_M' in qwen_encoder['GGUF__reason']
     assert 'INT4_CONVROT' not in str(data)
     assert client.get('/api/support', headers={'X-Workbench-Token': ''}).status_code == 403
     assert client.get('/api/support', headers={'Origin': 'https://evil.example'}).status_code == 403

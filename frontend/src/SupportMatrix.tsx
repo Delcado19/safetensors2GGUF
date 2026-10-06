@@ -192,10 +192,22 @@ export function SupportMatrix({
                               selected?.row === row &&
                               selected.format === format
                             }
+                            aria-describedby={
+                              row[format + "__scope"]
+                                ? `${row.arch || row.family}-${format}-scope`
+                                : undefined
+                            }
                             onClick={() => setSelected({ row, format })}
                           >
                             <info.icon size={18} />
                             <span>{info.label}</span>
+                            {row[format + "__scope"] && (
+                              <small
+                                id={`${row.arch || row.family}-${format}-scope`}
+                              >
+                                {row[format + "__scope"]}
+                              </small>
+                            )}
                           </button>
                         </td>
                       );
@@ -253,9 +265,15 @@ export function SupportMatrix({
         </div>
       )}
       <p className="preview-note">
+        Visible drift is model/checkpoint, profile and workflow dependent; it
+        does not mean every model or seed changes in the same way. Select a cell
+        for the observed details and test scope.
+      </p>
+      <p className="preview-note">
         Storage savings depend on source dtype and retained tensors. Inspect
         your source for an estimate. NVFP4 has hardware requirements; INT4
-        ConvRot remains excluded.
+        ConvRot is an SDXL-tested prototype; standard format integration is
+        pending.
       </p>
     </section>
   );

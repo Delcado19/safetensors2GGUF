@@ -4,7 +4,7 @@ of the GGUF/safetensors format dropdowns.
 
 Two things live here, both editorial judgment calls documented inline
 rather than hidden in a spreadsheet: which public model names map to each
-internal architecture key (MODEL_DISPLAY_NAMES), and a tri-state confidence
+internal architecture key (MODEL_DISPLAY_NAMES), and a four-state confidence
 level for each (architecture, format) combination (support_level()).
 """
 
@@ -147,13 +147,15 @@ _TE_STRUCTURALLY_IMPOSSIBLE: dict[tuple[str, str], str] = {
 def support_reason(arch_key: str, format_key: str) -> str | None:
     """Tooltip text for a diffusion-model support-table cell, or None if the
     cell needs no extra explanation beyond its symbol."""
-    return _STRUCTURALLY_IMPOSSIBLE.get((arch_key, format_key))
+    return (_STRUCTURALLY_IMPOSSIBLE.get((arch_key, format_key)) or
+            _SCOPED_RENDER_NOTES.get((arch_key, format_key)))
 
 
 def text_encoder_support_reason(family: str, format_key: str) -> str | None:
     """Tooltip text for a text-encoder support-table cell, or None if the
     cell needs no extra explanation beyond its symbol."""
-    return _TE_STRUCTURALLY_IMPOSSIBLE.get((family, format_key))
+    return (_TE_STRUCTURALLY_IMPOSSIBLE.get((family, format_key)) or
+            _TE_DRIFT_NOTES.get((family, format_key)))
 
 # (arch_key, format_key) pairs with DIRECT negative render-test evidence —
 # actually converted+loaded+rendered and visibly wrong (wrong pose/identity,
@@ -270,6 +272,39 @@ _RENDER_CONFIRMED_BAD: set[tuple[str, str]] = {
 # a guaranteed failure.)
 _RENDER_TESTED_DRIFT: set[tuple[str, str]] = {
     ("aura", "NVFP4"),
+    # 2026-10-05 same-source cat/dog comparisons supersede older clean samples
+    # for these pairs. Usable images with visible detail drift are CAUTION,
+    # not a universal failure claim. See docs/quantization-size-audit.md.
+    ("qwen_image", "NVFP4_MIXED"),
+    ("qwen_image", "INT8_MIXED"),
+}
+
+_SCOPED_RENDER_NOTES: dict[tuple[str, str], str] = {
+    ('qwen_image', 'NVFP4_MIXED'): (
+        'Qwen-Image-Edit-2511, qwen_edit_2511 profile: cat/hat and dog/scarf edits '
+        'remained usable; eyes, whiskers and scarf details visibly differed from '
+        'the original FP8 renders. Same seed, text encoder and VAE; no LoRA. '
+        'Two-reference smoke test, not evidence for every Qwen model or prompt. '
+        'Source: docs/quantization-size-audit.md, 2026-10-05 runtime validation.'),
+    ('qwen_image', 'INT8_MIXED'): (
+        'Qwen-Image-Edit-2511, qwen_edit_2511 profile, INT8/ConvRot mixed: usable '
+        'cat/hat and dog/scarf edits with small visible detail deviations from '
+        'the original FP8 renders. Same seed, text encoder and VAE; no LoRA. '
+        'Limited two-reference smoke test. '
+        'Source: docs/quantization-size-audit.md, 2026-10-05 runtime validation.'),
+    ('lumina2', 'NVFP4_MIXED'): (
+        'Profile-dependent evidence: Z-Image Turbo with the z_image_turbo '
+        'profile produced usable cat/hat and dog/scarf images, with hat, facial '
+        'detail and slight framing differences versus BF16 (2026-10-05, two '
+        'prompts). This does not clear the older default-policy family tests '
+        'that changed composition, pose and outfit substantially; the family '
+        'classification remains bad. Source: docs/quantization-size-audit.md '
+        'and the earlier render notes in model_support.py.'),
+    ('aura', 'NVFP4'): (
+        'AuraFlow 0.3: a close-up portrait lost lace-veil texture/freckles and '
+        'showed softer skin; identity remained usable. Other tested motifs '
+        'matched more closely. Mixed NVFP4 did not show this drift in that '
+        'comparison. Source: model_support.py, 2026-08-18 render notes.'),
 }
 
 _UNTESTED_SAFETENSORS_ARCHES: frozenset[str] = frozenset({"ernie_image", "krea2"})
@@ -518,6 +553,11 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
         return SUPPORT_VERIFIED
     if arch_key in _UNTESTED_SAFETENSORS_ARCHES:
         return SUPPORT_UNKNOWN
+    # New drift evidence must outrank older clean samples for the same pair.
+    # Keep stronger negative evidence; a scoped successful profile is not a
+    # blanket override of a family/default-policy failure.
+    if (arch_key, format_key) in _RENDER_TESTED_DRIFT and (arch_key, format_key) not in _RENDER_CONFIRMED_BAD:
+        return SUPPORT_CAUTION
     if format_key in ("F16", "F16_MIXED"):
         return SUPPORT_VERIFIED
     if format_key in ("FP8", "FP8_MIXED"):
@@ -883,10 +923,10 @@ _TE_RENDER_CONFIRMED_BAD: set[tuple[str, str]] = {
 # (family, format_key) pairs render-tested with visible-but-tolerable
 # deviation from the uncompressed baseline -- mirrors _RENDER_TESTED_DRIFT's
 # role for diffusion models (model_support.py's CAUTION/UNKNOWN split,
-# 2026-08-13). qwen3-8b's GGUF (Q5_K_M) conditioning drift was judged
-# tolerable enough to fold into VERIFIED rather than land here (see
-# _TE_RENDER_VERIFIED's comment).
+# 2026-08-13). Usable but visible conditioning drift is still CAUTION;
+# older clean/usable samples must not hide that observation.
 _TE_RENDER_TESTED_DRIFT: set[tuple[str, str]] = {
+    ('qwen3-8b', 'GGUF'),
     # umt5-xxl plain INT8 (Wan 2.2, 2026-08-19): same 8-render I2V batch as
     # _TE_RENDER_VERIFIED's umt5-xxl entries above -- character/pose/outfit/
     # background identical to every other format's baseline, but the
@@ -899,6 +939,19 @@ _TE_RENDER_TESTED_DRIFT: set[tuple[str, str]] = {
     # conditioning vector, the same class of variance qwen3-8b's GGUF
     # drift above was. Real enough to note, tolerable enough not to be BAD.
     ("umt5-xxl", "INT8"),
+}
+
+_TE_DRIFT_NOTES = {
+    ('qwen3-8b', 'GGUF'): (
+        'Qwen3 8B GGUF Q5_K_M: two same-seed/prompt comparisons retained the '
+        'subject/composition but changed a face-tattoo detail and a small '
+        'ornament gap. Usable conditioning drift; not evidence that every '
+        'GGUF precision drifts. Source: model_support.py, 2026-08-13 tests.'),
+    ('umt5-xxl', 'INT8'): (
+        'UMT5-XXL, Wan 2.2 I2V: character, pose, outfit and background matched '
+        'the baseline, but blink timing shifted by a few frames. INT8_MIXED '
+        'matched the baseline in that batch. Source: model_support.py, '
+        '2026-08-19 tests.'),
 }
 
 
@@ -927,10 +980,10 @@ def text_encoder_support_level(family: str, format_key: str) -> str:
         return SUPPORT_VERIFIED
     if (family, format_key) in _TE_RENDER_CONFIRMED_BAD:
         return SUPPORT_BAD
-    if (family, format_key) in _TE_RENDER_VERIFIED:
-        return SUPPORT_VERIFIED
     if (family, format_key) in _TE_RENDER_TESTED_DRIFT:
         return SUPPORT_CAUTION
+    if (family, format_key) in _TE_RENDER_VERIFIED:
+        return SUPPORT_VERIFIED
     return SUPPORT_UNKNOWN
 
 
@@ -969,6 +1022,8 @@ def build_support_table() -> list[dict]:
         for _, format_key in TABLE_FORMATS:
             row[format_key] = support_level(instance.arch, sensitive, format_key)
             row[f"{format_key}__reason"] = support_reason(instance.arch, format_key)
+            if instance.arch == 'lumina2' and format_key == 'NVFP4_MIXED':
+                row[f'{format_key}__scope'] = 'Profile-dependent drift'
         rows.append(row)
     rows.sort(key=lambda r: r["display_name"])
     return rows

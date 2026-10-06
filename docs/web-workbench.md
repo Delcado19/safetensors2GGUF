@@ -59,6 +59,23 @@ does not imply every release, quantization level or runtime configuration was
 tested. The matrix omits legacy theoretical savings percentages; estimates
 belong to source inspection. NVFP4 hardware requirements still apply.
 
+Usable images with observed visible drift are **caution**, even if older samples
+looked clean. The shared registry now surfaces the documented Qwen-Image-Edit-2511
+NVFP4_MIXED/INT8_MIXED detail drift and Qwen3-8B GGUF Q5_K_M conditioning drift.
+Reasons state checkpoint, precision policy, baseline and limited test scope.
+Z-Image Turbo NVFP4_MIXED under `z_image_turbo` has a **Profile-dependent drift**
+marker: its usable two-prompt result does not clear older default-policy family
+failures or unlock the generic bad cell. AuraFlow facial detail and UMT5 blink
+timing observations are also explicit. These updates reuse recorded evidence;
+they are not new render results and do not change quantization/protection math.
+
+Visible drift depends on the checkpoint, layer policy, inputs and sampling
+workflow, not bit width alone. Do not extrapolate one model/seed to every family.
+Diffusion quantization research identifies architecture/timestep effects
+([Q-Diffusion](https://arxiv.org/abs/2302.04304)) and channel/sample/temporal
+variation ([Q-DiT](https://arxiv.org/abs/2406.17343)). Those papers support the
+general sensitivity explanation, not certification of our NVFP4 implementation.
+
 **Use format** selects the model category and output container, clears the
 previous destination/base override/profile, and focuses the conversion model
 type. It never starts conversion or identifies the source. The user must choose

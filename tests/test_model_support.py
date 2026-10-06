@@ -248,8 +248,9 @@ class TestSupportLevel:
         assert support_level("qwen_image", True, "FP8") == SUPPORT_VERIFIED
         assert support_level("qwen_image", True, "FP8_MIXED") == SUPPORT_VERIFIED
         assert support_level("qwen_image", True, "INT8") == SUPPORT_VERIFIED
-        assert support_level("qwen_image", True, "INT8_MIXED") == SUPPORT_VERIFIED
-        assert support_level("qwen_image", True, "NVFP4_MIXED") == SUPPORT_VERIFIED
+        # Later same-source smoke tests found usable but visibly different details.
+        assert support_level("qwen_image", True, "INT8_MIXED") == SUPPORT_CAUTION
+        assert support_level("qwen_image", True, "NVFP4_MIXED") == SUPPORT_CAUTION
         assert support_level("qwen_image", True, "NVFP4") == SUPPORT_BAD
 
     def test_hidream_mixed_verified_plain_unknown_after_gate_fix(self):
@@ -512,7 +513,7 @@ class TestTextEncoderSupport:
         for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
             assert text_encoder_support_level("qwen3-4b", format_key) == SUPPORT_VERIFIED
 
-    def test_qwen3_8b_verified_on_every_format(self):
+    def test_qwen3_8b_gguf_visible_drift_other_formats_verified(self):
         # 2026-08-13 (FLUX.2 Klein 9B's own text encoder): 3 same-seed/
         # prompt comparisons against the unquantized BF16 baseline for
         # FP8/FP8_MIXED/NVFP4/NVFP4_MIXED, 2 for INT8/INT8_MIXED -- zero
@@ -521,9 +522,10 @@ class TestTextEncoderSupport:
         # in the same session -- text-encoder quantization only perturbs the
         # conditioning vector, not the sampling trajectory). GGUF (Q5_K_M)
         # added same day: 2 comparisons, minor conditioning drift but same
-        # subject/composition both times -- verified alongside the rest.
+        # subject/composition both times -- usable but visible drift.
         for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
-            assert text_encoder_support_level("qwen3-8b", format_key) == SUPPORT_VERIFIED
+            expected = SUPPORT_CAUTION if format_key == 'GGUF' else SUPPORT_VERIFIED
+            assert text_encoder_support_level("qwen3-8b", format_key) == expected
 
     def test_hidream_llama_and_t5xxl_verified_on_every_format(self):
         # 2026-08-18: FP8/FP8_MIXED/INT8/INT8_MIXED/NVFP4/NVFP4_MIXED

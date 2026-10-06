@@ -336,6 +336,9 @@ _RENDER_VERIFIED_MIXED: set[tuple[str, str]] = {
     ("qwen_image", "FP8"),
     ("qwen_image", "FP8_MIXED"),
     ("qwen_image", "INT8"),
+    # Historical clean samples still inform the mixed protection policy here.
+    # Later 2511 smoke tests showed detail drift; model_support.py overrides
+    # the UI classification to CAUTION without changing quantization math.
     ("qwen_image", "INT8_MIXED"),
     ("qwen_image", "NVFP4_MIXED"),
 }
