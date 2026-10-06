@@ -1259,10 +1259,14 @@ input[type="checkbox"] {
   border-radius: 10px;
 }
 .support-table {
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.85714rem;
   width: 100%;
+}
+.support-model-column {
+  width: 200px;
 }
 .support-table th,
 .support-table td {
@@ -1275,7 +1279,7 @@ input[type="checkbox"] {
 }
 .support-table thead th {
   background: var(--raised);
-  white-space: nowrap;
+  white-space: normal;
   text-align: center;
   vertical-align: middle;
 }
@@ -1301,8 +1305,7 @@ input[type="checkbox"] {
 .support-table th:first-child {
   position: sticky;
   left: 0;
-  min-width: 210px;
-  max-width: 250px;
+  overflow-wrap: anywhere;
   background: var(--surface);
   z-index: 1;
   border-right: 1px solid var(--line);
@@ -1319,7 +1322,7 @@ input[type="checkbox"] {
   flex-direction: column;
   gap: 4px;
   width: 100%;
-  min-width: 80px;
+  min-width: 0;
   min-height: 60px;
   padding: 8px;
   border: 1px solid transparent;
@@ -1391,9 +1394,8 @@ input[type="checkbox"] {
   .support-filters {
     grid-template-columns: 1fr;
   }
-  .support-table th:first-child {
-    min-width: 135px;
-    max-width: 160px;
+  .support-model-column {
+    width: 150px;
   }
 }
 .path-field {

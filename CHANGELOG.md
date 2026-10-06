@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: INT4 + ConvRot mixed-precision prototype column with SDXL drift evidence,
+  untested other models and blocked conversion handoff; balance all format columns.
+
 - Change: Compact compatibility headers into centered format/policy lines and
   display model identifiers separately; remove Family from Workbench model names.
 - Add: Distinct Z-Image Base/Turbo-profile and full/pruned Mistral rows with scoped

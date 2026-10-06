@@ -77,6 +77,11 @@ cell to review it, then **Use format** to prepare a conversion. Known unsupporte
 combinations cannot be applied from the matrix. The classic Gradio interface
 remains available as an alternative. See [migration scope and validation](docs/web-workbench.md).
 
+The diffusion matrix includes **INT4 + ConvRot / mixed precision** prototype evidence:
+SDXL has visible drift in the tested RealVisXL checkpoint; other models are untested.
+Equal-width centered format columns scroll horizontally on compact displays.
+Prototype cells show details but cannot apply a conversion target.
+
 The compact matrix places identifiers below model names, splits format/policy
 headers into centered lines, and separates Z-Image Base/Turbo-profile and
 full/pruned Mistral evidence. Pending integration is distinct from failed support.

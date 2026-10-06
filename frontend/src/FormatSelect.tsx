@@ -9,6 +9,7 @@ export function formatName(key: string): string {
         F32: "FP32",
         FP8: "FP8 (E4M3)",
         INT8: "INT8 + ConvRot",
+        INT4_CONVROT: "INT4 + ConvRot",
       } as Record<string, string>
     )[base] || base;
   return name + (key.endsWith("_MIXED") ? " · mixed precision" : "");

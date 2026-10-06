@@ -75,6 +75,11 @@ also distinguishes INT8 storage from the optional rotation procedure.
 Civitai was not directly accessible during this naming review; no exhaustive
 cross-site naming survey is claimed.
 
+The diffusion matrix includes **INT4 + ConvRot / mixed precision** prototype evidence:
+SDXL has visible drift in the tested RealVisXL checkpoint; other models are untested.
+Equal-width centered format columns scroll horizontally on compact displays.
+Prototype cells show details but cannot apply a conversion target.
+
 The guide has a separate **INT4 + ConvRot — Prototype / not selectable** card.
 It records the existing one-checkpoint SDXL render/LoRA/offload evidence and
 pending version/model integration. It does not invent production dropdown

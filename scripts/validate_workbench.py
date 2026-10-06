@@ -277,8 +277,7 @@ def main():
         expect(page.get_by_role('region', name='Selected compatibility details')).to_contain_text('whiskers')
         page.get_by_label('Find a model').fill('lumina2')
         page.get_by_label('Evidence filter').select_option('unknown')
-        expect(page.locator('.support-table tbody tr')).to_have_count(1)
-        expect(page.locator('.support-table tbody tr')).to_contain_text('Z-Image Turbo')
+        expect(page.locator('.support-table tbody tr')).to_have_count(2)  # Both variants have untested INT4 evidence.
         page.get_by_label('Evidence filter').select_option('all')
         page.get_by_role('button', name=re.compile(r', INT8 \+ ConvRot.*mixed precision: Verified$')).click()
         headers = page.locator('.support-table thead th')
@@ -310,6 +309,13 @@ def main():
         page.get_by_role('button', name='Format guide', exact=True).click()
         expect(page.get_by_label('INT4 ConvRot prototype status')).to_contain_text('PROTOTYPE')
         expect(page.get_by_label('INT4 ConvRot prototype status')).to_contain_text('NOT SELECTABLE')
+        page.get_by_label('Find a model').fill('sdxl')
+        page.get_by_role('button', name=re.compile(r', INT4 \+ ConvRot.*mixed precision: Visible drift$')).click()
+        expect(page.get_by_role('region', name='Selected compatibility details')).to_contain_text('ears, face')
+        expect(page.get_by_role('button', name='Use format')).to_be_disabled()
+        page.get_by_label('Find a model').fill('qwen_image')
+        page.get_by_role('button', name=re.compile(r', INT4 \+ ConvRot.*mixed precision: Untested$')).click()
+        expect(page.get_by_role('button', name='Use format')).to_be_disabled()
         # Prototype information never inserts a nonfunctional conversion choice.
         page.get_by_role('button', name='Convert model', exact=True).first.click()
         assert 'INT4' not in page.locator('#format').inner_text()

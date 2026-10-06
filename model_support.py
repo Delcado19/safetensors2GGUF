@@ -1114,5 +1114,25 @@ def build_workbench_support_tables() -> dict:
                 rows.append(full)
             rows.append(row)
         rows.sort(key=lambda row: row['display_name'])
-        tables[kind] = {'formats': [key for _, key in formats], 'rows': rows}
+        format_keys = [key for _, key in formats]
+        if kind == 'diffusion':
+            # Display recorded prototype evidence without exposing a production target.
+            fmt = 'INT4_CONVROT_MIXED'
+            format_keys.insert(format_keys.index('INT8_MIXED') + 1, fmt)
+            for row in rows:
+                row[fmt] = SUPPORT_CAUTION if row['arch'] == 'sdxl' else SUPPORT_UNKNOWN
+                row[fmt + '__selectable'] = 'false'
+                row[fmt + '__scope'] = 'SDXL checkpoint test' if row['arch'] == 'sdxl' else 'Prototype'
+                row[fmt + '__reason'] = (
+                    'RealVisXL V50 Lightning diffusion UNet, mixed precision: nine successful '
+                    'renders including LoRA, classic CPU offload and dynamic VRAM offload. '
+                    'Visible changes to ears, face, framing and knitting versus the source. '
+                    '58.22% smaller than the source UNet. ComfyUI 0.38.0, Kitchen 0.2.36, '
+                    'RTX 5080. Evidence covers this checkpoint and policy only. '
+                    if row['arch'] == 'sdxl' else
+                    'No project render evidence for INT4 + ConvRot mixed precision on this '
+                    'model/variant. SDXL results do not establish compatibility elsewhere. '
+                ) + ('Production integration and version guards are pending; this prototype '
+                     'cannot be selected for conversion. Source: docs/int4-convrot-validation.md.')
+        tables[kind] = {'formats': format_keys, 'rows': rows}
     return tables

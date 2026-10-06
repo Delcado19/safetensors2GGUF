@@ -185,11 +185,15 @@ export function SupportMatrix({
             role="region"
             aria-label="Compatibility table; scroll horizontally for all formats"
           >
-            <table className="support-table">
+            <table className="support-table" style={{ minWidth: `${200 + data!.formats.length * 104}px` }}>
               <caption className="sr-only">
                 {kind === "diffusion" ? "Diffusion model" : "Text encoder"}{" "}
                 compatibility by output format
               </caption>
+              <colgroup>
+                <col className="support-model-column" />
+                {data!.formats.map((format) => <col key={format} />)}
+              </colgroup>
               <thead>
                 <tr>
                   <th scope="col">Model</th>
@@ -283,9 +287,12 @@ export function SupportMatrix({
             Choose a source matching this model and variant. Selection changes
             form settings; it does not inspect or convert a model.
           </p>
+          {selected.row[selected.format + "__selectable"] === "false" && (
+            <p className="preview-note">Prototype evidence only. Conversion is not yet available in the application.</p>
+          )}
           <button
             className="primary"
-            disabled={busy || level === "bad" || level === "pending"}
+            disabled={busy || level === "bad" || level === "pending" || selected.row[selected.format + "__selectable"] === "false"}
             onClick={() =>
               choose(
                 kind,
@@ -319,8 +326,9 @@ export function SupportMatrix({
         <p>
           Native 4-bit ConvRot has passed SDXL rendering, LoRA and offload tests
           on one checkpoint. It remains outside the standard conversion formats
-          and compatibility matrix until version guards and supported-model
-          integration are implemented.
+          until version guards and supported-model integration are implemented.
+          The diffusion matrix records the tested mixed-precision policy and
+          leaves other models untested.
         </p>
         <p className="preview-note">
           INT8 + ConvRot is already implemented and appears in the INT8

@@ -56,7 +56,7 @@ def test_support_matrix_uses_shared_classifications_and_reasons():
     assert data == model_support.build_workbench_support_tables()
     assert len({row['id'] for row in data['diffusion']['rows']}) == len(data['diffusion']['rows'])
     assert len({row['id'] for row in data['text_encoder']['rows']}) == len(data['text_encoder']['rows'])
-    assert data['diffusion']['formats'] == [key for _, key in model_support.TABLE_FORMATS]
+    assert [key for key in data['diffusion']['formats'] if key != 'INT4_CONVROT_MIXED'] == [key for _, key in model_support.TABLE_FORMATS]
     assert data['text_encoder']['formats'] == [key for _, key in model_support.TEXT_ENCODER_TABLE_FORMATS]
     clip = next(row for row in data['text_encoder']['rows'] if row['family'] == 'clip-l')
     assert clip['GGUF'] == 'bad' and clip['GGUF__reason']
@@ -90,7 +90,17 @@ def test_support_matrix_uses_shared_classifications_and_reasons():
     assert not any('Family' in row['display_name'] for row in data['diffusion']['rows'])
     qwen_encoder = next(row for row in data['text_encoder']['rows'] if row['family'] == 'qwen3-8b')
     assert qwen_encoder['GGUF'] == 'caution' and 'Q5_K_M' in qwen_encoder['GGUF__reason']
-    assert 'INT4_CONVROT' not in str(data)
+    prototype = 'INT4_CONVROT_MIXED'
+    assert prototype in data['diffusion']['formats']
+    assert prototype not in data['text_encoder']['formats']
+    for row in data['diffusion']['rows']:
+        assert row[prototype] == ('caution' if row['arch'] == 'sdxl' else 'unknown')
+        assert row[prototype + '__selectable'] == 'false'
+        assert row[prototype + '__reason']
+    sdxl = next(row for row in data['diffusion']['rows'] if row['arch'] == 'sdxl')
+    assert 'nine successful' in sdxl[prototype + '__reason']
+    assert 'ears, face' in sdxl[prototype + '__reason']
+    assert prototype not in str(client.get('/api/config').json()['formats'])
     assert client.get('/api/support', headers={'X-Workbench-Token': ''}).status_code == 403
     assert client.get('/api/support', headers={'Origin': 'https://evil.example'}).status_code == 403
 
