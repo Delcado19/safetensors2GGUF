@@ -83,6 +83,10 @@ the implemented selectable path. ConvRot itself is not a bit width.
 
 ## Interactive compatibility matrix
 
+The [unsupported-entry upstream audit](unsupported-matrix-audit.md) reviews all
+negative cells as of 2026-10-06. Some grouped claims are stale or overbroad;
+that review does not imply new runtime validation or silently unblock exports.
+
 **Format guide** opens the shared project support matrix first, followed by the
 format overview. Choose diffusion models or text encoders, search a public model
 name/internal architecture, and optionally filter by evidence classification.

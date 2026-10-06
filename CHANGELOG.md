@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Docs: Audit all 30 unsupported compatibility cells against current upstream
+  sources, documenting stale GGUF claims, fork/export limits and retest requirements.
+
 - Change: Use consistent uppercase Workbench display names (FP16/FP32, FP8 E4M3,
   INT8 + ConvRot, NVFP4) across selection, matrix, preview and history.
 - Change: Group native format selects and move technical details/mixed-precision
