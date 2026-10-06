@@ -66,7 +66,10 @@ cycle or LoRA patching.
 ## Visual result and loader requirement
 
 Both motifs remain recognizable, with closely matching framing and accessories.
-Small visible differences affect cat eyes/muzzle/fur and dog/scarf texture.
+Small relative differences affect cat eyes/muzzle/fur and dog/scarf texture.
+All four images also have a shared raster/mosaic texture. This was overlooked
+in the initial review; they are loading/relative-drift smoke evidence, **not an
+approval of absolute image quality**. See the controlled follow-up below.
 No black/noise-only images, shape failures or kernel crashes occurred. The matrix
 records **Visible drift**, scoped to this checkpoint/Q4_0/molbal combination.
 
@@ -93,3 +96,36 @@ The four small preview PNGs are retained as reviewable evidence. The owned float
 staging/GGUF files and isolated server/profile were removed after validation.
 Original models, the normal ComfyUI server and the user's earlier Downloads test
 models were preserved.
+
+## Shared mosaic artifact follow-up
+
+The user correctly identified a common raster texture in all four images.
+The original test used eight steps without verifying which Raw/Turbo variant the
+installed shared filename represents. The
+[official ComfyUI Krea guide](https://github.com/Comfy-Org/docs/blob/main/tutorials/image/krea/krea-2.mdx)
+uses the Qwen-Image VAE, distinguishes 52-step Raw from eight-step Turbo, and
+places the standard output range at 1K?2K. The installed filename/metadata does
+not reliably identify the variant; do not infer Turbo from a working eight-step
+render. The original Wan VAE choice was copied from a local workflow.
+
+On 2026-10-06 a fresh isolated core-only ComfyUI profile tested the same installed
+INT8 model, encoder, cat prompt and seed:
+
+| Controlled change | Prompt ID | Observation |
+| --- | --- | --- |
+| Same sampled 512px latent decoded with Wan and Qwen VAEs | `1ec24d05-746c-4225-8bec-fd19cf758672` | Raster remains with both; VAE alone does not explain it. |
+| Qwen VAE, 1024px, 8 steps, CFG 1 | `414888a3-29ff-432b-bbd1-37ea6b7b24bc` | Raster remains; resolution alone does not resolve it. |
+| Qwen VAE, 512px, 52 steps, CFG 1 | `6ccdd232-d95b-48e9-b7be-cfe5b7532f36` | Sharper fur/hat/face and substantially reduced raster, with the step count as the isolated change. |
+| Qwen VAE, 1024px, 52 steps, CFG 4 | `6fc5e651-fd80-48f1-bd06-8d10b200fd1c` | Severe oversaturation/artifacts; changing several parameters together does not establish a correct Raw recipe. |
+
+[512px / 8 steps](images/krea2-validation/qwen-512-8.png),
+[512px / 52 steps](images/krea2-validation/qwen-512-52.png),
+[1024px / 8 steps](images/krea2-validation/qwen-1024-8.png).
+
+The short denoising recipe strongly contributes to the common artifact. This
+follow-up does not establish every remaining pixel pattern's mathematical cause,
+identify the exact Raw/Turbo variant, or prove an unquantized source is clean.
+A quality approval needs confirmed checkpoint provenance and a repeated
+source/GGUF comparison with an appropriate recipe. The existing Q4_0 export,
+loader success, size savings and stock-city96 rejection remain measured facts.
+The core-only test server/scratch files are cleaned up; diagnostic previews stay.

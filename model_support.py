@@ -1056,7 +1056,11 @@ def build_workbench_support_tables() -> dict:
                     'installed INT8 ConvRot source. A temporary reconstructed F16 source '
                     'was used for export; this is not an unquantized-original comparison. '
                     'ComfyUI 0.38.0, Kitchen 0.2.36, RTX 5080; 512px, eight Euler/simple '
-                    'steps, CFG 1, seed 1212121. Four successful renders. Molbal loader '
+                    'steps, CFG 1, seed 1212121. Four successful renders, but both source and '
+                    'GGUF had shared mosaic texture. A controlled 52-step source follow-up '
+                    'substantially reduced it; the original recipe is not a clean quality '
+                    'baseline. Raw/Turbo identity and a corrected quality comparison remain '
+                    'pending. Molbal loader '
                     'required; other checkpoints/precisions, LoRA, forced offload and '
                     'Linux remain untested. Source: docs/krea2-render-validation.md.')
             if key == 'lumina2':

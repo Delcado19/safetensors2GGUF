@@ -136,3 +136,8 @@ checks normalized names/shapes after export; GGUF architecture, readability,
 nonempty payload and duplicate names are checked before atomic publication.
 Source files and existing destinations survive failure or cancellation.
 No source-size estimate is reused from the native converter.
+
+The initial Krea eight-step comparisons share mosaic artifacts. Controlled
+source sampling at 52 steps reduces them substantially; a correctly identified
+Raw/Turbo checkpoint and a clean source/GGUF quality baseline remain pending.
+See [the diagnostic follow-up](krea2-render-validation.md#shared-mosaic-artifact-follow-up).

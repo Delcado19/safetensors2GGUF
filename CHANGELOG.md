@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Docs: Correct the Krea render assessment after shared mosaic artifacts were
+  identified; record controlled VAE/resolution/step checks and distinguish
+  successful loading/relative drift from an approved quality baseline.
+
 - Add: Native drive/location dropdown in the shared file dialog with current
   Windows drives and common-folder shortcuts; disable parent navigation at roots.
 - Test: Real Krea Q4_0 cat/dog comparisons through pinned molbal, with small visible
