@@ -49,6 +49,12 @@ and cancel button is included for all three pipelines.
 
 ### New React workbench (preview)
 
+On Windows, double-click **`start_gui.bat`** to launch the workbench with UV
+and open http://127.0.0.1:8765. The launcher opens an existing Workbench instance
+when one is already running. If the frontend build is missing, it installs its
+locked dependencies and builds it (Node.js/npm required once).
+After frontend source updates, run `npm run build` in `frontend` to refresh it.
+
 The local React/Vite/FastAPI workbench supports diffusion-model and text-encoder
 GGUF/safetensors conversion, local file browsing, inspection, progress,
 cancellation and session history. Choose **Model type ? Text encoder** for
@@ -138,9 +144,10 @@ pip install gguf torch safetensors tqdm gradio huggingface_hub transformers sent
   use — no ComfyUI installation required. See
   [Text-Encoder Conversion](#text-encoder-conversion) below.
 
-## Web UI (recommended)
+## Legacy Gradio UI
 
-Double-click **`start_gui.bat`** — the browser opens automatically.
+`start_gui.bat` launches the new React workbench. To run the legacy Gradio UI,
+use the terminal command below.
 
 Or from the terminal:
 
@@ -859,5 +866,8 @@ Raw/Turbo checkpoint and a clean source/GGUF quality baseline remain pending.
 See [the diagnostic follow-up](docs/krea2-render-validation.md#shared-mosaic-artifact-follow-up).
 
 Z-Image Turbo batch evidence now covers FP8/INT8 plain/mixed, NVFP4, the native
-INT4 prototype and Q4_K_M, with visible drift in a preserved single-pass workflow
-with two LoRAs. See [validation and limits](docs/zit-batch-validation.md).
+INT4 prototype and Q4_K_M: successful usable renders in a preserved single-pass
+workflow with two LoRAs, classified as Verified within that scope. Visual
+differences remain documented. The user deferred the ZIT portrait test to avoid
+reconversion costs; portrait quality remains untested.
+See [validation and limits](docs/zit-batch-validation.md).

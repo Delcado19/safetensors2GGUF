@@ -6,6 +6,20 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Change: Classify successful Z-Image Turbo renders as Verified; retain observed
+  visual differences and exact test scope without equating them to quality loss.
+  The user deferred the ZIT portrait comparison to avoid reconversion costs;
+  INT4 remains nonselectable.
+
+- Docs: Establish the user-approved motel/noir portrait as the default visual
+  quantization comparison prompt, with fixed-run settings and quality criteria.
+
+- Fix: Windows launcher reuses an already running Workbench instead of failing
+  with a port-8765 address-in-use error.
+
+- Fix: Windows `start_gui.bat` launches the React/FastAPI workbench through UV,
+  opens its local URL and builds a missing frontend with locked npm dependencies.
+
 - Test: Z-Image Turbo single-pass stored-workflow batch with two active LoRAs;
   FP8/INT8 plain/mixed, NVFP4, native INT4 prototype and only Q4_K_M GGUF
   rendered with visible drift; record scope, images and repeatable BF16 baseline.

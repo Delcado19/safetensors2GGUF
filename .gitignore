@@ -46,3 +46,7 @@ Thumbs.db
 
 # Local codebase analysis artifacts
 graphify-out/
+
+# Local Workbench server output
+.workbench-stdout.log
+.workbench-stderr.log

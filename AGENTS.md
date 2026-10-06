@@ -153,6 +153,23 @@ uv run pytest --tb=short -q --basetemp .pytest-tmp -p no:cacheprovider
 
 ## Runtime test defaults
 
+### Standard visual comparison prompt
+
+Use this user-approved prompt for future quantization image comparisons unless
+the user specifies another prompt:
+
+> A gorgeous adult woman leaning against a motel doorway at night, full body,
+> both hands visible, wearing a short black dress and heels, neon sign glowing
+> behind her, wet pavement reflections, smoky cinematic atmosphere, sultry
+> expression, dark noir sensuality, realistic skin, premium cover art, masterpiece.
+
+Keep the same workflow and fixed seeds across reference and quantized runs.
+Assess face, expression, pose, anatomy and image quality. Small changes in
+reflections, texture or lighting alone do not justify a Visible drift warning.
+Record meaningful observed changes and limit conclusions to the tested setup.
+The user deferred the ZIT portrait comparison to avoid reconversion costs;
+do not resume it without a new request. Existing still-life evidence remains valid.
+
 Prefer an existing matching workflow from the installed user workflow folder,
 using a named isolated copy and preserving sampler/steps/CFG/resolution/LoRAs.
 Change prompt and necessary model/loader/output references only. A grouped GGUF

@@ -46,8 +46,13 @@ placement, cloth folds and wood detail; NVFP4 and native INT4 show stronger
 framing/background/material changes. Q4_K_M remains recognizable with object and
 cloth/background differences. These are observed full-chain deviations, including
 loader/compute/LoRA effects, not an isolated numerical quantizer score.
-The Workbench Turbo row records Visible drift for these formats. Base/default
-classifications and unrelated model evidence remain unchanged.
+The Workbench Turbo row records Verified for these successful, usable renders.
+Ordinary visual differences alone do not establish degraded quality or justify
+a Visible drift warning. The user deferred the standard motel portrait test for
+ZIT to avoid reconversion costs; identity/expression/anatomy quality remains
+untested. Do not restart that test without a new user request.
+The earlier NVFP4 mixed cat/dog evidence also remains scoped to its two prompts.
+Base/default classifications and unrelated model evidence remain unchanged.
 
 [Reference](images/zit-validation/source.png).
 [FP8](images/zit-validation/FP8.png).

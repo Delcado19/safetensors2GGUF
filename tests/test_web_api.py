@@ -105,9 +105,9 @@ def test_support_matrix_uses_shared_classifications_and_reasons():
     assert lumina['NVFP4_MIXED'] == 'bad'
     assert 'Default/Base policy' in lumina['NVFP4_MIXED__reason']
     turbo = next(row for row in data['diffusion']['rows'] if row['id'] == 'lumina2_turbo')
-    assert turbo['NVFP4_MIXED'] == 'caution' and turbo['precision_profile'] == 'z_image_turbo'
-    assert turbo['FP8_MIXED'] == 'caution' and turbo['INT8_MIXED'] == 'caution'
-    assert turbo['GGUF'] == 'caution' and turbo['GGUF__scope'] == 'Q4_K_M / 2 LoRAs'
+    assert turbo['NVFP4_MIXED'] == 'verified' and turbo['precision_profile'] == 'z_image_turbo'
+    assert all(turbo[fmt] == 'verified' for fmt in ('FP8', 'FP8_MIXED', 'INT8', 'INT8_MIXED', 'NVFP4'))
+    assert turbo['GGUF'] == 'verified' and turbo['GGUF__scope'] == 'Q4_K_M / 2 LoRAs'
     assert 'Two prompts' in turbo['NVFP4_MIXED__reason']
     full = next(row for row in data['text_encoder']['rows'] if row['id'] == 'mistral-small-3.2-24b_full')
     pruned = next(row for row in data['text_encoder']['rows'] if row['id'] == 'mistral-small-3.2-24b_flux2_pruned')
@@ -124,7 +124,7 @@ def test_support_matrix_uses_shared_classifications_and_reasons():
     assert prototype in data['diffusion']['formats']
     assert prototype not in data['text_encoder']['formats']
     for row in data['diffusion']['rows']:
-        assert row[prototype] == ('caution' if row['arch'] == 'sdxl' or row['id'] == 'lumina2_turbo' else 'unknown')
+        assert row[prototype] == ('verified' if row['id'] == 'lumina2_turbo' else 'caution' if row['arch'] == 'sdxl' else 'unknown')
         assert row[prototype + '__selectable'] == 'false'
         assert row[prototype + '__reason']
     sdxl = next(row for row in data['diffusion']['rows'] if row['arch'] == 'sdxl')
