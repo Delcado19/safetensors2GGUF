@@ -1,7 +1,7 @@
 # React workbench migration
 
 The React/TypeScript/Vite frontend and FastAPI backend now cover diffusion
-models, text encoders, extraction and GGUF repair. Workflows use existing algorithms
+models, text encoders, extraction, GGUF repair and Hugging Face downloads. Workflows use existing algorithms
 and atomic output writers.
 The classic Gradio frontend remains available during migration.
 
@@ -37,10 +37,65 @@ changing the development API port).
   native modal focus management, reduced motion/transparency and contrast support.
 - Advanced executable, thread, intermediate-file and overwrite settings.
 
-Hugging Face downloads and the interactive
-support matrix remain in `uv run python gui.py`.
-They are the next migration milestones, not removed functionality. INT4 ConvRot
+The interactive support matrix remains in `uv run python gui.py`.
+It is a remaining migration milestone, not removed functionality. INT4 ConvRot
 is still excluded from the production format registry.
+
+## Hugging Face downloads
+
+Open **Hugging Face**, enter a model repository ID (`organization/model-name`)
+and a revision (default `main`), then choose **Inspect repository**. Inspection
+reads metadata only: checkpoint folders, safetensors file counts, total shard
+bytes when available, and the resolved commit. No tensors download at this step.
+Changing the repository or revision invalidates the plan; stale replies cannot
+replace it. When several folders contain checkpoints, choose one explicitly.
+The empty folder is the repository root, distinct from an unspecified selection.
+
+Choose a local **Download folder** and start **Download checkpoint**. Only the
+selected folder's safetensors files download and merge. The merged name is the
+folder's last segment, or the repository name for root weights. The final file
+is published atomically, and replacement requires the overwrite checkbox.
+The existing streaming merger keeps one tensor in memory at a time, preserves
+safetensors metadata, and rejects duplicate tensor keys or conflicting metadata.
+The UI pins downloads to the inspected commit; API downloads resolving a branch
+or tag also pin that revision before downloading shards.
+
+The download and merge need space for both staged shards and the merged output.
+Active downloads show the real transfer/merge phase with shard counts and
+**Working**, without pretending shard counts are byte percentages. Cancellation
+is cooperative: it waits for the current Hub transfer, then checks between shards,
+during merge and before publication. Errors/cancellation leave partial shards in
+`.hf_download_<repo-id-with-underscores>/` for a retry; success removes the staging
+directory. A retry resumes where the Hub's local download metadata permits it.
+It is not persisted job recovery; restarting the server clears job history.
+
+Authentication stays server-side: `HF_TOKEN` takes precedence, then
+`CODEX_HUGGINGFACE_API_KEY`, otherwise the Hub's stored login (for example
+`uv run hf auth login`). The UI exposes only a credential-availability boolean;
+it does not accept or return tokens. Gated repositories may require accepting
+the model's conditions on Hugging Face. Transport/access errors return controlled
+messages without response headers or signed URLs. No environment credentials are
+written to configuration or project files.
+
+Protected endpoints:
+
+- `POST /api/hf/inspect`: `source` (repo ID), optional `revision`; returns repo ID,
+  resolved revision and folder groups (`subfolder`, `files`, `bytes`).
+- `POST /api/hf/download`: same source/revision, required `destination` directory,
+  optional `subfolder` (`null` auto-selects only an unambiguous repository; `""`
+  selects root explicitly) and `overwrite`; returns a 202 shared job snapshot.
+- `/api/jobs` history/state/cancel applies to downloads too. Conversion, extraction,
+  repair and download all share the same one-worker limit.
+
+This feature downloads single-checkpoint safetensors weights, not a complete Hub
+repository, tokenizer or Diffusers pipeline. GGUF files are not downloaded by this
+merger. Multiple complete checkpoints in one folder are unsupported; duplicate
+keys are rejected. A successful download is not a new ComfyUI compatibility or
+render guarantee; choose an architecture/loader supported by your workflow.
+
+The integration follows the official [Hub API](https://huggingface.co/docs/huggingface_hub/package_reference/hf_api)
+and [file-download API](https://huggingface.co/docs/huggingface_hub/package_reference/file_download).
+It uses the already installed Python library; no new runtime dependency was added.
 
 ## Extraction and repair
 
@@ -160,7 +215,7 @@ runtime success is claimed from cross-platform source code alone.
 
 ### Verified milestone results
 
-On Windows, all 457 Python tests and Ruff pass, and TypeScript/Vite build
+On Windows, all 466 Python tests and Ruff pass, and TypeScript/Vite build
 successfully. Chromium verifies a real synthetic FP8_MIXED conversion, file
 selection, activity, format guide, both themes, 1440/768/390 px viewports,
 Escape/focus restoration, reduced-motion mode and actual 200% input text scaling.
@@ -180,11 +235,21 @@ source aliases and atomic component publication. Chromium exercises component
 export/comparison and both GGUF repairs, including file browsing and mobile layout.
 These are orchestration/file-format checks; no new ComfyUI render is claimed.
 
+The Hugging Face milestone additionally verifies variant selection, pinned revision
+propagation, server-only credentials, metadata preservation/conflict rejection,
+overwrite/path guards, cross-tool concurrency and cancellation through API/unit
+checks. The opt-in Chromium check actually downloaded and merged the public
+`hf-internal-testing/tiny-random-bert` root checkpoint (520,212 download bytes),
+validated its readable tensors and successful staging cleanup, and checked plan
+invalidation, folder picking and desktop/mobile layouts without page errors.
+
 With the API already running, replay the browser check with:
 
 ```bash
 uv run --with playwright playwright install chromium
 uv run --with playwright python scripts/validate_workbench.py
+# Optional network check: downloads a public 520 KB test checkpoint.
+uv run --with playwright python scripts/validate_workbench.py --hf-live
 ```
 
 Screenshots and owned synthetic fixtures are stored in the ignored
@@ -194,8 +259,8 @@ browser verification, not a complete screen-reader or assistive-technology audit
 
 ## Next milestones
 
-1. Hugging Face download workflow.
-2. Interactive compatibility matrix and release packaging.
+1. Interactive compatibility matrix.
+2. Accessibility audit, release packaging and launcher integration.
 3. Linux runtime verification before replacing the classic launcher by default.
 
 References: [Vite backend integration](https://vite.dev/guide/backend-integration.html),

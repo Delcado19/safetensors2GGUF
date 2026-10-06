@@ -9,6 +9,10 @@ from safetensors.torch import save_file
 from safetensors import safe_open
 
 import web_api
+import hf_download
+from types import SimpleNamespace
+import shutil
+from pathlib import Path
 import gguf
 import numpy as np
 from safetensors.torch import load_file
@@ -40,6 +44,93 @@ def _wait(client, job_id):
             return state
         time.sleep(.02)
     pytest.fail('Conversion worker did not finish')
+
+
+def test_hf_metadata_and_real_merge_through_api(tmp_path, monkeypatch):
+    """The protected API selects one pinned variant and runs the real streaming writer."""
+    source_a, source_b = tmp_path / 'a.safetensors', tmp_path / 'b.safetensors'
+    save_file({'a.weight': torch.ones(2, 2)}, str(source_a))
+    save_file({'b.weight': torch.zeros(3)}, str(source_b))
+    revision = 'b' * 40
+    files = {'variant/a.safetensors': source_a, 'variant/b.safetensors': source_b,
+             'other/model.safetensors': source_a}
+    class Api:
+        def __init__(self, **kwargs):
+            pass
+        def model_info(self, repo_id, **kwargs):
+            return SimpleNamespace(sha=revision, siblings=[SimpleNamespace(rfilename=name, size=path.stat().st_size) for name, path in files.items()])
+        def list_repo_files(self, repo_id, **kwargs):
+            assert kwargs['revision'] == revision
+            return list(files)
+    transfers = []
+    def transfer(repo_id, filename, local_dir, **kwargs):
+        assert kwargs['revision'] == revision
+        transfers.append(filename)
+        output = Path(local_dir) / filename
+        output.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(files[filename], output)
+        return str(output)
+    monkeypatch.setattr(hf_download, 'HfApi', Api)
+    monkeypatch.setattr(hf_download, 'hf_hub_download', transfer)
+    client = _client()
+    destination = tmp_path / 'downloads'
+    params = {'source': 'org/model', 'destination': str(destination)}
+    response = client.post('/api/hf/inspect', json=params)
+    assert response.status_code == 200, response.text
+    assert len(response.json()['groups']) == 2
+    assert transfers == [] and not destination.exists()
+    assert client.post('/api/hf/inspect', json=params, headers={'Origin': 'https://evil.example'}).status_code == 403
+    assert client.post('/api/hf/download', json={**params, 'token': 'not-accepted'}).status_code == 422
+    assert client.post('/api/hf/download', json={**params, 'source': '../model'}).status_code == 400
+    assert client.post('/api/hf/download', json={**params, 'subfolder': '../variant'}).status_code == 400
+    assert client.post('/api/hf/download', json={**params, 'destination': str(source_a)}).status_code == 400
+    assert client.post('/api/hf/download', json={'source': 'org/model'}).status_code == 400
+    response = client.post('/api/hf/download', json=params)
+    state = _wait(client, response.json()['id'])
+    assert state['status'] == 'failed' and 'subfolder' in state['error']
+    params |= {'revision': revision, 'subfolder': 'variant'}
+    response = client.post('/api/hf/download', json=params)
+    assert response.status_code == 202
+    state = _wait(client, response.json()['id'])
+    assert state['status'] == 'succeeded', state
+    assert set(load_file(state['output'])) == {'a.weight', 'b.weight'}
+    assert transfers == ['variant/a.safetensors', 'variant/b.safetensors']
+    assert not (destination / '.hf_download_org_model').exists()
+    original = Path(state['output']).read_bytes()
+    response = client.post('/api/hf/download', json=params)
+    assert _wait(client, response.json()['id'])['status'] == 'failed'
+    assert Path(state['output']).read_bytes() == original
+
+
+def test_hf_job_cancellation_and_secret_safe_errors(tmp_path, monkeypatch):
+    """Cancellation reaches the downloader; transport failures never return credentials."""
+    entered = threading.Event()
+    def blocked(*args, cancel_event, **kwargs):
+        entered.set()
+        assert cancel_event.wait(5)
+        raise RuntimeError('cancelled')
+    monkeypatch.setattr(web_api, 'download_repo_as_single_safetensors', blocked)
+    client = _client()
+    params = {'source': 'org/model', 'destination': str(tmp_path), 'revision': 'a' * 40}
+    response = client.post('/api/hf/download', json=params)
+    assert response.status_code == 202 and entered.wait(5)
+    assert response.json()['indeterminate']
+    assert client.post('/api/tools', json={'operation': 'analyze', 'source': str(_source(tmp_path))}).status_code == 409
+    client.post(f"/api/jobs/{response.json()['id']}/cancel", json={})
+    assert _wait(client, response.json()['id'])['status'] == 'cancelled'
+    monkeypatch.setenv('HF_TOKEN', 'fake-secret')
+    def fail(*args, **kwargs):
+        raise RuntimeError('failure fake-secret')
+    monkeypatch.setattr(web_api, 'download_repo_as_single_safetensors', fail)
+    response = client.post('/api/hf/download', json=params)
+    state = _wait(client, response.json()['id'])
+    assert state['status'] == 'failed' and 'fake-secret' not in str(state)
+    class TransportFailure(Exception):
+        response = SimpleNamespace(status_code=403)
+    monkeypatch.setattr(web_api, 'inspect_repo', lambda *args: (_ for _ in ()).throw(TransportFailure('fake-secret signed-url')))
+    response = client.post('/api/hf/inspect', json=params)
+    assert response.status_code == 400
+    assert 'access denied' in response.text and 'fake-secret' not in response.text
 
 
 def test_component_tools_roundtrip_and_guards(tmp_path):

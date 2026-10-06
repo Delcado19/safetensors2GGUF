@@ -19,6 +19,7 @@ def main():
     """Exercise file selection, real conversion, themes and responsive layouts."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--url', default='http://127.0.0.1:8765')
+    parser.add_argument('--hf-live', action='store_true', help='Download a public 520 KB Hub test checkpoint through the UI')
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1] / '.pytest-workbench-browser-tmp'
     root.mkdir(exist_ok=True)
@@ -152,10 +153,58 @@ def main():
         page.get_by_role('button', name='Restore 5D tensors', exact=True).click()
         expect(page.locator('.job-panel .output-path')).to_contain_text(restored.name, timeout=30000)
         assert any(len(tensor.shape) == 5 for tensor in gguf.GGUFReader(str(restored)).tensors)
+
+        if args.hf_live:
+            download_root = root / f'hf-live-{uuid.uuid4().hex}'
+            download_root.mkdir()
+            page.set_viewport_size({'width': 1440, 'height': 1100})
+            page.get_by_role('button', name='Hugging Face', exact=True).click()
+            expect(page.get_by_role('button', name='Download checkpoint')).to_be_disabled()
+            # Native variant selection must remain explicit for ambiguous repos.
+            page.route('**/api/hf/inspect', lambda route: route.fulfill(json={
+                'repo_id': 'ui-test/variants', 'revision': 'a' * 40,
+                'groups': [{'subfolder': '', 'files': 1, 'bytes': 100},
+                           {'subfolder': 'variant', 'files': 2, 'bytes': 200}]}))
+            page.get_by_label('Repository ID').fill('ui-test/variants')
+            page.get_by_role('button', name='Inspect repository').click()
+            expect(page.get_by_label('Checkpoint folder')).to_have_value('__choose__')
+            page.get_by_label('Download folder', exact=True).fill(str(download_root))
+            expect(page.get_by_role('button', name='Download checkpoint')).to_be_disabled()
+            page.get_by_label('Checkpoint folder').select_option('variant')
+            expect(page.get_by_role('button', name='Download checkpoint')).to_be_enabled()
+            page.unroute('**/api/hf/inspect')
+            page.get_by_label('Repository ID').fill('hf-internal-testing/tiny-random-bert')
+            page.get_by_role('button', name='Inspect repository').click()
+            expect(page.get_by_label('Checkpoint folder')).to_have_value('', timeout=30000)
+            # Changing a revision invalidates the previous pinned plan.
+            page.get_by_label('Revision', exact=True).fill('invalidated')
+            expect(page.get_by_label('Checkpoint folder')).not_to_be_visible()
+            page.get_by_label('Revision', exact=True).fill('main')
+            page.get_by_role('button', name='Inspect repository').click()
+            expect(page.get_by_label('Checkpoint folder')).to_have_value('', timeout=30000)
+            page.get_by_role('button', name='Browse download folder').click()
+            page.get_by_label('Folder path').fill(str(download_root))
+            page.get_by_role('button', name='Go', exact=True).click()
+            page.get_by_role('button', name='Use this folder').click()
+            expect(page.get_by_label('Download folder', exact=True)).to_have_value(str(download_root) + '/')
+            page.evaluate('scrollTo(0, 0)')
+            page.screenshot(path=str(root / 'huggingface-desktop.png'), full_page=True)
+            page.set_viewport_size({'width': 390, 'height': 844})
+            assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+            page.screenshot(path=str(root / 'huggingface-mobile.png'), full_page=True)
+            page.get_by_role('button', name='Download checkpoint').click()
+            expect(page.locator('.job-panel .output-path')).to_contain_text('tiny-random-bert.safetensors', timeout=120000)
+            downloaded = download_root / 'tiny-random-bert.safetensors'
+            from safetensors import safe_open
+            with safe_open(str(downloaded), framework='pt') as checkpoint:
+                assert len(checkpoint.keys()) > 0
+            assert not (download_root / '.hf_download_hf-internal-testing_tiny-random-bert').exists()
+            page.screenshot(path=str(root / 'huggingface-success-mobile.png'), full_page=True)
         assert not errors, errors
         print(json.dumps({'browser': 'Chromium', 'conversion': 'FP8_MIXED succeeded',
                           'text_encoder': 'F16_ST succeeded',
                           'tools': 'components, comparison, pad repair and 5D restoration succeeded',
+                          'huggingface': 'live tiny-random-bert download succeeded' if args.hf_live else 'not requested',
                           'viewport_checks': [1440, 768, 390], 'page_errors': errors,
                           'artifacts': str(root)}))
         browser.close()

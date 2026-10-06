@@ -4,6 +4,7 @@ import {
   ArrowDown,
   ArrowRight,
   ArrowUp,
+  ArrowDownToLine,
   Box,
   Check,
   CheckCircle2,
@@ -25,6 +26,7 @@ import {
 } from "lucide-react";
 import "./styles.css";
 import { ToolForm } from "./ToolForm";
+import { HuggingFaceForm } from "./HuggingFaceForm";
 
 type Container = "gguf" | "safetensors";
 type Config = {
@@ -33,6 +35,7 @@ type Config = {
   text_encoder_formats: Record<Container, [string, string][]>;
   executable: string;
   home: string;
+  hf_authenticated: boolean;
 };
 type Job = {
   id: string;
@@ -92,6 +95,7 @@ const jobLabel = (job: Job) =>
       analyze: "Component comparison",
       pad_tokens: "Pad-token repair",
       restore_5d: "5D restoration",
+      download: "Hub download",
     }) as Record<string, string>
   )[job.operation] || formatName(job.format);
 const filename = (path: string) => path.split(/[\\/]/).pop() || path;
@@ -99,9 +103,9 @@ const filename = (path: string) => path.split(/[\\/]/).pop() || path;
 function App() {
   const [config, setConfig] = useState<Config>();
   const [error, setError] = useState("");
-  const [view, setView] = useState<"convert" | "tools" | "activity" | "guide">(
-    "convert",
-  );
+  const [view, setView] = useState<
+    "convert" | "tools" | "download" | "activity" | "guide"
+  >("convert");
   const [light, setLight] = useState(
     () => localStorage.getItem("workbench-theme") === "light",
   );
@@ -113,6 +117,7 @@ function App() {
   const [destination, setDestination] = useState("");
   const [toolSource, setToolSource] = useState("");
   const [toolDestination, setToolDestination] = useState("");
+  const [downloadDestination, setDownloadDestination] = useState("");
   const [container, setContainer] = useState<Container>("gguf");
   const [format, setFormat] = useState("Q4_K_M");
   const [profile, setProfile] = useState("auto");
@@ -134,6 +139,7 @@ function App() {
   const browseVersion = useRef(0);
   const inspectVersion = useRef(0);
   const active = !!job && !terminal(job);
+  const busy = active || history.some((item) => !terminal(item));
 
   async function api<T>(
     path: string,
@@ -262,11 +268,11 @@ function App() {
     }
   }
 
-  async function start(body?: unknown) {
+  async function start(body?: unknown, endpoint = "tools") {
     setSubmitting(true);
     setError("");
     try {
-      setJob(await api<Job>(body ? "tools" : "jobs", body || parameters()));
+      setJob(await api<Job>(body ? endpoint : "jobs", body || parameters()));
     } catch (reason) {
       setError((reason as Error).message);
     } finally {
@@ -300,13 +306,15 @@ function App() {
     setPicker(target);
     setListing(undefined);
     const current =
-      view === "tools"
-        ? target === "source"
-          ? toolSource
-          : toolDestination
-        : target === "source"
-          ? source
-          : destination;
+      view === "download"
+        ? downloadDestination
+        : view === "tools"
+          ? target === "source"
+            ? toolSource
+            : toolDestination
+          : target === "source"
+            ? source
+            : destination;
     const parent = current.replace(/[\\/][^\\/]*$/, "");
     browse(parent && parent !== current ? parent : config?.home || "", target);
   }
@@ -324,7 +332,7 @@ function App() {
       : job.status === "failed"
         ? "Something needs attention"
         : job.status === "cancelled"
-          ? "Conversion cancelled"
+          ? "Job cancelled"
           : job.phase;
   return (
     <div className="app-shell">
@@ -383,6 +391,14 @@ function App() {
             <CircleHelp size={18} />
             Format guide
           </button>
+          <button
+            className={view === "download" ? "nav-item selected" : "nav-item"}
+            onClick={() => setView("download")}
+            aria-current={view === "download" ? "page" : undefined}
+          >
+            <ArrowDownToLine size={18} />
+            Hugging Face
+          </button>
         </nav>
         <div className="sidebar-bottom">
           <div className="local-note">
@@ -405,11 +421,13 @@ function App() {
             <strong>
               {view === "convert"
                 ? "Convert model"
-                : view === "tools"
-                  ? "Extract & repair"
-                  : view === "activity"
-                    ? "Activity"
-                    : "Format guide"}
+                : view === "download"
+                  ? "Hugging Face"
+                  : view === "tools"
+                    ? "Extract & repair"
+                    : view === "activity"
+                      ? "Activity"
+                      : "Format guide"}
             </strong>
           </span>
           <span className="connection">
@@ -424,20 +442,24 @@ function App() {
               <h1>
                 {view === "convert"
                   ? "Make room for bigger ideas."
-                  : view === "tools"
-                    ? "Bring every piece into place."
-                    : view === "activity"
-                      ? "Every conversion, in view."
-                      : "Find the right balance."}
+                  : view === "download"
+                    ? "Your next model starts here."
+                    : view === "tools"
+                      ? "Bring every piece into place."
+                      : view === "activity"
+                        ? "Every conversion, in view."
+                        : "Find the right balance."}
               </h1>
               <p>
                 {view === "convert"
                   ? "Bring your model. Choose a format. Keep creating."
-                  : view === "tools"
-                    ? "Separate checkpoint components. Restore your GGUF. Keep the original."
-                    : view === "activity"
-                      ? "Your recent jobs, progress, and results in this session."
-                      : "Storage, precision, and compatibility — without the guesswork."}
+                  : view === "download"
+                    ? "Choose a checkpoint from the Hub. Bring every shard together."
+                    : view === "tools"
+                      ? "Separate checkpoint components. Restore your GGUF. Keep the original."
+                      : view === "activity"
+                        ? "Your recent jobs, progress, and results in this session."
+                        : "Storage, precision, and compatibility — without the guesswork."}
               </p>
             </div>
             <span className="heading-symbol" aria-hidden="true">
@@ -453,9 +475,20 @@ function App() {
               </button>
             </div>
           )}
-          {(view === "convert" || view === "tools") && (
+          {(view === "convert" || view === "tools" || view === "download") && (
             <div className="work-grid">
-              {view === "tools" ? (
+              {view === "download" ? (
+                <HuggingFaceForm
+                  api={api}
+                  destination={downloadDestination}
+                  setDestination={setDownloadDestination}
+                  browse={() => openPicker("destination")}
+                  disabled={busy || submitting || !config}
+                  authenticated={!!config?.hf_authenticated}
+                  submit={(body) => start(body, "hf/download")}
+                  bytes={bytes}
+                />
+              ) : view === "tools" ? (
                 <ToolForm
                   source={toolSource}
                   destination={toolDestination}
@@ -463,7 +496,7 @@ function App() {
                   setDestination={setToolDestination}
                   browse={openPicker}
                   formats={config?.formats}
-                  disabled={active || submitting || !config}
+                  disabled={busy || submitting || !config}
                   submit={start}
                 />
               ) : (
@@ -485,7 +518,7 @@ function App() {
                       start();
                     }}
                   >
-                    <fieldset disabled={active || submitting}>
+                    <fieldset disabled={busy || submitting}>
                       <legend className="section-label">
                         <span>01</span>Source model
                       </legend>
@@ -549,7 +582,7 @@ function App() {
                         spellCheck={false}
                       />
                     </fieldset>
-                    <fieldset disabled={active || submitting}>
+                    <fieldset disabled={busy || submitting}>
                       <legend className="section-label">
                         <span>02</span>Output & precision
                       </legend>
@@ -785,13 +818,13 @@ function App() {
                       <button
                         className="primary"
                         disabled={
-                          !source.trim() || !config || active || submitting
+                          !source.trim() || !config || busy || submitting
                         }
                         type="submit"
                       >
                         {submitting
                           ? "Starting…"
-                          : active
+                          : busy
                             ? "Conversion running"
                             : "Convert model"}
                         <ArrowRight size={17} />
@@ -877,7 +910,7 @@ function App() {
                         !source.trim() ||
                         !config ||
                         inspecting ||
-                        active ||
+                        busy ||
                         submitting
                       }
                       onClick={inspect}
@@ -1049,7 +1082,11 @@ function App() {
                     onClick={() => {
                       setJob(item);
                       setView(
-                        item.operation === "convert" ? "convert" : "tools",
+                        item.operation === "download"
+                          ? "download"
+                          : item.operation === "convert"
+                            ? "convert"
+                            : "tools",
                       );
                     }}
                   >
@@ -1119,8 +1156,8 @@ function App() {
                 <div>
                   <h2>More tools remain in the classic interface.</h2>
                   <p>
-                    Hugging Face downloads are still available through gui.py
-                    while migration continues.
+                    The interactive compatibility matrix remains available
+                    through gui.py while migration continues.
                   </p>
                 </div>
               </div>
@@ -1235,9 +1272,11 @@ function App() {
               className="primary"
               disabled={!listing || browsing}
               onClick={() => {
-                (view === "tools" ? setToolDestination : setDestination)(
-                  listing!.path + "/",
-                );
+                (view === "download"
+                  ? setDownloadDestination
+                  : view === "tools"
+                    ? setToolDestination
+                    : setDestination)(listing!.path + "/");
                 setPicker(null);
               }}
             >

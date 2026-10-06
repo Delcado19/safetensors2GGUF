@@ -6,6 +6,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Hugging Face in the React workbench
+- Add: Hugging Face workspace with on-demand repository inspection, explicit
+  checkpoint-folder selection, shard counts/sizes and commit-pinned downloads.
+- Add: Shared download jobs/history, cooperative cancellation, local folder browser,
+  overwrite protection and server-side credential availability without token fields.
+- Fix: Preserve safetensors metadata during shard merging and reject conflicting
+  shard contracts; validate relative Hub paths and staging-directory containment.
+- Add: API auth/error/concurrency and real merge regression checks, plus optional
+  Chromium verification against a public 520 KB Hub checkpoint.
+
 ### Extraction and repair in the React workbench
 - Add: Extract & repair workspace for SDXL component export/local comparison,
   diffusion extraction, Lumina2 pad-token repair and 5D sidecar restoration.

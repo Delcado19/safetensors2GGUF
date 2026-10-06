@@ -3,13 +3,15 @@
 Jobs are process-local. Restarting cancels cooperative workers and clears history.
 The browser receives a session token from the same-origin config endpoint; every
 filesystem/job request requires it, preventing unrelated sites from using this
-local service as a filesystem API. No uploads or model downloads are performed.
+local service as a filesystem API. Hugging Face downloads are explicitly started
+by the user; model files are never uploaded.
 """
 from __future__ import annotations
 
 import argparse
 import gc
 import os
+import re
 import secrets
 import threading
 import time
@@ -33,6 +35,9 @@ from convert_safetensors import convert_to_safetensors
 from component_extract import analyze_components, default_output_root, extract_components
 from fix_pad_tokens import fix_pad_tokens
 from fix_5d_tensors import fix_5d_tensors
+from hf_download import download_repo_as_single_safetensors, inspect_repo, _hub_token, _validate_relative_path
+from huggingface_hub import get_token
+from huggingface_hub.utils import validate_repo_id
 from models.architectures import detect_arch
 from model_support import SUPPORT_BAD, text_encoder_support_level, text_encoder_support_reason
 from quantize import ALL_QUANT_CHOICES, LLAMA_QUANT_KEYS, estimate_output_size, find_exe
@@ -65,9 +70,9 @@ class ConversionRequest(BaseModel):
 
 
 class Job:
-    """Locked snapshot of a cooperative conversion, extraction or repair worker."""
+    """Locked snapshot of a cooperative conversion, tool or download worker."""
 
-    def __init__(self, parameters: ConversionRequest | ToolRequest):
+    def __init__(self, parameters: ConversionRequest | ToolRequest | DownloadRequest):
         self.id = uuid.uuid4().hex
         self.parameters = parameters
         self.cancel = threading.Event()
@@ -95,7 +100,7 @@ class Job:
                     'operation': getattr(self.parameters, 'operation', 'convert'),
                     'outputs': list(self.outputs), 'result': self.result,
                     'indeterminate': (self.parameters.model_kind == 'text_encoder' or
-                                      getattr(self.parameters, 'operation', '') in {'components', 'analyze'}) and self.status in {'queued', 'running', 'cancelling'},
+                                      getattr(self.parameters, 'operation', '') in {'components', 'analyze', 'download'}) and self.status in {'queued', 'running', 'cancelling'},
                     'finished': self.finished}
 
     def emit(self, event):
@@ -119,12 +124,21 @@ class Job:
             if self.cancel.is_set():
                 raise ConversionCancelled('cancelled')
             operation = getattr(params, 'operation', 'convert')
-            if operation not in {'analyze', 'components'}:
+            if operation not in {'analyze', 'components', 'download'}:
                 # Folder selections may name a new ComfyUI output directory.
                 Path(params.destination).parent.mkdir(parents=True, exist_ok=True)
             callbacks = {'on_log': lambda message: self.emit(('log', message)),
                          'cancel_event': self.cancel}
-            if operation == 'analyze':
+            if operation == 'download':
+                def transfer_phase(index, total, message):
+                    # Counts describe shards, not bytes: never show a fake percentage.
+                    with self.lock:
+                        self.phase = f'{message} ({index + 1}/{total})'
+                revision = params.revision if re.fullmatch(r'[0-9a-fA-F]{40}', params.revision) else inspect_repo(params.source, params.revision)['revision']
+                output = download_repo_as_single_safetensors(params.source, params.destination,
+                    subfolder=params.subfolder, revision=revision,
+                    overwrite=params.overwrite, on_progress=transfer_phase, **callbacks)
+            elif operation == 'analyze':
                 results = analyze_components(params.source, params.destination, cancel_event=self.cancel)
                 with self.lock:
                     self.result = [asdict(item) | {'status': item.status} for item in results]
@@ -176,7 +190,7 @@ class Job:
             with self.lock:
                 cancelled = isinstance(exc, ConversionCancelled) or str(exc) == 'cancelled'
                 self.status = 'cancelled' if cancelled else 'failed'
-                self.error = '' if cancelled else str(exc)
+                self.error = '' if cancelled else (download_error(exc) if getattr(params, 'operation', '') == 'download' else str(exc))
                 self.phase = 'Cancelled' if cancelled else 'Job failed'
         finally:
             gc.collect()
@@ -199,6 +213,36 @@ class ToolRequest(BaseModel):
     container: Literal['gguf', 'safetensors'] = 'safetensors'
     format: str = 'F16'
     model_kind: Literal['diffusion'] = 'diffusion'
+
+
+class DownloadRequest(BaseModel):
+    """Hub model repo and local output folder; no browser-supplied credentials."""
+
+    model_config = ConfigDict(extra='forbid')
+    source: str = Field(min_length=1, max_length=256)
+    destination: str = Field(default='', max_length=4096)
+    revision: str = Field(default='main', min_length=1, max_length=256)
+    subfolder: str | None = Field(default=None, max_length=1024)
+    overwrite: bool = False
+    operation: Literal['download'] = 'download'
+    model_kind: Literal['diffusion'] = 'diffusion'
+    format: Literal['safetensors'] = 'safetensors'
+
+
+def download_error(exc: Exception) -> str:
+    """Expose actionable download errors without HTTP headers, tokens or signed URLs."""
+    status = getattr(getattr(exc, 'response', None), 'status_code', None)
+    if status in {401, 403}:
+        return 'Hugging Face access denied. Configure a server-side token and accept any model access conditions.'
+    if status == 404:
+        return 'Hugging Face repository, revision or file not found, or not accessible to your account.'
+    if status == 429:
+        return 'Hugging Face rate limit reached. Retry later.'
+    if (isinstance(exc, ValueError) or type(exc) in {RuntimeError, OSError, FileExistsError, PermissionError}) and status is None:
+        message = str(exc)
+        token = _hub_token()
+        return message.replace(token, '[redacted]') if token else message
+    return 'Could not contact Hugging Face. Check the repository, access and connection, then retry.'
 
 
 def create_app() -> FastAPI:
@@ -240,7 +284,8 @@ def create_app() -> FastAPI:
                                 if (key in TEXT_ENCODER_SAFETENSORS_FORMATS) == (container == 'safetensors')]
                     for container in ('gguf', 'safetensors')},
                 'executable': str(find_exe() or ''), 'home': str(Path.home()),
-                'platform': os.name, 'history_persistent': False}
+                'platform': os.name, 'history_persistent': False,
+                'hf_authenticated': bool(_hub_token() or get_token())}
 
     @app.get('/api/files', dependencies=protected)
     def files(path: str = '', directories_only: bool = False):
@@ -373,6 +418,43 @@ def create_app() -> FastAPI:
             job.thread = threading.Thread(target=job.run, daemon=True)
             job.thread.start()
             return job.snapshot()
+
+    def resolve_download(params):
+        """Reject unsafe repo paths and resolve an optional local output directory."""
+        try:
+            params.source = params.source.strip()
+            validate_repo_id(params.source)
+            params.revision = params.revision.strip()
+            if not params.revision:
+                raise ValueError('Enter a revision or use main')
+            if params.subfolder is not None:
+                params.subfolder = params.subfolder.strip()
+                _validate_relative_path(params.subfolder)
+            if params.destination.strip():
+                folder = Path(params.destination.strip()).expanduser()
+                if folder.exists() and not folder.is_dir():
+                    raise ValueError('Choose an output directory')
+                params.destination = str(folder.resolve())
+        except (OSError, ValueError) as exc:
+            raise HTTPException(400, download_error(exc)) from exc
+        return params
+
+    @app.post('/api/hf/inspect', dependencies=protected)
+    def inspect_hf(params: DownloadRequest):
+        """List checkpoint folders and pin the revision without downloading tensors."""
+        params = resolve_download(params)
+        try:
+            return inspect_repo(params.source, params.revision)
+        except Exception as exc:
+            raise HTTPException(400, download_error(exc)) from exc
+
+    @app.post('/api/hf/download', status_code=202, dependencies=protected)
+    def download_hf(params: DownloadRequest):
+        """Run the existing streaming downloader under the shared job/cancel limit."""
+        params = resolve_download(params)
+        if not params.destination:
+            raise HTTPException(400, 'Choose an output directory')
+        return enqueue(params)
 
     @app.post('/api/tools', status_code=202, dependencies=protected)
     def tools(params: ToolRequest):

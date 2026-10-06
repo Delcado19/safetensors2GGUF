@@ -2,6 +2,8 @@ import os
 import shutil
 import threading
 import weakref
+from types import SimpleNamespace
+from pathlib import Path
 
 import pytest
 import torch
@@ -10,7 +12,39 @@ from safetensors.torch import save_file
 import hf_download
 
 
-def _fake_hf_hub_download(repo_id, filename, local_dir):
+def test_inspection_groups_sizes_and_server_credentials(monkeypatch):
+    """Metadata exposes commit/file sizes but never the server token."""
+    monkeypatch.setenv('HF_TOKEN', 'test-server-token')
+    monkeypatch.setenv('CODEX_HUGGINGFACE_API_KEY', 'test-fallback-token')
+    calls = []
+    class Api:
+        def __init__(self, token):
+            calls.append(token)
+        def model_info(self, repo_id, **kwargs):
+            assert kwargs['files_metadata'] and kwargs['revision'] == 'branch'
+            return SimpleNamespace(sha='a' * 40, siblings=[
+                SimpleNamespace(rfilename='variant/a.safetensors', size=10),
+                SimpleNamespace(rfilename='variant/b.safetensors', size=20),
+                SimpleNamespace(rfilename='model.safetensors', size=None),
+                SimpleNamespace(rfilename='README.md', size=100)])
+    monkeypatch.setattr(hf_download, 'HfApi', Api)
+    result = hf_download.inspect_repo('org/model', 'branch')
+    assert result['groups'] == [{'subfolder': '', 'files': 1, 'bytes': None}, {'subfolder': 'variant', 'files': 2, 'bytes': 30}]
+    assert result['revision'] == 'a' * 40
+    assert calls == ['test-server-token']
+    assert 'test-server-token' not in str(result)
+    monkeypatch.delenv('HF_TOKEN')
+    assert hf_download._hub_token() == 'test-fallback-token'
+
+
+@pytest.mark.parametrize('path', ['../model', '/absolute', 'a/../b', 'a\\b', 'C:drive'])
+def test_unsafe_hub_paths_are_rejected(path):
+    """Remote filenames cannot escape the staging/output folder."""
+    with pytest.raises(ValueError):
+        hf_download._find_shard_group([path + '/model.safetensors'], None)
+
+
+def _fake_hf_hub_download(repo_id, filename, local_dir, **kwargs):
     """Copy a pre-made shard from the fake 'hub' into local_dir, like the real download would."""
     src = _FAKE_HUB[repo_id][filename]
     dst = local_dir + "/" + filename
@@ -26,7 +60,7 @@ class _FakeHfApi:
     def __init__(self, files):
         self._files = files
 
-    def list_repo_files(self, repo_id):
+    def list_repo_files(self, repo_id, **kwargs):
         return self._files
 
 
@@ -45,7 +79,7 @@ def test_download_repo_as_single_safetensors_merges_shards(tmp_path, monkeypatch
         "model-00002-of-00002.safetensors": str(shard_b),
     }
 
-    monkeypatch.setattr(hf_download, "HfApi", lambda: _FakeHfApi(list(_FAKE_HUB[repo_id])))
+    monkeypatch.setattr(hf_download, "HfApi", lambda **kwargs: _FakeHfApi(list(_FAKE_HUB[repo_id])))
     monkeypatch.setattr(hf_download, "hf_hub_download", _fake_hf_hub_download)
 
     dest = tmp_path / "out"
@@ -76,7 +110,7 @@ def test_cancelled_download_leaves_partial_shards_for_resume(tmp_path, monkeypat
         "model-00001-of-00002.safetensors": str(shard_a),
         "model-00002-of-00002.safetensors": str(shard_b),
     }
-    monkeypatch.setattr(hf_download, "HfApi", lambda: _FakeHfApi(list(_FAKE_HUB[repo_id])))
+    monkeypatch.setattr(hf_download, "HfApi", lambda **kwargs: _FakeHfApi(list(_FAKE_HUB[repo_id])))
     monkeypatch.setattr(hf_download, "hf_hub_download", _fake_hf_hub_download)
 
     dest = tmp_path / "out"
@@ -104,7 +138,7 @@ def test_refuses_to_overwrite_existing_output(tmp_path, monkeypatch):
     existing = dest / "some-model.safetensors"
     existing.write_bytes(b"placeholder")
 
-    monkeypatch.setattr(hf_download, "HfApi", lambda: _FakeHfApi(["model.safetensors"]))
+    monkeypatch.setattr(hf_download, "HfApi", lambda **kwargs: _FakeHfApi(["model.safetensors"]))
 
     try:
         hf_download.download_repo_as_single_safetensors("someorg/some-model", dest, overwrite=False)
@@ -114,7 +148,7 @@ def test_refuses_to_overwrite_existing_output(tmp_path, monkeypatch):
 
 
 def test_raises_when_repo_has_no_safetensors_files(tmp_path, monkeypatch):
-    monkeypatch.setattr(hf_download, "HfApi", lambda: _FakeHfApi(["README.md", "config.json"]))
+    monkeypatch.setattr(hf_download, "HfApi", lambda **kwargs: _FakeHfApi(["README.md", "config.json"]))
     try:
         hf_download.download_repo_as_single_safetensors("someorg/no-weights", tmp_path)
         assert False, "expected RuntimeError"
@@ -139,7 +173,7 @@ def _setup_two_variant_repo(tmp_path, monkeypatch):
         "variant-a/model.safetensors": str(v1),
         "variant-b/model.safetensors": str(v2),
     }
-    monkeypatch.setattr(hf_download, "HfApi", lambda: _FakeHfApi(list(_FAKE_HUB[repo_id])))
+    monkeypatch.setattr(hf_download, "HfApi", lambda **kwargs: _FakeHfApi(list(_FAKE_HUB[repo_id])))
     monkeypatch.setattr(hf_download, "hf_hub_download", _fake_hf_hub_download)
     return repo_id
 
@@ -175,7 +209,7 @@ def test_merge_streams_mixed_dtypes_without_retaining_tensors(tmp_path, monkeypa
     save_file(tensors, str(shard))
     repo_id = "someorg/streamed"
     _FAKE_HUB[repo_id] = {"model.safetensors": str(shard)}
-    monkeypatch.setattr(hf_download, "HfApi", lambda: _FakeHfApi(["model.safetensors"]))
+    monkeypatch.setattr(hf_download, "HfApi", lambda **kwargs: _FakeHfApi(["model.safetensors"]))
     monkeypatch.setattr(hf_download, "hf_hub_download", _fake_hf_hub_download)
     real_open = hf_download.safe_open
     references = []
@@ -213,7 +247,7 @@ def test_merge_cancel_preserves_previous_output_and_resume_files(tmp_path, monke
     save_file({"weight": torch.ones(2, 2)}, str(shard))
     repo_id = "someorg/streamed"
     _FAKE_HUB[repo_id] = {"model.safetensors": str(shard)}
-    monkeypatch.setattr(hf_download, "HfApi", lambda: _FakeHfApi(["model.safetensors"]))
+    monkeypatch.setattr(hf_download, "HfApi", lambda **kwargs: _FakeHfApi(["model.safetensors"]))
     monkeypatch.setattr(hf_download, "hf_hub_download", _fake_hf_hub_download)
     dest = tmp_path / "out"
     dest.mkdir()
@@ -239,7 +273,7 @@ def test_duplicate_shard_keys_preserve_previous_output(tmp_path, monkeypatch):
     save_file({"weight": torch.ones(2, 2)}, str(shard))
     repo_id = "someorg/duplicates"
     _FAKE_HUB[repo_id] = {"a.safetensors": str(shard), "b.safetensors": str(shard)}
-    monkeypatch.setattr(hf_download, "HfApi", lambda: _FakeHfApi(["a.safetensors", "b.safetensors"]))
+    monkeypatch.setattr(hf_download, "HfApi", lambda **kwargs: _FakeHfApi(["a.safetensors", "b.safetensors"]))
     monkeypatch.setattr(hf_download, "hf_hub_download", _fake_hf_hub_download)
     dest = tmp_path / "out"
     dest.mkdir()
@@ -248,3 +282,23 @@ def test_duplicate_shard_keys_preserve_previous_output(tmp_path, monkeypatch):
     with pytest.raises(RuntimeError, match="Duplicate tensor key"):
         hf_download.download_repo_as_single_safetensors(repo_id, dest, overwrite=True)
     assert output.read_bytes() == b"original"
+
+
+def test_merge_preserves_metadata_and_refuses_conflicts(tmp_path, monkeypatch):
+    """Safetensors loader metadata survives merging; incompatible contracts fail safely."""
+    first, second = tmp_path / 'a.safetensors', tmp_path / 'b.safetensors'
+    save_file({'a.weight': torch.ones(2)}, str(first), metadata={'format': 'pt', 'quantization': 'native'})
+    save_file({'b.weight': torch.ones(2)}, str(second), metadata={'format': 'pt'})
+    repo = 'org/metadata'
+    _FAKE_HUB[repo] = {'a.safetensors': str(first), 'b.safetensors': str(second)}
+    monkeypatch.setattr(hf_download, 'HfApi', lambda **kwargs: _FakeHfApi(list(_FAKE_HUB[repo])))
+    monkeypatch.setattr(hf_download, 'hf_hub_download', _fake_hf_hub_download)
+    output = hf_download.download_repo_as_single_safetensors(repo, tmp_path / 'out')
+    from safetensors import safe_open
+    with safe_open(output, framework='pt') as merged:
+        assert merged.metadata() == {'format': 'pt', 'quantization': 'native'}
+    original = Path(output).read_bytes()
+    save_file({'b.weight': torch.ones(2)}, str(second), metadata={'format': 'other'})
+    with pytest.raises(RuntimeError, match='Conflicting safetensors metadata'):
+        hf_download.download_repo_as_single_safetensors(repo, tmp_path / 'out', overwrite=True)
+    assert Path(output).read_bytes() == original

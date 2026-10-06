@@ -1113,7 +1113,7 @@ input[type="checkbox"] {
   }
   .sidebar nav {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     margin-top: 18px;
     gap: 6px;
   }
@@ -1246,6 +1246,20 @@ input[type="checkbox"] {
 }
 .tool-overwrite {
   margin: 24px 0;
+}
+.hf-plan {
+  display: grid;
+  gap: 6px;
+}
+.hf-plan strong {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  overflow-wrap: anywhere;
+  margin-bottom: 0;
+}
+.hf-plan small {
+  color: var(--muted);
 }
 .component-results {
   display: grid;
