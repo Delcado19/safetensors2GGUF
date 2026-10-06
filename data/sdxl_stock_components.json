@@ -1,0 +1,35 @@
+{
+  "vae": {
+    "source_url": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/blob/main/vae/diffusion_pytorch_model.safetensors",
+    "source_file_sha256": "1598f3d24932bcfe6634e8b618ea1e30ab1d57f5aad13a6d2de446d2199f2341",
+    "tensor_count": 248,
+    "hash_scheme": "normalized-tensors-v1",
+    "variants": [
+      {"label": "SDXL 1.0 VAE FP32", "component_hash": "af5b030fb64bf25d66f627c7f0cb981df6a70203ddaef6fc9d59160c3d825c9f"},
+      {"label": "SDXL 1.0 VAE FP16 cast", "component_hash": "6b683dcce579943a7ea2adc76e328f9b84e6866909de1f9fa241d99490128e4d"},
+      {"label": "SDXL 1.0 VAE BF16 cast", "component_hash": "6a1c433a0c293c40aebdc9034ab7f3dc510888f61def18d492659b4f75758ad4"}
+    ]
+  },
+  "clip_l": {
+    "source_url": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/blob/main/text_encoder/model.safetensors",
+    "source_file_sha256": "5c3d6454dd2d23414b56aa1b5858a72487a656937847b6fea8d0606d7a42cdbc",
+    "tensor_count": 196,
+    "hash_scheme": "normalized-tensors-v1",
+    "variants": [
+      {"label": "SDXL 1.0 CLIP-L FP32", "component_hash": "124adb07c27aa406cd27bf2338b702351b9c3ce28465e0ff2f130b1d599aa701"},
+      {"label": "SDXL 1.0 CLIP-L FP16 cast", "component_hash": "fe2d340144b4e4dcce2e4c7e681192d20c5966d563d08fd578e794607f523a4d"},
+      {"label": "SDXL 1.0 CLIP-L BF16 cast", "component_hash": "b0203ad5c156680917c8aaefbb680ac17fca620da5877f68436d9e8dae07194a"}
+    ]
+  },
+  "clip_g": {
+    "source_url": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/blob/main/text_encoder_2/model.safetensors",
+    "source_file_sha256": "3a6032f63d37ae02bbc74ccd6a27440578cd71701f96532229d0154f55a8d3ff",
+    "tensor_count": 517,
+    "hash_scheme": "normalized-tensors-v1",
+    "variants": [
+      {"label": "SDXL 1.0 CLIP-G FP32", "component_hash": "4c43e1c76429def9d6e5e4bd218f69aa44327f473fa51b0844a22a2fe6fdc7dc"},
+      {"label": "SDXL 1.0 CLIP-G FP16 cast", "component_hash": "230d63978d94a1870035e86edad09cef71dc00dd452f2572b047f7f372880c11"},
+      {"label": "SDXL 1.0 CLIP-G BF16 cast", "component_hash": "6a5b3b4588d1ff2f6dbd0a6c6690572e70e977f9e855bdd22506d03517138e9a"}
+    ]
+  }
+}

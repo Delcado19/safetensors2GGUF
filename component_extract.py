@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Callable
 
@@ -16,6 +17,7 @@ from convert import ConversionCancelled
 
 
 SDXL_COMPONENTS = ("vae", "clip_l", "clip_g")
+STOCK_COMPONENTS = json.loads((Path(__file__).parent / 'data' / 'sdxl_stock_components.json').read_text())
 
 
 @dataclass(frozen=True)
@@ -36,6 +38,7 @@ class ComponentAnalysis:
     component_hash: str = ''
     reference_hash: str | None = None
     reference_error: str | None = None
+    stock_match: str | None = None
 
     @property
     def has_reference(self) -> bool:
@@ -57,6 +60,8 @@ class ComponentAnalysis:
     def status(self) -> str:
         if self.output_tensors == 0:
             return "not found"
+        if self.stock_match:
+            return f'recognized stock: {self.stock_match}'
         if not self.has_reference:
             if self.reference_error:
                 return 'unknown: local reference unreadable'
@@ -137,6 +142,36 @@ def _direct_prefixed_keys(keys: list[str], prefix: str, skip: set[str] | None = 
     }
 
 
+def _vae_mapping(keys, prefix=''):
+    """Normalize Diffusers VAE keys/shapes to the original SDXL layout.
+
+    Matches ComfyUI comfy/diffusers_convert.py; only attention Linear weights
+    become 1x1 Conv weights. LDM names already use this layout and stay intact.
+    """
+    mapped = {}
+    for source in keys:
+        if not source.startswith(prefix):
+            continue
+        key = source[len(prefix):]
+        diffusers_attention = '.mid_block.attentions.0.' in key
+        key = re.sub(r'encoder\.down_blocks\.(\d+)\.resnets\.(\d+)\.',
+                     lambda m: f'encoder.down.{m[1]}.block.{m[2]}.', key)
+        key = re.sub(r'decoder\.up_blocks\.(\d+)\.resnets\.(\d+)\.',
+                     lambda m: f'decoder.up.{3 - int(m[1])}.block.{m[2]}.', key)
+        key = re.sub(r'down_blocks\.(\d+)\.downsamplers\.0\.', lambda m: f'down.{m[1]}.downsample.', key)
+        key = re.sub(r'up_blocks\.(\d+)\.upsamplers\.0\.', lambda m: f'up.{3 - int(m[1])}.upsample.', key)
+        key = re.sub(r'mid_block\.resnets\.(\d+)\.', lambda m: f'mid.block_{int(m[1]) + 1}.', key)
+        key = key.replace('conv_shortcut', 'nin_shortcut').replace('conv_norm_out', 'norm_out')
+        key = key.replace('mid_block.attentions.0.', 'mid.attn_1.')
+        if diffusers_attention:
+            for old, new in (('group_norm.', 'norm.'), ('to_q.', 'q.'), ('to_k.', 'k.'),
+                             ('to_v.', 'v.'), ('to_out.0.', 'proj_out.')):
+                key = key.replace(old, new)
+        reshape = diffusers_attention and key.endswith(('.q.weight', '.k.weight', '.v.weight', '.proj_out.weight'))
+        mapped[key] = (source, (lambda t: t.reshape(*t.shape, 1, 1)) if reshape else (lambda t: t))
+    return mapped
+
+
 def _clip_g_mapping(keys: list[str]) -> dict[str, tuple[str, Callable[[torch.Tensor], torch.Tensor]]]:
     """Map embedded OpenCLIP bigG keys to Comfy/HF CLIP-G keys."""
 
@@ -185,10 +220,7 @@ def _clip_g_mapping(keys: list[str]) -> dict[str, tuple[str, Callable[[torch.Ten
 
 def _component_mapping(keys: list[str], component: str) -> dict[str, tuple[str, Callable[[torch.Tensor], torch.Tensor]]]:
     if component == "vae":
-        return {
-            dst: (src, lambda tensor: tensor)
-            for dst, src in _direct_prefixed_keys(keys, "first_stage_model.").items()
-        }
+        return _vae_mapping(keys, 'first_stage_model.')
     if component == "clip_l":
         return {
             dst: (src, lambda tensor: tensor)
@@ -213,7 +245,8 @@ def analyze_components(
     """Hash normalized components; optionally compute diagnostic numeric differences.
 
     Extraction uses ``detailed=False``: an unreadable optional reference cannot
-    block export and is never eligible for reuse. No stock provenance is implied.
+    block export and is never eligible for reuse. Stock recognition uses the
+    shipped official-file-verified fingerprint registry, not local filenames.
     """
 
     checkpoint = Path(checkpoint_path)
@@ -249,7 +282,9 @@ def analyze_components(
 
             if reference_path:
                 with reference_reader as ref:
-                    ref_keys = set(ref.keys())
+                    reference_mapping = _vae_mapping(ref.keys()) if component == 'vae' else {
+                        k: (k, lambda t: t) for k in ref.keys()}
+                    ref_keys = set(reference_mapping)
                     reference_tensors = len(ref_keys)
                     for dst_key, (src_key, transform) in mapping.items():
                         if cancel_event is not None and cancel_event.is_set():
@@ -259,7 +294,8 @@ def analyze_components(
                         if dst_key not in ref_keys:
                             missing_reference += 1
                             continue
-                        ref_tensor = ref.get_tensor(dst_key)
+                        ref_key, ref_transform = reference_mapping[dst_key]
+                        ref_tensor = ref_transform(ref.get_tensor(ref_key))
                         reference_hashes[dst_key] = _tensor_hash(ref_tensor)
                         if source_hashes[dst_key] == reference_hashes[dst_key]:
                             exact += 1
@@ -274,13 +310,15 @@ def analyze_components(
                     for key in ref_keys - set(mapping):
                         if cancel_event is not None and cancel_event.is_set():
                             raise ConversionCancelled()
-                        reference_hashes[key] = _tensor_hash(ref.get_tensor(key))
+                        ref_key, ref_transform = reference_mapping[key]
+                        reference_hashes[key] = _tensor_hash(ref_transform(ref.get_tensor(ref_key)))
             else:
                 for dst_key, (src_key, transform) in mapping.items():
                     if cancel_event is not None and cancel_event.is_set():
                         raise ConversionCancelled()
                     source_hashes[dst_key] = _tensor_hash(transform(source.get_tensor(src_key)))
 
+            component_hash = _component_hash(source_hashes)
             results.append(
                 ComponentAnalysis(
                     name=component,
@@ -300,9 +338,11 @@ def analyze_components(
                         sum(mean_abs_values) / len(mean_abs_values)
                         if mean_abs_values else None
                     ),
-                    component_hash=_component_hash(source_hashes),
+                    component_hash=component_hash,
                     reference_hash=_component_hash(reference_hashes) if reference_path else None,
                     reference_error=reference_error,
+                    stock_match=next((item['label'] for item in STOCK_COMPONENTS.get(component, {}).get('variants', [])
+                                      if item['component_hash'] == component_hash), None),
                 )
             )
 

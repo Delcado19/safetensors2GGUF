@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Offline recognition of official SDXL VAE/CLIP-L/CLIP-G FP32 weights and
+  direct FP16/BF16 casts from verified whole-file HF SHA256. Ship nine normalized
+  fingerprints with provenance and a read-only reproduction checker. Normalize
+  Diffusers VAE layout consistently with ComfyUI; stock recognition does not
+  skip export without an actual reusable local reference.
+
 - Change: Integrate component comparison into SDXL extraction and remove its
   separate Workbench task. Hash normalized tensor contents, optionally reuse
   identical local references, and show actual actions with diagnostic details.

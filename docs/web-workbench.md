@@ -267,8 +267,22 @@ existing CLIP-G layout mapping. File metadata and tensor ordering do not matter;
 precision differences and extra/missing tensors prevent reuse. The candidates
 are `vae/sdxlVAE.safetensors`, `clip/clip_l.safetensors` and `clip/clip_g.safetensors`
 in the chosen models root. A matching filename does not prove stock provenance.
-No trusted stock-hash registry is shipped. Missing or unreadable references mean
-unknown identity and do not block extraction. Differences do not indicate quality.
+The shipped `data/sdxl_stock_components.json` recognizes the official SDXL 1.0
+VAE/CLIP-L/CLIP-G FP32 files and their direct FP16/BF16 casts, without local
+reference files. Provenance includes official Hugging Face URLs and verified
+whole-file SHA256. `scripts/check_stock_components.py I:/ --verify` reproduces
+all nine normalized fingerprints from the verified original files, read-only.
+See [stock provenance and normalization](sdxl-stock-components.md).
+Missing/unreadable local references do not block stock recognition or extraction.
+Unregistered hashes mean unknown stock identity, not inferior quality.
+
+The official VAE uses Diffusers naming/Linear attention weights. Both official
+references and embedded VAE tensors normalize to the original SDXL naming and
+1x1 attention Conv shapes using ComfyUI's mapping. CLIP-G uses the existing
+QKV split/projection transpose. No reference files are downloaded at runtime.
+Recognition alone never skips export: reuse still requires an identical local
+file that ComfyUI can actually load. Other VAEs/encoders and mixed-dtype or
+indirectly rounded variants remain outside this exact-match registry.
 
 Reuse is enabled by default in the Workbench/API and can be disabled to export
 separate files. Results show comparison status, actual export/reuse action and

@@ -68,6 +68,7 @@ type Job = {
         reference_hash?: string | null;
         action?: string;
         reference_error?: string | null;
+        stock_match?: string | null;
       }[]
     | null;
 };
@@ -1052,6 +1053,7 @@ function App() {
                                 {item.name.replace("_", "-").toUpperCase()}
                               </strong>
                               <span>{item.status}</span>
+                              {!item.stock_match && <small>No registered stock match</small>}
                               {item.action && <small>{item.action}</small>}
                               {item.reference_path && (
                                 <small className="output-path">
@@ -1065,6 +1067,7 @@ function App() {
                                   <small className="output-path">Component SHA-256: {item.component_hash}</small>
                                   {item.reference_hash && <small className="output-path">Reference SHA-256: {item.reference_hash}</small>}
                                   <small>Hashes include normalized tensor names, shapes, datatypes and contents.</small>
+                                  <small>{item.stock_match ? `Verified stock identity: ${item.stock_match}` : "No registered stock match. This does not indicate lower quality."}</small>
                                   {item.reference_error && <small>{item.reference_error}</small>}
                                 </details>
                               )}

@@ -184,7 +184,8 @@ export function ToolForm({
             </label>
             <p className="preview-note">
               Checks sdxlVAE.safetensors in vae/ and clip_l.safetensors / clip_g.safetensors in clip/.
-              Different or unknown components are exported. Local matches do not certify stock provenance.
+              Known SDXL stock components are recognized even without local references.
+              Reuse requires an identical local file; other components are exported.
             </p>
             </>
           )}

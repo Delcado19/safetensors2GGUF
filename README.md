@@ -74,7 +74,9 @@ Open http://127.0.0.1:8765. Node/npm is needed for the frontend build, not norma
 operation. **Extract & repair** provides SDXL VAE/CLIP export with automatic
 normalized tensor hashing and optional reuse of identical local references,
 diffusion extraction, GGUF pad-token repair and 5D restoration. Different or
-unknown components are exported; local matches do not certify stock provenance.
+unknown components are exported. A shipped registry recognizes the official
+SDXL 1.0 VAE/CLIP-L/CLIP-G and their FP16/BF16 casts without local reference
+files. Local matches alone do not certify stock provenance.
 **Hugging Face** inspects model repositories, lets you select one checkpoint
 folder, and downloads/merges its safetensors shards into one local file. Downloads
 share job history/cancellation and use server-side `HF_TOKEN`,

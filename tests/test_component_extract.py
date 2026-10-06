@@ -171,3 +171,39 @@ def test_unreadable_reference_does_not_block_export(tmp_path):
     assert not exported[0].reused
     assert observed[0].status == 'unknown: local reference unreadable'
     assert observed[0].reference_hash is None
+
+
+def test_stock_recognition_without_local_reference_and_modified_rejection(tmp_path, monkeypatch):
+    """Recognition alone never skips a needed export; changed values lose identity."""
+    source = tmp_path / 'embedded.safetensors'
+    weight = torch.arange(4, dtype=torch.float32).reshape(2, 2)
+    save_file({'first_stage_model.decoder.weight': weight}, source)
+    from component_extract import _component_hash, _tensor_hash
+    fingerprint = _component_hash({'decoder.weight': _tensor_hash(weight)})
+    monkeypatch.setitem(component_extract.STOCK_COMPONENTS, 'vae', {
+        'variants': [{'component_hash': fingerprint, 'label': 'verified fixture FP32'}]})
+    item = analyze_components(source, components=('vae',))[0]
+    assert item.stock_match == 'verified fixture FP32' and not item.has_reference
+    assert item.status == 'recognized stock: verified fixture FP32'
+    exported = extract_components(source, extract_vae=True, extract_clip_l=False,
+                                  extract_clip_g=False, reuse_identical=True)
+    assert not exported[0].reused
+    assert load_file(exported[0].path)['decoder.weight'].equal(weight)
+    save_file({'first_stage_model.decoder.weight': weight + 1}, source)
+    assert analyze_components(source, components=('vae',))[0].stock_match is None
+
+
+def test_diffusers_vae_reference_matches_embedded_ldm_layout(tmp_path):
+    source = tmp_path / 'model.safetensors'
+    attention = torch.arange(4, dtype=torch.float32).reshape(2, 2)
+    save_file({'first_stage_model.decoder.mid.attn_1.q.weight': attention[:, :, None, None],
+               'first_stage_model.decoder.up.3.block.0.nin_shortcut.weight': attention.clone()}, source)
+    reference = tmp_path / 'vae' / 'sdxlVAE.safetensors'
+    reference.parent.mkdir()
+    save_file({'decoder.mid_block.attentions.0.to_q.weight': attention,
+               'decoder.up_blocks.0.resnets.0.conv_shortcut.weight': attention.clone()}, reference)
+    item = analyze_components(source, components=('vae',))[0]
+    assert item.is_exact_standard and item.component_hash == item.reference_hash
+    reused = extract_components(source, extract_vae=True, extract_clip_l=False,
+                                extract_clip_g=False, reuse_identical=True)
+    assert reused[0].reused
