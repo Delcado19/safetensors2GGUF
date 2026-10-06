@@ -1,7 +1,7 @@
 # React workbench migration
 
 The React/TypeScript/Vite frontend and FastAPI backend now cover diffusion
-models and text encoders. All conversion workflows use the existing algorithms
+models, text encoders, extraction and GGUF repair. Workflows use existing algorithms
 and atomic output writers.
 The classic Gradio frontend remains available during migration.
 
@@ -37,10 +37,45 @@ changing the development API port).
   native modal focus management, reduced motion/transparency and contrast support.
 - Advanced executable, thread, intermediate-file and overwrite settings.
 
-Component extraction, repair tools, Hugging Face downloads, and the interactive
+Hugging Face downloads and the interactive
 support matrix remain in `uv run python gui.py`.
 They are the next migration milestones, not removed functionality. INT4 ConvRot
 is still excluded from the production format registry.
+
+## Extraction and repair
+
+Open **Extract & repair**, choose an operation, and select a local source:
+
+| Operation | Source | Destination / behavior |
+| --- | --- | --- |
+| Extract components | SDXL safetensors checkpoint | Selected VAE to `vae/`, CLIP-L/G to `clip/` under the models root |
+| Compare components | SDXL safetensors checkpoint | Read-only comparison against `vae/sdxlVAE.safetensors`, `clip/clip_l.safetensors`, `clip/clip_g.safetensors` |
+| Extract diffusion model | Safetensors checkpoint | Existing conversion filters diffusion keys and writes to `diffusion_models/` |
+| Repair pad tokens | Older Lumina2 GGUF | Reshape 1D `x_pad_token` / `cap_pad_token` to `[1, D]` in a separate GGUF |
+| Restore 5D tensors | Quantized GGUF | Insert original sidecar tensors as F32 in a separate GGUF |
+
+The models root defaults to the nearest ancestor named `models`, otherwise the
+checkpoint's directory. Repair defaults to `<source-stem>-fixed.gguf`; a supplied
+output folder uses the same filename. 5D restoration accepts an optional explicit
+safetensors sidecar, otherwise uses the existing GGUF-metadata/legacy fallback.
+Diffusion GGUF K-quants require the detected llama-quantize executable; set up the
+converter through the existing installation guide if it is unavailable.
+
+`POST /api/tools` accepts `operation`, `source`, `destination`, `overwrite`,
+`components` (`vae`, `clip_l`, `clip_g`), optional `sidecar`, and diffusion
+`container` / `format`. It returns the same 202 job snapshots as `/api/jobs` and
+uses the same token/origin checks and one-worker limit. Comparison results are
+structured under `result`; component paths appear in `outputs` as they publish.
+Component export/comparison has no backend percentage callback, so active jobs
+show **Working**. Comparison is local reference evidence, not image-quality proof.
+
+All selected component destinations are preflighted before export. Each component
+is written to a sibling temporary file and published atomically. Cancellation or
+failure preserves the source and existing uncommitted outputs; previously
+published components remain and are shown in the job result. The set of components
+is deliberately not one transaction. Cancellation is checked between tensors
+and before publication; loading/comparing/writing one large tensor may delay it.
+Repair reuses the existing GGUF writers and their cooperative cancellation.
 
 ## Text-encoder workflow
 
@@ -125,7 +160,7 @@ runtime success is claimed from cross-platform source code alone.
 
 ### Verified milestone results
 
-On Windows, all 451 Python tests and Ruff pass, and TypeScript/Vite build
+On Windows, all 457 Python tests and Ruff pass, and TypeScript/Vite build
 successfully. Chromium verifies a real synthetic FP8_MIXED conversion, file
 selection, activity, format guide, both themes, 1440/768/390 px viewports,
 Escape/focus restoration, reduced-motion mode and actual 200% input text scaling.
@@ -136,6 +171,14 @@ cancellation are tested with a mocked encoder worker; existing encoder tests
 cover its converter contract. No new end-to-end llama.cpp conversion or ComfyUI
 render was performed for this UI migration. No browser page errors were observed.
 CI also builds the frontend with Node 22.
+
+The extraction/repair milestone additionally verifies real synthetic component
+exports and reference comparison, diffusion extraction to a newly created models
+root, pad-token shape/value repair, and 5D sidecar insertion through the API.
+Regression checks cover cross-tool concurrency, cancellation, preflight conflicts,
+source aliases and atomic component publication. Chromium exercises component
+export/comparison and both GGUF repairs, including file browsing and mobile layout.
+These are orchestration/file-format checks; no new ComfyUI render is claimed.
 
 With the API already running, replay the browser check with:
 
@@ -151,7 +194,7 @@ browser verification, not a complete screen-reader or assistive-technology audit
 
 ## Next milestones
 
-1. Extraction, repair and Hugging Face workflows with explicit job adapters.
+1. Hugging Face download workflow.
 2. Interactive compatibility matrix and release packaging.
 3. Linux runtime verification before replacing the classic launcher by default.
 

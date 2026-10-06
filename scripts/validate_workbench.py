@@ -9,6 +9,8 @@ import uuid
 from pathlib import Path
 
 import torch
+import gguf
+import numpy as np
 from playwright.sync_api import sync_playwright, expect
 from safetensors.torch import save_file
 
@@ -101,9 +103,59 @@ def main():
         page.set_viewport_size({'width': 390, 'height': 844})
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
         page.screenshot(path=str(root / 'text-encoder-mobile.png'), full_page=True)
+
+        checkpoint = root / f'embedded-{uuid.uuid4().hex}.safetensors'
+        save_file({'first_stage_model.decoder.weight': torch.ones(2, 2),
+                   'conditioner.embedders.0.transformer.text_model.embeddings.token_embedding.weight': torch.ones(2, 2),
+                   'conditioner.embedders.1.model.token_embedding.weight': torch.ones(2, 2)}, str(checkpoint))
+        tools_root = root / f'models-{uuid.uuid4().hex}'
+        page.set_viewport_size({'width': 1440, 'height': 1100})
+        page.get_by_role('button', name='Extract & repair', exact=True).click()
+        page.get_by_label('Source checkpoint').fill(str(checkpoint))
+        page.get_by_label('ComfyUI models root').fill(str(tools_root))
+        page.get_by_label('VAE', exact=True).check()
+        page.get_by_role('button', name='Extract components', exact=True).click()
+        expect(page.locator('.job-panel .output-path')).to_contain_text(checkpoint.stem + '-clip_g', timeout=30000)
+        assert (tools_root / 'vae' / f'{checkpoint.stem}-vae.safetensors').is_file()
+        page.get_by_label('Operation').select_option('analyze')
+        page.get_by_label('ComfyUI models root').fill(str(tools_root))
+        page.get_by_role('button', name='Compare components', exact=True).click()
+        page.get_by_role('heading', name='Comparison complete').wait_for(timeout=30000)
+        expect(page.locator('.component-results')).to_contain_text('no local reference')
+        page.screenshot(path=str(root / 'tools-desktop.png'), full_page=True)
+        page.set_viewport_size({'width': 390, 'height': 844})
+        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+        page.screenshot(path=str(root / 'tools-mobile.png'), full_page=True)
+
+        repair_source = root / f'pad-tokens-{uuid.uuid4().hex}.gguf'
+        writer = gguf.GGUFWriter(path=None, arch='lumina2')
+        writer.add_tensor('x_pad_token', np.arange(4, dtype=np.float32))
+        writer.write_header_to_file(path=str(repair_source))
+        writer.write_kv_data_to_file()
+        writer.write_tensors_to_file(progress=False)
+        writer.close()
+        page.get_by_label('Operation').select_option('pad_tokens')
+        page.get_by_role('button', name='Browse tool source').click()
+        page.get_by_label('Folder path').fill(str(root))
+        page.get_by_role('button', name='Go', exact=True).click()
+        page.locator('.file-entry').filter(has_text=repair_source.name).click()
+        page.get_by_role('button', name='Repair pad tokens', exact=True).click()
+        expect(page.locator('.job-panel .output-path')).to_contain_text(repair_source.stem + '-fixed.gguf', timeout=30000)
+        repaired = root / f'{repair_source.stem}-fixed.gguf'
+        assert gguf.GGUFReader(str(repaired)).tensors[0].data.shape == (1, 4)
+        page.screenshot(path=str(root / 'repair-mobile.png'), full_page=True)
+        sidecar = root / f'{repair_source.name}.5d.safetensors'
+        save_file({'restored.weight': torch.ones(1, 2, 3, 4, 5)}, str(sidecar))
+        page.get_by_label('Operation').select_option('restore_5d')
+        restored = root / f'restored-{uuid.uuid4().hex}.gguf'
+        page.get_by_label('Output GGUF or folder').fill(str(restored))
+        page.get_by_role('button', name='Restore 5D tensors', exact=True).click()
+        expect(page.locator('.job-panel .output-path')).to_contain_text(restored.name, timeout=30000)
+        assert any(len(tensor.shape) == 5 for tensor in gguf.GGUFReader(str(restored)).tensors)
         assert not errors, errors
         print(json.dumps({'browser': 'Chromium', 'conversion': 'FP8_MIXED succeeded',
                           'text_encoder': 'F16_ST succeeded',
+                          'tools': 'components, comparison, pad repair and 5D restoration succeeded',
                           'viewport_checks': [1440, 768, 390], 'page_errors': errors,
                           'artifacts': str(root)}))
         browser.close()

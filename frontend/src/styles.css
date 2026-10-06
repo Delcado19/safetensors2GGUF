@@ -1112,12 +1112,15 @@ input[type="checkbox"] {
     display: none;
   }
   .sidebar nav {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     margin-top: 18px;
     gap: 6px;
   }
   .nav-item {
-    padding: 0 10px;
+    flex-direction: column;
+    padding: 8px 4px;
+    gap: 5px;
     font-size: 0.78571rem;
     min-height: 40px;
     justify-content: center;
@@ -1223,6 +1226,44 @@ input[type="checkbox"] {
 }
 
 /* Compact desktop actions retain full touch targets on coarse pointers. */
+.path-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.path-field input {
+  min-width: 0;
+  flex: 1;
+}
+.path-field button {
+  flex-shrink: 0;
+}
+.tool-components {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 20px;
+}
+.tool-overwrite {
+  margin: 24px 0;
+}
+.component-results {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+  text-align: left;
+}
+.component-results > div {
+  display: grid;
+  gap: 6px;
+}
+.component-results small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.job-panel .output-path {
+  white-space: pre-line;
+}
 @media (pointer: coarse) {
   button,
   summary {

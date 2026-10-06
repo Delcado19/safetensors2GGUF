@@ -6,6 +6,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Extraction and repair in the React workbench
+- Add: Extract & repair workspace for SDXL component export/local comparison,
+  diffusion extraction, Lumina2 pad-token repair and 5D sidecar restoration.
+- Change: Tool jobs share conversion history, cancellation and the single-worker
+  limit; completed component paths remain visible after partial cancellation.
+- Fix: Component extraction preflights selected outputs and publishes each file
+  atomically, preserving existing outputs on cancellation or writer failure.
+- Add: Real API/browser extraction and GGUF repair checks, overwrite/source guards,
+  cross-tool concurrency and atomic cancellation regression coverage.
+
 ### Text encoders in the React workbench
 - Add: Text-encoder mode with separate GGUF/safetensors format registries,
   original-base repo override, loader guidance and shared job cancellation/history.

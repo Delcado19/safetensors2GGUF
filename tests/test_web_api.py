@@ -9,6 +9,9 @@ from safetensors.torch import save_file
 from safetensors import safe_open
 
 import web_api
+import gguf
+import numpy as np
+from safetensors.torch import load_file
 
 
 def _client():
@@ -37,6 +40,111 @@ def _wait(client, job_id):
             return state
         time.sleep(.02)
     pytest.fail('Conversion worker did not finish')
+
+
+def test_component_tools_roundtrip_and_guards(tmp_path):
+    """Export real components, compare a local reference, and reject bad inputs."""
+    client = _client()
+    source = tmp_path / 'embedded.safetensors'
+    tensor = torch.arange(4, dtype=torch.float32).reshape(2, 2)
+    save_file({'first_stage_model.decoder.weight': tensor,
+               'conditioner.embedders.0.transformer.text_model.embeddings.token_embedding.weight': tensor.clone()}, str(source))
+    root = tmp_path / 'models'
+    params = {'operation': 'components', 'source': str(source), 'destination': str(root),
+              'components': ['vae', 'clip_l']}
+    response = client.post('/api/tools', json=params)
+    assert response.status_code == 202, response.text
+    state = _wait(client, response.json()['id'])
+    assert state['status'] == 'succeeded', state
+    assert len(state['outputs']) == 2
+    assert torch.equal(load_file(root / 'vae' / 'embedded-vae.safetensors')['decoder.weight'], tensor)
+    assert torch.equal(load_file(root / 'clip' / 'embedded-clip_l.safetensors')['text_model.embeddings.token_embedding.weight'], tensor)
+    assert client.post('/api/tools', json={**params, 'components': []}).status_code == 400
+    assert client.post('/api/tools', json={**params, 'components': ['invalid']}).status_code == 422
+    assert client.post('/api/tools', json=params, headers={'X-Workbench-Token': ''}).status_code == 403
+    assert client.post('/api/tools', json={**params, 'destination': str(source)}).status_code == 400
+    response = client.post('/api/tools', json=params)
+    assert _wait(client, response.json()['id'])['status'] == 'failed'
+    save_file({'decoder.weight': tensor}, str(root / 'vae' / 'sdxlVAE.safetensors'))
+    response = client.post('/api/tools', json={**params, 'operation': 'analyze'})
+    state = _wait(client, response.json()['id'])
+    assert state['status'] == 'succeeded', state
+    assert state['result'][0]['status'] == 'matches local standard'
+    assert state['result'][1]['status'] == 'no local reference'
+
+
+@pytest.mark.parametrize('operation', ['pad_tokens', 'restore_5d'])
+def test_real_repair_tools(tmp_path, operation):
+    """Repair real GGUF shapes/sidecars without changing source bytes."""
+    client = _client()
+    source = tmp_path / 'source.gguf'
+    writer = gguf.GGUFWriter(path=None, arch='lumina2')
+    writer.add_tensor('x_pad_token', np.arange(4, dtype=np.float32))
+    writer.add_tensor('ordinary.weight', np.ones((2, 2), dtype=np.float32))
+    writer.write_header_to_file(path=str(source))
+    writer.write_kv_data_to_file()
+    writer.write_tensors_to_file(progress=False)
+    writer.close()
+    original = source.read_bytes()
+    sidecar = tmp_path / 'source.gguf.5d.safetensors'
+    save_file({'restored.weight': torch.ones(1, 2, 3, 4, 5)}, str(sidecar))
+    params = {'operation': operation, 'source': str(source)}
+    response = client.post('/api/tools', json=params)
+    assert response.status_code == 202, response.text
+    state = _wait(client, response.json()['id'])
+    assert state['status'] == 'succeeded', state
+    reader = gguf.GGUFReader(state['output'])
+    tensors = {item.name: item for item in reader.tensors}
+    if operation == 'pad_tokens':
+        assert tensors['x_pad_token'].data.shape == (1, 4)
+        np.testing.assert_array_equal(tensors['x_pad_token'].data, np.arange(4).reshape(1, 4))
+    else:
+        assert len(tensors['restored.weight'].shape) == 5
+        assert tensors['restored.weight'].tensor_type == gguf.GGMLQuantizationType.F32
+    np.testing.assert_array_equal(tensors['ordinary.weight'].data, np.ones((2, 2)))
+    assert source.read_bytes() == original
+    assert client.post('/api/tools', json=params).status_code == 400
+    assert client.post('/api/tools', json={**params, 'destination': str(source), 'overwrite': True}).status_code == 400
+    assert client.post('/api/tools', json={**params, 'destination': str(sidecar)}).status_code == 400
+    if operation == 'restore_5d':
+        assert client.post('/api/tools', json={**params, 'destination': str(tmp_path / 'new.gguf'), 'sidecar': str(tmp_path / 'missing.safetensors')}).status_code == 400
+
+
+def test_diffusion_extraction_uses_existing_pipeline(tmp_path):
+    """Checkpoint diffusion extraction writes into the loader's expected folder."""
+    client = _client()
+    source = _source(tmp_path)
+    weights = {'model.diffusion_model.' + key: value.clone() for key, value in load_file(source).items()}
+    weights['first_stage_model.decoder.weight'] = torch.ones(2, 2)
+    save_file(weights, str(source))
+    response = client.post('/api/tools', json={'operation': 'diffusion', 'source': str(source),
+        'destination': str(tmp_path / 'models'), 'container': 'safetensors', 'format': 'F16'})
+    assert response.status_code == 202, response.text
+    state = _wait(client, response.json()['id'])
+    assert state['status'] == 'succeeded', state
+    assert 'diffusion_models' in state['output']
+    exported = load_file(state['output'])
+    assert exported
+    assert not any(key.startswith(('model.diffusion_model.', 'first_stage_model.')) for key in exported)
+
+
+def test_tools_share_concurrency_and_cancel(tmp_path, monkeypatch):
+    """Tool workers participate in the same lock/cancellation contract as conversion."""
+    client = _client()
+    source = _source(tmp_path)
+    entered = threading.Event()
+    def blocked(*args, cancel_event, **kwargs):
+        entered.set()
+        assert cancel_event.wait(5)
+        raise web_api.ConversionCancelled()
+    monkeypatch.setattr(web_api, 'analyze_components', blocked)
+    response = client.post('/api/tools', json={'operation': 'analyze', 'source': str(source)})
+    assert response.status_code == 202
+    assert entered.wait(5)
+    assert response.json()['indeterminate']
+    assert client.post('/api/jobs', json={'source': str(source), 'container': 'safetensors', 'format': 'F16'}).status_code == 409
+    client.post(f"/api/jobs/{response.json()['id']}/cancel", json={})
+    assert _wait(client, response.json()['id'])['status'] == 'cancelled'
 
 
 def test_session_origin_and_file_browser(tmp_path):

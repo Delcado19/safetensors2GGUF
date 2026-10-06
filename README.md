@@ -65,8 +65,10 @@ uv run python web_api.py
 ```
 
 Open http://127.0.0.1:8765. Node/npm is needed for the frontend build, not normal
-operation. The classic `uv run python gui.py` interface still provides the other
-tools. See [migration scope and validation](docs/web-workbench.md).
+operation. **Extract & repair** provides SDXL VAE/CLIP export and local reference
+comparison, diffusion extraction, GGUF pad-token repair and 5D restoration.
+The classic `uv run python gui.py` interface still provides Hugging Face downloads
+and the interactive support matrix. See [migration scope and validation](docs/web-workbench.md).
 
 ### Python environment
 

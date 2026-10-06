@@ -9,6 +9,8 @@ from typing import Callable
 import torch
 from safetensors import safe_open
 from safetensors.torch import save_file
+from conversion_io import atomic_output, validate_output
+from convert import ConversionCancelled
 
 
 SDXL_COMPONENTS = ("vae", "clip_l", "clip_g")
@@ -181,8 +183,9 @@ def analyze_components(
     checkpoint_path: str | Path,
     models_root: str | Path | None = None,
     components: tuple[str, ...] = SDXL_COMPONENTS,
+    cancel_event=None,
 ) -> list[ComponentAnalysis]:
-    """Analyze embedded SDXL components and compare them to local references."""
+    """Compare embedded SDXL components to local references; cancel between tensors."""
 
     checkpoint = Path(checkpoint_path)
     root = Path(models_root) if models_root else default_output_root(checkpoint)
@@ -191,6 +194,8 @@ def analyze_components(
     with safe_open(str(checkpoint), framework="pt", device="cpu") as source:
         source_keys = list(source.keys())
         for component in components:
+            if cancel_event is not None and cancel_event.is_set():
+                raise ConversionCancelled()
             mapping = _component_mapping(source_keys, component)
             reference = _component_reference_path(root, component)
             reference_path = str(reference) if reference.is_file() else None
@@ -207,6 +212,8 @@ def analyze_components(
                     ref_keys = set(ref.keys())
                     reference_tensors = len(ref_keys)
                     for dst_key, (src_key, transform) in mapping.items():
+                        if cancel_event is not None and cancel_event.is_set():
+                            raise ConversionCancelled()
                         if dst_key not in ref_keys:
                             missing_reference += 1
                             continue
@@ -297,8 +304,16 @@ def extract_components(
     extract_clip_g: bool = True,
     overwrite: bool = False,
     on_log=None,
+    cancel_event=None,
+    on_output=None,
 ) -> list[ExtractedComponent]:
-    """Extract selected embedded SDXL components into a ComfyUI models folder."""
+    """Export components atomically; cancellation preserves already published files.
+
+    The selected set is preflighted before writing. Each component is a separate
+    transaction, so a later cancellation does not roll back completed exports.
+    ``on_output(path)`` receives each published path; ``cancel_event`` is checked
+    between tensors and before publication. Returns the completed components.
+    """
 
     checkpoint = Path(checkpoint_path)
     root = Path(models_root) if models_root else default_output_root(checkpoint)
@@ -315,9 +330,18 @@ def extract_components(
         while stem.suffix:
             stem = stem.with_suffix("")
 
+        # Preflight the whole selection so an existing later output cannot cause
+        # an avoidable partial export. Atomic publication also guards races.
+        for component, enabled in selected:
+            if enabled and _component_mapping(keys, component):
+                validate_output(checkpoint, _component_output_dir(root, component) /
+                                f"{stem.name}-{component}.safetensors", overwrite)
+
         for component, enabled in selected:
             if not enabled:
                 continue
+            if cancel_event is not None and cancel_event.is_set():
+                raise ConversionCancelled()
             mapping = _component_mapping(keys, component)
             if not mapping:
                 if on_log:
@@ -330,11 +354,15 @@ def extract_components(
             if output_path.exists() and not overwrite:
                 raise OSError(f"Output exists and overwrite is disabled: {output_path}")
 
-            tensors = {
-                dst_key: transform(source.get_tensor(src_key)).contiguous()
-                for dst_key, (src_key, transform) in sorted(mapping.items())
-            }
-            save_file(tensors, str(output_path))
+            tensors = {}
+            for dst_key, (src_key, transform) in sorted(mapping.items()):
+                if cancel_event is not None and cancel_event.is_set():
+                    raise ConversionCancelled()
+                tensors[dst_key] = transform(source.get_tensor(src_key)).contiguous()
+            with atomic_output(output_path, overwrite) as temporary:
+                save_file(tensors, temporary)
+                if cancel_event is not None and cancel_event.is_set():
+                    raise ConversionCancelled()
             written.append(
                 ExtractedComponent(
                     name=component,
@@ -342,6 +370,8 @@ def extract_components(
                     tensors=len(tensors),
                 )
             )
+            if on_output:
+                on_output(str(output_path))
             if on_log:
                 on_log(f"wrote {component}: {output_path} ({len(tensors)} tensors)")
 
