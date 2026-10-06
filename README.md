@@ -71,8 +71,11 @@ comparison, diffusion extraction, GGUF pad-token repair and 5D restoration.
 folder, and downloads/merges its safetensors shards into one local file. Downloads
 share job history/cancellation and use server-side `HF_TOKEN`,
 `CODEX_HUGGINGFACE_API_KEY`, or a stored Hub login for restricted repositories.
-The classic `uv run python gui.py` interface still provides the interactive support
-matrix. See [migration scope and validation](docs/web-workbench.md).
+**Format guide** includes the interactive diffusion/text-encoder support matrix,
+model search, evidence filters and visible compatibility explanations. Select a
+cell to review it, then **Use format** to prepare a conversion. Known unsupported
+combinations cannot be applied from the matrix. The classic Gradio interface
+remains available as an alternative. See [migration scope and validation](docs/web-workbench.md).
 
 ### Python environment
 

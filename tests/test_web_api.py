@@ -12,6 +12,7 @@ import web_api
 import hf_download
 from types import SimpleNamespace
 import shutil
+import model_support
 from pathlib import Path
 import gguf
 import numpy as np
@@ -44,6 +45,24 @@ def _wait(client, job_id):
             return state
         time.sleep(.02)
     pytest.fail('Conversion worker did not finish')
+
+
+def test_support_matrix_uses_shared_classifications_and_reasons():
+    """The workbench exposes the existing support registry, including negative evidence."""
+    client = _client()
+    response = client.get('/api/support')
+    assert response.status_code == 200
+    data = response.json()
+    assert data['diffusion']['rows'] == model_support.build_support_table()
+    assert data['text_encoder']['rows'] == model_support.build_text_encoder_support_table()
+    assert data['diffusion']['formats'] == [key for _, key in model_support.TABLE_FORMATS]
+    assert data['text_encoder']['formats'] == [key for _, key in model_support.TEXT_ENCODER_TABLE_FORMATS]
+    clip = next(row for row in data['text_encoder']['rows'] if row['family'] == 'clip-l')
+    assert clip['GGUF'] == 'bad' and clip['GGUF__reason']
+    assert clip['F16'] == 'verified'
+    assert 'INT4_CONVROT' not in str(data)
+    assert client.get('/api/support', headers={'X-Workbench-Token': ''}).status_code == 403
+    assert client.get('/api/support', headers={'Origin': 'https://evil.example'}).status_code == 403
 
 
 def test_hf_metadata_and_real_merge_through_api(tmp_path, monkeypatch):

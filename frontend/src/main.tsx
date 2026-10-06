@@ -27,6 +27,7 @@ import {
 import "./styles.css";
 import { ToolForm } from "./ToolForm";
 import { HuggingFaceForm } from "./HuggingFaceForm";
+import { SupportMatrix } from "./SupportMatrix";
 
 type Container = "gguf" | "safetensors";
 type Config = {
@@ -118,6 +119,7 @@ function App() {
   const [toolSource, setToolSource] = useState("");
   const [toolDestination, setToolDestination] = useState("");
   const [downloadDestination, setDownloadDestination] = useState("");
+  const [supportSelection, setSupportSelection] = useState("");
   const [container, setContainer] = useState<Container>("gguf");
   const [format, setFormat] = useState("Q4_K_M");
   const [profile, setProfile] = useState("auto");
@@ -474,6 +476,12 @@ function App() {
                 <X size={17} />
               </button>
             </div>
+          )}
+          {view === "convert" && supportSelection && (
+            <p className="encoder-note" role="status">
+              {supportSelection} Choose a matching source model before
+              converting.
+            </p>
           )}
           {(view === "convert" || view === "tools" || view === "download") && (
             <div className="work-grid">
@@ -1112,56 +1120,87 @@ function App() {
             </section>
           )}
           {view === "guide" && (
-            <section className="guide-panel">
-              <div className="guide-feature">
-                <Box size={32} />
-                <h2>GGUF</h2>
-                <p>
-                  Use with the ComfyUI-GGUF loader. Q4_K_M is a practical
-                  starting point; higher-bit formats retain more precision.
-                  K-quants require llama-quantize.
-                </p>
-              </div>
-              <div className="guide-feature">
-                <Layers3 size={32} />
-                <h2>Safetensors</h2>
-                <p>
-                  Load with ComfyUI's native model loader. Mixed formats
-                  preserve sensitive tensors at higher precision. FP8 and INT8
-                  may offer little saving when the source is already FP8.
-                </p>
-              </div>
-              <div className="guide-callout">
-                <ShieldCheck size={22} />
-                <div>
-                  <h2>Compatibility is model-specific.</h2>
+            <>
+              {config && (
+                <SupportMatrix
+                  api={api}
+                  busy={busy || submitting}
+                  choose={(kind, key, name, classification) => {
+                    // GGUF groups all precisions; encoder F16 means safetensors.
+                    const target =
+                      key === "GGUF"
+                        ? "Q4_K_M"
+                        : kind === "text_encoder" && key === "F16"
+                          ? "F16_ST"
+                          : key;
+                    setModelKind(kind);
+                    setContainer(key === "GGUF" ? "gguf" : "safetensors");
+                    setFormat(target);
+                    setDestination("");
+                    setBaseRepo("");
+                    setProfile("auto");
+                    setSupportSelection(
+                      `${name} · ${key.replace("_MIXED", " mixed")} · ${classification}.`,
+                    );
+                    setView("convert");
+                    requestAnimationFrame(() =>
+                      document.getElementById("model-kind")?.focus(),
+                    );
+                  }}
+                />
+              )}
+              <section className="guide-panel">
+                <div className="guide-feature">
+                  <Box size={32} />
+                  <h2>GGUF</h2>
                   <p>
-                    Lower precision can change images. NVFP4 has specific
-                    hardware requirements; INT4 ConvRot remains experimental and
-                    is not offered here. Check the repository's model-support
-                    documentation before choosing a format.
-                  </p>
-                  <a
-                    href="https://github.com/Delcado19/safetensors2GGUF#supported-models"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Read model support
-                    <ArrowRight size={15} />
-                  </a>
-                </div>
-              </div>
-              <div className="guide-callout">
-                <Settings2 size={22} />
-                <div>
-                  <h2>More tools remain in the classic interface.</h2>
-                  <p>
-                    The interactive compatibility matrix remains available
-                    through gui.py while migration continues.
+                    Use with the ComfyUI-GGUF loader. Q4_K_M is a practical
+                    starting point; higher-bit formats retain more precision.
+                    K-quants require llama-quantize.
                   </p>
                 </div>
-              </div>
-            </section>
+                <div className="guide-feature">
+                  <Layers3 size={32} />
+                  <h2>Safetensors</h2>
+                  <p>
+                    Load with ComfyUI's native model loader. Mixed formats
+                    preserve sensitive tensors at higher precision. FP8 and INT8
+                    may offer little saving when the source is already FP8.
+                  </p>
+                </div>
+                <div className="guide-callout">
+                  <ShieldCheck size={22} />
+                  <div>
+                    <h2>Compatibility is model-specific.</h2>
+                    <p>
+                      Lower precision can change images. NVFP4 has specific
+                      hardware requirements; INT4 ConvRot remains experimental
+                      and is not offered here. Check the repository's
+                      model-support documentation before choosing a format.
+                    </p>
+                    <a
+                      href="https://github.com/Delcado19/safetensors2GGUF#supported-models"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Read model support
+                      <ArrowRight size={15} />
+                    </a>
+                  </div>
+                </div>
+                <div className="guide-callout">
+                  <Settings2 size={22} />
+                  <div>
+                    <h2>Choose with evidence.</h2>
+                    <p>
+                      Explore diffusion models and text encoders below. Unknown
+                      combinations remain untested; known problem combinations
+                      include their available explanation.
+                    </p>
+                  </div>
+                </div>
+              </section>
+            </>
           )}
           <footer className="page-footer">
             <span>Built for your next creation.</span>

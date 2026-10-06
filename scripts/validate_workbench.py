@@ -6,6 +6,7 @@ Writes small synthetic models and screenshots under the ignored
 import argparse
 import json
 import uuid
+import re
 from pathlib import Path
 
 import torch
@@ -200,11 +201,55 @@ def main():
                 assert len(checkpoint.keys()) > 0
             assert not (download_root / '.hf_download_hf-internal-testing_tiny-random-bert').exists()
             page.screenshot(path=str(root / 'huggingface-success-mobile.png'), full_page=True)
+        page.set_viewport_size({'width': 1440, 'height': 1100})
+        page.get_by_role('button', name='Format guide', exact=True).click()
+        page.get_by_role('heading', name='Compatibility, in view.').wait_for()
+        expect(page.locator('.support-table tbody tr')).not_to_have_count(0)
+        page.get_by_label('Find a model').fill('no-such-family')
+        expect(page.get_by_text('No matching model families. Try another name or evidence filter.')).to_be_visible()
+        page.get_by_label('Model category').select_option('text_encoder')
+        page.get_by_label('Find a model').fill('clip-l')
+        expect(page.locator('.support-table tbody tr')).to_have_count(1)
+        page.get_by_role('button', name=re.compile(r', GGUF: Not supported$')).click()
+        detail = page.get_by_role('region', name='Selected compatibility details')
+        expect(detail).to_contain_text('CLIPModel')
+        expect(detail.get_by_role('button', name='Use format')).to_be_disabled()
+        page.get_by_role('button', name=re.compile(r', F16: Verified$')).click()
+        detail.get_by_role('button', name='Use format').focus()
+        page.keyboard.press('Enter')
+        expect(page.get_by_label('Model type')).to_have_value('text_encoder')
+        expect(page.get_by_label('Quantization')).to_have_value('F16_ST')
+        expect(page.get_by_label('Model type')).to_be_focused()
+        page.get_by_role('button', name='Format guide', exact=True).click()
+        page.get_by_label('Model category').select_option('text_encoder')
+        page.get_by_label('Find a model').fill('qwen3-4b')
+        page.get_by_role('button', name=re.compile(r', GGUF: Verified$')).click()
+        page.get_by_role('button', name='Use format').click()
+        expect(page.get_by_label('Quantization')).to_have_value('Q4_K_M')
+        page.get_by_role('button', name='Format guide', exact=True).click()
+        page.get_by_label('Find a model').fill('lumina2')
+        page.get_by_label('Evidence filter').select_option('unknown')
+        expect(page.get_by_text('No matching model families. Try another name or evidence filter.')).to_be_visible()
+        page.get_by_label('Evidence filter').select_option('all')
+        page.get_by_role('button', name=re.compile(r', INT8 mixed: Verified$')).click()
+        for width in (1440, 768, 390):
+            page.set_viewport_size({'width': width, 'height': 1100})
+            assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+        page.evaluate('scrollTo(0, 0)')
+        page.screenshot(path=str(root / 'support-mobile.png'), full_page=True)
+        page.set_viewport_size({'width': 1440, 'height': 1100})
+        page.screenshot(path=str(root / 'support-desktop.png'), full_page=True)
+        page.get_by_role('button', name='Dark appearance').click()
+        page.screenshot(path=str(root / 'support-dark.png'), full_page=True)
+        page.get_by_role('button', name='Use format').click()
+        expect(page.get_by_label('Model type')).to_have_value('diffusion')
+        expect(page.get_by_label('Quantization')).to_have_value('INT8_MIXED')
         assert not errors, errors
         print(json.dumps({'browser': 'Chromium', 'conversion': 'FP8_MIXED succeeded',
                           'text_encoder': 'F16_ST succeeded',
                           'tools': 'components, comparison, pad repair and 5D restoration succeeded',
                           'huggingface': 'live tiny-random-bert download succeeded' if args.hf_live else 'not requested',
+                          'support_matrix': 'filters, reasons, blocked combinations and form mappings passed',
                           'viewport_checks': [1440, 768, 390], 'page_errors': errors,
                           'artifacts': str(root)}))
         browser.close()

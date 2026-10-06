@@ -6,6 +6,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Compatibility matrix in the React workbench
+- Add: Searchable diffusion/text-encoder matrix in Format guide, reusing the
+  existing support registry and reasons through a protected read-only API.
+- Add: Evidence filters, keyboard/touch-accessible detail cells, sticky model
+  names and horizontally scrollable native tables for narrow screens.
+- Add: Explicit format handoff to conversion (GGUF to Q4_K_M; encoder F16 to
+  F16_ST), blocking known unsupported combinations without starting a job.
+- Add: API registry parity/security and Chromium filter/reason/format mapping checks.
+
 ### Hugging Face in the React workbench
 - Add: Hugging Face workspace with on-demand repository inspection, explicit
   checkpoint-folder selection, shard counts/sizes and commit-pinned downloads.

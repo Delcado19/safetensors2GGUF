@@ -37,9 +37,42 @@ changing the development API port).
   native modal focus management, reduced motion/transparency and contrast support.
 - Advanced executable, thread, intermediate-file and overwrite settings.
 
-The interactive support matrix remains in `uv run python gui.py`.
-It is a remaining migration milestone, not removed functionality. INT4 ConvRot
-is still excluded from the production format registry.
+The classic Gradio UI remains available as an alternative. INT4 ConvRot is still
+excluded from the production format registry.
+
+## Interactive compatibility matrix
+
+**Format guide** opens the shared project support matrix first, followed by the
+format overview. Choose diffusion models or text encoders, search a public model
+name/internal architecture, and optionally filter by evidence classification.
+The filter retains rows with at least one matching cell; other cells remain
+visible so alternatives can be compared. No matching rows show an explicit
+empty state. Tables use native captions and row/column headers, sticky model
+names, focusable horizontal scrolling and labeled cell buttons.
+
+Select a cell to read its classification and available support reason in a
+visible detail card. The registry's four states remain unchanged: verified,
+caution (visible drift), bad (unsupported/tooling gap or negative render evidence),
+and unknown (untested). Reasons are reused from `model_support.py`; the UI adds no
+new evidence. Verified can reflect render tests or implementation reasoning and
+does not imply every release, quantization level or runtime configuration was
+tested. The matrix omits legacy theoretical savings percentages; estimates
+belong to source inspection. NVFP4 hardware requirements still apply.
+
+**Use format** selects the model category and output container, clears the
+previous destination/base override/profile, and focuses the conversion model
+type. It never starts conversion or identifies the source. The user must choose
+a source matching the selected family. GGUF represents grouped precisions and
+selects Q4_K_M; text-encoder F16 selects `F16_ST` safetensors; other safetensors
+keys pass through unchanged. Known bad combinations disable this handoff, while
+their explanations remain accessible. Unknown/caution selections retain their
+existing classification, not an implied endorsement.
+
+`GET /api/support` uses the existing session token/origin guard and returns
+`diffusion`/`text_encoder` objects with format keys and registry rows/reasons.
+The frontend loads it once per mounted guide, without model loading or network
+requests to upstream model providers. Reopening the guide retries a failed load.
+No new dependency or decorative table/navigation animation was added.
 
 ## Hugging Face downloads
 
@@ -215,7 +248,7 @@ runtime success is claimed from cross-platform source code alone.
 
 ### Verified milestone results
 
-On Windows, all 466 Python tests and Ruff pass, and TypeScript/Vite build
+On Windows, all 467 Python tests and Ruff pass, and TypeScript/Vite build
 successfully. Chromium verifies a real synthetic FP8_MIXED conversion, file
 selection, activity, format guide, both themes, 1440/768/390 px viewports,
 Escape/focus restoration, reduced-motion mode and actual 200% input text scaling.
@@ -243,6 +276,12 @@ checks. The opt-in Chromium check actually downloaded and merged the public
 validated its readable tensors and successful staging cleanup, and checked plan
 invalidation, folder picking and desktop/mobile layouts without page errors.
 
+The matrix milestone verifies API parity with both shared registries and
+token/origin protection. Chromium checks search/empty states, category/evidence
+filters, unsupported CLIP GGUF explanations and disabled handoff, keyboard F16_ST
+handoff/focus, grouped GGUF Q4_K_M and diffusion INT8_MIXED mappings, both themes
+and 1440/768/390 px layouts. These are UI/data-contract checks, not new renders.
+
 With the API already running, replay the browser check with:
 
 ```bash
@@ -259,9 +298,8 @@ browser verification, not a complete screen-reader or assistive-technology audit
 
 ## Next milestones
 
-1. Interactive compatibility matrix.
-2. Accessibility audit, release packaging and launcher integration.
-3. Linux runtime verification before replacing the classic launcher by default.
+1. Accessibility audit, release packaging and launcher integration.
+2. Linux runtime verification before replacing the classic launcher by default.
 
 References: [Vite backend integration](https://vite.dev/guide/backend-integration.html),
 [FastAPI CORS/origin model](https://fastapi.tiangolo.com/tutorial/cors/),
