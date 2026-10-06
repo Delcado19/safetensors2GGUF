@@ -84,7 +84,7 @@ def test_support_matrix_uses_shared_classifications_and_reasons():
     assert data == model_support.build_workbench_support_tables()
     assert len({row['id'] for row in data['diffusion']['rows']}) == len(data['diffusion']['rows'])
     assert len({row['id'] for row in data['text_encoder']['rows']}) == len(data['text_encoder']['rows'])
-    assert [key for key in data['diffusion']['formats'] if key != 'INT4_CONVROT_MIXED'] == [key for _, key in model_support.TABLE_FORMATS]
+    assert data['diffusion']['formats'] == [key for _, key in model_support.TABLE_FORMATS]
     assert data['text_encoder']['formats'] == [key for _, key in model_support.TEXT_ENCODER_TABLE_FORMATS]
     clip = next(row for row in data['text_encoder']['rows'] if row['family'] == 'clip-l')
     assert clip['GGUF'] == 'bad' and clip['GGUF__reason']
@@ -125,12 +125,12 @@ def test_support_matrix_uses_shared_classifications_and_reasons():
     assert prototype not in data['text_encoder']['formats']
     for row in data['diffusion']['rows']:
         assert row[prototype] == ('verified' if row['id'] == 'lumina2_turbo' else 'caution' if row['arch'] == 'sdxl' else 'unknown')
-        assert row[prototype + '__selectable'] == 'false'
+        assert row[prototype + '__selectable'] == 'true'
         assert row[prototype + '__reason']
     sdxl = next(row for row in data['diffusion']['rows'] if row['arch'] == 'sdxl')
     assert 'nine successful' in sdxl[prototype + '__reason']
     assert 'ears, face' in sdxl[prototype + '__reason']
-    assert prototype not in str(client.get('/api/config').json()['formats'])
+    assert prototype in str(client.get('/api/config').json()['formats'])
     assert client.get('/api/support', headers={'X-Workbench-Token': ''}).status_code == 403
     assert client.get('/api/support', headers={'Origin': 'https://evil.example'}).status_code == 403
 
@@ -347,7 +347,7 @@ def test_session_origin_and_file_browser(tmp_path):
     assert client.get('/api/locations', headers={'Origin': 'https://evil.example'}).status_code == 403
 
 
-@pytest.mark.parametrize(('container', 'format_key'), [('safetensors', 'FP8_MIXED'), ('gguf', 'F16')])
+@pytest.mark.parametrize(('container', 'format_key'), [('safetensors', 'FP8_MIXED'), ('safetensors', 'INT4_CONVROT_MIXED'), ('gguf', 'F16')])
 def test_real_conversion_and_inspection(tmp_path, container, format_key):
     """Exercise actual writers, estimates and overwrite protection through HTTP."""
     client = _client()

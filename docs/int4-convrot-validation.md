@@ -111,7 +111,30 @@ ComfyUI's CUDA allocator initialization before importing Kitchen/Torch.
 Neither was an INT4 render failure. No existing server was stopped or restarted.
 
 This establishes native compatibility for this checkpoint, selected precision
-policy and LoRA on this installation. The production format dropdown still has
-no INT4 target; version/dependency guards and cross-family support are separate
-implementation work. The previous blanket statement that full-model
+policy and LoRA on this installation. The production diffusion dropdown now
+offers `INT4_CONVROT_MIXED`. The streaming writer shares eligibility rules with
+size planning, preserves source dtype on fallback, and supports reconversion.
+No additional ComfyUI render tests were run for this integration.
+The previous blanket statement that full-model
 Offload/LoRA evidence was missing is now superseded for SDXL.
+
+## Production storage contract (2026-10-06)
+
+The PyTorch writer reuses the existing regular Hadamard rotation. It emits
+signed [-7,7] codes, low nibble first, packed I8 `[N,K/2]` plus F32 `[N]` scales.
+Metadata uses `format=convrot_w4a4`, rotation 256 and `linear_dtype=int4`;
+Kitchen's fixed quantization group size is 64. Unsupported group/layout metadata
+is rejected on reconversion. Protected and ineligible weights retain source dtype.
+FP16 zero rows receive a representable scale floor to avoid division by zero.
+
+`scripts/check_int4_native.py` compared packing, scales and reconstruction against
+installed Kitchen 0.2.37: identical for FP32, BF16 and FP16 random weights.
+Streaming roundtrip tests cover payload estimation, shape-critical protection,
+unaligned/conv fallback, zero weights and INT4-to-FP16 reconversion.
+These are codec/converter checks, not new model-quality evidence.
+
+The app displays runtime requirements instead of inferring support from a version
+number alone: the target ComfyUI must register `convrot_w4a4` and Kitchen must
+provide `TensorCoreConvRotW4A4Layout`; native compute needs NVIDIA SM 7.5+.
+ComfyUI is a separate environment, so the converter cannot certify its loader
+or GPU from its own Python version. Older incompatible runtimes need updating.

@@ -37,8 +37,8 @@ changing the development API port).
   native modal focus management, reduced motion/transparency and contrast support.
 - Advanced executable, thread, intermediate-file and overwrite settings.
 
-The classic Gradio UI remains available as an alternative. INT4 ConvRot is still
-excluded from the production format registry.
+The classic Gradio UI remains available as an alternative. Native INT4 ConvRot
+mixed precision is offered for diffusion safetensors output.
 
 ## Format names and selection
 
@@ -75,18 +75,20 @@ also distinguishes INT8 storage from the optional rotation procedure.
 Civitai was not directly accessible during this naming review; no exhaustive
 cross-site naming survey is claimed.
 
-The diffusion matrix includes **INT4 + ConvRot / mixed precision** prototype evidence:
-SDXL has visible drift in the tested RealVisXL checkpoint; other models are untested.
+The diffusion matrix includes selectable **INT4 + ConvRot / mixed precision**:
+SDXL has visible drift in the tested RealVisXL checkpoint; ZIT has a scoped
+successful still-life test. Other models remain untested.
 The guide uses the full desktop workspace width. Equal-width centered format
 columns fit at 1366px and wider with normal text sizing; compact displays and
 increased text sizing retain horizontal scrolling rather than shrinking labels.
-Prototype cells show details but cannot apply a conversion target.
+INT4 cells show details and can prepare the native mixed conversion target.
 
-The guide has a separate **INT4 + ConvRot — Prototype / not selectable** card.
-It records the existing one-checkpoint SDXL render/LoRA/offload evidence and
-pending version/model integration. It does not invent production dropdown
-entries or support classifications for untested families. INT8 + ConvRot remains
-the implemented selectable path. ConvRot itself is not a bit width.
+The guide's INT4 card records scoped SDXL render/LoRA/offload and ZIT evidence
+without promoting untested families. It explains required native ComfyUI
+`convrot_w4a4` support, Kitchen `TensorCoreConvRotW4A4Layout` (tested 0.2.36/0.2.37)
+and NVIDIA SM 7.5+ for native compute. Conversion uses the existing PyTorch
+dependency; the target ComfyUI runtime is a separate environment.
+Both INT8 and INT4 ConvRot are selectable. ConvRot itself is not a bit width.
 
 ## Interactive compatibility matrix
 

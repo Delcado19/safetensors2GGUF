@@ -41,6 +41,7 @@ class TestTableFormats:
         assert keys == {
             "GGUF", "F16", "F16_MIXED", "INT8", "INT8_MIXED",
             "FP8", "FP8_MIXED", "NVFP4", "NVFP4_MIXED",
+            "INT4_CONVROT_MIXED",
         }
 
     def test_headers_include_percentages_from_safetensors_size_ratios(self):

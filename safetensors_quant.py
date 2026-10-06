@@ -81,6 +81,7 @@ SAFETENSORS_DTYPE_CHOICES: list[tuple[str, str]] = [
     ("fp8 mix · fp8, protected weights retain source precision", "FP8_MIXED"),
     ("int8 · tensorwise, ConvRot-rotated where possible", "INT8"),
     ("int8 mix · int8/ConvRot, protected weights retain source precision, recommended ★", "INT8_MIXED"),
+    ("int4 convrot mix · native W4A4, requires compatible ComfyUI/Kitchen", "INT4_CONVROT_MIXED"),
     ("nvfp4 · NVIDIA FP4, full-precision compute, needs Blackwell GPU", "NVFP4"),
     ("nvfp4 mix · nvfp4, protected weights retain source precision, needs Blackwell GPU", "NVFP4_MIXED"),
 ]
@@ -382,6 +383,10 @@ def format_recommendation(model_arch, target_key: str) -> tuple[str, str]:
     mixed = target_key.endswith("_MIXED")
     base = target_key[: -len("_MIXED")] if mixed else target_key
     arch = model_arch.arch
+    if target_key == 'INT4_CONVROT_MIXED':
+        return 'warn', ('Native INT4 + ConvRot requires ComfyUI convrot_w4a4 support '
+                        'and Kitchen TensorCoreConvRotW4A4Layout (tested 0.2.36). '
+                        'SDXL and Z-Image Turbo have scoped render evidence; other models are untested.')
     sensitive = bool(model_arch.keys_hiprec)
     mixed_verified = (arch, target_key) in _RENDER_VERIFIED_MIXED
     # Separate from the above: whether PLAIN (non-mixed) output for this
@@ -468,12 +473,13 @@ def layer_key(key: str) -> str:
     return key[: -len(".weight")] if key.endswith(".weight") else key
 
 
-_MIXED_KEYS = {"F16_MIXED", "FP8_MIXED", "NVFP4_MIXED", "INT8_MIXED"}
+_MIXED_KEYS = {"F16_MIXED", "FP8_MIXED", "NVFP4_MIXED", "INT8_MIXED", "INT4_CONVROT_MIXED"}
 _BASE_KEY = {
     "F16": "F16", "F16_MIXED": "F16",
     "FP8": "FP8", "FP8_MIXED": "FP8",
     "NVFP4": "NVFP4", "NVFP4_MIXED": "NVFP4",
     "INT8": "INT8", "INT8_MIXED": "INT8",
+    "INT4_CONVROT_MIXED": "INT4_CONVROT",
 }
 
 
@@ -544,6 +550,14 @@ def plan_tensor_output(
     base = _BASE_KEY[target_key]
     mixed = target_key in _MIXED_KEYS
     from convert import _TORCH_TO_ST_DTYPE
+
+    if base == 'INT4_CONVROT':
+        from safetensors_quant_int4 import eligible_int4
+        if _is_hiprec_shape(key, shape, old_dtype, model_arch) or not eligible_int4(key, shape, model_arch):
+            return [(key, _TORCH_TO_ST_DTYPE[old_dtype], tuple(shape))], None
+        return [(key, 'I8', (shape[0], shape[1] // 2)),
+                (f'{layer_key(key)}.weight_scale', 'F32', (shape[0],))], {
+                    'format': 'convrot_w4a4', 'convrot_groupsize': 256, 'linear_dtype': 'int4'}
 
     if mixed and _is_hiprec_shape(key, shape, old_dtype, model_arch):
         return [(key, _TORCH_TO_ST_DTYPE[old_dtype], tuple(shape))], None
@@ -640,6 +654,12 @@ def quantize_tensor_st(
     old_dtype = data.dtype
     base = _BASE_KEY[target_key]
     mixed = target_key in _MIXED_KEYS
+
+    if base == 'INT4_CONVROT':
+        from safetensors_quant_int4 import eligible_int4, quantize_int4_convrot
+        if is_hiprec_st(key, data, model_arch, old_dtype) or not eligible_int4(key, data.shape, model_arch):
+            return {key: data}
+        return quantize_int4_convrot(data, key)
 
     if mixed and is_hiprec_st(key, data, model_arch, old_dtype):
         # Keep the tensor's ORIGINAL dtype, not a forced F32 upcast: is_hiprec_st

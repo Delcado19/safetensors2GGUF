@@ -42,7 +42,8 @@ export function FormatSelect({
             F16: "Half-precision float; a precision cast rather than low-bit quantization.",
             F16_ST: "Half-precision float; casts text-encoder tensors to FP16.",
             FP8: "Scaled FP8 E4M3 (float8_e4m3fn).",
-            INT8: "Native INT8 tensorwise storage, with ConvRot rotation on eligible linear layers. This is the implemented INT8 path, separate from the INT4 prototype.",
+            INT8: "Native INT8 tensorwise storage, with ConvRot rotation on eligible linear layers.",
+            INT4_CONVROT: "Native ConvRot W4A4: packed INT4 weights with FP32 row scales. Requires ComfyUI convrot_w4a4 support and Kitchen TensorCoreConvRotW4A4Layout (tested 0.2.36), NVIDIA SM 7.5+ for native compute. Render evidence is scoped to SDXL and Z-Image Turbo.",
             NVFP4:
               "NVIDIA FP4 with block scaling. Native accelerated compute requires compatible Blackwell hardware.",
           } as Record<string, string>

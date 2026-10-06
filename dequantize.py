@@ -9,9 +9,9 @@ reversible) but strictly better than either refusing, or the corruption that
 motivated the original guard (treating scale/comfy_quant sidecar tensors as
 ordinary weights and quantizing them a second time).
 
-Supports the two on-disk quantized formats this tool itself writes/reads:
+Supports the on-disk quantized formats this tool itself writes/reads:
 int8_tensorwise (plain and ConvRot-rotated) and scaled float8_e4m3fn/e5m2, plus
-NVFP4 via the existing dequantize_nvfp4(). Detection prefers the authoritative
+NVFP4 and native packed ConvRot W4A4. Detection prefers the authoritative
 per-layer ".comfy_quant" JSON sidecar (the convention real ComfyUI-native
 quantized releases use, per comfy/utils.py's convert_old_quants()) and falls
 back to a dtype + sibling-scale-tensor heuristic when that sidecar is absent
@@ -35,14 +35,14 @@ def dequantized_shape_of(fmt: str, packed_shape: tuple[int, ...]) -> tuple[int, 
     no tensor data touched. Used by convert_safetensors.py's streaming
     writer Pass 1 to plan already-quantized sources' post-dequant shape.
 
-    Only NVFP4 changes shape on disk (2 values packed per byte, halving the
+    NVFP4 and ConvRot W4A4 change shape on disk (2 values per byte, halving the
     last dimension -- see safetensors_quant_nvfp4.quantize_nvfp4's
     `packed.reshape(*lead, last // 2)` and its inverse in
     dequantize_nvfp4's `values.reshape(*lead, half * 2)`, which this
     function's nvfp4 branch mirrors). FP8/INT8 weight+scale sidecars merge
     back to the original shape unchanged.
     """
-    if fmt == "nvfp4":
+    if fmt in ("nvfp4", "convrot_w4a4"):
         return (*packed_shape[:-1], packed_shape[-1] * 2)
     if fmt in ("float8_e4m3fn", "int8_tensorwise"):
         return tuple(packed_shape)
@@ -123,7 +123,7 @@ def _find_scale_key(state_dict, prefix: str) -> str | None:
 def detect_quantized_weight(state_dict, key: str) -> str | None:
     """Return the detected on-disk quant format for a ".weight" tensor, or
     None if it isn't recognizably quantized. One of "int8_tensorwise",
-    "float8_e4m3fn", "nvfp4"."""
+    "float8_e4m3fn", "nvfp4", "convrot_w4a4"."""
     if not key.endswith(".weight"):
         return None
     prefix = layer_key(key)
@@ -131,7 +131,7 @@ def detect_quantized_weight(state_dict, key: str) -> str | None:
     conf = _read_comfy_quant_sidecar(state_dict, prefix)
     if conf is not None:
         fmt = conf.get("format")
-        if fmt in ("int8_tensorwise", "float8_e4m3fn", "nvfp4"):
+        if fmt in ("int8_tensorwise", "float8_e4m3fn", "nvfp4", "convrot_w4a4"):
             return fmt
 
     scale_key = _find_scale_key(state_dict, prefix)
@@ -318,6 +318,16 @@ def dequantize_weight(state_dict, key: str, fmt: str, q: torch.Tensor) -> torch.
             },
             key,
         )
+
+    if fmt == 'convrot_w4a4':
+        from safetensors_quant_int4 import dequantize_int4_convrot
+        conf = _read_comfy_quant_sidecar(state_dict, prefix) or {}
+        if conf.get('linear_dtype', 'int4') not in ('int4', 'int8'):
+            raise ValueError('Unsupported ConvRot linear dtype')
+        if conf.get('quant_group_size', 64) != 64:
+            raise ValueError('Unsupported ConvRot quantization group size')
+        return dequantize_int4_convrot(q, state_dict[_find_scale_key(state_dict, prefix)],
+                                      int(conf.get('convrot_groupsize', 256)))
 
     scale = state_dict[_find_scale_key(state_dict, prefix)].to(torch.float32)
     value = q.to(torch.float32) * scale

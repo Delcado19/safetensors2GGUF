@@ -281,7 +281,7 @@ def main():
         scoped.click()
         expect(page.get_by_role('region', name='Selected compatibility details')).to_contain_text('Default/Base policy')
         expect(page.locator('.support-table tbody tr')).to_have_count(2)
-        page.get_by_role('button', name=re.compile(r'Z-Image Turbo.*NVFP4.*mixed precision: Visible drift$')).click()
+        page.get_by_role('button', name=re.compile(r'Z-Image Turbo.*NVFP4.*mixed precision: Verified$')).click()
         expect(page.get_by_role('region', name='Selected compatibility details')).to_contain_text('Two prompts')
         page.get_by_role('button', name='Use format').click()
         expect(page.get_by_label('Precision profile')).to_have_value('z_image_turbo')
@@ -305,7 +305,7 @@ def main():
         page.get_by_label('Evidence filter').select_option('unknown')
         expect(page.locator('.support-table tbody tr')).to_have_count(1)  # Only Base retains untested INT4 evidence.
         page.get_by_label('Evidence filter').select_option('all')
-        page.get_by_role('button', name=re.compile(r', INT8 \+ ConvRot.*mixed precision: Verified$')).click()
+        page.get_by_role('button', name=re.compile(r'Z-Image Base.*INT8 \+ ConvRot.*mixed precision: Verified$')).click()
         headers = page.locator('.support-table thead th')
         assert headers.nth(2).inner_text() == 'FP16'
         assert headers.nth(3).inner_text() == 'FP16\nmixed precision'
@@ -325,7 +325,7 @@ def main():
                 page.get_by_label('Model category').select_option(category)
                 assert page.locator('.support-scroll').evaluate('(node) => node.scrollWidth <= node.clientWidth + 1')
         page.get_by_label('Model category').select_option('diffusion')
-        page.get_by_role('button', name=re.compile(r', INT8 \+ ConvRot.*mixed precision: Verified$')).click()
+        page.get_by_role('button', name=re.compile(r'Z-Image Base.*INT8 \+ ConvRot.*mixed precision: Verified$')).click()
         page.set_viewport_size({'width': 1440, 'height': 1100})
         page.locator('.support-scroll').evaluate('(node) => node.scrollLeft = 0')
         page.screenshot(path=str(root / 'support-desktop.png'), full_page=True)
@@ -343,18 +343,17 @@ def main():
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
         page.screenshot(path=str(root / 'format-selection-mobile.png'), full_page=True)
         page.get_by_role('button', name='Format guide', exact=True).click()
-        expect(page.get_by_label('INT4 ConvRot prototype status')).to_contain_text('PROTOTYPE')
-        expect(page.get_by_label('INT4 ConvRot prototype status')).to_contain_text('NOT SELECTABLE')
+        expect(page.get_by_label('INT4 ConvRot runtime requirements')).to_contain_text('NATIVE W4A4')
         page.get_by_label('Find a model').fill('sdxl')
         page.get_by_role('button', name=re.compile(r', INT4 \+ ConvRot.*mixed precision: Visible drift$')).click()
         expect(page.get_by_role('region', name='Selected compatibility details')).to_contain_text('ears, face')
-        expect(page.get_by_role('button', name='Use format')).to_be_disabled()
+        expect(page.get_by_role('button', name='Use format')).to_be_enabled()
         page.get_by_label('Find a model').fill('qwen_image')
         page.get_by_role('button', name=re.compile(r', INT4 \+ ConvRot.*mixed precision: Untested$')).click()
-        expect(page.get_by_role('button', name='Use format')).to_be_disabled()
-        # Prototype information never inserts a nonfunctional conversion choice.
+        expect(page.get_by_role('button', name='Use format')).to_be_enabled()
+        # Native INT4 is offered without promoting untested model evidence.
         page.get_by_role('button', name='Convert model', exact=True).first.click()
-        assert 'INT4' not in page.locator('#format').inner_text()
+        assert 'INT4' in page.locator('#format').inner_text()
         # Inspect changes available formats, never silently changes the request.
         krea_source = root / 'krea-ui.safetensors'
         save_file({'first.weight': torch.ones(64, 64),

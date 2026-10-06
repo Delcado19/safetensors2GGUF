@@ -83,10 +83,11 @@ cell to review it, then **Use format** to prepare a conversion. Known unsupporte
 combinations cannot be applied from the matrix. The classic Gradio interface
 remains available as an alternative. See [migration scope and validation](docs/web-workbench.md).
 
-The diffusion matrix includes **INT4 + ConvRot / mixed precision** prototype evidence:
-SDXL has visible drift in the tested RealVisXL checkpoint; other models are untested.
+The diffusion matrix includes selectable **INT4 + ConvRot / mixed precision**:
+SDXL has visible drift in the tested RealVisXL checkpoint; ZIT has a scoped
+successful still-life test. Other models remain untested.
 Equal-width centered format columns scroll horizontally on compact displays.
-Prototype cells show details but cannot apply a conversion target.
+INT4 cells can prepare a conversion without promoting untested model evidence.
 
 The local file dialog offers a **Drive or location** dropdown with Windows drive
 letters and Home/Downloads/Documents shortcuts, for both source and output
@@ -99,8 +100,8 @@ full/pruned Mistral evidence. Pending integration is distinct from failed suppor
 Workbench format names are uppercase: **FP16**, **FP8 (E4M3)**, **INT8 + ConvRot**
 and **NVFP4**. “Mixed precision” describes the tool's protected-weight policy,
 not an extra bit width. Short grouped choices show details below the select.
-The guide distinguishes implemented INT8 ConvRot from the nonselectable,
-SDXL-tested **INT4 + ConvRot prototype**. Internal/API keys and filenames retain
+The guide distinguishes INT8 ConvRot from native **INT4 + ConvRot W4A4**.
+Internal/API keys and filenames retain
 their existing spellings for compatibility.
 
 Krea GGUF now uses the project-owned pinned molbal source. Inspect the source
@@ -387,8 +388,15 @@ no storage saving: both store eight bits per weight. See
 
 Native **INT4 ConvRot** has also passed a full SDXL test with classic/dynamic
 offload and LoRA: 2.00 GiB versus 4.78 GiB source UNet weights. This experimental
-checkpoint was packed using installed Kitchen directly; INT4 is not yet a GUI
-output choice. See [the validation report](docs/int4-convrot-validation.md) for
+checkpoint was packed using installed Kitchen directly. **INT4 + ConvRot mixed
+precision** is now a diffusion safetensors output choice. It requires a ComfyUI
+loader with `convrot_w4a4` and Kitchen `TensorCoreConvRotW4A4Layout` (tested
+Kitchen 0.2.36/0.2.37, ComfyUI 0.38.0); native INT4 compute needs NVIDIA SM 7.5+.
+Older loaders are incompatible. The writer uses PyTorch only, preserving source
+precision for protected, unaligned, non-Linear and shape-critical weights.
+Its packed INT4 `[N,K/2]` and FP32 row-scale `[N]` contract is checked against
+Kitchen using `scripts/check_int4_native.py` in a ComfyUI Python environment.
+See [the validation report](docs/int4-convrot-validation.md) for
 packing/version details and visible quantization differences.
 
 
@@ -866,7 +874,7 @@ Raw/Turbo checkpoint and a clean source/GGUF quality baseline remain pending.
 See [the diagnostic follow-up](docs/krea2-render-validation.md#shared-mosaic-artifact-follow-up).
 
 Z-Image Turbo batch evidence now covers FP8/INT8 plain/mixed, NVFP4, the native
-INT4 prototype and Q4_K_M: successful usable renders in a preserved single-pass
+native INT4 mixed format and Q4_K_M: successful usable renders in a preserved single-pass
 workflow with two LoRAs, classified as Verified within that scope. Visual
 differences remain documented. The user deferred the ZIT portrait test to avoid
 reconversion costs; portrait quality remains untested.

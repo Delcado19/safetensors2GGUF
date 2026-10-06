@@ -321,14 +321,15 @@ export function SupportMatrix({
       </p>
       <div
         className="support-detail"
-        aria-label="INT4 ConvRot prototype status"
+        aria-label="INT4 ConvRot runtime requirements"
       >
-        <span className="tiny-label">PROTOTYPE · NOT SELECTABLE</span>
+        <span className="tiny-label">NATIVE W4A4 · MIXED PRECISION</span>
         <h3>INT4 + ConvRot</h3>
         <p>
           Native 4-bit ConvRot has passed SDXL rendering, LoRA and offload tests
-          on one checkpoint, plus Z-Image Turbo single-pass rendering with two LoRAs. It remains outside the standard conversion formats
-          until version guards and supported-model integration are implemented.
+          on one checkpoint, plus Z-Image Turbo single-pass rendering with two LoRAs.
+          Conversion is available with native ComfyUI convrot_w4a4 support and
+          Kitchen TensorCoreConvRotW4A4Layout (tested 0.2.36), NVIDIA SM 7.5+ for native compute.
           The diffusion matrix records the tested mixed-precision policy and
           leaves other models untested.
         </p>

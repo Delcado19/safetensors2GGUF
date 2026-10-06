@@ -1222,8 +1222,8 @@ function App() {
                     <h2>Compatibility is model-specific.</h2>
                     <p>
                       Lower precision can change images. NVFP4 has specific
-                      hardware requirements; INT4 ConvRot remains experimental
-                      and is not offered here. Check the repository's
+                      hardware requirements; INT4 ConvRot needs a compatible
+                      native ComfyUI/Kitchen loader. Check the repository's
                       model-support documentation before choosing a format.
                     </p>
                     <a

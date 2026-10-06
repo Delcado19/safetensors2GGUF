@@ -63,10 +63,11 @@ Base/default classifications and unrelated model evidence remain unchanged.
 [INT4_CONVROT_MIXED](images/zit-validation/INT4_CONVROT_MIXED.png).
 [Q4_K_M](images/zit-validation/Q4_K_M.png).
 
-INT4 is a test-only native prototype: 180 eligible Linear weights, Kitchen
+The INT4 test used a native prototype: 180 eligible Linear weights, Kitchen
 `TensorCoreConvRotW4A4Layout`, group rotation 256, layout group 64, packed I8
-[N,K/2] with F32 [N] scales, mixed Turbo protections. It remains nonselectable
-until production/version integration; this test does not prove forced offload.
+[N,K/2] with F32 [N] scales, mixed Turbo protections. It is now selectable through
+the production streaming writer; this test does not prove forced offload.
+See the INT4 validation report for runtime requirements.
 Safetensors used the existing converter with `z_image_turbo`; GGUF used the
 existing patched llama-quantize build 3962 (c8c07d658) and stock city96 loader.
 

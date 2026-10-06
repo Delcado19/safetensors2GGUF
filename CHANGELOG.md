@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Native INT4 + ConvRot mixed diffusion safetensors conversion, exact
+  source-aware size planning, preserved fallback precision and safe reconversion.
+  Offer the format in the Workbench and retain model-specific runtime evidence.
+  Display native ComfyUI/Kitchen and GPU requirements; verify the codec against
+  Kitchen 0.2.37 without additional model renders or new dependencies.
+
 - Change: Classify successful Z-Image Turbo renders as Verified; retain observed
   visual differences and exact test scope without equating them to quality loss.
   The user deferred the ZIT portrait comparison to avoid reconversion costs;

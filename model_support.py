@@ -65,6 +65,7 @@ TABLE_FORMATS: list[tuple[str, str]] = [
     (_format_header_label("FP8_MIXED"), "FP8_MIXED"),
     (_format_header_label("INT8"), "INT8"),
     (_format_header_label("INT8_MIXED"), "INT8_MIXED"),
+    (_format_header_label("INT4_CONVROT_MIXED"), "INT4_CONVROT_MIXED"),
     (_format_header_label("NVFP4"), "NVFP4"),
     (_format_header_label("NVFP4_MIXED"), "NVFP4_MIXED"),
 ]
@@ -553,6 +554,8 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
         return SUPPORT_CAUTION
     if format_key in ("F16", "F16_MIXED"):
         return SUPPORT_VERIFIED
+    if format_key == 'INT4_CONVROT_MIXED':
+        return SUPPORT_CAUTION if arch_key == 'sdxl' else SUPPORT_UNKNOWN
     if format_key in ("FP8", "FP8_MIXED"):
         if (arch_key, format_key) in _RENDER_VERIFIED_MIXED:
             return SUPPORT_VERIFIED
@@ -1153,23 +1156,22 @@ def build_workbench_support_tables() -> dict:
         rows.sort(key=lambda row: row['display_name'])
         format_keys = [key for _, key in formats]
         if kind == 'diffusion':
-            # Display recorded prototype evidence without exposing a production target.
+            # Native mixed INT4 is selectable; runtime evidence remains model-specific.
             fmt = 'INT4_CONVROT_MIXED'
-            format_keys.insert(format_keys.index('INT8_MIXED') + 1, fmt)
             for row in rows:
                 zit = row['id'] == 'lumina2_turbo'
                 row[fmt] = SUPPORT_VERIFIED if zit else SUPPORT_CAUTION if row['arch'] == 'sdxl' else SUPPORT_UNKNOWN
-                row[fmt + '__selectable'] = 'false'
+                row[fmt + '__selectable'] = 'true'
                 row[fmt + '__scope'] = ('ZIT / 2 LoRAs' if zit else
-                                       'SDXL checkpoint test' if row['arch'] == 'sdxl' else 'Prototype')
+                                       'SDXL checkpoint test' if row['arch'] == 'sdxl' else 'Native W4A4')
                 row[fmt + '__reason'] = (
                     'Z-Image Turbo BF16, z_image_turbo protection, 180 native INT4 ConvRot '
                     'Linear layers: successful single-pass still-life render with two active '
                     'LoRAs, with cloth/background and framing differences; these alone '
                     'do not establish quality loss. The user deferred the portrait test '
                     'to avoid reconversion costs. Kernel '
-                    'Kitchen 0.2.36 on RTX 5080; production/version integration and forced '
-                    'offload remain separate. Source: docs/zit-batch-validation.md. '
+                    'Kitchen 0.2.36 on RTX 5080; forced offload remains untested for ZIT. '
+                    'Source: docs/zit-batch-validation.md. '
                     if zit else
                     'RealVisXL V50 Lightning diffusion UNet, mixed precision: nine successful '
                     'renders including LoRA, classic CPU offload and dynamic VRAM offload. '
@@ -1179,7 +1181,8 @@ def build_workbench_support_tables() -> dict:
                     if row['arch'] == 'sdxl' else
                     'No project render evidence for INT4 + ConvRot mixed precision on this '
                     'model/variant. SDXL results do not establish compatibility elsewhere. '
-                ) + ('Production integration and version guards are pending; this prototype '
-                     'cannot be selected for conversion. Source: docs/int4-convrot-validation.md.')
+                ) + ('Requires native ComfyUI convrot_w4a4 support and Kitchen '
+                     'TensorCoreConvRotW4A4Layout (tested 0.2.36); NVIDIA SM 7.5+ '
+                     'for native INT4 compute. Source: docs/int4-convrot-validation.md.')
         tables[kind] = {'formats': format_keys, 'rows': rows}
     return tables

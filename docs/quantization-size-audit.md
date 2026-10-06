@@ -237,8 +237,9 @@ dynamic offload with 1,769 observed native INT4 requantizations. The 591-layer
 checkpoint is 2.00 GiB versus 4.78 GiB source UNet weights. See
 [the full validation report](int4-convrot-validation.md) for exact packing,
 prompt IDs, visual differences and cleanup. This supersedes the earlier
-single-layer-only status; it does not establish cross-family quality or add
-an INT4 entry to the production format dropdown.
+single-layer-only status; it does not establish cross-family quality. Native
+INT4 mixed precision is now offered in the production diffusion dropdown;
+see the validation report for the storage contract and runtime requirements.
 
 A transient Windows sharing violation occurred while unlinking Qwen NVFP4's
 completed temporary hardlink. The final file had already been published; its

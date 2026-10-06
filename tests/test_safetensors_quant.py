@@ -45,6 +45,7 @@ class TestRegistry:
         assert keys == {
             "F16", "F16_MIXED", "FP8", "FP8_MIXED",
             "INT8", "INT8_MIXED", "NVFP4", "NVFP4_MIXED",
+            "INT4_CONVROT_MIXED",
         }
 
     def test_fp8_is_offered_again(self):

@@ -268,6 +268,11 @@ def convert_to_safetensors(
                 enc = sys.stdout.encoding or "ascii"
                 print(msg.encode(enc, errors="replace").decode(enc))
 
+    if target_key == 'INT4_CONVROT_MIXED':
+        _log('INFO: INT4 + ConvRot requires native ComfyUI convrot_w4a4 loading '
+             'and Kitchen TensorCoreConvRotW4A4Layout (tested: ComfyUI 0.38.0 / Kitchen 0.2.36). '
+             'NVIDIA SM 7.5+ is required for native INT4 compute; older loaders are incompatible.')
+
     state_dict = load_state_dict(path, strip_prefixes=strip_prefixes)
     quant_formats, quant_skip_keys = _scan_quantized_layers(state_dict)
     if quant_formats:
