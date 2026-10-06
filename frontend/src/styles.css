@@ -1276,6 +1276,7 @@ input[type="checkbox"] {
 .support-table thead th {
   background: var(--raised);
   white-space: nowrap;
+  text-align: center;
 }
 .support-table th:first-child {
   position: sticky;
@@ -1288,6 +1289,7 @@ input[type="checkbox"] {
 }
 .support-table thead th:first-child {
   background: var(--raised);
+  text-align: left;
 }
 .support-table tbody tr:last-child > * {
   border-bottom: 0;

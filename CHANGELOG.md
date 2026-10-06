@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Fix: Center compatibility format column headings over their cell contents.
+
 ### Compatibility matrix in the React workbench
 - Add: Searchable diffusion/text-encoder matrix in Format guide, reusing the
   existing support registry and reasons through a protected read-only API.
