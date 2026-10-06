@@ -103,5 +103,7 @@ loading. Linux and LoRA/offload behavior require their own evidence.
 - Complete pinned source and license: **secured and tracked**.
 - Offline verification and corruption regression: **implemented**.
 - Production conversion adapter: **planned, not enabled**.
+- Matrix GGUF cell: **Requires molbal · tests pending**, still blocked until
+  the local adapter/converter/loader combination is implemented and validated.
 - Krea conversion/render validation: **pending**, no large model downloaded.
 - Mistral and ERNIE integration: **separate later work**.

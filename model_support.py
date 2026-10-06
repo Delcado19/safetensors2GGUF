@@ -93,9 +93,15 @@ _STRUCTURALLY_IMPOSSIBLE: dict[tuple[str, str], str] = {
         "lcpp.patch has no ernie_image llm_arch entry. Safetensors only."
     ),
     ("krea2", "GGUF"): (
-        "No GGUF build exists with this project's targeted tooling -- Krea 2 "
-        "requires an unofficial city96/ComfyUI-GGUF fork/PR (#459), not the "
-        "lcpp.patch version used here. Safetensors only."
+        "Krea 2 GGUF requires the Krea-capable molbal/ComfyUI-GGUF loader "
+        "according to the published model instructions. The source snapshot "
+        "is secured at 5a0a3ffa0e3eae5c6af8b0b981b660a24d5fbc04, but our "
+        "conversion adapter is not enabled and the exact converter/loader "
+        "combination has not been runtime-tested. Loader requirement is "
+        "documented; local compatibility, output quality and coexistence with "
+        "the city96 workflow remain pending. Existing safetensors conversion "
+        "is a separate path. Source: docs/krea2-backend-preparation.md and "
+        "https://huggingface.co/molbal/krea2-gguf."
     ),
 }
 
@@ -1012,6 +1018,8 @@ def build_support_table() -> list[dict]:
                 row[f'{format_key}__scope'] = 'Profile-dependent drift'
             if instance.arch == 'qwen_image' and format_key == 'GGUF':
                 row[f'{format_key}__scope'] = 'Q4_K_M smoke test'
+            if instance.arch == 'krea2' and format_key == 'GGUF':
+                row[f'{format_key}__scope'] = 'Requires molbal · tests pending'
         rows.append(row)
     rows.sort(key=lambda r: r["display_name"])
     return rows

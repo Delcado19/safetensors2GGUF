@@ -63,6 +63,11 @@ def test_support_matrix_uses_shared_classifications_and_reasons():
     qwen = next(row for row in data['diffusion']['rows'] if row['arch'] == 'qwen_image')
     assert qwen['GGUF'] == 'verified' and qwen['GGUF__scope'] == 'Q4_K_M smoke test'
     assert '3962' in qwen['GGUF__reason'] and 'quality parity' in qwen['GGUF__reason']
+    krea = next(row for row in data['diffusion']['rows'] if row['arch'] == 'krea2')
+    assert krea['GGUF'] == 'bad'
+    assert krea['GGUF__scope'] == 'Requires molbal · tests pending'
+    assert 'adapter is not enabled' in krea['GGUF__reason']
+    assert 'not been runtime-tested' in krea['GGUF__reason']
     assert qwen['NVFP4_MIXED'] == 'caution' and 'whiskers' in qwen['NVFP4_MIXED__reason']
     assert qwen['INT8_MIXED'] == 'caution' and 'small visible detail' in qwen['INT8_MIXED__reason']
     lumina = next(row for row in data['diffusion']['rows'] if row['arch'] == 'lumina2')

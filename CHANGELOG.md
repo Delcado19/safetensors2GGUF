@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Docs: Show Krea GGUF's documented molbal-loader requirement and pending local
+  adapter/runtime validation directly in the compatibility matrix.
+
 - Add: Complete pinned molbal source archive with preserved Apache-2.0 license,
   provenance and offline checksum/path/entrypoint verification.
 - Docs: Prepare the isolated Krea GGUF adapter contract, initial format allowlist,
