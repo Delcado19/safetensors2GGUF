@@ -6,6 +6,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Native drive/location dropdown in the shared file dialog with current
+  Windows drives and common-folder shortcuts; disable parent navigation at roots.
+- Test: Real Krea Q4_0 cat/dog comparisons through pinned molbal, with small visible
+  drift versus an installed INT8 ConvRot baseline and 36.75% storage savings;
+  the installed stock city96 loader rejects the same GGUF architecture.
+- Change: Scope the Krea matrix cell to tested Q4_0/molbal with Visible drift and
+  exact-format handoff, retaining native city96 guards and untested other scopes.
+
+
 - Add: Offline pinned Krea GGUF subprocess adapter with seven explicit non-K
   formats, verified disposable source extraction, streaming/progress/cancellation,
   and readable GGUF/tensor-shape checks before atomic publication.

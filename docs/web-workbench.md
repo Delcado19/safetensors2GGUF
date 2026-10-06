@@ -113,12 +113,13 @@ pruned configuration/export handling are shown as pending, not as universal
 upstream format failures. This presentation split does not implement the missing
 model detection/configuration work.
 
-Krea GGUF displays **Validation pending** / **molbal loader required**. Pending
+Krea GGUF displays **Visible drift** / **Q4_0 / molbal loader**, linked to
+[the real two-prompt test](krea2-render-validation.md); handoff selects Q4_0. Pending
 cells use a clock icon, visible explanations, unique accessible descriptions
 and a separate evidence filter. They are excluded from the unsupported filter;
 their format-handoff button stays disabled. Mistral keeps its existing blocked
-status. Krea has unknown render evidence; its pinned export adapter is implemented
-and available through explicit source inspection. The classical table/native-writer
+status. Krea has scoped Q4_0 render evidence; its pinned export adapter exposes
+only the inspected source-specific allowlist. The classical table/native-writer
 contracts remain unchanged.
 
 The [unsupported-entry upstream audit](unsupported-matrix-audit.md) reviews all
@@ -171,7 +172,7 @@ existing classification, not an implied endorsement.
 `GET /api/support` uses the existing session token/origin guard and returns
 `diffusion`/`text_encoder` objects with format keys and scoped rows/reasons.
 Rows have unique `id` values, source `arch`/`family`, optional `precision_profile`,
-and optional cell `__label`/`__pending`/`__scope` presentation metadata.
+and optional cell `__label`/`__pending`/`__scope`/`__format` presentation metadata.
 The frontend loads it once per mounted guide, without model loading or network
 requests to upstream model providers. Reopening the guide retries a failed load.
 No new dependency or decorative table/navigation animation was added.
@@ -419,5 +420,22 @@ requested format. Choose one explicitly; unsupported prior selections remain
 visible as disabled placeholders and cannot be submitted. The pinned streaming
 backend runs in a disposable process, preserves prior outputs on failure/cancel,
 and requires no external llama-quantize. Size estimates are unavailable.
-The loader requirement and pending full-model image validation remain visible
-after changing precision. See [Krea adapter details](krea2-backend-preparation.md).
+The loader requirement and scoped Q4_0 drift evidence remain visible
+after changing precision; other checkpoints and levels remain untested. See [Krea adapter details](krea2-backend-preparation.md).
+
+## Drive and folder navigation
+
+The shared native file dialog has a **Drive or location** select, grouped into
+**Places** (Home, existing Downloads/Documents) and **Drives**. Windows drive
+letters are enumerated through GetLogicalDrives without probing empty disks or
+network shares. Linux lists `/` and directories under common mount locations.
+Unavailable locations report a normal browsing error; the last successful folder
+remains available. Lists refresh when opening the dialog. Both source selection
+and destination selection share these shortcuts, keyboard navigation and focus
+handling. The parent button is disabled at a root; direct path entry remains
+available for arbitrary directories and UNC paths.
+
+`GET /api/locations` requires the same session/origin protection as `/api/files`.
+Browser checks navigate to a real drive root and Home, then select a model using
+the existing folder list. Windows runtime is verified; Linux enumeration has
+not yet been exercised on a Linux machine.

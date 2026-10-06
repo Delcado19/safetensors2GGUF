@@ -72,6 +72,7 @@ export function SupportMatrix({
     name: string,
     classification: string,
     profile?: string,
+    suggestedFormat?: string,
   ) => void;
 }) {
   const [matrix, setMatrix] = useState<Matrix>();
@@ -279,7 +280,7 @@ export function SupportMatrix({
           </p>
           {selected.format === "GGUF" && (
             <p className="preview-note">
-              GGUF groups multiple precisions. Use format selects Q4_K_M; this
+              GGUF groups multiple precisions. Use format selects {selected.row.GGUF__format || "Q4_K_M"}; this
               cell does not verify every quantization level.
             </p>
           )}
@@ -300,6 +301,7 @@ export function SupportMatrix({
                 selected.row.display_name,
                 cellLabel(selected.row, selected.format),
                 selected.row.precision_profile,
+                selected.row[selected.format + "__format"] || undefined,
               )
             }
           >

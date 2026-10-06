@@ -881,6 +881,9 @@ input[type="checkbox"] {
   display: flex;
   gap: 10px;
   align-items: center;
+  margin-top: 12px;
+}
+.folder-location {
   margin-top: 24px;
 }
 .folder-address > button:first-child {

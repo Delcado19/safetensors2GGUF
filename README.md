@@ -82,6 +82,10 @@ SDXL has visible drift in the tested RealVisXL checkpoint; other models are unte
 Equal-width centered format columns scroll horizontally on compact displays.
 Prototype cells show details but cannot apply a conversion target.
 
+The local file dialog offers a **Drive or location** dropdown with Windows drive
+letters and Home/Downloads/Documents shortcuts, for both source and output
+selection. Linux offers the filesystem root and common mounted-media locations.
+
 The compact matrix places identifiers below model names, splits format/policy
 headers into centered lines, and separates Z-Image Base/Turbo-profile and
 full/pruned Mistral evidence. Pending integration is distinct from failed support.
@@ -96,8 +100,10 @@ their existing spellings for compatibility.
 Krea GGUF now uses the project-owned pinned molbal source. Inspect the source
 to expose FP16/BF16/Q8_0/Q5_1/Q5_0/Q4_1/Q4_0, then choose explicitly. No
 llama-quantize or upstream fetch is required for these exports. A Krea-capable
-ComfyUI core and molbal loader are required; full-model rendering remains
-unvalidated. See [adapter status and remaining tests](docs/krea2-backend-preparation.md).
+ComfyUI core and molbal loader are required. Q4_0 has a two-prompt render test
+with visible drift versus one installed INT8 ConvRot checkpoint; other scopes
+remain untested. See [runtime evidence](docs/krea2-render-validation.md) and
+[adapter restrictions](docs/krea2-backend-preparation.md).
 
 ### Python environment
 

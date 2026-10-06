@@ -98,8 +98,8 @@ _STRUCTURALLY_IMPOSSIBLE: dict[tuple[str, str], str] = {
         "is secured at 5a0a3ffa0e3eae5c6af8b0b981b660a24d5fbc04, but our "
         "native city96 conversion path cannot export this architecture. The "
         "Workbench's pinned molbal adapter exports an explicit non-K allowlist, "
-        "but the exact converter/loader combination has not been runtime-tested. Loader requirement is "
-        "documented; local compatibility, output quality and coexistence with "
+        "and Q4_0 has a two-prompt molbal render test with visible drift versus one INT8 ConvRot checkpoint. Loader requirement is "
+        "tested for the recorded city96/molbal revisions; other scopes and coexistence with "
         "the city96 workflow remain pending. Existing safetensors conversion "
         "is a separate path. Source: docs/krea2-backend-preparation.md and "
         "https://huggingface.co/molbal/krea2-gguf."
@@ -1045,11 +1045,20 @@ def build_workbench_support_tables() -> dict:
             row['id'] = key
             row['display_name'] = row['display_name'].rsplit(' (', 1)[0].replace(' Family', '').replace('Lumina-Image 2.0', 'Lumina 2.0')
             if key == 'krea2':
-                # Export checks pass; do not promote pending full-model renders.
-                row['GGUF'] = SUPPORT_UNKNOWN
-                row['GGUF__label'] = 'Validation pending'
-                row['GGUF__scope'] = 'molbal loader required'
-                row['GGUF__pending'] = 'true'
+                # Native city96 stays guarded; evidence belongs to the molbal path.
+                row['GGUF'] = SUPPORT_CAUTION
+                row['GGUF__scope'] = 'Q4_0 / molbal loader'
+                row['GGUF__format'] = 'Q4_0'
+                row['GGUF__reason'] = (
+                    'Lustify Krea 2, Q4_0 via the pinned molbal adapter/loader: two '
+                    'same-seed cat/hat and dog/scarf comparisons produced usable images '
+                    'with small changes in eyes, muzzle, fur and scarf detail versus the '
+                    'installed INT8 ConvRot source. A temporary reconstructed F16 source '
+                    'was used for export; this is not an unquantized-original comparison. '
+                    'ComfyUI 0.38.0, Kitchen 0.2.36, RTX 5080; 512px, eight Euler/simple '
+                    'steps, CFG 1, seed 1212121. Four successful renders. Molbal loader '
+                    'required; other checkpoints/precisions, LoRA, forced offload and '
+                    'Linux remain untested. Source: docs/krea2-render-validation.md.')
             if key == 'lumina2':
                 row.update(id='lumina2_base', display_name='Z-Image Base / Lumina 2.0', precision_profile='auto')
                 row['NVFP4_MIXED__reason'] = (

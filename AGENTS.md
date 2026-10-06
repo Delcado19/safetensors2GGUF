@@ -33,9 +33,10 @@ Krea preparation completed: the complete molbal source at commit
 with license/provenance/checksum and an offline verifier. Read
 `docs/krea2-backend-preparation.md` for the concrete adapter contract and remaining
 work. The Workbench adapter is implemented and synthetic exports pass for its
-seven-format allowlist. Full-model Krea rendering, loader coexistence, LoRA,
-offload and Linux tests remain pending; do not promote synthetic export evidence
-to verified image support.
+seven-format allowlist. Full-model Q4_0 cat/dog renders with molbal passed with
+visible drift versus one installed INT8 ConvRot checkpoint. Stock city96 rejected
+the exact GGUF. Read `docs/krea2-render-validation.md`; other checkpoints/levels,
+loader coexistence, LoRA, forced offload and Linux remain pending.
 
 Read and retain this open TODO at the start of every project session. Do not
 start implementing it merely because a session begins; use it when planning

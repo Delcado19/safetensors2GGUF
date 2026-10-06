@@ -35,7 +35,7 @@ export function FormatSelect({
       ? ["F16", "F32", "BF16"].includes(value)
         ? `Floating-point GGUF. ${formatName(value)} uses the internal GGUF type ${value}.`
         : /^Q[45]_[01]$/.test(value)
-          ? `GGUF ${value}. Krea uses the pinned streaming converter. A matching molbal loader is required; full-model rendering remains untested.`
+          ? `GGUF ${value}. Krea uses the pinned streaming converter and requires a matching molbal loader. Q4_0 has a scoped render test with visible drift; this does not validate every model or precision.`
           : `GGUF ${value}. Q8_0 is written directly; K-quants require llama-quantize. Bit width alone does not predict visual fidelity.`
       : (
           {

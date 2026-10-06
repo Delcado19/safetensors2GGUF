@@ -93,11 +93,12 @@ def test_support_matrix_uses_shared_classifications_and_reasons():
     assert qwen['GGUF'] == 'verified' and qwen['GGUF__scope'] == 'Q4_K_M smoke test'
     assert '3962' in qwen['GGUF__reason'] and 'quality parity' in qwen['GGUF__reason']
     krea = next(row for row in data['diffusion']['rows'] if row['arch'] == 'krea2')
-    assert krea['GGUF'] == 'unknown'
-    assert krea['GGUF__scope'] == 'molbal loader required'
-    assert krea['GGUF__label'] == 'Validation pending' and krea['GGUF__pending'] == 'true'
-    assert 'adapter exports' in krea['GGUF__reason']
-    assert 'not been runtime-tested' in krea['GGUF__reason']
+    assert krea['GGUF'] == 'caution'
+    assert krea['GGUF__scope'] == 'Q4_0 / molbal loader'
+    assert krea['GGUF__format'] == 'Q4_0'
+    assert 'GGUF__pending' not in krea
+    assert 'Four successful renders' in krea['GGUF__reason']
+    assert 'not an unquantized-original' in krea['GGUF__reason']
     assert qwen['NVFP4_MIXED'] == 'caution' and 'whiskers' in qwen['NVFP4_MIXED__reason']
     assert qwen['INT8_MIXED'] == 'caution' and 'small visible detail' in qwen['INT8_MIXED__reason']
     lumina = next(row for row in data['diffusion']['rows'] if row['id'] == 'lumina2_base')
@@ -336,6 +337,13 @@ def test_session_origin_and_file_browser(tmp_path):
     assert client.get('/api/files', headers={'Origin': 'https://evil.example'}).status_code == 403
     assert client.get('/api/files', headers={'Host': 'evil.example'}).status_code == 400
     assert client.get('/api/files', params={'path': str(tmp_path / 'missing')}).status_code == 400
+    locations = client.get('/api/locations')
+    assert locations.status_code == 200
+    assert any(item['label'] == 'Home' for item in locations.json())
+    assert any(item['group'] == 'Drives' for item in locations.json())
+    assert all(Path(item['path']).is_absolute() for item in locations.json())
+    assert client.get('/api/locations', headers={'X-Workbench-Token': ''}).status_code == 403
+    assert client.get('/api/locations', headers={'Origin': 'https://evil.example'}).status_code == 403
 
 
 @pytest.mark.parametrize(('container', 'format_key'), [('safetensors', 'FP8_MIXED'), ('gguf', 'F16')])

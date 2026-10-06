@@ -54,6 +54,34 @@ MODEL_SUFFIXES = {'.safetensors', '.ckpt', '.pt', '.pth', '.bin', '.gguf'}
 DIST = Path(__file__).parent / 'frontend' / 'dist'
 
 
+def filesystem_locations():
+    """List navigation shortcuts without probing disk/network contents on Windows."""
+    locations = [{'label': 'Home', 'path': str(Path.home()), 'group': 'Places'}]
+    for name in ('Downloads', 'Documents'):
+        folder = Path.home() / name
+        if folder.is_dir():
+            locations.append({'label': name, 'path': str(folder), 'group': 'Places'})
+    if os.name == 'nt':
+        import ctypes
+        # GetLogicalDrives enumerates drive letters without blocking on an
+        # unavailable network share or empty removable disk. Browsing reports errors.
+        mask = ctypes.windll.kernel32.GetLogicalDrives()
+        for index in range(26):
+            if mask & (1 << index):
+                root = chr(ord('A') + index) + ':\\'
+                locations.append({'label': root, 'path': root, 'group': 'Drives'})
+    else:
+        locations.append({'label': 'Filesystem /', 'path': '/', 'group': 'Drives'})
+        for parent in (Path('/mnt'), Path('/media') / Path.home().name,
+                       Path('/run/media') / Path.home().name):
+            try:
+                locations.extend({'label': child.name, 'path': str(child), 'group': 'Drives'}
+                                 for child in sorted(parent.iterdir()) if child.is_dir())
+            except OSError:
+                continue
+    return locations
+
+
 class ConversionRequest(BaseModel):
     """Validated local conversion parameters; format keys come from the registry."""
 
@@ -317,6 +345,11 @@ def create_app() -> FastAPI:
         except OSError as exc:
             raise HTTPException(400, str(exc)) from exc
 
+    @app.get('/api/locations', dependencies=protected)
+    def locations():
+        """Return current drives and common folders for both source/output dialogs."""
+        return filesystem_locations()
+
     def resolve(params):
         """Resolve output naming and enforce format/source/overwrite guards."""
         source = Path(params.source.strip()).expanduser()
@@ -524,6 +557,7 @@ def create_app() -> FastAPI:
                         container=params.container, format=params.format, overwrite=params.overwrite))
         except (OSError, ValueError) as exc:
             raise HTTPException(400, str(exc)) from exc
+
         return enqueue(params)
 
     @app.get('/api/jobs', dependencies=protected)

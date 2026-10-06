@@ -9,6 +9,6 @@
   "size_bytes": 916243,
   "file_count": 52,
   "license": "Apache-2.0",
-  "integration_status": "source secured; Krea adapter implemented with synthetic exports; full-model renders pending",
+  "integration_status": "source secured; Krea adapter and scoped Q4_0 full-model renders tested with drift; other runtime scopes pending",
   "initial_krea_formats": ["F16", "BF16", "Q8_0", "Q5_1", "Q5_0", "Q4_1", "Q4_0"]
 }

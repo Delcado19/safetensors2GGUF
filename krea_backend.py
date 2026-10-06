@@ -23,7 +23,9 @@ VENDOR = Path(__file__).resolve().parent / 'third_party' / 'molbal'
 KREA_FORMATS = ('F16', 'BF16', 'Q8_0', 'Q5_1', 'Q5_0', 'Q4_1', 'Q4_0')
 KREA_CHOICES = [(key, key) for key in KREA_FORMATS]
 LOADER_NOTE = ('Requires a Krea-capable ComfyUI core and molbal GGUF loader. '
-               'Full-model rendering, LoRA and offload validation are pending.')
+               'Q4_0 has a two-prompt render test on one checkpoint with visible '
+               'drift versus its INT8 source. Other checkpoints/precisions, LoRA '
+               'and forced offload validation remain pending.')
 _PROGRESS_PREFIX = 'KREA_PROGRESS '
 
 

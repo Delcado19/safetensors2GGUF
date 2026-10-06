@@ -37,6 +37,7 @@ type Config = {
   text_encoder_formats: Record<Container, [string, string][]>;
   executable: string;
   home: string;
+  platform: string;
   hf_authenticated: boolean;
 };
 type Job = {
@@ -82,6 +83,7 @@ type Listing = {
   truncated: boolean;
   entries: { name: string; path: string; directory: boolean; size: number }[];
 };
+type Location = { label: string; path: string; group: string };
 const terminal = (job: Job) =>
   ["succeeded", "failed", "cancelled"].includes(job.status);
 const bytes = (value: number) =>
@@ -143,6 +145,7 @@ function App() {
   const [history, setHistory] = useState<Job[]>([]);
   const [picker, setPicker] = useState<"source" | "destination" | null>(null);
   const [listing, setListing] = useState<Listing>();
+  const [locations, setLocations] = useState<Location[]>([]);
   const [folderPath, setFolderPath] = useState("");
   const [browsing, setBrowsing] = useState(false);
   const [pickerError, setPickerError] = useState("");
@@ -250,6 +253,17 @@ function App() {
   useEffect(() => {
     if (picker) dialog.current?.showModal();
     else dialog.current?.close();
+  }, [picker]);
+
+  useEffect(() => {
+    if (!picker) return;
+    const controller = new AbortController();
+    api<Location[]>("locations", undefined, controller.signal)
+      .then(setLocations)
+      .catch((reason) => {
+        if (!controller.signal.aborted) setPickerError(reason.message);
+      });
+    return () => controller.abort();
   }, [picker]);
 
   function parameters() {
@@ -684,7 +698,7 @@ function App() {
                       {kreaSource && (
                         <p className="preview-note">
                           Krea GGUF requires a Krea-capable ComfyUI core and the molbal GGUF loader.
-                          Full-model rendering is not yet validated. Choose an available format explicitly;
+                          Q4_0 was tested on one checkpoint with visible drift; other combinations remain untested. Choose an available format explicitly;
                           size estimates are unavailable for this backend.
                         </p>
                       )}
@@ -1156,14 +1170,15 @@ function App() {
                     name,
                     classification,
                     precisionProfile,
+                    suggestedFormat,
                   ) => {
                     // GGUF groups all precisions; encoder F16 means safetensors.
                     const target =
-                      key === "GGUF"
+                      suggestedFormat || (key === "GGUF"
                         ? "Q4_K_M"
                         : kind === "text_encoder" && key === "F16"
                           ? "F16_ST"
-                          : key;
+                          : key);
                     setModelKind(kind);
                     setContainer(key === "GGUF" ? "gguf" : "safetensors");
                     setFormat(target);
@@ -1264,6 +1279,34 @@ function App() {
             <X size={20} />
           </button>
         </div>
+        <div className="folder-location">
+          <label className="field-label" htmlFor="folder-location">Drive or location</label>
+          <select
+            id="folder-location"
+            value={locations
+              .filter((location) => {
+                let folder = (listing?.path || "").replace(/\\/g, "/");
+                let root = location.path.replace(/\\/g, "/").replace(/\/$/, "");
+                if (config?.platform === "nt") {
+                  folder = folder.toLowerCase();
+                  root = root.toLowerCase();
+                }
+                return folder === root || folder.startsWith(root + "/");
+              })
+              .sort((a, b) => b.path.length - a.path.length)[0]?.path || ""}
+            disabled={browsing || !locations.length}
+            onChange={(event) => browse(event.target.value)}
+          >
+            <option value="" disabled>Choose a drive or folder</option>
+            {["Places", "Drives"].map((group) => (
+              <optgroup key={group} label={group}>
+                {locations.filter((location) => location.group === group).map((location) => (
+                  <option key={location.path} value={location.path}>{location.label}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </div>
         <form
           className="folder-address"
           onSubmit={(event) => {
@@ -1274,7 +1317,7 @@ function App() {
           <button
             type="button"
             aria-label="Parent directory"
-            disabled={browsing || !listing}
+            disabled={browsing || !listing || listing.path === listing.parent}
             onClick={() => browse(listing!.parent)}
           >
             <ArrowUp size={18} />

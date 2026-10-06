@@ -1,8 +1,9 @@
 # Krea 2 molbal backend preparation
 
 Prepared and implemented: 2026-10-06. The Workbench now dispatches Krea GGUF
-to the pinned source through `krea_backend.py`. Small synthetic exports are tested;
-no ComfyUI installation change or large-model conversion/render was performed.
+to the pinned source through `krea_backend.py`. Synthetic exports and a full-model Q4_0 two-prompt render comparison are tested.
+See [runtime evidence](krea2-render-validation.md). No shared ComfyUI installation
+was changed.
 
 ## Secured backend
 
@@ -79,8 +80,8 @@ estimates rather than reuse a mismatched planner.
    the allowlisted formats for the chosen backend. Reuse shared jobs, cancellation
    and output/log state; do not add a second scheduler or custom select control.
 5. Communicate the required Krea-capable molbal loader and pinned backend version
-   in the result/guide. The matrix handoff remains restricted until full-model
-   render evidence exists; synthetic export is not image-quality evidence.
+   in the result/guide. The matrix now records the scoped Q4_0 render
+   evidence and hands off that exact precision; other levels are not certified.
 
 ## Loader deployment and next tests
 
@@ -97,11 +98,11 @@ worker failure, malformed/empty output, cancellation, scalar-scaled FP8 values
 and atomic publication. Fresh extraction avoids trusting a mutable code cache.
 The GGUF reader is closed even when parsing fails, preserving Windows cleanup.
 
-Next select a real installed
-Krea checkpoint for baseline versus converted renders, identical seed/prompt/
-encoder/VAE, including appropriate Raw/Turbo settings. Verify the exact molbal
-loader revision and record output size/visual drift separately from successful
-loading. Linux and LoRA/offload behavior require their own evidence.
+A real installed INT8 ConvRot checkpoint was reconstructed to F16 and exported
+to Q4_0. Four same-seed cat/dog renders with the installed encoder/VAE succeeded
+with small visible drift. The installed city96 loader rejected the exact GGUF;
+the pinned molbal loader rendered it. See [full runtime scope](krea2-render-validation.md).
+Other checkpoints/precisions, Linux and LoRA/forced-offload behavior remain open.
 
 ## Current status
 
@@ -111,9 +112,10 @@ loading. Linux and LoRA/offload behavior require their own evidence.
   small synthetic sources through the actual pinned subprocess. Classic native
   `convert.py` retains its city96 Krea guard; the shared GUI pipeline dispatches
   allowlisted Krea requests to molbal.
-- Matrix GGUF cell: **Validation pending** / **molbal loader required**. Full-model
-  runtime validation is still pending; the matrix does not claim verified renders.
-- Full-model Krea conversion/render validation: **pending**, no large model downloaded.
+- Matrix GGUF cell: **Visible drift** / **Q4_0 / molbal loader**, with exact precision
+  handoff and one-checkpoint/two-prompt evidence.
+- Full-model Q4_0 render validation: **completed** against the already-quantized
+  installed INT8 checkpoint, not an unquantized original. Other scopes remain open.
 - Mistral and ERNIE integration: **separate later work**.
 
 ## Workbench usage and restrictions
