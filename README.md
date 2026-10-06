@@ -857,3 +857,7 @@ The initial Krea eight-step comparisons share mosaic artifacts. Controlled
 source sampling at 52 steps reduces them substantially; a correctly identified
 Raw/Turbo checkpoint and a clean source/GGUF quality baseline remain pending.
 See [the diagnostic follow-up](docs/krea2-render-validation.md#shared-mosaic-artifact-follow-up).
+
+Z-Image Turbo batch evidence now covers FP8/INT8 plain/mixed, NVFP4, the native
+INT4 prototype and Q4_K_M, with visible drift in a preserved single-pass workflow
+with two LoRAs. See [validation and limits](docs/zit-batch-validation.md).

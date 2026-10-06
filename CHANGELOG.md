@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Test: Z-Image Turbo single-pass stored-workflow batch with two active LoRAs;
+  FP8/INT8 plain/mixed, NVFP4, native INT4 prototype and only Q4_K_M GGUF
+  rendered with visible drift; record scope, images and repeatable BF16 baseline.
+
 - Docs: Correct the Krea render assessment after shared mosaic artifacts were
   identified; record controlled VAE/resolution/step checks and distinguish
   successful loading/relative drift from an approved quality baseline.

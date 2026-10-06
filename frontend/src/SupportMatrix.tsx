@@ -327,7 +327,7 @@ export function SupportMatrix({
         <h3>INT4 + ConvRot</h3>
         <p>
           Native 4-bit ConvRot has passed SDXL rendering, LoRA and offload tests
-          on one checkpoint. It remains outside the standard conversion formats
+          on one checkpoint, plus Z-Image Turbo single-pass rendering with two LoRAs. It remains outside the standard conversion formats
           until version guards and supported-model integration are implemented.
           The diffusion matrix records the tested mixed-precision policy and
           leaves other models untested.

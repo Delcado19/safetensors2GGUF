@@ -150,3 +150,11 @@ uv run pytest --tb=short -q --basetemp .pytest-tmp -p no:cacheprovider
 # Trigger documentation check manually
 # (start agent via Claude Code)
 ```
+
+## Runtime test defaults
+
+Prefer an existing matching workflow from the installed user workflow folder,
+using a named isolated copy and preserving sampler/steps/CFG/resolution/LoRAs.
+Change prompt and necessary model/loader/output references only. A grouped GGUF
+Untested cell means one representative precision (Q4_K_M by default), not all
+GGUF precisions, unless the user explicitly requests them.

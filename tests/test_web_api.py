@@ -106,7 +106,8 @@ def test_support_matrix_uses_shared_classifications_and_reasons():
     assert 'Default/Base policy' in lumina['NVFP4_MIXED__reason']
     turbo = next(row for row in data['diffusion']['rows'] if row['id'] == 'lumina2_turbo')
     assert turbo['NVFP4_MIXED'] == 'caution' and turbo['precision_profile'] == 'z_image_turbo'
-    assert turbo['FP8_MIXED'] == 'unknown' and turbo['INT8_MIXED'] == 'unknown'
+    assert turbo['FP8_MIXED'] == 'caution' and turbo['INT8_MIXED'] == 'caution'
+    assert turbo['GGUF'] == 'caution' and turbo['GGUF__scope'] == 'Q4_K_M / 2 LoRAs'
     assert 'Two prompts' in turbo['NVFP4_MIXED__reason']
     full = next(row for row in data['text_encoder']['rows'] if row['id'] == 'mistral-small-3.2-24b_full')
     pruned = next(row for row in data['text_encoder']['rows'] if row['id'] == 'mistral-small-3.2-24b_flux2_pruned')
@@ -123,7 +124,7 @@ def test_support_matrix_uses_shared_classifications_and_reasons():
     assert prototype in data['diffusion']['formats']
     assert prototype not in data['text_encoder']['formats']
     for row in data['diffusion']['rows']:
-        assert row[prototype] == ('caution' if row['arch'] == 'sdxl' else 'unknown')
+        assert row[prototype] == ('caution' if row['arch'] == 'sdxl' or row['id'] == 'lumina2_turbo' else 'unknown')
         assert row[prototype + '__selectable'] == 'false'
         assert row[prototype + '__reason']
     sdxl = next(row for row in data['diffusion']['rows'] if row['arch'] == 'sdxl')

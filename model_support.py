@@ -1090,6 +1090,23 @@ def build_workbench_support_tables() -> dict:
                     'BF16. Two prompts, seed 1212121, nine Euler/simple steps, no LoRA. '
                     'This does not certify the default/Base policy or other quantizations. '
                     'Source: docs/quantization-size-audit.md, 2026-10-05 runtime tests.')
+                # One stored single-pass workflow, fixed seeds and two active
+                # LoRAs. This evidence must not leak into Base/default policy.
+                for fmt in ('GGUF', 'FP8', 'FP8_MIXED', 'INT8', 'INT8_MIXED', 'NVFP4'):
+                    turbo[fmt] = SUPPORT_CAUTION
+                    if fmt == 'GGUF':
+                        turbo['GGUF__format'] = 'Q4_K_M'
+                    turbo[fmt + '__scope'] = 'Q4_K_M / 2 LoRAs' if fmt == 'GGUF' else 'Single-pass / 2 LoRAs'
+                    turbo[fmt + '__reason'] = (
+                        'Z-Image Turbo BF16 source, stored Seed Variance Enhancer single-pass '
+                        'workflow: successful still-life render with two active LoRAs, but '
+                        'visible changes to object placement, cloth and background details. '
+                        '1120x1440, eight dpmpp_sde/ddim_uniform steps, CFG 1, shift 3.5; '
+                        'stored sampler/enhancer seeds retained. The repeated source was '
+                        'pixel-identical. Safetensors use z_image_turbo protection; GGUF '
+                        'evidence covers only Q4_K_M through city96, not other precisions. '
+                        'One checkpoint/prompt/workflow on ComfyUI 0.38.0, RTX 5080; '
+                        'other contexts remain untested. Source: docs/zit-batch-validation.md.')
                 rows.append(turbo)
             if key == 'mistral-small-3.2-24b':
                 row.update(id=key + '_flux2_pruned', display_name='Mistral Small 3.2 24B · FLUX.2 pruned')
@@ -1136,10 +1153,18 @@ def build_workbench_support_tables() -> dict:
             fmt = 'INT4_CONVROT_MIXED'
             format_keys.insert(format_keys.index('INT8_MIXED') + 1, fmt)
             for row in rows:
-                row[fmt] = SUPPORT_CAUTION if row['arch'] == 'sdxl' else SUPPORT_UNKNOWN
+                zit = row['id'] == 'lumina2_turbo'
+                row[fmt] = SUPPORT_CAUTION if row['arch'] == 'sdxl' or zit else SUPPORT_UNKNOWN
                 row[fmt + '__selectable'] = 'false'
-                row[fmt + '__scope'] = 'SDXL checkpoint test' if row['arch'] == 'sdxl' else 'Prototype'
+                row[fmt + '__scope'] = ('ZIT / 2 LoRAs' if zit else
+                                       'SDXL checkpoint test' if row['arch'] == 'sdxl' else 'Prototype')
                 row[fmt + '__reason'] = (
+                    'Z-Image Turbo BF16, z_image_turbo protection, 180 native INT4 ConvRot '
+                    'Linear layers: successful single-pass still-life render with two active '
+                    'LoRAs, but substantial cloth/background and framing drift. Kernel '
+                    'Kitchen 0.2.36 on RTX 5080; production/version integration and forced '
+                    'offload remain separate. Source: docs/zit-batch-validation.md. '
+                    if zit else
                     'RealVisXL V50 Lightning diffusion UNet, mixed precision: nine successful '
                     'renders including LoRA, classic CPU offload and dynamic VRAM offload. '
                     'Visible changes to ears, face, framing and knitting versus the source. '

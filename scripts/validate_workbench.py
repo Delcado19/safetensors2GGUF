@@ -303,7 +303,7 @@ def main():
         expect(page.get_by_role('region', name='Selected compatibility details')).to_contain_text('whiskers')
         page.get_by_label('Find a model').fill('lumina2')
         page.get_by_label('Evidence filter').select_option('unknown')
-        expect(page.locator('.support-table tbody tr')).to_have_count(2)  # Both variants have untested INT4 evidence.
+        expect(page.locator('.support-table tbody tr')).to_have_count(1)  # Only Base retains untested INT4 evidence.
         page.get_by_label('Evidence filter').select_option('all')
         page.get_by_role('button', name=re.compile(r', INT8 \+ ConvRot.*mixed precision: Verified$')).click()
         headers = page.locator('.support-table thead th')
