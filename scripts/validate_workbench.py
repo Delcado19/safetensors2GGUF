@@ -230,7 +230,7 @@ def main():
         expect(page.get_by_role('region', name='Selected compatibility details')).to_contain_text('no same-seed source comparison')
         expect(page.get_by_role('button', name='Use format')).to_be_enabled()
         page.get_by_label('Find a model').fill('krea2')
-        krea_gguf = page.get_by_role('button', name=re.compile(r', GGUF: Integration pending$'))
+        krea_gguf = page.get_by_role('button', name=re.compile(r', GGUF: Validation pending$'))
         expect(krea_gguf).to_contain_text('molbal loader required')
         expect(page.locator('.model-code')).to_have_text('(krea2)')
         krea_gguf.click()
@@ -329,6 +329,30 @@ def main():
         # Prototype information never inserts a nonfunctional conversion choice.
         page.get_by_role('button', name='Convert model', exact=True).first.click()
         assert 'INT4' not in page.locator('#format').inner_text()
+        # Inspect changes available formats, never silently changes the request.
+        krea_source = root / 'krea-ui.safetensors'
+        save_file({'first.weight': torch.ones(64, 64),
+                   'txtfusion.projector.weight': torch.ones(64, 64),
+                   'blocks.0.attn.wq.weight': torch.randn(64, 64)}, str(krea_source))
+        page.set_viewport_size({'width': 1440, 'height': 1100})
+        page.get_by_role('button', name='GGUF For ComfyUI-GGUF').click()
+        page.locator('#source').fill(str(krea_source))
+        expect(page.get_by_text(re.compile(r'Z-Image Base / Lumina 2.0.*Choose a matching source model'))).not_to_be_visible()
+        krea_output = root / f'krea-ui-{uuid.uuid4().hex}.gguf'
+        page.locator('#destination').fill(str(krea_output))
+        page.locator('#format').select_option('Q4_K_M')
+        page.get_by_role('button', name='Inspect & estimate').click()
+        expect(page.get_by_text('krea2', exact=True)).to_be_visible()
+        expect(page.locator('#format')).to_have_value('Q4_K_M')
+        expect(page.get_by_role('button', name='Convert model', exact=True).last).to_be_disabled()
+        page.locator('#format').select_option('Q4_0')
+        assert page.locator('#format optgroup').all_text_contents() == ['FP16BF16', 'Q8_0', 'Q5_1Q5_0Q4_1Q4_0']
+        page.get_by_role('button', name='Convert model', exact=True).last.click()
+        expect(page.get_by_text(str(krea_output), exact=True)).to_be_visible(timeout=30000)
+        page.get_by_role('heading', name='Your model is ready').wait_for(timeout=30000)
+        assert krea_output.is_file()
+        assert page.locator('#format').input_value() == 'Q4_0'
+        page.screenshot(path=str(root / 'krea-adapter-desktop.png'), full_page=True)
         assert not errors, errors
         print(json.dumps({'browser': 'Chromium', 'conversion': 'FP8_MIXED succeeded',
                           'text_encoder': 'F16_ST succeeded',

@@ -6,7 +6,8 @@ import threading
 import uuid
 from pathlib import Path
 
-from convert import convert_file
+from convert import convert_file, load_state_dict
+from models.architectures import detect_arch
 from conversion_io import validate_output
 from fix_5d_tensors import fix_5d_tensors as _fix_5d
 from fix_pad_tokens import fix_pad_tokens as _fix_pad
@@ -112,6 +113,13 @@ def _pipeline(
     # Check the final output before doing expensive work; honor the GUI checkbox.
     final_dst = _resolve_dst(src, dst_raw, quant_key) or str(_strip_model_suffix(src)) + f"-{quant_key}.gguf"
     validate_output(src, final_dst, overwrite)
+    # Safetensors detection reads headers; do not load eager .ckpt sources twice.
+    if Path(src).suffix == '.safetensors' and detect_arch(load_state_dict(src)).arch == 'krea2':
+        from krea_backend import convert_krea
+        return convert_krea(src, final_dst, quant_key, overwrite=overwrite,
+                            cancel_event=cancel_event, on_log=_log,
+                            on_progress=lambda index, total, phase: _frac(
+                                index / total if total else 0, f'{phase}: {index}/{total}'))
     is_kquant = quant_key in LLAMA_QUANT_KEYS
     # Total-step count for k-quants is 2 normally, 3 if a 5D side-car exists.
     # We only know needs_fix after step 1, so step 1 shows "1/2+" as a hint.

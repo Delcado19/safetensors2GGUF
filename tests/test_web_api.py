@@ -47,6 +47,34 @@ def _wait(client, job_id):
     pytest.fail('Conversion worker did not finish')
 
 
+def test_krea_inspection_dispatch_and_format_guards(tmp_path):
+    """Expose Krea capabilities explicitly and execute its pinned worker via the API."""
+    source = tmp_path / 'krea.safetensors'
+    save_file({'first.weight': torch.ones(64, 64),
+               'txtfusion.projector.weight': torch.ones(64, 64),
+               'blocks.0.attn.wq.weight': torch.randn(64, 64)}, str(source))
+    client = _client()
+    params = {'source': str(source), 'destination': str(tmp_path / 'krea.gguf'),
+              'container': 'gguf', 'format': 'Q4_K_M'}
+    inspection = client.post('/api/inspect', json=params)
+    assert inspection.status_code == 200
+    data = inspection.json()
+    assert data['architecture'] == 'krea2' and data['backend'] == 'molbal'
+    assert data['estimated_bytes'] is None and data['support'] == 'unknown'
+    assert 'molbal GGUF loader' in data['support_reason']
+    assert data['formats'] == [list(choice) for choice in web_api.KREA_CHOICES]
+    assert client.post('/api/jobs', json=params).status_code == 400
+    params['format'] = 'Q4_0'
+    assert client.post('/api/jobs', json=params | {'threads': 2}).status_code == 400
+    response = client.post('/api/jobs', json=params)
+    assert response.status_code == 202
+    job = _wait(client, response.json()['id'])
+    assert job['status'] == 'succeeded', job['error']
+    assert Path(job['output']).is_file()
+    other = _source(tmp_path)
+    assert client.post('/api/jobs', json=params | {'source': str(other), 'destination': str(tmp_path / 'other.gguf')}).status_code == 400
+
+
 def test_support_matrix_uses_shared_classifications_and_reasons():
     """The workbench exposes the existing support registry, including negative evidence."""
     client = _client()
@@ -65,10 +93,10 @@ def test_support_matrix_uses_shared_classifications_and_reasons():
     assert qwen['GGUF'] == 'verified' and qwen['GGUF__scope'] == 'Q4_K_M smoke test'
     assert '3962' in qwen['GGUF__reason'] and 'quality parity' in qwen['GGUF__reason']
     krea = next(row for row in data['diffusion']['rows'] if row['arch'] == 'krea2')
-    assert krea['GGUF'] == 'bad'
+    assert krea['GGUF'] == 'unknown'
     assert krea['GGUF__scope'] == 'molbal loader required'
-    assert krea['GGUF__label'] == 'Integration pending' and krea['GGUF__pending'] == 'true'
-    assert 'adapter is not enabled' in krea['GGUF__reason']
+    assert krea['GGUF__label'] == 'Validation pending' and krea['GGUF__pending'] == 'true'
+    assert 'adapter exports' in krea['GGUF__reason']
     assert 'not been runtime-tested' in krea['GGUF__reason']
     assert qwen['NVFP4_MIXED'] == 'caution' and 'whiskers' in qwen['NVFP4_MIXED__reason']
     assert qwen['INT8_MIXED'] == 'caution' and 'small visible detail' in qwen['INT8_MIXED__reason']

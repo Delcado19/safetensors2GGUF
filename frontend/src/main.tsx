@@ -73,6 +73,8 @@ type Inspection = {
   destination: string;
   support?: string;
   support_reason?: string | null;
+  formats?: [string, string][];
+  backend?: string;
 };
 type Listing = {
   path: string;
@@ -127,6 +129,14 @@ function App() {
   const [overwrite, setOverwrite] = useState(false);
   const [keepIntermediate, setKeepIntermediate] = useState(false);
   const [inspection, setInspection] = useState<Inspection>();
+  const [sourceFormats, setSourceFormats] = useState<{
+    source: string;
+    choices: [string, string][];
+    backend?: string;
+  }>();
+  const kreaSource =
+    modelKind === "diffusion" && container === "gguf" &&
+    sourceFormats?.source === source && sourceFormats.backend === "molbal";
   const [inspecting, setInspecting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [job, setJob] = useState<Job>();
@@ -192,6 +202,11 @@ function App() {
 
   // Changes invalidate estimates immediately; no stale response may replace them.
   useEffect(() => {
+    // Matrix evidence for the previous model cannot follow a replacement source.
+    setSupportSelection("");
+  }, [source]);
+
+  useEffect(() => {
     inspectVersion.current++;
     setInspection(undefined);
     setInspecting(false);
@@ -246,11 +261,11 @@ function App() {
       destination,
       container,
       format,
-      precision_profile: modelKind === "diffusion" ? profile : "auto",
-      executable: modelKind === "diffusion" ? executable : "",
-      threads: modelKind === "diffusion" ? threads : 0,
+      precision_profile: modelKind === "diffusion" && !kreaSource ? profile : "auto",
+      executable: modelKind === "diffusion" && !kreaSource ? executable : "",
+      threads: modelKind === "diffusion" && !kreaSource ? threads : 0,
       overwrite,
-      keep_intermediate: modelKind === "diffusion" && keepIntermediate,
+      keep_intermediate: modelKind === "diffusion" && !kreaSource && keepIntermediate,
     };
   }
 
@@ -260,7 +275,10 @@ function App() {
     setError("");
     try {
       const result = await api<Inspection>("inspect", parameters());
-      if (version === inspectVersion.current) setInspection(result);
+      if (version === inspectVersion.current) {
+        setInspection(result);
+        if (result.formats) setSourceFormats({ source, choices: result.formats, backend: result.backend });
+      }
     } catch (reason) {
       if (version === inspectVersion.current)
         setError((reason as Error).message);
@@ -656,11 +674,20 @@ function App() {
                         choices={
                           ((modelKind === "text_encoder"
                             ? config?.text_encoder_formats[container]
-                            : config?.formats[container]) || [
+                            : container === "gguf" && sourceFormats?.source === source
+                              ? sourceFormats.choices
+                              : config?.formats[container]) || [
                             [format, format],
                           ]) as [string, string][]
                         }
                       />
+                      {kreaSource && (
+                        <p className="preview-note">
+                          Krea GGUF requires a Krea-capable ComfyUI core and the molbal GGUF loader.
+                          Full-model rendering is not yet validated. Choose an available format explicitly;
+                          size estimates are unavailable for this backend.
+                        </p>
+                      )}
                       {modelKind === "text_encoder" && (
                         <div className="encoder-note">
                           <strong>
@@ -758,7 +785,7 @@ function App() {
                               </>
                             )}
                           {container === "gguf" &&
-                            modelKind === "diffusion" && (
+                            modelKind === "diffusion" && !kreaSource && (
                               <>
                                 <label
                                   className="field-label"
@@ -823,7 +850,8 @@ function App() {
                       <button
                         className="primary"
                         disabled={
-                          !source.trim() || !config || busy || submitting
+                          !source.trim() || !config || busy || submitting ||
+                          (modelKind === "diffusion" && container === "gguf" && sourceFormats?.source === source && !sourceFormats.choices.some(([, key]) => key === format))
                         }
                         type="submit"
                       >

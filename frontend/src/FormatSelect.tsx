@@ -34,7 +34,9 @@ export function FormatSelect({
     container === "gguf"
       ? ["F16", "F32", "BF16"].includes(value)
         ? `Floating-point GGUF. ${formatName(value)} uses the internal GGUF type ${value}.`
-        : `GGUF ${value}. Q8_0 is written directly; K-quants require llama-quantize. Bit width alone does not predict visual fidelity.`
+        : /^Q[45]_[01]$/.test(value)
+          ? `GGUF ${value}. Krea uses the pinned streaming converter. A matching molbal loader is required; full-model rendering remains untested.`
+          : `GGUF ${value}. Q8_0 is written directly; K-quants require llama-quantize. Bit width alone does not predict visual fidelity.`
       : (
           {
             F16: "Half-precision float; a precision cast rather than low-bit quantization.",
@@ -57,8 +59,12 @@ export function FormatSelect({
             match: (key: string) => key === "Q8_0",
           },
           {
+            name: "Block quants",
+            match: (key: string) => /^Q[45]_[01]$/.test(key),
+          },
+          {
             name: "K-quants",
-            match: (key: string) => key.startsWith("Q") && key !== "Q8_0",
+            match: (key: string) => key.startsWith("Q") && key.includes("_K"),
           },
         ]
       : [
@@ -79,6 +85,9 @@ export function FormatSelect({
         onChange={(event) => onChange(event.target.value)}
         aria-describedby={id + "-description"}
       >
+        {!choices.some(([, key]) => key === value) && (
+          <option value={value} disabled>{formatName(value)} — unavailable; choose a format</option>
+        )}
         {groups.map((group) => {
           const entries = choices.filter(([, key]) => group.match(key));
           return entries.length ? (

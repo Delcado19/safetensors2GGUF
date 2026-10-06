@@ -113,11 +113,13 @@ pruned configuration/export handling are shown as pending, not as universal
 upstream format failures. This presentation split does not implement the missing
 model detection/configuration work.
 
-Krea GGUF displays **Integration pending** / **molbal loader required**. Pending
+Krea GGUF displays **Validation pending** / **molbal loader required**. Pending
 cells use a clock icon, visible explanations, unique accessible descriptions
 and a separate evidence filter. They are excluded from the unsupported filter;
-their format-handoff button stays disabled. Internally their existing blocked
-status remains intact. The classical tables/export guard contracts are unchanged.
+their format-handoff button stays disabled. Mistral keeps its existing blocked
+status. Krea has unknown render evidence; its pinned export adapter is implemented
+and available through explicit source inspection. The classical table/native-writer
+contracts remain unchanged.
 
 The [unsupported-entry upstream audit](unsupported-matrix-audit.md) reviews all
 negative cells as of 2026-10-06. Some grouped claims are stale or overbroad;
@@ -409,3 +411,13 @@ browser verification, not a complete screen-reader or assistive-technology audit
 References: [Vite backend integration](https://vite.dev/guide/backend-integration.html),
 [FastAPI CORS/origin model](https://fastapi.tiangolo.com/tutorial/cors/),
 [React effect cleanup](https://react.dev/reference/react/useEffect).
+
+## Krea GGUF adapter
+
+**Inspect & estimate** exposes Krea-specific non-K formats without changing the
+requested format. Choose one explicitly; unsupported prior selections remain
+visible as disabled placeholders and cannot be submitted. The pinned streaming
+backend runs in a disposable process, preserves prior outputs on failure/cancel,
+and requires no external llama-quantize. Size estimates are unavailable.
+The loader requirement and pending full-model image validation remain visible
+after changing precision. See [Krea adapter details](krea2-backend-preparation.md).

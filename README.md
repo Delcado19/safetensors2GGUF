@@ -93,9 +93,11 @@ The guide distinguishes implemented INT8 ConvRot from the nonselectable,
 SDXL-tested **INT4 + ConvRot prototype**. Internal/API keys and filenames retain
 their existing spellings for compatibility.
 
-Krea GGUF backend preparation now includes a project-owned pinned molbal source
-snapshot. The conversion adapter is not yet enabled; see
-[preparation status and next implementation](docs/krea2-backend-preparation.md).
+Krea GGUF now uses the project-owned pinned molbal source. Inspect the source
+to expose FP16/BF16/Q8_0/Q5_1/Q5_0/Q4_1/Q4_0, then choose explicitly. No
+llama-quantize or upstream fetch is required for these exports. A Krea-capable
+ComfyUI core and molbal loader are required; full-model rendering remains
+unvalidated. See [adapter status and remaining tests](docs/krea2-backend-preparation.md).
 
 ### Python environment
 

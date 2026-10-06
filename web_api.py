@@ -31,6 +31,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from conversion_service import _pipeline, _resolve_dst_st, _strip_model_suffix
 from convert import ConversionCancelled, load_state_dict
 from conversion_io import validate_output
+from krea_backend import KREA_CHOICES, LOADER_NOTE, validate_krea_request
 from convert_safetensors import convert_to_safetensors
 from component_extract import analyze_components, default_output_root, extract_components
 from fix_pad_tokens import fix_pad_tokens
@@ -324,6 +325,8 @@ def create_app() -> FastAPI:
         params.source = str(source.resolve())
         choices = TEXT_ENCODER_FORMAT_CHOICES if params.model_kind == 'text_encoder' else (
             ALL_QUANT_CHOICES if params.container == 'gguf' else SAFETENSORS_DTYPE_CHOICES)
+        if params.model_kind == 'diffusion' and params.container == 'gguf':
+            choices = [*choices, *KREA_CHOICES]
         if params.format not in {key for _, key in choices}:
             raise HTTPException(400, 'Unsupported quantization format')
         if params.model_kind == 'text_encoder':
@@ -382,14 +385,21 @@ def create_app() -> FastAPI:
                         'destination': params.destination, 'support': support, 'support_reason': reason}
             arch = detect_arch(load_state_dict(params.source))
             if params.container == 'gguf':
-                size = estimate_output_size(params.source, params.format)
+                available = KREA_CHOICES if arch.arch == 'krea2' else ALL_QUANT_CHOICES
+                # Molbal protection differs from our native planner. No borrowed estimate.
+                size = None if arch.arch == 'krea2' else estimate_output_size(params.source, params.format)
                 breakdown = None
             else:
                 breakdown = safetensors_output_size_breakdown(params.source, params.format, arch,
                                                              precision_profile=params.precision_profile)
                 size = breakdown['total'] if breakdown else None
-            return {'architecture': arch.arch, 'source_bytes': Path(params.source).stat().st_size,
-                    'estimated_bytes': size, 'breakdown': breakdown, 'destination': params.destination}
+            result = {'architecture': arch.arch, 'source_bytes': Path(params.source).stat().st_size,
+                      'estimated_bytes': size, 'breakdown': breakdown, 'destination': params.destination}
+            if params.container == 'gguf':
+                result['formats'] = available
+                if arch.arch == 'krea2':
+                    result.update(backend='molbal', support='unknown', support_reason=LOADER_NOTE)
+            return result
         except Exception as exc:
             raise HTTPException(400, str(exc)) from exc
 
@@ -403,6 +413,17 @@ def create_app() -> FastAPI:
             except Exception as exc:
                 # Invalid checkpoint headers must surface as input errors,
                 # including format-specific exceptions from safetensors/torch.
+                raise HTTPException(400, str(exc)) from exc
+        if params.model_kind == 'diffusion' and params.container == 'gguf':
+            try:
+                arch = detect_arch(load_state_dict(params.source))
+                if arch.arch == 'krea2':
+                    validate_krea_request(params.source, params.format)
+                    if params.executable or params.threads or params.keep_intermediate or params.precision_profile != 'auto':
+                        raise ValueError('Krea GGUF uses its pinned streaming backend; diffusion advanced settings do not apply.')
+                elif params.format not in {key for _, key in ALL_QUANT_CHOICES}:
+                    raise ValueError('This GGUF format is available only for Krea models.')
+            except Exception as exc:
                 raise HTTPException(400, str(exc)) from exc
         if params.model_kind == 'diffusion' and params.container == 'gguf' and params.format in LLAMA_QUANT_KEYS:
             executable = Path(params.executable) if params.executable else find_exe()

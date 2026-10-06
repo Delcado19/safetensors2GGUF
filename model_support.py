@@ -96,8 +96,9 @@ _STRUCTURALLY_IMPOSSIBLE: dict[tuple[str, str], str] = {
         "Krea 2 GGUF requires the Krea-capable molbal/ComfyUI-GGUF loader "
         "according to the published model instructions. The source snapshot "
         "is secured at 5a0a3ffa0e3eae5c6af8b0b981b660a24d5fbc04, but our "
-        "conversion adapter is not enabled and the exact converter/loader "
-        "combination has not been runtime-tested. Loader requirement is "
+        "native city96 conversion path cannot export this architecture. The "
+        "Workbench's pinned molbal adapter exports an explicit non-K allowlist, "
+        "but the exact converter/loader combination has not been runtime-tested. Loader requirement is "
         "documented; local compatibility, output quality and coexistence with "
         "the city96 workflow remain pending. Existing safetensors conversion "
         "is a separate path. Source: docs/krea2-backend-preparation.md and "
@@ -1044,7 +1045,9 @@ def build_workbench_support_tables() -> dict:
             row['id'] = key
             row['display_name'] = row['display_name'].rsplit(' (', 1)[0].replace(' Family', '').replace('Lumina-Image 2.0', 'Lumina 2.0')
             if key == 'krea2':
-                row['GGUF__label'] = 'Integration pending'
+                # Export checks pass; do not promote pending full-model renders.
+                row['GGUF'] = SUPPORT_UNKNOWN
+                row['GGUF__label'] = 'Validation pending'
                 row['GGUF__scope'] = 'molbal loader required'
                 row['GGUF__pending'] = 'true'
             if key == 'lumina2':

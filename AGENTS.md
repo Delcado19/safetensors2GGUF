@@ -32,8 +32,10 @@ Krea preparation completed: the complete molbal source at commit
 `5a0a3ffa0e3eae5c6af8b0b981b660a24d5fbc04` is tracked in `third_party/molbal`
 with license/provenance/checksum and an offline verifier. Read
 `docs/krea2-backend-preparation.md` for the concrete adapter contract and remaining
-work. Source preservation does not enable the production adapter or certify Krea
-renders. Complete that isolated implementation/testing before changing support.
+work. The Workbench adapter is implemented and synthetic exports pass for its
+seven-format allowlist. Full-model Krea rendering, loader coexistence, LoRA,
+offload and Linux tests remain pending; do not promote synthetic export evidence
+to verified image support.
 
 Read and retain this open TODO at the start of every project session. Do not
 start implementing it merely because a session begins; use it when planning

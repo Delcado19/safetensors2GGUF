@@ -1,8 +1,8 @@
 # Krea 2 molbal backend preparation
 
-Prepared: 2026-10-06. Scope: pin and preserve source, inspect the conversion
-contract, and define the next implementation/test step. No production adapter,
-ComfyUI installation change or large-model conversion/render was performed.
+Prepared and implemented: 2026-10-06. The Workbench now dispatches Krea GGUF
+to the pinned source through `krea_backend.py`. Small synthetic exports are tested;
+no ComfyUI installation change or large-model conversion/render was performed.
 
 ## Secured backend
 
@@ -20,7 +20,7 @@ ComfyUI installation change or large-model conversion/render was performed.
 This source snapshot remains available from our own checkout if the original
 repository disappears. It does not yet solve offline packaging of Python wheels,
 ComfyUI/Kitchen or the other llama.cpp toolchains. No moving upstream HEAD should
-be fetched by the future runtime adapter.
+be fetched by the runtime adapter.
 
 ## Inspected contract and limits
 
@@ -34,7 +34,8 @@ expose the function's overwrite parameter. Do not drive interactive prompts.
 The converter's top-level imports and `lora.py` imports are Python/Torch/NumPy/
 GGUF/safetensors utilities; ComfyUI core is not imported at those entrypoints.
 This suggests a subprocess in our uv environment can handle the initial standard
-formats, but imports/execution have not yet been runtime-tested. Custom ConvRot
+formats. Imports and real small-file exports have now been exercised for every
+allowlisted format in the application environment. Custom ConvRot
 modes have additional Kitchen/backend requirements and remain outside this step.
 
 Initial Krea capability allowlist:
@@ -59,10 +60,10 @@ broader substring-based safetensors protection list. Do not equate their sizes o
 quality policy. Until a backend-specific estimator is validated, show unavailable
 estimates rather than reuse a mismatched planner.
 
-## Concrete next implementation
+## Implemented adapter contract
 
-1. Verify the tracked archive before extracting into a version-specific local
-   cache using safe archive extraction. Keep upstream source unmodified and our
+1. Verify the tracked archive before extracting into a fresh disposable
+   directory using safe archive extraction. Keep upstream source unmodified and our
    adapter separate. Preserve provenance/license files with distributed builds.
 2. Add a small isolated Python subprocess runner for the pinned `convert_file`
    entrypoint. This prevents its `sys.path`/top-level `lora` imports from colliding
@@ -78,8 +79,8 @@ estimates rather than reuse a mismatched planner.
    the allowlisted formats for the chosen backend. Reuse shared jobs, cancellation
    and output/log state; do not add a second scheduler or custom select control.
 5. Communicate the required Krea-capable molbal loader and pinned backend version
-   in the result/guide. The current matrix remains restricted until actual adapter
-   and render evidence exist; source preservation is not compatibility evidence.
+   in the result/guide. The matrix handoff remains restricted until full-model
+   render evidence exists; synthetic export is not image-quality evidence.
 
 ## Loader deployment and next tests
 
@@ -90,9 +91,13 @@ Use an isolated ComfyUI test profile for initial Krea validation; decide later
 whether to retain a separate profile or package the needed loader with distinct
 node IDs while preserving the existing city96 workflow path.
 
-After the usage reset, perform small synthetic adapter checks first: explicit
+The automated synthetic adapter checks cover: explicit
 format dispatch, tensor names/dtypes/shapes, source-alias/existing-output guards,
-worker failure, cancellation and atomic publication. Then select a real installed
+worker failure, malformed/empty output, cancellation, scalar-scaled FP8 values
+and atomic publication. Fresh extraction avoids trusting a mutable code cache.
+The GGUF reader is closed even when parsing fails, preserving Windows cleanup.
+
+Next select a real installed
 Krea checkpoint for baseline versus converted renders, identical seed/prompt/
 encoder/VAE, including appropriate Raw/Turbo settings. Verify the exact molbal
 loader revision and record output size/visual drift separately from successful
@@ -102,8 +107,30 @@ loading. Linux and LoRA/offload behavior require their own evidence.
 
 - Complete pinned source and license: **secured and tracked**.
 - Offline verification and corruption regression: **implemented**.
-- Production conversion adapter: **planned, not enabled**.
-- Matrix GGUF cell: **Integration pending** / **molbal loader required**, still blocked until
-  the local adapter/converter/loader combination is implemented and validated.
-- Krea conversion/render validation: **pending**, no large model downloaded.
+- Workbench conversion adapter: **implemented**, seven formats exercised with
+  small synthetic sources through the actual pinned subprocess. Classic native
+  `convert.py` retains its city96 Krea guard; the shared GUI pipeline dispatches
+  allowlisted Krea requests to molbal.
+- Matrix GGUF cell: **Validation pending** / **molbal loader required**. Full-model
+  runtime validation is still pending; the matrix does not claim verified renders.
+- Full-model Krea conversion/render validation: **pending**, no large model downloaded.
 - Mistral and ERNIE integration: **separate later work**.
+
+## Workbench usage and restrictions
+
+Select a Krea `.safetensors` source and press **Inspect & estimate**. Inspection
+returns the model-specific allowlist without changing the requested precision.
+If Q4_K_M was selected, its disabled placeholder asks for an explicit supported
+choice; conversion remains disabled until one is chosen. Select FP16, BF16,
+Q8_0, Q5_1, Q5_0, Q4_1 or Q4_0. These exports do not use llama-quantize.
+Changing precision retains source-specific capabilities; choosing another source
+falls back to the normal registry. API job submission independently detects the
+source and rejects wrong-backend formats and inapplicable advanced settings.
+
+Only floating-point (FP32/FP16/BF16 or scalar-scaled FP8) Safetensors sources
+are enabled. Packed INT8, NVFP4, ConvRot and `.comfy_quant` sources are rejected
+before writing rather than being interpreted as ordinary weights. The adapter
+checks normalized names/shapes after export; GGUF architecture, readability,
+nonempty payload and duplicate names are checked before atomic publication.
+Source files and existing destinations survive failure or cancellation.
+No source-size estimate is reused from the native converter.

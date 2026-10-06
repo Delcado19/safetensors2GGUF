@@ -41,9 +41,9 @@ _GGUF_UNSUPPORTED_ARCHITECTURES: dict[str, str] = {
         "has no ernie_image llm_arch entry. Use safetensors output instead."
     ),
     "krea2": (
-        "Krea 2 GGUF is unsupported in this project: it needs an unofficial "
-        "city96/ComfyUI-GGUF fork/PR (#459), not the lcpp.patch version this "
-        "tool targets. Use safetensors output instead."
+        "Krea 2 GGUF is unsupported by this native city96 writer. Use the "
+        "Workbench's pinned molbal adapter with its explicit non-K format "
+        "allowlist, or safetensors output. ComfyUI render validation is pending."
     ),
 }
 

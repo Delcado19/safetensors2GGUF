@@ -124,10 +124,12 @@ def test_gui_refuses_existing_final_output_before_conversion(tmp_path, quant_key
 
 @pytest.mark.parametrize("overwrite", [False, True])
 def test_gui_forwards_overwrite_for_direct_gguf(tmp_path, overwrite):
+    source = tmp_path / 'source.safetensors'
+    save_file({'double_blocks.0.img_attn.proj.weight': torch.ones(2, 2)}, str(source))
     destination = str(tmp_path / "output.gguf")
     arch = SimpleNamespace(arch="flux", fix_path=destination + ".5d.safetensors")
     with patch("conversion_service.convert_file", return_value=(destination, arch)) as convert:
-        assert gui._pipeline("source.safetensors", destination, "F16", "", 0, False, overwrite, queue.Queue()) == destination
+        assert gui._pipeline(str(source), destination, "F16", "", 0, False, overwrite, queue.Queue()) == destination
     assert convert.call_args.kwargs["overwrite"] is overwrite
 
 

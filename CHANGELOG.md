@@ -6,6 +6,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Offline pinned Krea GGUF subprocess adapter with seven explicit non-K
+  formats, verified disposable source extraction, streaming/progress/cancellation,
+  and readable GGUF/tensor-shape checks before atomic publication.
+- Change: Workbench inspection exposes source-specific formats without silent
+  substitution; reject wrong-backend formats and packed Krea sources, omit
+  mismatched size estimates and show the molbal loader/runtime-validation scope.
+- Test: Actual synthetic exports for every Krea format, FP8 scale restoration,
+  API/browser dispatch and preservation after failure, corrupt output or cancel.
+- Fix: Clear previous matrix-selection evidence when the source model changes.
+
+
 - Change: Use full desktop workspace width for the format guide and flexible
   equal-width columns; both compatibility tables fit at 1366px and wider
   with normal text sizing, retaining horizontal scrolling on compact/zoomed views.
