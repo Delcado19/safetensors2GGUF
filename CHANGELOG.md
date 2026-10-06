@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Fix: Replace the obsolete Qwen-Image GGUF rejection with verified Q4_K_M
+  conversion/render smoke-test evidence, including the tested binary and fidelity limits.
+
 - Docs: Audit all 30 unsupported compatibility cells against current upstream
   sources, documenting stale GGUF claims, fork/export limits and retest requirements.
 

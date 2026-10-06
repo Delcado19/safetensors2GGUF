@@ -60,22 +60,15 @@ class TestSupportLevel:
         assert support_level("lumina2", True, "GGUF") == SUPPORT_VERIFIED
         assert support_level("sdxl", False, "GGUF") == SUPPORT_VERIFIED
 
-    def test_gguf_bad_for_qwen_image_structural_gap(self):
-        # 2026-08-23: the format_key == "GGUF" branch used to return
-        # SUPPORT_VERIFIED unconditionally, before ever consulting
-        # _RENDER_CONFIRMED_BAD -- silently overriding the
-        # ("qwen_image", "GGUF") entry already in that set and showing GGUF
-        # as verified for an architecture with no possible GGUF build at
-        # all (city96/ComfyUI-GGUF's lcpp.patch has no qwen_image llm_arch
-        # entry). Must actually surface as BAD, with a tooltip reason
-        # distinguishing "cannot be built" from a render-tested-wrong
-        # result -- caught by build_support_table() still returning
-        # "verified" for this cell after the fix was believed complete.
-        assert support_level("qwen_image", True, "GGUF") == SUPPORT_BAD
+    def test_qwen_gguf_smoke_test_supersedes_old_binary_restriction(self):
+        # One successful local build/render, not a fidelity test for all quants.
+        assert support_level("qwen_image", True, "GGUF") == SUPPORT_VERIFIED
         assert support_reason("qwen_image", "GGUF") is not None
-        assert "lcpp.patch" in support_reason("qwen_image", "GGUF")
+        assert "3962" in support_reason("qwen_image", "GGUF")
+        assert "no same-seed source comparison" in support_reason("qwen_image", "GGUF")
         row = next(r for r in build_support_table() if r["arch"] == "qwen_image")
-        assert row["GGUF"] == SUPPORT_BAD
+        assert row["GGUF"] == SUPPORT_VERIFIED
+        assert row['GGUF__scope'] == 'Q4_K_M smoke test'
         assert row["GGUF__reason"] == support_reason("qwen_image", "GGUF")
 
     def test_gguf_bad_for_safetensors_only_new_architectures(self):

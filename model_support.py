@@ -97,13 +97,6 @@ _STRUCTURALLY_IMPOSSIBLE: dict[tuple[str, str], str] = {
         "requires an unofficial city96/ComfyUI-GGUF fork/PR (#459), not the "
         "lcpp.patch version used here. Safetensors only."
     ),
-    ("qwen_image", "GGUF"): (
-        "No GGUF build exists or can exist with this project's tooling -- "
-        "city96/ComfyUI-GGUF's lcpp.patch (needed to make llama-quantize "
-        "understand diffusion-model GGUFs) has no qwen_image llm_arch entry "
-        "at all. Upstream gap, not a failed/wrong render. "
-        "docs/issues_analysis.md #21's correction."
-    ),
 }
 
 _TE_STRUCTURALLY_IMPOSSIBLE: dict[tuple[str, str], str] = {
@@ -198,19 +191,6 @@ _RENDER_CONFIRMED_BAD: set[tuple[str, str]] = {
     # writeup this classification is based on.
     ("lumina2", "NVFP4"),
     ("lumina2", "NVFP4_MIXED"),
-    # qwen_image GGUF (all K-quants): not a render defect -- conversion
-    # itself is structurally impossible. city96/ComfyUI-GGUF's lcpp.patch
-    # (the patch that makes llama-quantize understand diffusion-model GGUFs
-    # at all) has no `qwen_image` llm_arch entry -- confirmed 2026-08-20
-    # against the current patch on main (zero "qwen" matches) and the
-    # still-open upstream city96/ComfyUI-GGUF#347. llama-quantize.exe
-    # crashes with STATUS_STACK_BUFFER_OVERRUN on the unrecognized
-    # architecture string rather than a clean error. See
-    # docs/issues_analysis.md #21's correction. Same reasoning as clip-l/
-    # clip-bigg's GGUF entries in _TE_RENDER_CONFIRMED_BAD below: BAD (not
-    # UNKNOWN) so the table doesn't invite retesting something that can
-    # never succeed with this project's public llama-quantize dependency.
-    ("qwen_image", "GGUF"),
     # qwen_image plain NVFP4 (Qwen-Image-Edit-2511, 2026-08-20 batch,
     # reviewed 2026-08-23): render-tested via the fixed-seed edit workflow
     # (BF16 text encoder held constant) -- severe full-image mosaic/pixel-
@@ -280,6 +260,15 @@ _RENDER_TESTED_DRIFT: set[tuple[str, str]] = {
 }
 
 _SCOPED_RENDER_NOTES: dict[tuple[str, str], str] = {
+    ('qwen_image', 'GGUF'): (
+        'Qwen-Image-Edit-2511 Q4_K_M: converted and rendered successfully on '
+        '2026-10-05 with Easy-Install llama-quantize build 3962 (c8c07d658), '
+        'ComfyUI 0.38.0 and RTX 5080. The empty __index_timestep_zero__ marker '
+        'was preserved via the companion-file repair path. One cat/hat edit, '
+        'no LoRA and no same-seed source comparison: quality parity and other '
+        'Qwen variants/precisions are not established. The older lcpp.patch '
+        'limitation is specific to that binary, not a universal GGUF ban. '
+        'Source: docs/conversion-safety-validation.md, Qwen GGUF render smoke test.'),
     ('qwen_image', 'NVFP4_MIXED'): (
         'Qwen-Image-Edit-2511, qwen_edit_2511 profile: cat/hat and dog/scarf edits '
         'remained usable; eyes, whiskers and scarf details visibly differed from '
@@ -331,8 +320,10 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
 
     - GGUF: always VERIFIED, EXCEPT an architecture explicitly listed in
       _RENDER_CONFIRMED_BAD for "GGUF" because no build is possible with
-      this project's targeted City96 lcpp.patch path (`qwen_image`,
-      `ernie_image`, `krea2`).
+      this project's targeted City96 lcpp.patch path (`ernie_image`, `krea2`).
+      Qwen-Image-Edit-2511 Q4_K_M has a successful 2026-10-05 conversion/render
+      using the Easy-Install binary; its reason/scope records that one smoke
+      test without claiming source fidelity or every GGUF precision.
       This exception was added 2026-08-23 after the blanket-VERIFIED
       reasoning below silently overrode an already-added
       ("qwen_image", "GGUF") _RENDER_CONFIRMED_BAD entry -- the format_key
@@ -541,13 +532,8 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
       tradeoff, not a bug.
     """
     if format_key == "GGUF":
-        # The "always VERIFIED by design" reasoning above assumes a K-quant
-        # build is actually possible for this architecture at all. It isn't
-        # for qwen_image (city96/ComfyUI-GGUF's lcpp.patch has no qwen_image
-        # llm_arch entry -- docs/issues_analysis.md #21's correction) --
-        # checked first so a structurally-impossible GGUF doesn't silently
-        # show as VERIFIED just because every buildable architecture's GGUF
-        # is. See support_reason() for the corresponding tooltip text.
+        # Check remaining tooling gaps first. Qwen's historical issue #21
+        # restriction is superseded by the recorded Easy-Install smoke test.
         if (arch_key, format_key) in _RENDER_CONFIRMED_BAD:
             return SUPPORT_BAD
         return SUPPORT_VERIFIED
@@ -1024,6 +1010,8 @@ def build_support_table() -> list[dict]:
             row[f"{format_key}__reason"] = support_reason(instance.arch, format_key)
             if instance.arch == 'lumina2' and format_key == 'NVFP4_MIXED':
                 row[f'{format_key}__scope'] = 'Profile-dependent drift'
+            if instance.arch == 'qwen_image' and format_key == 'GGUF':
+                row[f'{format_key}__scope'] = 'Q4_K_M smoke test'
         rows.append(row)
     rows.sort(key=lambda r: r["display_name"])
     return rows

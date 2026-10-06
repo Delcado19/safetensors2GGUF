@@ -909,7 +909,13 @@ into undefined behavior trying to process an MMDiT checkpoint as if it might be 
 text/LLM model — manifesting as the stack-buffer-overrun crash, not a clean error
 message.
 
-**Conclusion: GGUF `Q4_K_M` (and every other llama-quantize K-quant) is currently
+**Superseded on 2026-10-05:** the Easy-Install build 3962 (`c8c07d658`) completed
+Qwen-Image-Edit-2511 Q4_K_M conversion and a ComfyUI render after companion-file
+handling preserved the empty variant marker. See
+[runtime evidence](conversion-safety-validation.md#qwen-image-edit-2511-gguf-render-smoke-test).
+The older binary/patch limitation below is historical, not a universal GGUF ban.
+
+**Historical conclusion: GGUF `Q4_K_M` (and every other llama-quantize K-quant) is currently
 structurally unsupported for `qwen_image` with this tool's llama-quantize dependency —
 not a bug in this tool's own code, an upstream gap.** The `.input_scale` fix above is
 still correct and stays (a real, separate bug that would have hit any architecture

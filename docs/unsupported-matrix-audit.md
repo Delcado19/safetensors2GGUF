@@ -56,3 +56,10 @@ capability alone is not a successful standard-loader/render test.
    retest matching outputs before lifting native CLIP/AuraFlow/plain-policy guards.
 
 No large model was downloaded, converted or rendered during this audit.
+
+## Applied correction after the audit
+
+The Qwen-Image GGUF matrix entry now shows verified with a visible **Q4_K_M
+smoke test** scope and the exact binary/test limits from the existing runtime
+record. The obsolete universal-build rejection was removed. Other audited
+restrictions remain pending their separate integration or runtime work.
