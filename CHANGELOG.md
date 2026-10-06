@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Complete pinned molbal source archive with preserved Apache-2.0 license,
+  provenance and offline checksum/path/entrypoint verification.
+- Docs: Prepare the isolated Krea GGUF adapter contract, initial format allowlist,
+  atomic output/cancellation plan and loader deployment/runtime validation steps.
+
 - Docs: Make project-controlled, pinned and offline-recoverable converter
   dependencies a prerequisite of the persistent unified-converter roadmap.
 

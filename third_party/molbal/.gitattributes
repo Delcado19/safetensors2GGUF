@@ -1,0 +1,3 @@
+# Preserve upstream license bytes for offline snapshot verification on Windows.
+LICENSE -text
+source.tar.gz -text

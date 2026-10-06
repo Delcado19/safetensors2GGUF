@@ -84,6 +84,10 @@ The guide distinguishes implemented INT8 ConvRot from the nonselectable,
 SDXL-tested **INT4 + ConvRot prototype**. Internal/API keys and filenames retain
 their existing spellings for compatibility.
 
+Krea GGUF backend preparation now includes a project-owned pinned molbal source
+snapshot. The conversion adapter is not yet enabled; see
+[preparation status and next implementation](docs/krea2-backend-preparation.md).
+
 ### Python environment
 
 ```bash

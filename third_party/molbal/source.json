@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/molbal/ComfyUI-GGUF",
+  "commit": "5a0a3ffa0e3eae5c6af8b0b981b660a24d5fbc04",
+  "commit_date": "2026-10-05T21:25:26Z",
+  "snapshot_date": "2026-10-06",
+  "archive": "source.tar.gz",
+  "archive_root": "molbal-ComfyUI-GGUF-5a0a3ff",
+  "sha256": "a5bca0e18ab3bed476bdb1d40e3ff12db211d539d7cdc43f68c114673a458558",
+  "size_bytes": 916243,
+  "file_count": 52,
+  "license": "Apache-2.0",
+  "integration_status": "source secured; Krea 2 adapter planned, not enabled or runtime-tested",
+  "initial_krea_formats": ["F16", "BF16", "Q8_0", "Q5_1", "Q5_0", "Q4_1", "Q4_0"]
+}
