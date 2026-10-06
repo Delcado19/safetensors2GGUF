@@ -64,6 +64,10 @@ type Job = {
         exact_matches: number;
         mismatches: number;
         reference_path: string | null;
+        component_hash?: string;
+        reference_hash?: string | null;
+        action?: string;
+        reference_error?: string | null;
       }[]
     | null;
 };
@@ -1048,15 +1052,21 @@ function App() {
                                 {item.name.replace("_", "-").toUpperCase()}
                               </strong>
                               <span>{item.status}</span>
-                              <small>
-                                {item.output_tensors} exportable tensors ·{" "}
-                                {item.exact_matches} exact · {item.mismatches}{" "}
-                                different
-                              </small>
+                              {item.action && <small>{item.action}</small>}
                               {item.reference_path && (
                                 <small className="output-path">
                                   {item.reference_path}
                                 </small>
+                              )}
+                              {item.component_hash && (
+                                <details>
+                                  <summary>Comparison details</summary>
+                                  <small>{item.output_tensors} exportable tensors · {item.exact_matches} exact · {item.mismatches} different</small>
+                                  <small className="output-path">Component SHA-256: {item.component_hash}</small>
+                                  {item.reference_hash && <small className="output-path">Reference SHA-256: {item.reference_hash}</small>}
+                                  <small>Hashes include normalized tensor names, shapes, datatypes and contents.</small>
+                                  {item.reference_error && <small>{item.reference_error}</small>}
+                                </details>
                               )}
                             </div>
                           ))}

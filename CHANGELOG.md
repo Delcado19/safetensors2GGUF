@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Change: Integrate component comparison into SDXL extraction and remove its
+  separate Workbench task. Hash normalized tensor contents, optionally reuse
+  identical local references, and show actual actions with diagnostic details.
+  Missing/unreadable references do not block export; local matches do not imply
+  stock provenance. Preserve the read-only diagnostic API and overwrite guards.
+
 - Add: Native INT4 + ConvRot mixed diffusion safetensors conversion, exact
   source-aware size planning, preserved fallback precision and safe reconversion.
   Offer the format in the Workbench and retain model-specific runtime evidence.

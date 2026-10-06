@@ -249,8 +249,17 @@ def test_component_tools_roundtrip_and_guards(tmp_path):
     response = client.post('/api/tools', json={**params, 'operation': 'analyze'})
     state = _wait(client, response.json()['id'])
     assert state['status'] == 'succeeded', state
-    assert state['result'][0]['status'] == 'matches local standard'
+    assert state['result'][0]['status'] == 'matches local reference'
     assert state['result'][1]['status'] == 'no local reference'
+    response = client.post('/api/tools', json=params | {'components': ['vae']})
+    state = _wait(client, response.json()['id'])
+    assert state['status'] == 'succeeded', state
+    assert state['outputs'] == [str(root / 'vae' / 'sdxlVAE.safetensors')]
+    assert state['result'][0]['action'] == 'Reused local reference'
+    assert state['result'][0]['component_hash'] == state['result'][0]['reference_hash']
+    # Explicitly disabling reuse keeps existing overwrite protection.
+    response = client.post('/api/tools', json=params | {'components': ['vae'], 'reuse_identical': False})
+    assert _wait(client, response.json()['id'])['status'] == 'failed'
 
 
 @pytest.mark.parametrize('operation', ['pad_tokens', 'restore_5d'])

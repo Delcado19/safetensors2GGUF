@@ -98,8 +98,8 @@ def test_analyze_components_marks_exact_vae_and_different_clip_l(tmp_path):
     results = {item.name: item for item in analyze_components(checkpoint)}
 
     assert results["vae"].is_exact_standard
-    assert results["clip_l"].status == "differs from local standard"
-    assert "matches local standard" in format_component_analysis([results["vae"]])
+    assert results["clip_l"].status == "differs from local reference"
+    assert "matches local reference" in format_component_analysis([results["vae"]])
 
 
 def test_extract_components_writes_selected_files_and_maps_clip_g(tmp_path):
@@ -132,3 +132,42 @@ def test_extract_components_writes_selected_files_and_maps_clip_g(tmp_path):
         clip_g["text_projection.weight"],
         torch.tensor([[1.0, 3.0], [2.0, 4.0]]),
     )
+
+
+def test_component_hash_identity_and_safe_reuse(tmp_path):
+    """Packaging changes match; dtype/extra tensors never qualify for reuse."""
+    checkpoint = tmp_path / 'model.safetensors'
+    _write_minimal_sdxl_checkpoint(checkpoint)
+    reference = tmp_path / 'vae' / 'sdxlVAE.safetensors'
+    reference.parent.mkdir()
+    save_file({'decoder.conv_in.weight': torch.ones(1, 1)}, reference,
+              metadata={'irrelevant': 'different file packaging'})
+    analysis = analyze_components(checkpoint, components=('vae',))[0]
+    assert analysis.component_hash == analysis.reference_hash
+    original = reference.read_bytes()
+    result = extract_components(checkpoint, extract_vae=True, extract_clip_l=False,
+                                extract_clip_g=False, reuse_identical=True)
+    assert result[0].reused and result[0].path == str(reference)
+    assert not (reference.parent / 'model-vae.safetensors').exists()
+    assert reference.read_bytes() == original
+    save_file({'decoder.conv_in.weight': torch.ones(1, 1).half()}, reference)
+    assert not analyze_components(checkpoint, components=('vae',))[0].is_exact_standard
+    result = extract_components(checkpoint, extract_vae=True, extract_clip_l=False,
+                                extract_clip_g=False, reuse_identical=True)
+    assert not result[0].reused
+    save_file({'decoder.conv_in.weight': torch.ones(1, 1), 'extra': torch.ones(1)}, reference)
+    assert not analyze_components(checkpoint, components=('vae',))[0].is_exact_standard
+
+
+def test_unreadable_reference_does_not_block_export(tmp_path):
+    checkpoint = tmp_path / 'model.safetensors'
+    _write_minimal_sdxl_checkpoint(checkpoint)
+    reference = tmp_path / 'vae' / 'sdxlVAE.safetensors'
+    reference.parent.mkdir()
+    reference.write_bytes(b'not a safetensors file')
+    observed = []
+    exported = extract_components(checkpoint, extract_vae=True, extract_clip_l=False,
+                                  extract_clip_g=False, reuse_identical=True, on_analysis=observed.extend)
+    assert not exported[0].reused
+    assert observed[0].status == 'unknown: local reference unreadable'
+    assert observed[0].reference_hash is None

@@ -3,17 +3,12 @@ import { ArrowRight, FolderOpen, ShieldCheck } from "lucide-react";
 import { FormatSelect } from "./FormatSelect";
 
 type Operation =
-  "analyze" | "components" | "diffusion" | "pad_tokens" | "restore_5d";
+  "components" | "diffusion" | "pad_tokens" | "restore_5d";
 const operations: [Operation, string, string][] = [
   [
     "components",
     "Extract components",
-    "Separate embedded SDXL VAE, CLIP-L and CLIP-G into ComfyUI folders.",
-  ],
-  [
-    "analyze",
-    "Compare components",
-    "Compare embedded components with sdxlVAE, clip_l and clip_g in your local models root.",
+    "Check embedded SDXL VAE, CLIP-L and CLIP-G, reuse identical local references or export separate files.",
   ],
   [
     "diffusion",
@@ -55,6 +50,7 @@ export function ToolForm({
   const [components, setComponents] = useState(["clip_l", "clip_g"]);
   const [sidecar, setSidecar] = useState("");
   const [overwrite, setOverwrite] = useState(false);
+  const [reuseIdentical, setReuseIdentical] = useState(true);
   const [container, setContainer] = useState<"gguf" | "safetensors">(
     "safetensors",
   );
@@ -77,6 +73,7 @@ export function ToolForm({
             sidecar: operation === "restore_5d" ? sidecar : "",
             components,
             overwrite,
+            reuse_identical: reuseIdentical,
             container,
             format,
           });
@@ -157,6 +154,7 @@ export function ToolForm({
               : "VAE goes to vae/, CLIP to clip/, diffusion to diffusion_models/."}
           </p>
           {operation === "components" && (
+            <>
             <div className="tool-components">
               {[
                 ["vae", "VAE"],
@@ -179,6 +177,16 @@ export function ToolForm({
                 </label>
               ))}
             </div>
+            <label className="checkbox tool-overwrite">
+              <input type="checkbox" checked={reuseIdentical}
+                onChange={(event) => setReuseIdentical(event.target.checked)} />
+              Reuse identical local components
+            </label>
+            <p className="preview-note">
+              Checks sdxlVAE.safetensors in vae/ and clip_l.safetensors / clip_g.safetensors in clip/.
+              Different or unknown components are exported. Local matches do not certify stock provenance.
+            </p>
+            </>
           )}
           {operation === "restore_5d" && (
             <>
@@ -221,7 +229,6 @@ export function ToolForm({
               />
             </>
           )}
-          {operation !== "analyze" && (
             <label className="checkbox tool-overwrite">
               <input
                 type="checkbox"
@@ -230,7 +237,6 @@ export function ToolForm({
               />
               Replace existing output files
             </label>
-          )}
         </fieldset>
         <div className="form-actions">
           <span>

@@ -174,6 +174,9 @@ class Job:
                     self.result = [asdict(item) | {'status': item.status} for item in results]
                 output = ''
             elif operation == 'components':
+                def analyzed(results):
+                    with self.lock:
+                        self.result = [asdict(item) | {'status': item.status} for item in results]
                 def published(path):
                     # Keep completed component paths visible even after cancellation.
                     with self.lock:
@@ -182,10 +185,14 @@ class Job:
                     extract_vae='vae' in params.components,
                     extract_clip_l='clip_l' in params.components,
                     extract_clip_g='clip_g' in params.components,
-                    overwrite=params.overwrite, on_output=published, **callbacks)
+                    overwrite=params.overwrite, on_output=published,
+                    reuse_identical=params.reuse_identical, on_analysis=analyzed, **callbacks)
                 if not written:
                     raise ValueError('No selected embedded SDXL components found')
                 output = '\n'.join(item.path for item in written)
+                actions = {item.name: 'Reused local reference' if item.reused else 'Exported' for item in written}
+                with self.lock:
+                    self.result = [item | {'action': actions.get(item['name'], 'Not found')} for item in self.result]
             elif operation in {'pad_tokens', 'restore_5d'}:
                 callbacks['on_progress'] = lambda index, total, key: self.emit(('progress', index, total, key))
                 if operation == 'pad_tokens':
@@ -240,6 +247,7 @@ class ToolRequest(BaseModel):
     sidecar: str = Field(default='', max_length=4096)
     components: list[Literal['vae', 'clip_l', 'clip_g']] = Field(default_factory=lambda: ['clip_l', 'clip_g'], max_length=3)
     overwrite: bool = False
+    reuse_identical: bool = True
     container: Literal['gguf', 'safetensors'] = 'safetensors'
     format: str = 'F16'
     model_kind: Literal['diffusion'] = 'diffusion'

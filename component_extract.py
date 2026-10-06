@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
+import json
 from pathlib import Path
 from typing import Callable
 
 import torch
-from safetensors import safe_open
+from safetensors import SafetensorError, safe_open
 from safetensors.torch import save_file
 from conversion_io import atomic_output, validate_output
 from convert import ConversionCancelled
@@ -31,6 +33,9 @@ class ComponentAnalysis:
     extra_reference_keys: int
     max_abs_diff: float | None
     mean_abs_diff: float | None
+    component_hash: str = ''
+    reference_hash: str | None = None
+    reference_error: str | None = None
 
     @property
     def has_reference(self) -> bool:
@@ -44,6 +49,8 @@ class ComponentAnalysis:
             and self.exact_matches == self.output_tensors
             and self.mismatches == 0
             and self.missing_reference_keys == 0
+            and self.extra_reference_keys == 0
+            and self.component_hash == self.reference_hash
         )
 
     @property
@@ -51,11 +58,13 @@ class ComponentAnalysis:
         if self.output_tensors == 0:
             return "not found"
         if not self.has_reference:
+            if self.reference_error:
+                return 'unknown: local reference unreadable'
             return "no local reference"
         if self.is_exact_standard:
-            return "matches local standard"
+            return "matches local reference"
         if self.missing_reference_keys == 0:
-            return "differs from local standard"
+            return "differs from local reference"
         return "incomplete reference comparison"
 
 
@@ -66,6 +75,21 @@ class ExtractedComponent:
     name: str
     path: str
     tensors: int
+    reused: bool = False
+
+
+def _tensor_hash(tensor: torch.Tensor) -> str:
+    """Fingerprint logical shape, dtype and bytes; never safetensors packaging."""
+    tensor = tensor.detach().contiguous()
+    header = json.dumps([str(tensor.dtype), list(tensor.shape)]).encode()
+    digest = hashlib.sha256(header + b'\0')
+    digest.update(memoryview(tensor.reshape(-1).view(torch.uint8).numpy()))
+    return digest.hexdigest()
+
+
+def _component_hash(records: dict[str, str]) -> str:
+    """Stable normalized key order, independent of file metadata/tensor ordering."""
+    return hashlib.sha256(json.dumps(sorted(records.items())).encode()).hexdigest()
 
 
 def find_models_root(path: str | Path) -> Path | None:
@@ -184,8 +208,13 @@ def analyze_components(
     models_root: str | Path | None = None,
     components: tuple[str, ...] = SDXL_COMPONENTS,
     cancel_event=None,
+    detailed: bool = True,
 ) -> list[ComponentAnalysis]:
-    """Compare embedded SDXL components to local references; cancel between tensors."""
+    """Hash normalized components; optionally compute diagnostic numeric differences.
+
+    Extraction uses ``detailed=False``: an unreadable optional reference cannot
+    block export and is never eligible for reuse. No stock provenance is implied.
+    """
 
     checkpoint = Path(checkpoint_path)
     root = Path(models_root) if models_root else default_output_root(checkpoint)
@@ -206,29 +235,51 @@ def analyze_components(
             extra_reference = 0
             max_abs_diff: float | None = None
             mean_abs_values: list[float] = []
+            source_hashes: dict[str, str] = {}
+            reference_hashes: dict[str, str] = {}
+            reference_error = None
+            if reference_path:
+                try:
+                    reference_reader = safe_open(reference_path, framework='pt', device='cpu')
+                except (OSError, SafetensorError) as error:
+                    if detailed:
+                        raise
+                    reference_error = str(error)
+                    reference_path = None
 
             if reference_path:
-                with safe_open(reference_path, framework="pt", device="cpu") as ref:
+                with reference_reader as ref:
                     ref_keys = set(ref.keys())
                     reference_tensors = len(ref_keys)
                     for dst_key, (src_key, transform) in mapping.items():
                         if cancel_event is not None and cancel_event.is_set():
                             raise ConversionCancelled()
+                        src_tensor = transform(source.get_tensor(src_key)).contiguous()
+                        source_hashes[dst_key] = _tensor_hash(src_tensor)
                         if dst_key not in ref_keys:
                             missing_reference += 1
                             continue
-                        src_tensor = transform(source.get_tensor(src_key)).contiguous()
                         ref_tensor = ref.get_tensor(dst_key)
-                        if src_tensor.shape == ref_tensor.shape and torch.equal(src_tensor, ref_tensor):
+                        reference_hashes[dst_key] = _tensor_hash(ref_tensor)
+                        if source_hashes[dst_key] == reference_hashes[dst_key]:
                             exact += 1
                             continue
                         mismatches += 1
-                        if src_tensor.shape == ref_tensor.shape:
+                        if detailed and src_tensor.shape == ref_tensor.shape and src_tensor.numel():
                             diff = (src_tensor.float() - ref_tensor.float()).abs()
                             current_max = float(diff.max())
                             max_abs_diff = current_max if max_abs_diff is None else max(max_abs_diff, current_max)
                             mean_abs_values.append(float(diff.mean()))
                     extra_reference = len(ref_keys - set(mapping))
+                    for key in ref_keys - set(mapping):
+                        if cancel_event is not None and cancel_event.is_set():
+                            raise ConversionCancelled()
+                        reference_hashes[key] = _tensor_hash(ref.get_tensor(key))
+            else:
+                for dst_key, (src_key, transform) in mapping.items():
+                    if cancel_event is not None and cancel_event.is_set():
+                        raise ConversionCancelled()
+                    source_hashes[dst_key] = _tensor_hash(transform(source.get_tensor(src_key)))
 
             results.append(
                 ComponentAnalysis(
@@ -249,6 +300,9 @@ def analyze_components(
                         sum(mean_abs_values) / len(mean_abs_values)
                         if mean_abs_values else None
                     ),
+                    component_hash=_component_hash(source_hashes),
+                    reference_hash=_component_hash(reference_hashes) if reference_path else None,
+                    reference_error=reference_error,
                 )
             )
 
@@ -306,6 +360,8 @@ def extract_components(
     on_log=None,
     cancel_event=None,
     on_output=None,
+    reuse_identical: bool = False,
+    on_analysis=None,
 ) -> list[ExtractedComponent]:
     """Export components atomically; cancellation preserves already published files.
 
@@ -313,6 +369,9 @@ def extract_components(
     transaction, so a later cancellation does not roll back completed exports.
     ``on_output(path)`` receives each published path; ``cancel_event`` is checked
     between tensors and before publication. Returns the completed components.
+    Hash comparisons are included; optional identical-reference reuse publishes
+    no new file. Reused paths are returned with ``reused=True`` and sent to
+    ``on_output``. ``on_analysis`` receives the preflight comparison results.
     """
 
     checkpoint = Path(checkpoint_path)
@@ -323,6 +382,13 @@ def extract_components(
         ("clip_g", extract_clip_g),
     ]
     written: list[ExtractedComponent] = []
+    # Only embedded components with identical names, shapes, dtypes and bytes
+    # may reuse local files. A filename never proves stock provenance.
+    analysis = analyze_components(checkpoint, root, tuple(c for c, enabled in selected if enabled),
+                                  cancel_event, detailed=False)
+    if on_analysis:
+        on_analysis(analysis)
+    reusable = {item.name: item for item in analysis if reuse_identical and item.is_exact_standard}
 
     with safe_open(str(checkpoint), framework="pt", device="cpu") as source:
         keys = list(source.keys())
@@ -333,7 +399,7 @@ def extract_components(
         # Preflight the whole selection so an existing later output cannot cause
         # an avoidable partial export. Atomic publication also guards races.
         for component, enabled in selected:
-            if enabled and _component_mapping(keys, component):
+            if enabled and component not in reusable and _component_mapping(keys, component):
                 validate_output(checkpoint, _component_output_dir(root, component) /
                                 f"{stem.name}-{component}.safetensors", overwrite)
 
@@ -346,6 +412,15 @@ def extract_components(
             if not mapping:
                 if on_log:
                     on_log(f"skip {component}: no embedded tensors found")
+                continue
+
+            if component in reusable:
+                reference = reusable[component].reference_path
+                written.append(ExtractedComponent(component, reference, len(mapping), reused=True))
+                if on_output:
+                    on_output(reference)
+                if on_log:
+                    on_log(f'reused {component}: identical local reference {reference}')
                 continue
 
             output_dir = _component_output_dir(root, component)

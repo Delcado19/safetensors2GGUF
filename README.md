@@ -71,8 +71,10 @@ uv run python web_api.py
 ```
 
 Open http://127.0.0.1:8765. Node/npm is needed for the frontend build, not normal
-operation. **Extract & repair** provides SDXL VAE/CLIP export and local reference
-comparison, diffusion extraction, GGUF pad-token repair and 5D restoration.
+operation. **Extract & repair** provides SDXL VAE/CLIP export with automatic
+normalized tensor hashing and optional reuse of identical local references,
+diffusion extraction, GGUF pad-token repair and 5D restoration. Different or
+unknown components are exported; local matches do not certify stock provenance.
 **Hugging Face** inspects model repositories, lets you select one checkpoint
 folder, and downloads/merges its safetensors shards into one local file. Downloads
 share job history/cancellation and use server-side `HF_TOKEN`,

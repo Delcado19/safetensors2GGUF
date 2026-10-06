@@ -241,8 +241,7 @@ Open **Extract & repair**, choose an operation, and select a local source:
 
 | Operation | Source | Destination / behavior |
 | --- | --- | --- |
-| Extract components | SDXL safetensors checkpoint | Selected VAE to `vae/`, CLIP-L/G to `clip/` under the models root |
-| Compare components | SDXL safetensors checkpoint | Read-only comparison against `vae/sdxlVAE.safetensors`, `clip/clip_l.safetensors`, `clip/clip_g.safetensors` |
+| Extract components | SDXL safetensors checkpoint | Automatically compare selected components; reuse identical local references or export VAE to `vae/`, CLIP-L/G to `clip/` |
 | Extract diffusion model | Safetensors checkpoint | Existing conversion filters diffusion keys and writes to `diffusion_models/` |
 | Repair pad tokens | Older Lumina2 GGUF | Reshape 1D `x_pad_token` / `cap_pad_token` to `[1, D]` in a separate GGUF |
 | Restore 5D tensors | Quantized GGUF | Insert original sidecar tensors as F32 in a separate GGUF |
@@ -255,12 +254,28 @@ Diffusion GGUF K-quants require the detected llama-quantize executable; set up t
 converter through the existing installation guide if it is unavailable.
 
 `POST /api/tools` accepts `operation`, `source`, `destination`, `overwrite`,
-`components` (`vae`, `clip_l`, `clip_g`), optional `sidecar`, and diffusion
+`components` (`vae`, `clip_l`, `clip_g`), `reuse_identical` (default true), optional `sidecar`, and diffusion
 `container` / `format`. It returns the same 202 job snapshots as `/api/jobs` and
 uses the same token/origin checks and one-worker limit. Comparison results are
 structured under `result`; component paths appear in `outputs` as they publish.
 Component export/comparison has no backend percentage callback, so active jobs
 show **Working**. Comparison is local reference evidence, not image-quality proof.
+
+There is no separate Compare components task in the Workbench. Extraction hashes
+normalized tensor names, shapes, datatypes and bytes with SHA-256, after the
+existing CLIP-G layout mapping. File metadata and tensor ordering do not matter;
+precision differences and extra/missing tensors prevent reuse. The candidates
+are `vae/sdxlVAE.safetensors`, `clip/clip_l.safetensors` and `clip/clip_g.safetensors`
+in the chosen models root. A matching filename does not prove stock provenance.
+No trusted stock-hash registry is shipped. Missing or unreadable references mean
+unknown identity and do not block extraction. Differences do not indicate quality.
+
+Reuse is enabled by default in the Workbench/API and can be disabled to export
+separate files. Results show comparison status, actual export/reuse action and
+paths; hashes and counts are available in Comparison details. Reused references
+are never overwritten. The Python extraction helper keeps reuse opt-in for
+existing callers. The `analyze` API operation remains a read-only diagnostic
+with optional numeric differences; extraction avoids those costly calculations.
 
 All selected component destinations are preflighted before export. Each component
 is written to a sibling temporary file and published atomically. Cancellation or
