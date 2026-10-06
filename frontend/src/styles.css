@@ -1266,7 +1266,7 @@ input[type="checkbox"] {
   width: 100%;
 }
 .support-model-column {
-  width: 200px;
+  width: 13rem;
 }
 .support-table th,
 .support-table td {
@@ -1454,5 +1454,24 @@ input[type="checkbox"] {
   button,
   summary {
     min-height: 44px;
+  }
+}
+
+/* Evidence tables use the full workspace; compact/zoomed views retain scrolling. */
+@media (min-width: 901px) {
+  main.wide-guide {
+    max-width: none;
+    padding-inline: 24px;
+  }
+  .wide-guide .support-panel {
+    padding-inline: 24px;
+  }
+  .wide-guide .support-table th,
+  .wide-guide .support-table td {
+    padding-inline: 4px;
+  }
+  .wide-guide .support-cell {
+    padding-inline: 4px;
+    overflow-wrap: anywhere;
   }
 }

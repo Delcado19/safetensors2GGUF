@@ -77,7 +77,9 @@ cross-site naming survey is claimed.
 
 The diffusion matrix includes **INT4 + ConvRot / mixed precision** prototype evidence:
 SDXL has visible drift in the tested RealVisXL checkpoint; other models are untested.
-Equal-width centered format columns scroll horizontally on compact displays.
+The guide uses the full desktop workspace width. Equal-width centered format
+columns fit at 1366px and wider with normal text sizing; compact displays and
+increased text sizing retain horizontal scrolling rather than shrinking labels.
 Prototype cells show details but cannot apply a conversion target.
 
 The guide has a separate **INT4 + ConvRot — Prototype / not selectable** card.

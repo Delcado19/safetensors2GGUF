@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Change: Use full desktop workspace width for the format guide and flexible
+  equal-width columns; both compatibility tables fit at 1366px and wider
+  with normal text sizing, retaining horizontal scrolling on compact/zoomed views.
+
 - Add: INT4 + ConvRot mixed-precision prototype column with SDXL drift evidence,
   untested other models and blocked conversion handoff; balance all format columns.
 

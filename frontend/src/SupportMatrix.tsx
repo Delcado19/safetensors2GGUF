@@ -185,7 +185,7 @@ export function SupportMatrix({
             role="region"
             aria-label="Compatibility table; scroll horizontally for all formats"
           >
-            <table className="support-table" style={{ minWidth: `${200 + data!.formats.length * 104}px` }}>
+            <table className="support-table" style={{ minWidth: `${13 + data!.formats.length * 6}rem` }}>
               <caption className="sr-only">
                 {kind === "diffusion" ? "Diffusion model" : "Text encoder"}{" "}
                 compatibility by output format

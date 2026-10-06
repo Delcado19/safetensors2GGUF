@@ -292,6 +292,16 @@ def main():
         page.evaluate('scrollTo(0, 0)')
         page.screenshot(path=str(root / 'support-mobile.png'), full_page=True)
         page.set_viewport_size({'width': 1440, 'height': 1100})
+        # Both categories fit normal desktop widths without shrinking typography.
+        for desktop_width in (1366, 1440, 1920):
+            page.set_viewport_size({'width': desktop_width, 'height': 1100})
+            for category in ('diffusion', 'text_encoder'):
+                page.get_by_label('Model category').select_option(category)
+                assert page.locator('.support-scroll').evaluate('(node) => node.scrollWidth <= node.clientWidth + 1')
+        page.get_by_label('Model category').select_option('diffusion')
+        page.get_by_role('button', name=re.compile(r', INT8 \+ ConvRot.*mixed precision: Verified$')).click()
+        page.set_viewport_size({'width': 1440, 'height': 1100})
+        page.locator('.support-scroll').evaluate('(node) => node.scrollLeft = 0')
         page.screenshot(path=str(root / 'support-desktop.png'), full_page=True)
         page.get_by_role('button', name='Dark appearance').click()
         page.screenshot(path=str(root / 'support-dark.png'), full_page=True)

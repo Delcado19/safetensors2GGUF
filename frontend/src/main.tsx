@@ -436,7 +436,7 @@ function App() {
             {config ? "Local engine connected" : "Connecting to engine"}
           </span>
         </header>
-        <main id="main" tabIndex={-1}>
+        <main id="main" tabIndex={-1} className={view === "guide" ? "wide-guide" : undefined}>
           <div className="page-heading">
             <div>
               <span className="eyebrow">LESS WEIGHT. MORE POSSIBILITY.</span>
