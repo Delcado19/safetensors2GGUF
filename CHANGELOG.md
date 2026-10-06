@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Docs: Make project-controlled, pinned and offline-recoverable converter
+  dependencies a prerequisite of the persistent unified-converter roadmap.
+
 - Docs: Add the unified multi-backend converter roadmap as a persistent startup
   TODO in AGENTS.md, including later evaluation of implementation/fork consolidation.
 

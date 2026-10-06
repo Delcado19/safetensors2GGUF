@@ -6,6 +6,16 @@
 text-encoder GGUF paths while integrating the additional model/format capabilities
 of `molbal/ComfyUI-GGUF`.
 
+**Prerequisite: Own the critical dependencies.** Essential conversion features
+must remain installable/buildable if an upstream repository disappears. Preserve
+complete pinned source snapshots (including required bundled dependencies,
+licenses and provenance) under project-controlled distribution, alongside tested
+platform binaries or reproducible build instructions and checksums. A commit ID,
+submodule URL or ignored local cache alone does not satisfy this requirement.
+Normal conversion must use the shipped/pinned tools; upstream access belongs to
+explicit maintenance/update work, not an implicit fetch of moving HEAD on first
+use. Separate this requirement from optional user-requested model downloads.
+
 Recorded roadmap (the final consolidation strategy remains open):
 - First provide one application with a shared format registry, model checks,
   precision protection, progress/cancellation and safe output handling.
