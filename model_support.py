@@ -1023,3 +1023,96 @@ def build_support_table() -> list[dict]:
         rows.append(row)
     rows.sort(key=lambda r: r["display_name"])
     return rows
+
+
+def build_workbench_support_tables() -> dict:
+    """Project registry evidence onto explicit variants without changing export guards.
+
+    Older family-wide results must not certify a different checkpoint/profile.
+    Pending labels describe local integration, not failed images or upstream bans.
+    Classic tables and converter classifications retain their existing contracts.
+    """
+    tables = {}
+    for kind, formats, source_rows in (
+        ('diffusion', TABLE_FORMATS, build_support_table()),
+        ('text_encoder', TEXT_ENCODER_TABLE_FORMATS, build_text_encoder_support_table()),
+    ):
+        rows = []
+        for source in source_rows:
+            row = dict(source)
+            key = row.get('arch', row.get('family'))
+            row['id'] = key
+            row['display_name'] = row['display_name'].rsplit(' (', 1)[0].replace(' Family', '').replace('Lumina-Image 2.0', 'Lumina 2.0')
+            if key == 'krea2':
+                row['GGUF__label'] = 'Integration pending'
+                row['GGUF__scope'] = 'molbal loader required'
+                row['GGUF__pending'] = 'true'
+            if key == 'lumina2':
+                row.update(id='lumina2_base', display_name='Z-Image Base / Lumina 2.0', precision_profile='auto')
+                row['NVFP4_MIXED__reason'] = (
+                    'Default/Base policy: older comparisons substantially changed composition, '
+                    'pose and outfit. The newer usable Turbo-profile result belongs to the '
+                    'separate Z-Image Turbo row, not this policy. Source: model_support.py '
+                    'and docs/quantization-size-audit.md.')
+                row.pop('NVFP4_MIXED__scope', None)
+                turbo = {'id': 'lumina2_turbo', 'arch': key,
+                         'display_name': 'Z-Image Turbo · Turbo profile',
+                         'precision_profile': 'z_image_turbo'}
+                for _, fmt in formats:
+                    turbo[fmt] = SUPPORT_VERIFIED if fmt in {'F16', 'F16_MIXED'} else SUPPORT_UNKNOWN
+                    turbo[fmt + '__reason'] = (
+                        'Turbo-profile evidence is scoped to this checkpoint/policy. '
+                        'No equivalent render validation is recorded for this format. '
+                        'Source: docs/quantization-size-audit.md.')
+                    if fmt in {'F16', 'F16_MIXED'}:
+                        turbo[fmt + '__reason'] = 'Plain precision-cast path; supported by implementation reasoning, not a new Turbo render test.'
+                turbo['NVFP4_MIXED'] = SUPPORT_CAUTION
+                turbo['NVFP4_MIXED__scope'] = 'Two-prompt Turbo test'
+                turbo['NVFP4_MIXED__reason'] = (
+                    'Z-Image Turbo, z_image_turbo profile: usable cat/hat and dog/scarf '
+                    'images, with hat, facial detail and slight framing differences versus '
+                    'BF16. Two prompts, seed 1212121, nine Euler/simple steps, no LoRA. '
+                    'This does not certify the default/Base policy or other quantizations. '
+                    'Source: docs/quantization-size-audit.md, 2026-10-05 runtime tests.')
+                rows.append(turbo)
+            if key == 'mistral-small-3.2-24b':
+                row.update(id=key + '_flux2_pruned', display_name='Mistral Small 3.2 24B · FLUX.2 pruned')
+                row['GGUF__pending'] = 'true'
+                row['GGUF__label'] = 'Configuration pending'
+                row['GGUF__scope'] = '30-layer packaging'
+                row['GGUF__reason'] = (
+                    'The FLUX.2 safetensors packaging has 30 layers and omits final norm/lm_head '
+                    'weights. Our 40-layer base configuration must not be forced onto it. '
+                    'A matching configuration/export contract is pending. Upstream support '
+                    'for the full Mistral encoder does not resolve this packaging mismatch. '
+                    'Source: docs/unsupported-matrix-audit.md and model_support.py.')
+                for _, fmt in formats:
+                    if fmt != 'GGUF':
+                        row[fmt + '__reason'] = (
+                            'Evidence applies to the FLUX.2 pruned packaging, not the full '
+                            '40-layer base encoder. Safetensors F16 is a precision cast; '
+                            'the six quantized safetensors formats were render-tested in '
+                            'the recorded FLUX.2 workflow. Source: model_support.py, 2026-08-23.')
+                full = {'id': key + '_full', 'family': key, 'display_name': 'Mistral Small 3.2 24B · Full encoder'}
+                for _, fmt in formats:
+                    full[fmt] = SUPPORT_VERIFIED if fmt == 'F16' else SUPPORT_UNKNOWN
+                    full[fmt + '__reason'] = (
+                        'Full 40-layer base encoder: do not inherit the pruned FLUX.2 '
+                        'checkpoint results. Local format-specific render validation '
+                        'is pending. F16 is supported by precision-cast reasoning.')
+                # The existing family-wide GGUF guard remains until the backend
+                # distinguishes full/pruned sources. Do not expose a false handoff.
+                full['GGUF'] = SUPPORT_BAD
+                full['GGUF__pending'] = 'true'
+                full['GGUF__label'] = 'Integration pending'
+                full['GGUF__scope'] = '40-layer base encoder'
+                full['GGUF__reason'] = (
+                    'Upstream city96 supports the full Mistral encoder (issue #367 is '
+                    'closed). Our family-wide GGUF guard and local validation still '
+                    'need separate full/pruned handling. This is a local integration '
+                    'status, not an upstream format ban. Source: docs/unsupported-matrix-audit.md.')
+                rows.append(full)
+            rows.append(row)
+        rows.sort(key=lambda row: row['display_name'])
+        tables[kind] = {'formats': [key for _, key in formats], 'rows': rows}
+    return tables

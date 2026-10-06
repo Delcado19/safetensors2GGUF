@@ -53,8 +53,9 @@ def test_support_matrix_uses_shared_classifications_and_reasons():
     response = client.get('/api/support')
     assert response.status_code == 200
     data = response.json()
-    assert data['diffusion']['rows'] == model_support.build_support_table()
-    assert data['text_encoder']['rows'] == model_support.build_text_encoder_support_table()
+    assert data == model_support.build_workbench_support_tables()
+    assert len({row['id'] for row in data['diffusion']['rows']}) == len(data['diffusion']['rows'])
+    assert len({row['id'] for row in data['text_encoder']['rows']}) == len(data['text_encoder']['rows'])
     assert data['diffusion']['formats'] == [key for _, key in model_support.TABLE_FORMATS]
     assert data['text_encoder']['formats'] == [key for _, key in model_support.TEXT_ENCODER_TABLE_FORMATS]
     clip = next(row for row in data['text_encoder']['rows'] if row['family'] == 'clip-l')
@@ -65,16 +66,28 @@ def test_support_matrix_uses_shared_classifications_and_reasons():
     assert '3962' in qwen['GGUF__reason'] and 'quality parity' in qwen['GGUF__reason']
     krea = next(row for row in data['diffusion']['rows'] if row['arch'] == 'krea2')
     assert krea['GGUF'] == 'bad'
-    assert krea['GGUF__scope'] == 'Requires molbal · tests pending'
+    assert krea['GGUF__scope'] == 'molbal loader required'
+    assert krea['GGUF__label'] == 'Integration pending' and krea['GGUF__pending'] == 'true'
     assert 'adapter is not enabled' in krea['GGUF__reason']
     assert 'not been runtime-tested' in krea['GGUF__reason']
     assert qwen['NVFP4_MIXED'] == 'caution' and 'whiskers' in qwen['NVFP4_MIXED__reason']
     assert qwen['INT8_MIXED'] == 'caution' and 'small visible detail' in qwen['INT8_MIXED__reason']
-    lumina = next(row for row in data['diffusion']['rows'] if row['arch'] == 'lumina2')
+    lumina = next(row for row in data['diffusion']['rows'] if row['id'] == 'lumina2_base')
     assert lumina['NVFP4_MIXED'] == 'bad'
-    assert lumina['NVFP4_MIXED__scope'] == 'Profile-dependent drift'
-    assert 'z_image_turbo' in lumina['NVFP4_MIXED__reason']
-    assert 'default-policy' in lumina['NVFP4_MIXED__reason']
+    assert 'Default/Base policy' in lumina['NVFP4_MIXED__reason']
+    turbo = next(row for row in data['diffusion']['rows'] if row['id'] == 'lumina2_turbo')
+    assert turbo['NVFP4_MIXED'] == 'caution' and turbo['precision_profile'] == 'z_image_turbo'
+    assert turbo['FP8_MIXED'] == 'unknown' and turbo['INT8_MIXED'] == 'unknown'
+    assert 'Two prompts' in turbo['NVFP4_MIXED__reason']
+    full = next(row for row in data['text_encoder']['rows'] if row['id'] == 'mistral-small-3.2-24b_full')
+    pruned = next(row for row in data['text_encoder']['rows'] if row['id'] == 'mistral-small-3.2-24b_flux2_pruned')
+    assert full['FP8_MIXED'] == 'unknown' and pruned['FP8_MIXED'] == 'verified'
+    assert full['GGUF__label'] == 'Integration pending'
+    assert pruned['GGUF__label'] == 'Configuration pending'
+    assert '30 layers' in pruned['GGUF__reason'] and '40-layer' in full['GGUF__scope']
+    # Display projection cannot remove existing production/export guards.
+    assert model_support.text_encoder_support_level('mistral-small-3.2-24b', 'GGUF') == 'bad'
+    assert not any('Family' in row['display_name'] for row in data['diffusion']['rows'])
     qwen_encoder = next(row for row in data['text_encoder']['rows'] if row['family'] == 'qwen3-8b')
     assert qwen_encoder['GGUF'] == 'caution' and 'Q5_K_M' in qwen_encoder['GGUF__reason']
     assert 'INT4_CONVROT' not in str(data)

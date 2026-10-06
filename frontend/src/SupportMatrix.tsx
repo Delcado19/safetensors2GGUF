@@ -6,16 +6,25 @@ import {
   CircleHelp,
   TriangleAlert,
   XCircle,
+  Clock3,
 } from "lucide-react";
 
-type Level = "verified" | "caution" | "bad" | "unknown";
+type Level = "verified" | "caution" | "bad" | "unknown" | "pending";
 type Kind = "diffusion" | "text_encoder";
-type Row = { display_name: string; arch?: string; family?: string } & Record<
-  string,
-  string | null | undefined
->;
+type Row = {
+  id: string;
+  display_name: string;
+  arch?: string;
+  family?: string;
+  precision_profile?: string;
+} & Record<string, string | null | undefined>;
 type Matrix = Record<Kind, { formats: string[]; rows: Row[] }>;
 const levels = {
+  pending: {
+    label: "Integration pending",
+    icon: Clock3,
+    note: "Local integration or validation is pending. This is not a claim that the format is fundamentally unsupported.",
+  },
   verified: {
     label: "Verified",
     icon: CheckCircle2,
@@ -38,6 +47,17 @@ const levels = {
   },
 };
 const label = formatName;
+const cellLevel = (row: Row, format: string): Level =>
+  row[format + "__pending"] === "true" ? "pending" : (row[format] as Level);
+const cellLabel = (row: Row, format: string) =>
+  row[format + "__label"] || levels[cellLevel(row, format)].label;
+function headerLines(key: string) {
+  if (key.endsWith("_MIXED"))
+    return [label(key.replace(/_MIXED$/, "")), "mixed precision"];
+  if (key === "INT8") return ["INT8", "+ConvRot"];
+  if (key === "FP8") return ["FP8", "(E4M3)"];
+  return [label(key)];
+}
 
 export function SupportMatrix({
   api,
@@ -51,6 +71,7 @@ export function SupportMatrix({
     format: string,
     name: string,
     classification: string,
+    profile?: string,
   ) => void;
 }) {
   const [matrix, setMatrix] = useState<Matrix>();
@@ -73,11 +94,13 @@ export function SupportMatrix({
   const rows =
     data?.rows.filter(
       (row) =>
-        row.display_name.toLowerCase().includes(query.trim().toLowerCase()) &&
+        `${row.display_name} ${row.arch || row.family}`
+          .toLowerCase()
+          .includes(query.trim().toLowerCase()) &&
         (filter === "all" ||
-          data.formats.some((format) => row[format] === filter)),
+          data.formats.some((format) => cellLevel(row, format) === filter)),
     ) || [];
-  const level = selected?.row[selected.format] as Level | undefined;
+  const level = selected ? cellLevel(selected.row, selected.format) : undefined;
   return (
     <section className="support-panel" aria-labelledby="support-title">
       <div className="panel-heading">
@@ -153,8 +176,8 @@ export function SupportMatrix({
       {matrix && (
         <>
           <p className="preview-note" role="status">
-            {rows.length} model families shown. The evidence filter keeps rows
-            with at least one matching cell.
+            {rows.length} models / variants shown. The evidence filter keeps
+            rows with at least one matching cell.
           </p>
           <div
             className="support-scroll"
@@ -169,43 +192,53 @@ export function SupportMatrix({
               </caption>
               <thead>
                 <tr>
-                  <th scope="col">Model family</th>
+                  <th scope="col">Model</th>
                   {data!.formats.map((format) => (
-                    <th scope="col" key={format}>
-                      {label(format)}
+                    <th scope="col" key={format} aria-label={label(format)}>
+                      {headerLines(format).map((line, index) => (
+                        <span
+                          className={index ? "format-subtitle" : "format-title"}
+                          key={line}
+                        >
+                          {line}
+                        </span>
+                      ))}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.arch || row.family}>
-                    <th scope="row">{row.display_name}</th>
+                  <tr key={row.id} data-model-id={row.id}>
+                    <th scope="row">
+                      <span className="model-name">{row.display_name}</span>
+                      <small className="model-code">
+                        ({row.arch || row.family})
+                      </small>
+                    </th>
                     {data!.formats.map((format) => {
-                      const status = row[format] as Level;
+                      const status = cellLevel(row, format);
                       const info = levels[status];
                       return (
                         <td key={format}>
                           <button
                             className={"support-cell " + status}
-                            aria-label={`${row.display_name}, ${label(format)}: ${info.label}`}
+                            aria-label={`${row.display_name}, ${label(format)}: ${cellLabel(row, format)}`}
                             aria-pressed={
                               selected?.row === row &&
                               selected.format === format
                             }
                             aria-describedby={
                               row[format + "__scope"]
-                                ? `${row.arch || row.family}-${format}-scope`
+                                ? `${row.id}-${format}-scope`
                                 : undefined
                             }
                             onClick={() => setSelected({ row, format })}
                           >
                             <info.icon size={18} />
-                            <span>{info.label}</span>
+                            <span>{cellLabel(row, format)}</span>
                             {row[format + "__scope"] && (
-                              <small
-                                id={`${row.arch || row.family}-${format}-scope`}
-                              >
+                              <small id={`${row.id}-${format}-scope`}>
                                 {row[format + "__scope"]}
                               </small>
                             )}
@@ -220,7 +253,8 @@ export function SupportMatrix({
           </div>
           {!rows.length && (
             <p className="empty-state">
-              No matching model families. Try another name or evidence filter.
+              No matching models or variants. Try another name or evidence
+              filter.
             </p>
           )}
         </>
@@ -232,7 +266,8 @@ export function SupportMatrix({
           aria-label="Selected compatibility details"
         >
           <span className={"support-level " + level}>
-            {levels[level].label} · {label(selected.format)}
+            {cellLabel(selected.row, selected.format)} ·{" "}
+            {label(selected.format)}
           </span>
           <h3>{selected.row.display_name}</h3>
           <p>
@@ -245,18 +280,19 @@ export function SupportMatrix({
             </p>
           )}
           <p className="preview-note">
-            Choose a source matching this family. Selection changes form
-            settings; it does not inspect or convert a model.
+            Choose a source matching this model and variant. Selection changes
+            form settings; it does not inspect or convert a model.
           </p>
           <button
             className="primary"
-            disabled={busy || level === "bad"}
+            disabled={busy || level === "bad" || level === "pending"}
             onClick={() =>
               choose(
                 kind,
                 selected.format,
                 selected.row.display_name,
-                levels[level].label,
+                cellLabel(selected.row, selected.format),
+                selected.row.precision_profile,
               )
             }
           >
@@ -283,8 +319,8 @@ export function SupportMatrix({
         <p>
           Native 4-bit ConvRot has passed SDXL rendering, LoRA and offload tests
           on one checkpoint. It remains outside the standard conversion formats
-          and family matrix until version guards and supported-model integration
-          are implemented.
+          and compatibility matrix until version guards and supported-model
+          integration are implemented.
         </p>
         <p className="preview-note">
           INT8 + ConvRot is already implemented and appears in the INT8

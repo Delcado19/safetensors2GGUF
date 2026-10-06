@@ -1277,12 +1277,32 @@ input[type="checkbox"] {
   background: var(--raised);
   white-space: nowrap;
   text-align: center;
+  vertical-align: middle;
+}
+.format-title,
+.format-subtitle {
+  display: block;
+}
+.format-subtitle {
+  font-weight: 400;
+  font-size: 0.78571rem;
+  color: var(--muted);
+}
+.model-name {
+  display: block;
+}
+.model-code {
+  display: block;
+  margin-top: 4px;
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 0.78571rem;
 }
 .support-table th:first-child {
   position: sticky;
   left: 0;
-  min-width: 240px;
-  max-width: 280px;
+  min-width: 210px;
+  max-width: 250px;
   background: var(--surface);
   z-index: 1;
   border-right: 1px solid var(--line);
@@ -1299,14 +1319,24 @@ input[type="checkbox"] {
   flex-direction: column;
   gap: 4px;
   width: 100%;
-  min-width: 90px;
+  min-width: 80px;
   min-height: 60px;
   padding: 8px;
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
   font-size: 0.78571rem;
-  white-space: nowrap;
+  white-space: normal;
+}
+.support-cell small {
+  max-width: 9rem;
+  font-size: 0.78571rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.support-cell.pending,
+.support-level.pending {
+  color: var(--muted);
 }
 .support-cell[aria-pressed="true"] {
   border-color: var(--accent);

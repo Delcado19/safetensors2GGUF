@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Change: Compact compatibility headers into centered format/policy lines and
+  display model identifiers separately; remove Family from Workbench model names.
+- Add: Distinct Z-Image Base/Turbo-profile and full/pruned Mistral rows with scoped
+  evidence, unique IDs and Turbo-profile handoff, avoiding inherited test claims.
+- Change: Show Krea/local Mistral integration or configuration work as pending,
+  separately filterable from unsupported combinations while retaining export guards.
+
 - Docs: Show Krea GGUF's documented molbal-loader requirement and pending local
   adapter/runtime validation directly in the compatibility matrix.
 

@@ -77,6 +77,10 @@ cell to review it, then **Use format** to prepare a conversion. Known unsupporte
 combinations cannot be applied from the matrix. The classic Gradio interface
 remains available as an alternative. See [migration scope and validation](docs/web-workbench.md).
 
+The compact matrix places identifiers below model names, splits format/policy
+headers into centered lines, and separates Z-Image Base/Turbo-profile and
+full/pruned Mistral evidence. Pending integration is distinct from failed support.
+
 Workbench format names are uppercase: **FP16**, **FP8 (E4M3)**, **INT8 + ConvRot**
 and **NVFP4**. “Mixed precision” describes the tool's protected-weight policy,
 not an extra bit width. Short grouped choices show details below the select.

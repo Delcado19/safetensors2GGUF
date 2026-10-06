@@ -1122,7 +1122,13 @@ function App() {
                 <SupportMatrix
                   api={api}
                   busy={busy || submitting}
-                  choose={(kind, key, name, classification) => {
+                  choose={(
+                    kind,
+                    key,
+                    name,
+                    classification,
+                    precisionProfile,
+                  ) => {
                     // GGUF groups all precisions; encoder F16 means safetensors.
                     const target =
                       key === "GGUF"
@@ -1135,7 +1141,9 @@ function App() {
                     setFormat(target);
                     setDestination("");
                     setBaseRepo("");
-                    setProfile("auto");
+                    setProfile(
+                      key === "GGUF" ? "auto" : precisionProfile || "auto",
+                    );
                     setSupportSelection(
                       `${name} · ${formatName(key)} · ${classification}.`,
                     );
@@ -1190,7 +1198,7 @@ function App() {
                   <div>
                     <h2>Choose with evidence.</h2>
                     <p>
-                      Explore diffusion models and text encoders below. Unknown
+                      Explore diffusion models and text encoders above. Unknown
                       combinations remain untested; known problem combinations
                       include their available explanation.
                     </p>

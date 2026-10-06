@@ -40,7 +40,7 @@ from huggingface_hub import get_token
 from huggingface_hub.utils import validate_repo_id
 from models.architectures import detect_arch
 from model_support import SUPPORT_BAD, text_encoder_support_level, text_encoder_support_reason
-from model_support import TABLE_FORMATS, TEXT_ENCODER_TABLE_FORMATS, build_support_table, build_text_encoder_support_table
+from model_support import build_workbench_support_tables
 from quantize import ALL_QUANT_CHOICES, LLAMA_QUANT_KEYS, estimate_output_size, find_exe
 from safetensors_quant import SAFETENSORS_DTYPE_CHOICES, filename_suffix_for, safetensors_output_size_breakdown
 from text_encoder_convert import (
@@ -278,10 +278,7 @@ def create_app() -> FastAPI:
     @app.get('/api/support', dependencies=protected)
     def support():
         """Expose shared project classifications and reasons, without new compatibility claims."""
-        return {kind: {'formats': [key for _, key in formats], 'rows': builder()}
-                for kind, formats, builder in (
-                    ('diffusion', TABLE_FORMATS, build_support_table),
-                    ('text_encoder', TEXT_ENCODER_TABLE_FORMATS, build_text_encoder_support_table))}
+        return build_workbench_support_tables()
 
     @app.get('/api/config')
     def config(response: Response):

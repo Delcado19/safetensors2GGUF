@@ -83,6 +83,35 @@ the implemented selectable path. ConvRot itself is not a bit width.
 
 ## Interactive compatibility matrix
 
+The Workbench now uses `build_workbench_support_tables()` to project shared
+records onto explicit model/profile variants. Model titles omit Family; the
+internal architecture/family identifier appears on a separate muted line.
+Centered headers split format and policy: `FP16` / `mixed precision`, `INT8` /
+`+ConvRot`, and `INT8 + ConvRot` / `mixed precision`. This is presentation only;
+API conversion keys, writer metadata and file naming are unchanged.
+
+Z-Image Base / Lumina 2.0 retains the recorded default-policy classifications.
+The separate Z-Image Turbo row scopes evidence to `z_image_turbo`: NVFP4_MIXED
+shows visible drift from the recorded two-prompt test; the other quantized
+formats/GGUF remain untested for that scoped policy, while FP16 precision casts
+use existing implementation reasoning. **Use format** transfers the Turbo profile
+for safetensors; selecting GGUF resets to auto because these safetensors profiles
+do not apply to the GGUF pipeline.
+
+The Mistral table distinguishes the full 40-layer base encoder from the FLUX.2
+30-layer pruned packaging. Only the pruned row carries the recorded quantized
+safetensors render results; the full row does not inherit them. GGUF remains
+blocked by the existing production family guard: full encoder integration and
+pruned configuration/export handling are shown as pending, not as universal
+upstream format failures. This presentation split does not implement the missing
+model detection/configuration work.
+
+Krea GGUF displays **Integration pending** / **molbal loader required**. Pending
+cells use a clock icon, visible explanations, unique accessible descriptions
+and a separate evidence filter. They are excluded from the unsupported filter;
+their format-handoff button stays disabled. Internally their existing blocked
+status remains intact. The classical tables/export guard contracts are unchanged.
+
 The [unsupported-entry upstream audit](unsupported-matrix-audit.md) reviews all
 negative cells as of 2026-10-06. Some grouped claims are stale or overbroad;
 that review does not imply new runtime validation or silently unblock exports.
@@ -96,7 +125,7 @@ empty state. Tables use native captions and row/column headers, sticky model
 names, focusable horizontal scrolling and labeled cell buttons.
 
 Select a cell to read its classification and available support reason in a
-visible detail card. The registry's four states remain unchanged: verified,
+visible detail card. The underlying registry's four states remain unchanged: verified,
 caution (visible drift), bad (unsupported/tooling gap or negative render evidence),
 and unknown (untested). Reasons are reused from `model_support.py`; the UI adds no
 new evidence. Verified can reflect render tests or implementation reasoning and
@@ -122,7 +151,7 @@ variation ([Q-DiT](https://arxiv.org/abs/2406.17343)). Those papers support the
 general sensitivity explanation, not certification of our NVFP4 implementation.
 
 **Use format** selects the model category and output container, clears the
-previous destination/base override/profile, and focuses the conversion model
+previous destination/base override, applies the row's profile (auto for GGUF), and focuses the conversion model
 type. It never starts conversion or identifies the source. The user must choose
 a source matching the selected family. GGUF represents grouped precisions and
 selects Q4_K_M; text-encoder F16 selects `F16_ST` safetensors; other safetensors
@@ -131,7 +160,9 @@ their explanations remain accessible. Unknown/caution selections retain their
 existing classification, not an implied endorsement.
 
 `GET /api/support` uses the existing session token/origin guard and returns
-`diffusion`/`text_encoder` objects with format keys and registry rows/reasons.
+`diffusion`/`text_encoder` objects with format keys and scoped rows/reasons.
+Rows have unique `id` values, source `arch`/`family`, optional `precision_profile`,
+and optional cell `__label`/`__pending`/`__scope` presentation metadata.
 The frontend loads it once per mounted guide, without model loading or network
 requests to upstream model providers. Reopening the guide retries a failed load.
 No new dependency or decorative table/navigation animation was added.
@@ -310,7 +341,7 @@ runtime success is claimed from cross-platform source code alone.
 
 ### Verified milestone results
 
-On Windows, all 467 Python tests and Ruff pass, and TypeScript/Vite build
+On Windows, all 468 Python tests and Ruff pass, and TypeScript/Vite build
 successfully. Chromium verifies a real synthetic FP8_MIXED conversion, file
 selection, activity, format guide, both themes, 1440/768/390 px viewports,
 Escape/focus restoration, reduced-motion mode and actual 200% input text scaling.
@@ -338,11 +369,16 @@ checks. The opt-in Chromium check actually downloaded and merged the public
 validated its readable tensors and successful staging cleanup, and checked plan
 invalidation, folder picking and desktop/mobile layouts without page errors.
 
-The matrix milestone verifies API parity with both shared registries and
+The matrix milestone verifies the scoped Workbench projection of shared registries and
 token/origin protection. Chromium checks search/empty states, category/evidence
 filters, unsupported CLIP GGUF explanations and disabled handoff, keyboard F16_ST
 handoff/focus, grouped GGUF Q4_K_M and diffusion INT8_MIXED mappings, both themes
 and 1440/768/390 px layouts. These are UI/data-contract checks, not new renders.
+
+The compact variant-table update also verifies centered two-line headers,
+separate model-code lines, unique variant IDs/accessible descriptions, pending
+filter separation and disabled handoffs, full/pruned Mistral evidence separation,
+and automatic `z_image_turbo` profile selection. No new model render is claimed.
 
 With the API already running, replay the browser check with:
 
