@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ArrowRight, FolderOpen, ShieldCheck } from "lucide-react";
+import { FormatSelect } from "./FormatSelect";
 
 type Operation =
   "analyze" | "components" | "diffusion" | "pad_tokens" | "restore_5d";
@@ -211,17 +212,13 @@ export function ToolForm({
               <label className="field-label" htmlFor="tool-format">
                 Quantization
               </label>
-              <select
+              <FormatSelect
                 id="tool-format"
                 value={format}
-                onChange={(event) => setFormat(event.target.value)}
-              >
-                {formats?.[container].map(([name, key]) => (
-                  <option key={key} value={key}>
-                    {name}
-                  </option>
-                ))}
-              </select>
+                onChange={setFormat}
+                container={container}
+                choices={formats?.[container] || []}
+              />
             </>
           )}
           {operation !== "analyze" && (

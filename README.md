@@ -77,6 +77,13 @@ cell to review it, then **Use format** to prepare a conversion. Known unsupporte
 combinations cannot be applied from the matrix. The classic Gradio interface
 remains available as an alternative. See [migration scope and validation](docs/web-workbench.md).
 
+Workbench format names are uppercase: **FP16**, **FP8 (E4M3)**, **INT8 + ConvRot**
+and **NVFP4**. “Mixed precision” describes the tool's protected-weight policy,
+not an extra bit width. Short grouped choices show details below the select.
+The guide distinguishes implemented INT8 ConvRot from the nonselectable,
+SDXL-tested **INT4 + ConvRot prototype**. Internal/API keys and filenames retain
+their existing spellings for compatibility.
+
 ### Python environment
 
 ```bash

@@ -40,6 +40,47 @@ changing the development API port).
 The classic Gradio UI remains available as an alternative. INT4 ConvRot is still
 excluded from the production format registry.
 
+## Format names and selection
+
+The Workbench uses one shared display formatter for conversion/extraction selects,
+compatibility headers/cells, output preview and job history. Numeric format names
+are uppercase; lower-case filenames/loader identifiers are not rewritten.
+
+| Workbench display | Internal key | Meaning |
+| --- | --- | --- |
+| FP16 | `F16`, encoder `F16_ST` | Half-precision float; GGUF calls the type F16 |
+| FP32 / BF16 | `F32` / `BF16` | Floating-point GGUF outputs |
+| FP8 (E4M3) | `FP8` | Scaled `float8_e4m3fn` safetensors |
+| INT8 + ConvRot | `INT8` | Native `int8_tensorwise`, rotated on eligible linear layers |
+| NVFP4 | `NVFP4` | NVIDIA FP4 with block scaling |
+| … · mixed precision | Existing `*_MIXED` | Model-specific protected weights retain source precision |
+| Q4_K_M, Q6_K, etc. | Unchanged GGUF keys | GGUF-specific quantization names, not interchangeable with NVFP4/INT4 |
+
+Native option groups separate floating-point / Q8 / K-quant GGUF choices and
+standard / mixed-precision safetensors policies. Options contain only short
+names; the selected format's details and protection policy appear underneath,
+linked with `aria-describedby`. Even standard policy keeps mandatory loader/
+shape-compatible tensors. API format registries supply the allowed keys;
+display changes do not alter writers, output suffixes, metadata or API payloads.
+The classic Gradio UI retains its legacy descriptive choice labels.
+
+“Mixed” is used by upstream publishers (for example Comfy-Org's
+[`fp8mixed` files](https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/tree/main/split_files/diffusion_models)
+and [`nvfp4_mixed` file](https://huggingface.co/Comfy-Org/Ideogram-4/blob/main/diffusion_models/ideogram4_nvfp4_mixed.safetensors)),
+but those names alone do not specify the same protected layers/scaling/runtime
+recipe as this tool. Common numeric terms do not make every community suffix a
+portable format contract. The native
+[INT8 tensorwise/ConvRot format](https://github.com/Comfy-Org/comfy-quants/blob/main/docs/formats/int8_tensorwise.md)
+also distinguishes INT8 storage from the optional rotation procedure.
+Civitai was not directly accessible during this naming review; no exhaustive
+cross-site naming survey is claimed.
+
+The guide has a separate **INT4 + ConvRot — Prototype / not selectable** card.
+It records the existing one-checkpoint SDXL render/LoRA/offload evidence and
+pending version/model integration. It does not invent production dropdown
+entries or support classifications for untested families. INT8 + ConvRot remains
+the implemented selectable path. ConvRot itself is not a bit width.
+
 ## Interactive compatibility matrix
 
 **Format guide** opens the shared project support matrix first, followed by the

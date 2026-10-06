@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Change: Use consistent uppercase Workbench display names (FP16/FP32, FP8 E4M3,
+  INT8 + ConvRot, NVFP4) across selection, matrix, preview and history.
+- Change: Group native format selects and move technical details/mixed-precision
+  policy explanations below the control; preserve API keys, metadata and filenames.
+- Add: Separate nonselectable INT4 + ConvRot SDXL prototype card, distinguishing it
+  from implemented INT8 ConvRot; browser checks cover aliases/groups/key parity.
+
 - Fix: Show usable-but-visible Qwen-Image-Edit-2511 NVFP4/INT8 mixed and Qwen3
   8B GGUF drift as caution instead of letting older clean samples hide it.
 - Add: Concrete drift details/test scope, profile-dependent Z-Image Turbo evidence,

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { formatName } from "./FormatSelect";
 import {
   ArrowRight,
   CheckCircle2,
@@ -36,7 +37,7 @@ const levels = {
     note: "No confirmed project render evidence for this combination. This is neither a success nor a failure claim.",
   },
 };
-const label = (key: string) => key.replace("_MIXED", " mixed");
+const label = formatName;
 
 export function SupportMatrix({
   api,
@@ -271,10 +272,25 @@ export function SupportMatrix({
       </p>
       <p className="preview-note">
         Storage savings depend on source dtype and retained tensors. Inspect
-        your source for an estimate. NVFP4 has hardware requirements; INT4
-        ConvRot is an SDXL-tested prototype; standard format integration is
-        pending.
+        your source for an estimate. NVFP4 has hardware requirements.
       </p>
+      <div
+        className="support-detail"
+        aria-label="INT4 ConvRot prototype status"
+      >
+        <span className="tiny-label">PROTOTYPE · NOT SELECTABLE</span>
+        <h3>INT4 + ConvRot</h3>
+        <p>
+          Native 4-bit ConvRot has passed SDXL rendering, LoRA and offload tests
+          on one checkpoint. It remains outside the standard conversion formats
+          and family matrix until version guards and supported-model integration
+          are implemented.
+        </p>
+        <p className="preview-note">
+          INT8 + ConvRot is already implemented and appears in the INT8
+          columns/options above. ConvRot is a rotation method, not a bit width.
+        </p>
+      </div>
     </section>
   );
 }

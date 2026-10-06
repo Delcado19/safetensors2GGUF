@@ -28,6 +28,7 @@ import "./styles.css";
 import { ToolForm } from "./ToolForm";
 import { HuggingFaceForm } from "./HuggingFaceForm";
 import { SupportMatrix } from "./SupportMatrix";
+import { FormatSelect, formatName } from "./FormatSelect";
 
 type Container = "gguf" | "safetensors";
 type Config = {
@@ -87,8 +88,6 @@ const bytes = (value: number) =>
     : value >= 2 ** 20
       ? `${(value / 2 ** 20).toFixed(1)} MiB`
       : `${(value / 1024).toFixed(1)} KiB`;
-const formatName = (key: string) =>
-  key === "F16_ST" ? "F16" : key.replace("_MIXED", " · mixed");
 const jobLabel = (job: Job) =>
   (
     ({
@@ -649,21 +648,19 @@ function App() {
                       <label className="field-label" htmlFor="format">
                         Quantization
                       </label>
-                      <select
+                      <FormatSelect
                         id="format"
                         value={format}
-                        onChange={(event) => setFormat(event.target.value)}
-                      >
-                        {(
-                          (modelKind === "text_encoder"
+                        onChange={setFormat}
+                        container={container}
+                        choices={
+                          ((modelKind === "text_encoder"
                             ? config?.text_encoder_formats[container]
-                            : config?.formats[container]) || [[format, format]]
-                        ).map(([label, key]) => (
-                          <option key={key} value={key}>
-                            {label}
-                          </option>
-                        ))}
-                      </select>
+                            : config?.formats[container]) || [
+                            [format, format],
+                          ]) as [string, string][]
+                        }
+                      />
                       {modelKind === "text_encoder" && (
                         <div className="encoder-note">
                           <strong>
@@ -866,7 +863,7 @@ function App() {
                     <dl className="preview-details">
                       <div>
                         <dt>Format</dt>
-                        <dd>{format.replace("_MIXED", " · mixed")}</dd>
+                        <dd>{formatName(format)}</dd>
                       </div>
                       <div>
                         <dt>Architecture</dt>
@@ -1140,7 +1137,7 @@ function App() {
                     setBaseRepo("");
                     setProfile("auto");
                     setSupportSelection(
-                      `${name} · ${key.replace("_MIXED", " mixed")} · ${classification}.`,
+                      `${name} · ${formatName(key)} · ${classification}.`,
                     );
                     setView("convert");
                     requestAnimationFrame(() =>
