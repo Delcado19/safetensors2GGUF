@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Docs: Add the unified multi-backend converter roadmap as a persistent startup
+  TODO in AGENTS.md, including later evaluation of implementation/fork consolidation.
+
 - Fix: Replace the obsolete Qwen-Image GGUF rejection with verified Q4_K_M
   conversion/render smoke-test evidence, including the tested binary and fidelity limits.
 

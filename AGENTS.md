@@ -1,5 +1,27 @@
 # Agents & Automation
 
+## Persistent project TODO — load at every session start
+
+**Open: Build one unified model converter.** Preserve the tested diffusion and
+text-encoder GGUF paths while integrating the additional model/format capabilities
+of `molbal/ComfyUI-GGUF`.
+
+Recorded roadmap (the final consolidation strategy remains open):
+- First provide one application with a shared format registry, model checks,
+  precision protection, progress/cancellation and safe output handling.
+- Initially dispatch to the existing patched diffusion llama.cpp toolchain,
+  plain text-encoder llama.cpp toolchain, and an integrated molbal backend,
+  using pinned, traceable versions and matching model/runtime tests.
+- Then evaluate selectively consolidating implementations or maintaining forks
+  of all three sources into one converter. A wholesale merge remains an
+  alternative to assess.
+- Keep working conversion formats available throughout; do not replace a tested
+  path solely because another backend offers more features.
+
+Read and retain this open TODO at the start of every project session. Do not
+start implementing it merely because a session begins; use it when planning
+relevant work. Update its status when implemented or explicitly superseded.
+
 This project uses Claude Code Hooks and sub-agents that run automatically before every `git commit`.
 
 ---
