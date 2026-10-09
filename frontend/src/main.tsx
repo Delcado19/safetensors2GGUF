@@ -1404,7 +1404,7 @@ function App() {
                   ? setDownloadDestination
                   : view === "tools"
                     ? setToolDestination
-                    : setDestination)(listing!.path + "/");
+                    : setDestination)(listing!.path);
                 setPicker(null);
               }}
             >

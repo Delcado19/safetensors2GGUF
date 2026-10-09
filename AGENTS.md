@@ -157,7 +157,10 @@ Native `INT4_CONVROT_MIXED` is a production diffusion safetensors target.
 Keep eligibility/planning/writing consistent and preserve source precision on
 fallback. Use `scripts/check_int4_native.py` with the installed ComfyUI Python
 to check Kitchen storage compatibility without model inference. Runtime evidence
-remains scoped to SDXL and ZIT; do not start new ComfyUI renders unless requested.
+is checkpoint/workflow-specific; do not start new ComfyUI renders unless requested.
+Latest additional Base evidence: read `docs/zimage-base-render-validation.md`
+for the 2026-10-09 ten-format portrait batch, including plain NVFP4 anatomy failure.
+Retained local gallery: `runtime-results/zimage-base-2026-10-09/index.html`.
 
 ### Standard visual comparison prompt
 

@@ -63,7 +63,11 @@ def main():
         expect(page.get_by_label('Folder path')).to_have_value(target_drive)
         # Destination browsing only presents directories; Escape preserves output.
         expect(page.get_by_role('button', name='Use this folder')).to_be_enabled()
+        page.get_by_role('button', name='Use this folder').click()
+        expect(page.locator('#destination')).to_have_value(target_drive)
+        page.get_by_role('button', name='Choose folder', exact=True).click()
         page.keyboard.press('Escape')
+        expect(page.locator('#destination')).to_have_value(target_drive)
         page.get_by_role('button', name='Safetensors Native ComfyUI loading').click()
         # Test reruns explicitly authorize replacement of this owned artifact.
         output = root / f'qwen-ui-output-{uuid.uuid4().hex}.safetensors'

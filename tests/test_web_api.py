@@ -104,6 +104,12 @@ def test_support_matrix_uses_shared_classifications_and_reasons():
     lumina = next(row for row in data['diffusion']['rows'] if row['id'] == 'lumina2_base')
     assert lumina['NVFP4_MIXED'] == 'bad'
     assert 'Default/Base policy' in lumina['NVFP4_MIXED__reason']
+    for fmt in ('INT8', 'NVFP4'):
+        assert lumina[fmt] == 'bad'
+        assert lumina[fmt + '__label'] == 'Severe visual drift'
+        assert lumina[fmt + '__scope'] == 'Base portrait / all stages'
+        assert 'user rejected all three stages' in lumina[fmt + '__reason']
+        assert 'successful loading' in lumina[fmt + '__reason']
     turbo = next(row for row in data['diffusion']['rows'] if row['id'] == 'lumina2_turbo')
     assert turbo['NVFP4_MIXED'] == 'verified' and turbo['precision_profile'] == 'z_image_turbo'
     assert all(turbo[fmt] == 'verified' for fmt in ('FP8', 'FP8_MIXED', 'INT8', 'INT8_MIXED', 'NVFP4'))

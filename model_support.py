@@ -1068,6 +1068,25 @@ def build_workbench_support_tables() -> dict:
                     'Linux remain untested. Source: docs/krea2-render-validation.md.')
             if key == 'lumina2':
                 row.update(id='lumina2_base', display_name='Z-Image Base / Lumina 2.0', precision_profile='auto')
+                # User review rejects the large motif changes at every saved stage.
+                for fmt, finding in (
+                    ('INT8', 'Strong pose/face drift: crouched raised-leg posture, right-facing '
+                     'profile and flattened gray/green lighting replace the reference motif.'),
+                    ('NVFP4', 'Severe anatomy breakdown: contorted/inverted torso and '
+                     'apparent extra/fused limb structures.')):
+                    row[fmt] = SUPPORT_BAD
+                    row[fmt + '__label'] = 'Severe visual drift'
+                    row[fmt + '__scope'] = 'Base portrait / all stages'
+                    row[fmt + '__reason'] = (
+                        'Z-Image Base, conservative profile: ' + finding + ' These changes '
+                        'occur in the Base image and persist through Turbo refinement and '
+                        'final upscaling. The user rejected all three stages as unusable. '
+                        'This is failed visual fidelity despite successful loading, not an '
+                        'unsupported file format. Fixed seed 3626416340707206, stored FameGrid '
+                        'workflow, 23 res_2s/beta57 steps, CFG 3.5; independent BF16 Base '
+                        'repeat was pixel-identical. ComfyUI 0.39.0, Kitchen 0.2.37, RTX 5080. '
+                        'Scoped to this checkpoint/prompt/workflow; not the Turbo profile or '
+                        'mixed variants. Source: docs/zimage-base-render-validation.md.')
                 row['NVFP4_MIXED__reason'] = (
                     'Default/Base policy: older comparisons substantially changed composition, '
                     'pose and outfit. The newer usable Turbo-profile result belongs to the '

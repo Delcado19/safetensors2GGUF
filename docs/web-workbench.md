@@ -465,6 +465,9 @@ remains available. Lists refresh when opening the dialog. Both source selection
 and destination selection share these shortcuts, keyboard navigation and focus
 handling. The parent button is disabled at a root; direct path entry remains
 available for arbitrary directories and UNC paths.
+Choosing an output folder preserves the resolved path verbatim, including drive
+roots such as `I:\`, without appending mixed or duplicate separators. Existing
+folders are recognized by the output resolvers without a trailing slash.
 
 `GET /api/locations` requires the same session/origin protection as `/api/files`.
 Browser checks navigate to a real drive root and Home, then select a model using

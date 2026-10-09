@@ -50,3 +50,6 @@ graphify-out/
 # Local Workbench server output
 .workbench-stdout.log
 .workbench-stderr.log
+
+# Retained local image-validation batches (models are never copied here)
+runtime-results/

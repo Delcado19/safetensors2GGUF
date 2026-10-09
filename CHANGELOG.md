@@ -6,6 +6,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Change: Mark plain INT8 and NVFP4 in the Z-Image Base row as Severe visual
+  drift after user rejection of Base/refined/final portrait images. Block format
+  handoff for these failed visual results while retaining exact runtime scope;
+  Turbo and mixed-precision classifications remain separate.
+
+- Test: Render ten existing Z-Image Base conversions with the stored FameGrid
+  workflow and fixed motel portrait prompt, preserving Turbo/upscaling stages.
+  Retain 36 PNGs and an independent source repeat; document severe plain-NVFP4
+  anatomy failure, usable mixed-NVFP4/Q4_K_M and per-format motif differences.
+
+- Fix: Folder selection preserves the filesystem's resolved path without
+  appending a slash, avoiding mixed drive-root separators such as `I:\/`.
+
 - Add: Offline recognition of official SDXL VAE/CLIP-L/CLIP-G FP32 weights and
   direct FP16/BF16 casts from verified whole-file HF SHA256. Ship nine normalized
   fingerprints with provenance and a read-only reproduction checker. Normalize
