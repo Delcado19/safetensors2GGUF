@@ -189,7 +189,7 @@ def main():
             download_root = root / f'hf-live-{uuid.uuid4().hex}'
             download_root.mkdir()
             page.set_viewport_size({'width': 1440, 'height': 1100})
-            page.get_by_role('button', name='Hugging Face', exact=True).click()
+            page.get_by_role('button', name='Downloads', exact=True).click()
             expect(page.get_by_role('button', name='Download checkpoint')).to_be_disabled()
             # Native variant selection must remain explicit for ambiguous repos.
             page.route('**/api/hf/inspect', lambda route: route.fulfill(json={

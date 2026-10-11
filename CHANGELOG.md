@@ -6,6 +6,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Civitai safetensors/GGUF downloads in the Workbench, with hash-pinned
+  persistent partials, byte progress, cancellation, fresh-link retries and
+  `.red`/`.com` fallback. Validate every resumed range and SHA256 before atomic
+  publication; preserve existing outputs and partials on errors. Rename the
+  shared navigation entry to Downloads and retain Hugging Face behavior.
+- Add: Write-only Civitai key setup in the Workbench download view, with session
+  overrides, environment fallback and optional Windows Credential Manager storage.
+  Return presence/source only and keep keys out of validation errors and job history.
+
 - Change: Mark plain INT8 and NVFP4 in the Z-Image Base row as Severe visual
   drift after user rejection of Base/refined/final portrait images. Block format
   handoff for these failed visual results while retaining exact runtime scope;

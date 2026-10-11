@@ -81,6 +81,25 @@ files. Local matches alone do not certify stock provenance.
 folder, and downloads/merges its safetensors shards into one local file. Downloads
 share job history/cancellation and use server-side `HF_TOKEN`,
 `CODEX_HUGGINGFACE_API_KEY`, or a stored Hub login for restricted repositories.
+**Downloads → Civitai** accepts version IDs, version-specific model links, or
+direct download links with `fileId`. Inspect first, select a safetensors/GGUF file,
+then choose **Download / resume**. Partials survive cancellation, network errors
+and server restarts. Retry the same file in the same folder to continue. Temporary
+failures retry up to four total attempts with fresh signed links and alternating
+`.red`/`.com` domains. A response ignoring Range is never appended. The complete
+SHA256 must match before atomic publication; existing outputs need explicit
+replacement. Failed checksum partials are retained: choose another folder for a
+clean retry. Only HTTPS Civitai storage redirects and the observed, pinned
+Civitai Cloudflare R2 account host are supported.
+The download view provides write-only **Civitai API key** setup.
+Enter a key for the current server session or
+explicitly save it in Windows Credential Manager as a generic credential named
+`safetensors2GGUF/Civitai`. Resolution order: session override, `CIVITAI_API_KEY`,
+`CIVITAI_TOKEN`, `CODEX_CIVITAI_API_KEY`, then that Windows credential. The UI shows
+only presence/source, never stored key values. Keys are not saved in browser
+storage, job history or project files. Clearing the session override restores
+the environment/stored key; it does not delete that credential. Other Windows
+Vault entries are not enumerated. On other platforms use session/environment keys.
 **Format guide** includes the interactive diffusion/text-encoder support matrix,
 model search, evidence filters and visible compatibility explanations. Select a
 cell to review it, then **Use format** to prepare a conversion. Known unsupported

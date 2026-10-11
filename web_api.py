@@ -31,6 +31,8 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from conversion_service import _pipeline, _resolve_dst_st, _strip_model_suffix
 from convert import ConversionCancelled, load_state_dict
 from conversion_io import validate_output
+from civitai_credentials import CivitaiCredentials
+from civitai_download import CivitaiError, download_model, inspect_version, parse_source
 from krea_backend import KREA_CHOICES, LOADER_NOTE, validate_krea_request
 from convert_safetensors import convert_to_safetensors
 from component_extract import analyze_components, default_output_root, extract_components
@@ -102,9 +104,10 @@ class ConversionRequest(BaseModel):
 class Job:
     """Locked snapshot of a cooperative conversion, tool or download worker."""
 
-    def __init__(self, parameters: ConversionRequest | ToolRequest | DownloadRequest):
+    def __init__(self, parameters: ConversionRequest | ToolRequest | DownloadRequest | CivitaiDownloadRequest, credentials=None):
         self.id = uuid.uuid4().hex
         self.parameters = parameters
+        self.credentials = credentials
         self.cancel = threading.Event()
         self.lock = threading.Lock()
         self.logs = deque(maxlen=400)
@@ -154,12 +157,18 @@ class Job:
             if self.cancel.is_set():
                 raise ConversionCancelled('cancelled')
             operation = getattr(params, 'operation', 'convert')
-            if operation not in {'analyze', 'components', 'download'}:
+            if operation not in {'analyze', 'components', 'download', 'civitai_download'}:
                 # Folder selections may name a new ComfyUI output directory.
                 Path(params.destination).parent.mkdir(parents=True, exist_ok=True)
             callbacks = {'on_log': lambda message: self.emit(('log', message)),
                          'cancel_event': self.cancel}
-            if operation == 'download':
+            if operation == 'civitai_download':
+                key, _ = self.credentials.resolve()
+                output = download_model(params.source, params.file_id, params.destination, key,
+                    overwrite=params.overwrite,
+                    on_progress=lambda fraction, phase: self.emit(('progress_frac', fraction, phase)),
+                    **callbacks)
+            elif operation == 'download':
                 def transfer_phase(index, total, message):
                     # Counts describe shards, not bytes: never show a fake percentage.
                     with self.lock:
@@ -227,7 +236,11 @@ class Job:
             with self.lock:
                 cancelled = isinstance(exc, ConversionCancelled) or str(exc) == 'cancelled'
                 self.status = 'cancelled' if cancelled else 'failed'
-                self.error = '' if cancelled else (download_error(exc) if getattr(params, 'operation', '') == 'download' else str(exc))
+                self.error = '' if cancelled else (
+                    str(exc) if operation == 'civitai_download' and isinstance(exc, CivitaiError) else
+                    'Civitai download failed. Check access, connection and local storage; partial files are retained.'
+                    if operation == 'civitai_download' else
+                    download_error(exc) if operation == 'download' else str(exc))
                 self.phase = 'Cancelled' if cancelled else 'Job failed'
         finally:
             gc.collect()
@@ -267,6 +280,27 @@ class DownloadRequest(BaseModel):
     format: Literal['safetensors'] = 'safetensors'
 
 
+class CivitaiKeyRequest(BaseModel):
+    """Write-only credential input; kept separate from job parameters and history."""
+
+    model_config = ConfigDict(extra='forbid')
+    key: str = Field(default='', max_length=1024, repr=False)
+    persist: bool = False
+
+
+class CivitaiDownloadRequest(BaseModel):
+    """Version/file identity only; secrets are resolved by the worker, not job history."""
+
+    model_config = ConfigDict(extra='forbid')
+    source: str = Field(min_length=1, max_length=1024)
+    file_id: int = Field(default=0, ge=0, le=999999999999)
+    destination: str = Field(default='', max_length=4096)
+    overwrite: bool = False
+    operation: Literal['civitai_download'] = 'civitai_download'
+    model_kind: Literal['diffusion'] = 'diffusion'
+    format: Literal['safetensors', 'gguf'] = 'safetensors'
+
+
 def download_error(exc: Exception) -> str:
     """Expose actionable download errors without HTTP headers, tokens or signed URLs."""
     status = getattr(getattr(exc, 'response', None), 'status_code', None)
@@ -286,6 +320,7 @@ def download_error(exc: Exception) -> str:
 def create_app() -> FastAPI:
     """Create an isolated API with bounded job history and same-origin access."""
     token = secrets.token_urlsafe(32)
+    civitai_credentials = CivitaiCredentials()
     jobs: dict[str, Job] = {}
     jobs_lock = threading.Lock()
 
@@ -298,6 +333,7 @@ def create_app() -> FastAPI:
                 job.cancel.set()
 
     app = FastAPI(title='safetensors workbench', lifespan=lifespan)
+    app.state.civitai_credentials = civitai_credentials
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=['localhost', '127.0.0.1', '[::1]'])
 
     def authorize(request: Request, x_workbench_token: str = Header(default='')):
@@ -311,6 +347,26 @@ def create_app() -> FastAPI:
             raise HTTPException(403, 'Missing or invalid workbench session')
 
     protected = [Depends(authorize)]
+
+    @app.get('/api/civitai/credentials', dependencies=protected)
+    def civitai_status(response: Response):
+        """Expose presence/source only; credentials never enter config or job history."""
+        response.headers['Cache-Control'] = 'no-store'
+        return civitai_credentials.status()
+
+    @app.post('/api/civitai/credentials', dependencies=protected)
+    async def civitai_key(request: Request, response: Response):
+        """Accept write-only keys without reflecting invalid secret input in errors."""
+        response.headers['Cache-Control'] = 'no-store'
+        try:
+            # FastAPI's default validation errors echo input: parse secrets ourselves.
+            params = CivitaiKeyRequest.model_validate(await request.json())
+        except Exception:
+            raise HTTPException(400, 'Invalid credential request.') from None
+        try:
+            return civitai_credentials.set(params.key, params.persist)
+        except (ValueError, OSError):
+            raise HTTPException(400, 'Could not update the Civitai key. Check the key and selected storage.') from None
 
     @app.get('/api/support', dependencies=protected)
     def support():
@@ -481,7 +537,7 @@ def create_app() -> FastAPI:
             # ponytail: one worker bounds model RAM; add scheduling only if needed.
             while len(jobs) >= 20:
                 del jobs[next(iter(jobs))]
-            job = Job(params)
+            job = Job(params, civitai_credentials)
             jobs[job.id] = job
             job.thread = threading.Thread(target=job.run, daemon=True)
             job.thread.start()
@@ -522,6 +578,42 @@ def create_app() -> FastAPI:
         params = resolve_download(params)
         if not params.destination:
             raise HTTPException(400, 'Choose an output directory')
+        return enqueue(params)
+
+    @app.post('/api/civitai/inspect', dependencies=protected)
+    def inspect_civitai(params: CivitaiDownloadRequest):
+        """Resolve version/file choices without transferring model weights."""
+        try:
+            key, _ = civitai_credentials.resolve()
+            return inspect_version(params.source, key)
+        except CivitaiError as exc:
+            raise HTTPException(400, str(exc)) from None
+        except Exception:
+            raise HTTPException(400, 'Could not inspect Civitai. Check access and connection.') from None
+
+    @app.post('/api/civitai/download', status_code=202, dependencies=protected)
+    def download_civitai(params: CivitaiDownloadRequest):
+        """Use the shared worker/cancel limit with canonical, credential-free identity."""
+        try:
+            version, linked_file = parse_source(params.source)
+            if linked_file and params.file_id and linked_file != params.file_id:
+                raise CivitaiError('Selected file does not match the download link.')
+            params.source = str(version)
+            params.file_id = params.file_id or linked_file or 0
+            if not params.file_id:
+                raise CivitaiError('Select a model file first.')
+            if not params.destination.strip():
+                raise CivitaiError('Choose an output directory.')
+            folder = Path(params.destination.strip()).expanduser()
+            if folder.exists() and not folder.is_dir():
+                raise CivitaiError('Choose an output directory.')
+            params.destination = str(folder.resolve())
+            if not civitai_credentials.resolve()[0]:
+                raise CivitaiError('Set a Civitai API key before downloading.')
+        except CivitaiError as exc:
+            raise HTTPException(400, str(exc)) from None
+        except Exception:
+            raise HTTPException(400, 'Could not prepare Civitai download. Check credentials and output folder.') from None
         return enqueue(params)
 
     @app.post('/api/tools', status_code=202, dependencies=protected)

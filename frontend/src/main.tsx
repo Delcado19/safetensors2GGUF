@@ -27,6 +27,8 @@ import {
 import "./styles.css";
 import { ToolForm } from "./ToolForm";
 import { HuggingFaceForm } from "./HuggingFaceForm";
+import { CivitaiCredentials } from "./CivitaiCredentials";
+import { CivitaiForm } from "./CivitaiForm";
 import { SupportMatrix } from "./SupportMatrix";
 import { FormatSelect, formatName } from "./FormatSelect";
 
@@ -105,6 +107,7 @@ const jobLabel = (job: Job) =>
       pad_tokens: "Pad-token repair",
       restore_5d: "5D restoration",
       download: "Hub download",
+      civitai_download: "Civitai download",
     }) as Record<string, string>
   )[job.operation] || formatName(job.format);
 const filename = (path: string) => path.split(/[\\/]/).pop() || path;
@@ -127,6 +130,7 @@ function App() {
   const [toolSource, setToolSource] = useState("");
   const [toolDestination, setToolDestination] = useState("");
   const [downloadDestination, setDownloadDestination] = useState("");
+  const [downloadProvider, setDownloadProvider] = useState("hf");
   const [supportSelection, setSupportSelection] = useState("");
   const [container, setContainer] = useState<Container>("gguf");
   const [format, setFormat] = useState("Q4_K_M");
@@ -435,7 +439,7 @@ function App() {
             aria-current={view === "download" ? "page" : undefined}
           >
             <ArrowDownToLine size={18} />
-            Hugging Face
+            Downloads
           </button>
         </nav>
         <div className="sidebar-bottom">
@@ -492,7 +496,7 @@ function App() {
                 {view === "convert"
                   ? "Bring your model. Choose a format. Keep creating."
                   : view === "download"
-                    ? "Choose a checkpoint from the Hub. Bring every shard together."
+                    ? "Download a checkpoint from Hugging Face or Civitai."
                     : view === "tools"
                       ? "Separate checkpoint components. Restore your GGUF. Keep the original."
                       : view === "activity"
@@ -522,6 +526,13 @@ function App() {
           {(view === "convert" || view === "tools" || view === "download") && (
             <div className="work-grid">
               {view === "download" ? (
+                <div>
+                <label className="field-label" htmlFor="download-provider">Download provider</label>
+                <select id="download-provider" value={downloadProvider} onChange={(event) => setDownloadProvider(event.target.value)}>
+                  <option value="hf">Hugging Face</option>
+                  <option value="civitai">Civitai</option>
+                </select>
+                {downloadProvider === "hf" ? (
                 <HuggingFaceForm
                   api={api}
                   destination={downloadDestination}
@@ -532,6 +543,13 @@ function App() {
                   submit={(body) => start(body, "hf/download")}
                   bytes={bytes}
                 />
+                ) : (<>
+                  <CivitaiForm api={api} destination={downloadDestination} setDestination={setDownloadDestination}
+                    browse={() => openPicker("destination")} disabled={busy || submitting || !config}
+                    submit={(body) => start(body, "civitai/download")} bytes={bytes} />
+                  {config && <CivitaiCredentials api={api} />}
+                </>)}
+                </div>
               ) : view === "tools" ? (
                 <ToolForm
                   source={toolSource}
@@ -1142,7 +1160,7 @@ function App() {
                     onClick={() => {
                       setJob(item);
                       setView(
-                        item.operation === "download"
+                        ["download", "civitai_download"].includes(item.operation)
                           ? "download"
                           : item.operation === "convert"
                             ? "convert"

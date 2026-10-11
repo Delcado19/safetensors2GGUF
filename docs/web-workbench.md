@@ -1,7 +1,7 @@
 # React workbench migration
 
 The React/TypeScript/Vite frontend and FastAPI backend now cover diffusion
-models, text encoders, extraction, GGUF repair and Hugging Face downloads. Workflows use existing algorithms
+models, text encoders, extraction, GGUF repair and Hugging Face/Civitai downloads. Workflows use existing algorithms
 and atomic output writers.
 The classic Gradio frontend remains available during migration.
 
@@ -181,7 +181,7 @@ No new dependency or decorative table/navigation animation was added.
 
 ## Hugging Face downloads
 
-Open **Hugging Face**, enter a model repository ID (`organization/model-name`)
+Open **Downloads**, select **Hugging Face**, enter a model repository ID (`organization/model-name`)
 and a revision (default `main`), then choose **Inspect repository**. Inspection
 reads metadata only: checkpoint folders, safetensors file counts, total shard
 bytes when available, and the resolved commit. No tensors download at this step.
@@ -234,6 +234,59 @@ render guarantee; choose an architecture/loader supported by your workflow.
 The integration follows the official [Hub API](https://huggingface.co/docs/huggingface_hub/package_reference/hf_api)
 and [file-download API](https://huggingface.co/docs/huggingface_hub/package_reference/file_download).
 It uses the already installed Python library; no new runtime dependency was added.
+
+## Civitai downloads
+
+Open **Downloads → Civitai**. Enter a version ID, a model link containing
+`modelVersionId`, or a direct `/api/download/models/<version>?fileId=<file>` link.
+Inspection lists safetensors/GGUF model files with SHA256; select one and start
+**Download / resume**. Browser links containing tokens are rejected. Keys are set
+in the separate write-only credential form, used only by the server, and never
+included in job parameters, history, logs or transport error messages.
+
+Credential priority is session override, `CIVITAI_API_KEY`, `CIVITAI_TOKEN`,
+`CODEX_CIVITAI_API_KEY`, then the Windows generic credential
+`safetensors2GGUF/Civitai`. Saving in Credential Manager is explicit. Environment
+changes normally require restarting the server; manual session input overrides
+an older inherited environment. Clearing the override restores stored credentials.
+
+The downloader retains `.civitai-<version>-<file>-<sha256>.part` on cancellation
+or failure. Restart the same file in the same folder to resume; job history itself
+is process-local. Resume requires HTTP 206 with the exact requested start byte
+and a consistent total. A 200 response at a nonzero offset is never appended.
+Connection failures, timeouts, HTTP 408/429/5xx and expired signed storage links
+retry with fresh links and alternating `.red`/`.com` domains, up to four total
+attempts with 1/2/4-second cancellable waits. Model API 401/403/404 stop immediately.
+Only HTTPS redirects to Civitai domains and the observed, pinned Civitai
+Cloudflare R2 account host are accepted; storage requests receive
+no API key. Cancellation checks between chunks and during hashing; a blocked
+network read may take up to the 20-second socket timeout to return.
+
+The complete SHA256 is checked before atomic publication. Existing files require
+explicit replacement and remain intact on failures. Failed-checksum partials stay
+for diagnosis; choose a new folder for a clean download. Completed partials matching
+the advertised metadata size can finish verification without another transfer.
+
+Protected endpoints:
+
+- `GET/POST /api/civitai/credentials`: presence/source status or write-only key
+  update (`key`, optional `persist`); responses are not cached.
+- `POST /api/civitai/inspect`: `source`; returns version and safe file choices.
+- `POST /api/civitai/download`: `source`, `file_id`, `destination`, optional
+  `overwrite` and `format`; returns a 202 shared job snapshot. Keys are resolved
+  at worker start; changing a key does not affect an already running transfer.
+
+Live evidence from this session: version `3276318`, file `3160899`
+(`solstice_v2_3160899.safetensors`, 13,141,730,784 bytes) downloaded in two
+connections. The first transferred 32 MiB; the second returned
+`206 bytes 33554432-13141730783/13141730784`. Full SHA256 matched
+`97877b10e14dfd203eba0b06f89d4aafc21b42bc5ccebd5aa71a4d29300ccb3b`.
+That standalone test establishes server resume for this file, not a live
+fault-injection test of the Workbench fallback or a ComfyUI loading guarantee.
+The implemented metadata/redirect/range path also passed a live read of the last
+64 bytes of that same file through Civitai's Cloudflare R2 storage redirect.
+Automated tests cover interruptions, ignored/wrong ranges, domain fallback,
+cancellation, restart recovery, SHA256 mismatch, output preservation and secrets.
 
 ## Extraction and repair
 
