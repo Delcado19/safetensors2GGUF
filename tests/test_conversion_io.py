@@ -315,3 +315,35 @@ def test_5d_metadata_discovers_job_specific_companion(tmp_path):
     inserted = fix_5d_tensors(str(destination), str(fixed), on_log=lambda _: None)
     assert inserted == ["current.weight"]
     assert "current.weight" in {tensor.name for tensor in gguf.GGUFReader(str(fixed)).tensors}
+
+
+@pytest.mark.parametrize("stage", ["success", "tensors", "write", "cancel"])
+def test_gguf_disk_spool_is_closed_on_every_exit(tmp_path, stage):
+    """Force disk rollover and check explicit cleanup without garbage collection."""
+    import tempfile
+
+    source, destination = tmp_path / "source.safetensors", tmp_path / "output.gguf"
+    save_file({"double_blocks.0.img_attn.proj.weight": torch.ones(2, 2)}, str(source))
+    destination.write_bytes(b"original")
+    factory = tempfile.SpooledTemporaryFile
+    spools = []
+
+    def disk_spool(**kwargs):
+        kwargs["max_size"] = 1
+        spool = factory(**kwargs)
+        spool.rollover()
+        spools.append(spool)
+        return spool
+
+    with patch("convert.tempfile.SpooledTemporaryFile", side_effect=disk_spool):
+        if stage == "success":
+            convert_file(str(source), str(destination), interact=False, overwrite=True, on_log=lambda _: None)
+        else:
+            target = "convert.gguf.GGUFWriter.write_tensors_to_file" if stage == "write" else "convert.handle_tensors"
+            failure = ConversionCancelled() if stage == "cancel" else OSError("disk failure")
+            with patch(target, side_effect=failure):
+                with pytest.raises(type(failure)):
+                    convert_file(str(source), str(destination), interact=False, overwrite=True, on_log=lambda _: None)
+            assert destination.read_bytes() == b"original"
+    assert len(spools) == 1 and spools[0].closed
+    assert set(tmp_path.iterdir()) == {source, destination}

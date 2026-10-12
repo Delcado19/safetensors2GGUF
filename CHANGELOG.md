@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Fix: Close the output-local GGUF tensor spool on success, errors and cancellation,
+  preventing Windows temporary-file leaks after failed writes. Add forced disk
+  rollover regression coverage for every exit path.
+
 - Fix: Store the streaming GGUF tensor spool, text-encoder model copy and F16
   K-quant intermediate on the output filesystem instead of the system temporary
   directory, avoiding failures on a small Linux `/tmp` tmpfs while retaining

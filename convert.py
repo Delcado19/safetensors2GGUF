@@ -533,53 +533,55 @@ def convert_file(
 
     # Keep the large spool beside the output; system temp may be a small tmpfs.
     writer = gguf.GGUFWriter(path=None, arch=model_arch.arch, use_temp_file=True)
-    writer.temp_file = tempfile.SpooledTemporaryFile(
+    # GGUFWriter.close() closes outputs only; own the spool on every exit path.
+    with tempfile.SpooledTemporaryFile(
         mode="w+b", max_size=256 * 1024 * 1024, dir=Path(dst_path).resolve().parent,
-    )
-    writer.add_quantization_version(gguf.GGML_QUANT_VERSION)
-    writer.add_file_type(ftype_gguf)
+    ) as spool:
+        writer.temp_file = spool
+        writer.add_quantization_version(gguf.GGML_QUANT_VERSION)
+        writer.add_file_type(ftype_gguf)
 
-    try:
-        handle_tensors(
-            writer, state_dict, model_arch,
-            on_progress=on_progress, on_log=on_log,
-            target_quant=target_quant, cancel_event=cancel_event,
-            log_tensor_every=log_tensor_every,
-            apply_unsqueeze=apply_unsqueeze,
-        )
-    except ConversionCancelled:
-        # Release writer buffers (may hold GBs of tensor data)
-        del writer
-        del state_dict
-        raise
+        try:
+            handle_tensors(
+                writer, state_dict, model_arch,
+                on_progress=on_progress, on_log=on_log,
+                target_quant=target_quant, cancel_event=cancel_event,
+                log_tensor_every=log_tensor_every,
+                apply_unsqueeze=apply_unsqueeze,
+            )
+        except ConversionCancelled:
+            # Release writer buffers (may hold GBs of tensor data)
+            del writer
+            del state_dict
+            raise
 
-    if getattr(model_arch, "_nd_tensors", None):
-        writer.add_string("comfy.gguf.5d_sidecar", os.path.basename(model_arch.fix_path))
+        if getattr(model_arch, "_nd_tensors", None):
+            writer.add_string("comfy.gguf.5d_sidecar", os.path.basename(model_arch.fix_path))
 
-    _info("Writing GGUF file…")
-    sidecar_published = False
-    try:
-        with atomic_output(dst_path, overwrite) as temporary:
-            try:
-                writer.write_header_to_file(path=temporary)
-                writer.write_kv_data_to_file()
-                writer.write_tensors_to_file(progress=on_log is None)
-            finally:
-                # Close before atomic_output removes/replaces the file (Windows).
-                writer.close()
-            if cancel_event is not None and cancel_event.is_set():
-                raise ConversionCancelled()
-            if getattr(model_arch, "_nd_tensors", None):
-                # Never replace an earlier successful conversion's companion file.
-                with atomic_output(model_arch.fix_path) as sidecar:
-                    save_file(model_arch._nd_tensors, sidecar)
-                sidecar_published = True
+        _info("Writing GGUF file…")
+        sidecar_published = False
+        try:
+            with atomic_output(dst_path, overwrite) as temporary:
+                try:
+                    writer.write_header_to_file(path=temporary)
+                    writer.write_kv_data_to_file()
+                    writer.write_tensors_to_file(progress=on_log is None)
+                finally:
+                    # Close before atomic_output removes/replaces the file (Windows).
+                    writer.close()
                 if cancel_event is not None and cancel_event.is_set():
                     raise ConversionCancelled()
-    except BaseException:
-        if sidecar_published:
-            os.unlink(model_arch.fix_path)
-        raise
+                if getattr(model_arch, "_nd_tensors", None):
+                    # Never replace an earlier successful conversion's companion file.
+                    with atomic_output(model_arch.fix_path) as sidecar:
+                        save_file(model_arch._nd_tensors, sidecar)
+                    sidecar_published = True
+                    if cancel_event is not None and cancel_event.is_set():
+                        raise ConversionCancelled()
+        except BaseException:
+            if sidecar_published:
+                os.unlink(model_arch.fix_path)
+            raise
 
     fix_path = model_arch.fix_path
     if getattr(model_arch, "_nd_tensors", None):
