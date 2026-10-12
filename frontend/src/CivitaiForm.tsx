@@ -7,7 +7,7 @@ type Inspection = {
   files: { id: number; name: string; bytes: number | null; sha256: string }[];
 };
 
-export function CivitaiForm({ api, destination, setDestination, browse, disabled, submit, bytes }: {
+export function CivitaiForm({ api, destination, setDestination, browse, disabled, submit, bytes, authenticated, configureCredentials }: {
   api: <T>(path: string, body?: unknown, signal?: AbortSignal) => Promise<T>;
   destination: string;
   setDestination: (value: string) => void;
@@ -15,6 +15,8 @@ export function CivitaiForm({ api, destination, setDestination, browse, disabled
   disabled: boolean;
   submit: (parameters: unknown) => void;
   bytes: (value: number) => string;
+  authenticated: boolean | undefined;
+  configureCredentials: () => void;
 }) {
   const [source, setSource] = useState("");
   const [inspection, setInspection] = useState<Inspection>();
@@ -57,7 +59,8 @@ export function CivitaiForm({ api, destination, setDestination, browse, disabled
     <div className="panel-heading"><h2 id="civitai-title">Download from Civitai</h2><span className="tag">CIVITAI</span></div>
     <form onSubmit={(event) => {
       event.preventDefault();
-      if (inspection && selected) submit({
+      // Credential setup is required for download, while metadata inspection stays anonymous.
+      if (authenticated === true && inspection && selected) submit({
         source: String(inspection.version), file_id: selected.id, destination, overwrite,
         format: selected.name.toLowerCase().endsWith(".gguf") ? "gguf" : "safetensors",
       });
@@ -99,8 +102,17 @@ export function CivitaiForm({ api, destination, setDestination, browse, disabled
           Start the same file in the same folder to resume, including after a server restart.
           Temporary failures retry automatically with a fresh link and alternate domain.</p>
       </fieldset>
+      <div className="credential-download-status" role="status" aria-live="polite">
+        <p className="preview-note">{authenticated === true
+          ? "API key configured. Model access is checked when downloading."
+          : authenticated === false ? "Configure a Civitai API key before downloading."
+          : "Credential status is being checked or needs recovery. Open API key setup to continue."}</p>
+        {authenticated !== true && <button className="secondary" type="button" onClick={configureCredentials}>
+          Configure API key
+        </button>}
+      </div>
       <div className="form-actions"><span>Publish only after SHA256 verification</span>
-        <button className="primary" type="submit" disabled={disabled || inspecting || !selected || !destination.trim()}>
+        <button className="primary" type="submit" disabled={disabled || authenticated !== true || inspecting || !selected || !destination.trim()}>
           {disabled ? "Please wait…" : "Download / resume"}
         </button>
       </div>

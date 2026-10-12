@@ -237,18 +237,71 @@ It uses the already installed Python library; no new runtime dependency was adde
 
 ## Civitai downloads
 
+Download forms retain their in-memory preparation when switching providers or
+visiting other views. Hidden forms are excluded from interaction and accessibility
+navigation; a page reload still clears this process-local UI state. During a job,
+the inspector prioritizes running-worker progress/cancellation while separately
+showing any selected historical result. Live polling drives the connection badge;
+failures show retrying/disconnected status and recovery clears that error. A rotated
+engine session token is reloaded after restart without clearing form drafts; a job
+lost with the old engine is explicitly marked unavailable instead of staying busy.
+
+Compatibility-cell details appear near the filters, receive keyboard focus and
+scroll into view immediately. Disabled/unsupported format guards remain intact.
+The light theme uses a dedicated `#356020` focus color rather than the pale accent,
+with more than 3:1 contrast on the adjacent surfaces. Navigation, keyboard actions
+and functional progress remain immediate; this fix introduces no new motion.
+
+The download page shows Hugging Face and Civitai as two visible provider buttons,
+with a checkmark and pressed state indicating the active source. Credential setup
+shows a persistent inline confirmation near **Use key**, including whether a
+variable, vault entry, or direct key was used. Feedback is announced to assistive
+technology and never reveals the key. This confirms local configuration only;
+model access is checked when inspecting/downloading. Editing input or selecting a
+different credential source clears the old confirmation.
+Credential status is also shown next to **Download / resume**, which requires a
+configured key. **Configure API key** focuses the credential selector, or the retry
+button when its status is unavailable. Failed initial status requests offer
+**Retry credential status**; recovery preserves inspected model/file preparation.
+
+`scripts/validate_ui_audit.py` exercises these UI contracts against a running
+Workbench using simulated jobs/credential responses. It never submits real model
+work, cancels real jobs, or writes real credentials. Run with
+`uv run --with playwright python scripts/validate_ui_audit.py --url http://127.0.0.1:8765`;
+the script uses installed Microsoft Edge in headless mode.
+
 Open **Downloads → Civitai**. Enter a version ID, a model link containing
 `modelVersionId`, or a direct `/api/download/models/<version>?fileId=<file>` link.
 Inspection lists safetensors/GGUF model files with SHA256; select one and start
 **Download / resume**. Browser links containing tokens are rejected. Keys are set
 in the separate write-only credential form, used only by the server, and never
 included in job parameters, history, logs or transport error messages.
+Diffusion weights may use Civitai's `Model`, `Diffusion Model`, or `UNet` file
+labels; all three are supported. Training-data files and files lacking a valid
+SHA256 or safe safetensors/GGUF filename remain excluded. The reported Krea Center
+version `3148254`, file `3032128`, uses `UNet` and passes live metadata inspection.
 
 Credential priority is session override, `CIVITAI_API_KEY`, `CIVITAI_TOKEN`,
 `CODEX_CIVITAI_API_KEY`, then the Windows generic credential
 `safetensors2GGUF/Civitai`. Saving in Credential Manager is explicit. Environment
 changes normally require restarting the server; manual session input overrides
 an older inherited environment. Clearing the override restores stored credentials.
+The credential selector starts at **Choose credential source…** with input and
+**Use key** disabled. Choose **API key**, **Environment variable**, or **Windows
+Credential Manager** and enter the corresponding key, arbitrary variable name,
+or arbitrary generic credential name. Only direct API keys are masked; reference
+names remain visible for typo checking. Only the selected
+source is resolved into a session override; direct keys are never interpreted as
+variable names. Missing references preserve the previous key. Windows Credential
+Manager is disabled on other platforms and never enumerates entries. Optional
+persistence is available for direct keys only, writing the default target above.
+The input clears after submission; **Clear session key** separately removes the
+override. Automatic fallbacks remain compatible but do not limit reference names.
+After updating the source selector, restart the Workbench server and reload the
+browser: an older running backend rejects the new `source` field. Safe setup
+errors distinguish missing process variables from missing vault entries without
+echoing either reference names or keys. Environment changes may also require
+restarting the launcher terminal so the new server inherits the updated values.
 
 The downloader retains `.civitai-<version>-<file>-<sha256>.part` on cancellation
 or failure. Restart the same file in the same folder to resume; job history itself
@@ -270,7 +323,9 @@ the advertised metadata size can finish verification without another transfer.
 Protected endpoints:
 
 - `GET/POST /api/civitai/credentials`: presence/source status or write-only key
-  update (`key`, optional `persist`); responses are not cached.
+  update (`key`, `source`: `direct`/`environment`/`windows_vault`, optional `persist`
+  for direct keys); omitted source defaults to direct for older callers. Responses
+  are not cached and expose no key or reference name.
 - `POST /api/civitai/inspect`: `source`; returns version and safe file choices.
 - `POST /api/civitai/download`: `source`, `file_id`, `destination`, optional
   `overwrite` and `format`; returns a 202 shared job snapshot. Keys are resolved

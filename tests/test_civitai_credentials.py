@@ -14,7 +14,7 @@ def store(monkeypatch):
         monkeypatch.delenv(name, raising=False)
     vault = ['vault-secret']
 
-    def fake_vault(value=None):
+    def fake_vault(value=None, target=credentials.VAULT_TARGET):
         if value is not None:
             vault[0] = value
         return vault[0]
@@ -37,6 +37,45 @@ def test_precedence_clear_and_explicit_persistence(store, monkeypatch):
     manager.set('saved-secret', persist=True)
     assert vault[0] == 'saved-secret'
     assert manager.resolve() == ('saved-secret', 'session')
+
+
+@pytest.mark.parametrize('name', (*credentials.ENV_NAMES, 'MY_CUSTOM_CIVITAI_KEY'))
+def test_environment_reference_uses_value_and_missing_variable_preserves_session(store, monkeypatch, name):
+    """Variable references must resolve server-side and never become literal API keys."""
+    manager, vault = store
+    manager.set('previous')
+    with pytest.raises(ValueError, match='not set'):
+        manager.set(name, source='environment')
+    assert manager.resolve() == ('previous', 'session')
+    monkeypatch.setenv(name, 'resolved-secret')
+    manager.set(name, source='environment')
+    assert manager.resolve() == ('resolved-secret', 'session_environment')
+    assert vault[0] == 'vault-secret'
+    assert 'resolved-secret' not in str(manager.status())
+
+
+def test_named_vault_reference_and_missing_entry_preserve_session(store, monkeypatch):
+    """Read only the selected vault target and retain the old key on a missing entry."""
+    manager, _ = store
+    calls = []
+    def vault(value=None, target=credentials.VAULT_TARGET):
+        calls.append((value, target))
+        return 'vault-key' if target == 'MY_CUSTOM_CREDENTIAL' else ''
+    monkeypatch.setattr(credentials, '_vault_key', vault)
+    manager.set('MY_CUSTOM_CREDENTIAL', source='windows_vault')
+    assert manager.resolve() == ('vault-key', 'session_windows_vault')
+    assert calls == [(None, 'MY_CUSTOM_CREDENTIAL')]
+    with pytest.raises(ValueError, match='not found'):
+        manager.set('MISSING', source='windows_vault')
+    assert manager.resolve() == ('vault-key', 'session_windows_vault')
+
+
+def test_direct_key_is_not_interpreted_as_reference(store, monkeypatch):
+    """A variable-shaped key stays literal when direct mode is selected."""
+    manager, _ = store
+    monkeypatch.setenv('CIVITAI_API_KEY', 'environment-secret')
+    manager.set('CIVITAI_API_KEY', source='direct')
+    assert manager.resolve() == ('CIVITAI_API_KEY', 'session')
 
 
 def test_invalid_keys_and_vault_failure_preserve_session(store, monkeypatch):
@@ -73,3 +112,21 @@ def test_api_never_echoes_keys_and_requires_session(store):
         assert 'manual-secret' not in result.text
     assert client.post(path, json={'key': ''}).json()['source'] == 'windows_vault'
     assert client.post(path, json={'key': 'secret'}, headers={'Origin': 'https://example.com'}).status_code == 403
+
+
+def test_api_explicit_environment_and_invalid_source(store, monkeypatch):
+    """The API resolves arbitrary environment names without returning their values."""
+    monkeypatch.setenv('CUSTOM_MODEL_DOWNLOAD_KEY', 'private-api-key')
+    client = TestClient(web_api.create_app(), base_url='http://localhost')
+    client.headers['X-Workbench-Token'] = client.get('/api/config').json()['token']
+    path = '/api/civitai/credentials'
+    result = client.post(path, json={'source': 'environment', 'key': 'CUSTOM_MODEL_DOWNLOAD_KEY'})
+    assert result.status_code == 200
+    assert result.json()['source'] == 'session_environment'
+    assert 'private-api-key' not in result.text
+    assert client.post(path, json={'source': '', 'key': 'private-api-key'}).status_code == 400
+    missing = client.post(path, json={'source': 'environment', 'key': 'MISSING'})
+    assert missing.status_code == 400
+    assert 'not set in the server process' in missing.json()['detail']
+    assert 'private-api-key' not in missing.text
+    assert client.app.state.civitai_credentials.resolve()[0] == 'private-api-key'

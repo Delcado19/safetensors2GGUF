@@ -31,7 +31,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from conversion_service import _pipeline, _resolve_dst_st, _strip_model_suffix
 from convert import ConversionCancelled, load_state_dict
 from conversion_io import validate_output
-from civitai_credentials import CivitaiCredentials
+from civitai_credentials import CivitaiCredentials, CredentialError
 from civitai_download import CivitaiError, download_model, inspect_version, parse_source
 from krea_backend import KREA_CHOICES, LOADER_NOTE, validate_krea_request
 from convert_safetensors import convert_to_safetensors
@@ -285,6 +285,7 @@ class CivitaiKeyRequest(BaseModel):
 
     model_config = ConfigDict(extra='forbid')
     key: str = Field(default='', max_length=1024, repr=False)
+    source: Literal['direct', 'environment', 'windows_vault'] = 'direct'
     persist: bool = False
 
 
@@ -364,7 +365,9 @@ def create_app() -> FastAPI:
         except Exception:
             raise HTTPException(400, 'Invalid credential request.') from None
         try:
-            return civitai_credentials.set(params.key, params.persist)
+            return civitai_credentials.set(params.key, params.persist, params.source)
+        except CredentialError as exc:
+            raise HTTPException(400, str(exc)) from None
         except (ValueError, OSError):
             raise HTTPException(400, 'Could not update the Civitai key. Check the key and selected storage.') from None
 

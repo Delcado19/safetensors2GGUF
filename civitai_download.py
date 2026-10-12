@@ -123,8 +123,8 @@ def inspect_version(source, key='', cancel_event=None):
     for item in metadata.get('files', []):
         name, digest = item.get('name', ''), item.get('hashes', {}).get('SHA256', '').lower()
         # Windows-safe names and hashes are trust boundaries, not uploader promises.
-        # Krea/Solstice files are labeled Diffusion Model by the current API.
-        if (item.get('type') not in {'Model', 'Diffusion Model'} or Path(name).suffix.lower() not in {'.safetensors', '.gguf'} or
+        # Civitai labels diffusion weights as Model, Diffusion Model, or UNet.
+        if (item.get('type') not in {'Model', 'Diffusion Model', 'UNet'} or Path(name).suffix.lower() not in {'.safetensors', '.gguf'} or
                 not name or len(name) > 200 or name.rstrip(' .') != name or
                 any(ord(char) < 32 or char in '<>:"/\\|?*' for char in name) or
                 name.split('.')[0].upper() in {'CON', 'PRN', 'AUX', 'NUL', *{f'COM{i}' for i in range(1, 10)}, *{f'LPT{i}' for i in range(1, 10)}} or

@@ -185,6 +185,30 @@ def main():
         expect(page.locator('.job-panel .output-path')).to_contain_text(restored.name, timeout=30000)
         assert any(len(tensor.shape) == 5 for tensor in gguf.GGUFReader(str(restored)).tensors)
 
+        # Credential feedback is a UI contract; never write real keys during browser smoke tests.
+        def credential_response(route):
+            route.fulfill(json={'configured': True, 'vault_available': True,
+                                'source': 'environment' if route.request.method == 'GET' else 'session_environment'})
+        page.route('**/api/civitai/credentials', credential_response)
+        page.get_by_role('button', name='Downloads', exact=True).click()
+        providers = page.get_by_role('group', name='Model source')
+        expect(providers.get_by_role('button', name='Hugging Face')).to_have_attribute('aria-pressed', 'true')
+        providers.get_by_role('button', name='Civitai').focus()
+        page.keyboard.press('Enter')
+        expect(providers.get_by_role('button', name='Civitai')).to_have_attribute('aria-pressed', 'true')
+        expect(page.locator('#civitai-key')).to_be_disabled()
+        expect(page.get_by_role('button', name='Use key', exact=True)).to_be_disabled()
+        page.get_by_label('Credential source', exact=True).select_option('environment')
+        expect(page.get_by_label('Variable name', exact=True)).to_have_attribute('type', 'text')
+        page.get_by_label('Variable name', exact=True).fill('BROWSER_TEST_VARIABLE')
+        page.get_by_role('button', name='Use key', exact=True).click()
+        expect(page.get_by_text('Environment key loaded for this session.', exact=True)).to_be_visible()
+        expect(page.locator('#civitai-key')).to_have_value('')
+        page.get_by_label('Variable name', exact=True).fill('EDITED_VARIABLE')
+        expect(page.get_by_text('Environment key loaded for this session.', exact=True)).to_have_count(0)
+        page.unroute('**/api/civitai/credentials', credential_response)
+        providers.get_by_role('button', name='Hugging Face').click()
+
         if args.hf_live:
             download_root = root / f'hf-live-{uuid.uuid4().hex}'
             download_root.mkdir()
@@ -199,7 +223,7 @@ def main():
             page.get_by_label('Repository ID').fill('ui-test/variants')
             page.get_by_role('button', name='Inspect repository').click()
             expect(page.get_by_label('Checkpoint folder')).to_have_value('__choose__')
-            page.get_by_label('Download folder', exact=True).fill(str(download_root))
+            page.locator('#hf-destination').fill(str(download_root))
             expect(page.get_by_role('button', name='Download checkpoint')).to_be_disabled()
             page.get_by_label('Checkpoint folder').select_option('variant')
             expect(page.get_by_role('button', name='Download checkpoint')).to_be_enabled()
@@ -217,7 +241,7 @@ def main():
             page.get_by_label('Folder path').fill(str(download_root))
             page.get_by_role('button', name='Go', exact=True).click()
             page.get_by_role('button', name='Use this folder').click()
-            expect(page.get_by_label('Download folder', exact=True)).to_have_value(str(download_root) + '/')
+            expect(page.locator('#hf-destination')).to_have_value(str(download_root))
             page.evaluate('scrollTo(0, 0)')
             page.screenshot(path=str(root / 'huggingface-desktop.png'), full_page=True)
             page.set_viewport_size({'width': 390, 'height': 844})

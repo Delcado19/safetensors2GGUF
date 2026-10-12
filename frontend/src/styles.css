@@ -21,12 +21,15 @@
   --text: #e7e9ee;
   --muted: #a2a6b3;
   --accent: #c3eb9a;
+  /* Focus contrast is independent of the decorative accent, especially in light mode. */
+  --focus: #c3eb9a;
   --accent-text: #233017;
   --input: #14161b;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   color-scheme: dark;
 }
 :root[data-theme="light"] {
+  --focus: #356020;
   --bg: #f5f5f2;
   --sidebar: #eeefea;
   --surface: #fff;
@@ -46,6 +49,10 @@
 }
 body {
   margin: 0;
+}
+[hidden] {
+  /* Mounted download forms preserve drafts but must not occupy layout or keyboard navigation. */
+  display: none !important;
 }
 button,
 input,
@@ -78,8 +85,9 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 select:focus-visible,
-summary:focus-visible {
-  outline: 2px solid var(--accent);
+summary:focus-visible,
+.support-detail:focus-visible {
+  outline: 2px solid var(--focus);
   outline-offset: 4px;
 }
 a {
@@ -315,6 +323,71 @@ h1 {
   grid-template-columns: minmax(0, 1fr) 300px;
   gap: 24px;
   align-items: start;
+}
+.download-column {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.provider-panel {
+  padding: 18px 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.provider-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--input);
+}
+.provider-switch button {
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font-weight: 600;
+  min-width: 0;
+}
+.provider-switch button[aria-pressed="true"] {
+  background: var(--raised);
+  border-color: var(--line);
+}
+.provider-check-hidden {
+  visibility: hidden;
+}
+.credential-current {
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+.credential-download-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 12px;
+}
+.credential-feedback {
+  min-height: 56px;
+  padding: 12px 0;
+}
+.credential-success {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: var(--text);
+  line-height: 1.5;
+}
+.credential-success svg {
+  margin-top: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .provider-switch button:hover {
+    background: var(--raised);
+  }
 }
 .conversion-panel,
 .preview-panel,

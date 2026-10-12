@@ -92,6 +92,15 @@ replacement. Failed checksum partials are retained: choose another folder for a
 clean retry. Only HTTPS Civitai storage redirects and the observed, pinned
 Civitai Cloudflare R2 account host are supported.
 The download view provides write-only **Civitai API key** setup.
+Select **API key**, **Environment variable**, or **Windows Credential Manager**
+from **Choose credential source…**, then fill the field with the key or
+freely chosen variable/generic credential name. The server reads only the selected
+source. Direct API keys are masked; variable and vault entry names stay visible
+so typing mistakes are easy to spot. The server stores the resolved key
+for this session; missing references are rejected.
+The password field clears after submitting without clearing the server credential.
+**Clear session key** removes the override. Automatic fallback below remains
+available, but does not restrict names entered in the source selector.
 Enter a key for the current server session or
 explicitly save it in Windows Credential Manager as a generic credential named
 `safetensors2GGUF/Civitai`. Resolution order: session override, `CIVITAI_API_KEY`,
@@ -99,7 +108,8 @@ explicitly save it in Windows Credential Manager as a generic credential named
 only presence/source, never stored key values. Keys are not saved in browser
 storage, job history or project files. Clearing the session override restores
 the environment/stored key; it does not delete that credential. Other Windows
-Vault entries are not enumerated. On other platforms use session/environment keys.
+Vault entries are not enumerated; explicit vault mode reads only your chosen
+generic entry. On other platforms use session/environment keys.
 **Format guide** includes the interactive diffusion/text-encoder support matrix,
 model search, evidence filters and visible compatibility explanations. Select a
 cell to review it, then **Use format** to prepare a conversion. Known unsupported

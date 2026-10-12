@@ -6,6 +6,34 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Change: Show environment variable and Windows credential names as readable
+  text while masking direct API keys; never display resolved secret values.
+
+- Fix: Accept Civitai's UNet file label when listing downloadable diffusion
+  weights (reported Krea Center version 3148254/file 3032128), alongside Model
+  and Diffusion Model. Keep filename, container and SHA256 guards unchanged.
+
+- Fix: Preserve download preparation across provider/navigation switches, keep
+  running-worker controls visible when reviewing historical results, and derive
+  connection status from live polling with session refresh after engine restart.
+  Use a high-contrast light-theme focus ring. Reveal/focus compatibility details
+  near the table filters, expose credential state at download, and allow retry
+  of credential-status failures without losing model/file selections.
+
+- Change: Make Hugging Face/Civitai selection permanently visible as grouped
+  provider buttons, and show source-specific inline confirmation after credential
+  setup or clearing. Keep keyboard focus, light/dark tokens and screen-reader
+  feedback; successful setup does not imply model access has been verified.
+
+- Fix: Add explicit Civitai credential source selection (direct key, arbitrary
+  environment variable, or named Windows generic credential) with masked direct
+  keys and readable reference names.
+  Start unselected with disabled input/action, resolve references server-side,
+  and preserve existing credentials on missing references. Keep automatic fallback
+  and direct-key persistence; never guess whether direct input is a variable name.
+  Show safe setup errors and a server-restart hint when an older backend rejects
+  the new source selector or an environment variable is absent from the process.
+
 - Add: Civitai safetensors/GGUF downloads in the Workbench, with hash-pinned
   persistent partials, byte progress, cancellation, fresh-link retries and
   `.red`/`.com` fallback. Validate every resumed range and SHA256 before atomic

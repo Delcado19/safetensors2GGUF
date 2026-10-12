@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatName } from "./FormatSelect";
 import {
   ArrowRight,
@@ -81,6 +81,13 @@ export function SupportMatrix({
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Level | "all">("all");
   const [selected, setSelected] = useState<{ row: Row; format: string }>();
+  const detailRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!selected) return;
+    // Selecting a cell must reveal its evidence without traversing the entire table.
+    detailRef.current?.focus({ preventScroll: true });
+    detailRef.current?.scrollIntoView({ block: "nearest", behavior: "instant" });
+  }, [selected]);
   useEffect(() => {
     const controller = new AbortController();
     api<Matrix>("support", undefined, controller.signal)
@@ -160,6 +167,56 @@ export function SupportMatrix({
           </select>
         </div>
       </div>
+      {selected && level && (
+        <div
+          ref={detailRef}
+          className="support-detail"
+          tabIndex={-1}
+          role="region"
+          aria-labelledby="support-detail-context support-detail-title support-detail-classification"
+          aria-describedby="support-detail-reason"
+        >
+          <span id="support-detail-context" className="sr-only">Selected compatibility details</span>
+          <span id="support-detail-classification" className={"support-level " + level}>
+            {cellLabel(selected.row, selected.format)} ·{" "}
+            {label(selected.format)}
+          </span>
+          <h3 id="support-detail-title">{selected.row.display_name}</h3>
+          <p id="support-detail-reason">
+            {selected.row[selected.format + "__reason"] || levels[level].note}
+          </p>
+          {selected.format === "GGUF" && (
+            <p className="preview-note">
+              GGUF groups multiple precisions. Use format selects {selected.row.GGUF__format || "Q4_K_M"}; this
+              cell does not verify every quantization level.
+            </p>
+          )}
+          <p className="preview-note">
+            Choose a source matching this model and variant. Selection changes
+            form settings; it does not inspect or convert a model.
+          </p>
+          {selected.row[selected.format + "__selectable"] === "false" && (
+            <p className="preview-note">Prototype evidence only. Conversion is not yet available in the application.</p>
+          )}
+          <button
+            className="primary"
+            disabled={busy || level === "bad" || level === "pending" || selected.row[selected.format + "__selectable"] === "false"}
+            onClick={() =>
+              choose(
+                kind,
+                selected.format,
+                selected.row.display_name,
+                cellLabel(selected.row, selected.format),
+                selected.row.precision_profile,
+                selected.row[selected.format + "__format"] || undefined,
+              )
+            }
+          >
+            Use format
+            <ArrowRight size={16} />
+          </button>
+        </div>
+      )}
       <div className="support-legend">
         {Object.entries(levels).map(([key, item]) => (
           <span className={"support-level " + key} key={key}>
@@ -263,52 +320,6 @@ export function SupportMatrix({
             </p>
           )}
         </>
-      )}
-      {selected && level && (
-        <div
-          className="support-detail"
-          role="region"
-          aria-label="Selected compatibility details"
-        >
-          <span className={"support-level " + level}>
-            {cellLabel(selected.row, selected.format)} ·{" "}
-            {label(selected.format)}
-          </span>
-          <h3>{selected.row.display_name}</h3>
-          <p>
-            {selected.row[selected.format + "__reason"] || levels[level].note}
-          </p>
-          {selected.format === "GGUF" && (
-            <p className="preview-note">
-              GGUF groups multiple precisions. Use format selects {selected.row.GGUF__format || "Q4_K_M"}; this
-              cell does not verify every quantization level.
-            </p>
-          )}
-          <p className="preview-note">
-            Choose a source matching this model and variant. Selection changes
-            form settings; it does not inspect or convert a model.
-          </p>
-          {selected.row[selected.format + "__selectable"] === "false" && (
-            <p className="preview-note">Prototype evidence only. Conversion is not yet available in the application.</p>
-          )}
-          <button
-            className="primary"
-            disabled={busy || level === "bad" || level === "pending" || selected.row[selected.format + "__selectable"] === "false"}
-            onClick={() =>
-              choose(
-                kind,
-                selected.format,
-                selected.row.display_name,
-                cellLabel(selected.row, selected.format),
-                selected.row.precision_profile,
-                selected.row[selected.format + "__format"] || undefined,
-              )
-            }
-          >
-            Use format
-            <ArrowRight size={16} />
-          </button>
-        </div>
       )}
       <p className="preview-note">
         Visible drift is model/checkpoint, profile and workflow dependent; it

@@ -61,11 +61,12 @@ def test_source_trust_boundary(source):
         download.parse_source(source)
 
 
-def test_inspect_accepts_current_diffusion_model_label(monkeypatch):
-    """Current Krea API labels remain usable without admitting unsafe files."""
+@pytest.mark.parametrize('file_type', ['Model', 'Diffusion Model', 'UNet'])
+def test_inspect_accepts_diffusion_weight_labels(monkeypatch, file_type):
+    """Diffusion file labels, including reported version 3148254 UNet, stay selectable."""
     metadata = {'files': [
         {'id': 3160899, 'name': 'solstice_v2_3160899.safetensors',
-         'type': 'Diffusion Model', 'hashes': {'SHA256': DIGEST}, 'sizeKB': 1.5},
+         'type': file_type, 'hashes': {'SHA256': DIGEST}, 'sizeKB': 1.5},
         {'id': 1, 'name': '../escape.safetensors', 'type': 'Model', 'hashes': {'SHA256': DIGEST}},
         {'id': 2, 'name': 'training.safetensors', 'type': 'Training Data', 'hashes': {'SHA256': DIGEST}},
     ]}

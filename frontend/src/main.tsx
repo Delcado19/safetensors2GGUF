@@ -114,6 +114,8 @@ const filename = (path: string) => path.split(/[\\/]/).pop() || path;
 
 function App() {
   const [config, setConfig] = useState<Config>();
+  const [connection, setConnection] = useState("connecting");
+  const [connectionError, setConnectionError] = useState("");
   const [error, setError] = useState("");
   const [view, setView] = useState<
     "convert" | "tools" | "download" | "activity" | "guide"
@@ -131,6 +133,7 @@ function App() {
   const [toolDestination, setToolDestination] = useState("");
   const [downloadDestination, setDownloadDestination] = useState("");
   const [downloadProvider, setDownloadProvider] = useState("hf");
+  const [civitaiAuthenticated, setCivitaiAuthenticated] = useState<boolean>();
   const [supportSelection, setSupportSelection] = useState("");
   const [container, setContainer] = useState<Container>("gguf");
   const [format, setFormat] = useState("Q4_K_M");
@@ -150,7 +153,7 @@ function App() {
     sourceFormats?.source === source && sourceFormats.backend === "molbal";
   const [inspecting, setInspecting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [job, setJob] = useState<Job>();
+  const [selectedJob, setJob] = useState<Job>();
   const [history, setHistory] = useState<Job[]>([]);
   const [picker, setPicker] = useState<"source" | "destination" | null>(null);
   const [listing, setListing] = useState<Listing>();
@@ -161,6 +164,9 @@ function App() {
   const dialog = useRef<HTMLDialogElement>(null);
   const browseVersion = useRef(0);
   const inspectVersion = useRef(0);
+  // Viewing history must never hide the current worker's progress or cancellation.
+  const runningJob = history.find((item) => !terminal(item));
+  const job = runningJob || selectedJob;
   const active = !!job && !terminal(job);
   const busy = active || history.some((item) => !terminal(item));
 
@@ -180,11 +186,11 @@ function App() {
     });
     if (!response.ok) {
       const result = await response.json();
-      throw new Error(
+      throw Object.assign(new Error(
         typeof result.detail === "string"
           ? result.detail
           : "Please check your input.",
-      );
+      ), { status: response.status });
     }
     return response.json();
   }
@@ -202,7 +208,10 @@ function App() {
         setExecutable(result.executable);
       })
       .catch((reason) => {
-        if (reason.name !== "AbortError") setError(reason.message);
+        if (reason.name !== "AbortError") {
+          setConnection("disconnected");
+          setError(reason.message);
+        }
       });
     return () => controller.abort();
   }, []);
@@ -240,6 +249,8 @@ function App() {
     const poll = async () => {
       try {
         const jobs = await api<Job[]>("jobs", undefined, controller.signal);
+        setConnection("connected");
+        setConnectionError("");
         setHistory(jobs);
         setJob((current) =>
           current
@@ -247,7 +258,26 @@ function App() {
             : jobs.find((item) => !terminal(item)),
         );
       } catch (reason) {
-        if (!controller.signal.aborted) setError((reason as Error).message);
+        if (!controller.signal.aborted) {
+          setConnection("disconnected");
+          setConnectionError((reason as Error).message);
+          // A restarted engine rotates its session token; refresh it without losing form drafts.
+          if ((reason as Error & { status?: number }).status === 403) {
+            try {
+              const response = await fetch('/api/config', { signal: controller.signal, cache: 'no-store' });
+              if (response.ok) {
+                const fresh: Config = await response.json();
+                if (fresh.token !== config.token) {
+                  setHistory([]);
+                  setJob((current) => current && !terminal(current)
+                    ? { ...current, status: 'failed', error: 'Engine restarted. This job is no longer available.', finished: Date.now() / 1000 }
+                    : current);
+                  setConfig(fresh);
+                }
+              }
+            } catch { /* Polling retries when the engine is reachable again. */ }
+          }
+        }
       } finally {
         if (!controller.signal.aborted) timer = setTimeout(poll, 800);
       }
@@ -464,7 +494,7 @@ function App() {
               {view === "convert"
                 ? "Convert model"
                 : view === "download"
-                  ? "Hugging Face"
+                  ? "Downloads"
                   : view === "tools"
                     ? "Extract & repair"
                     : view === "activity"
@@ -473,8 +503,8 @@ function App() {
             </strong>
           </span>
           <span className="connection">
-            <span className={config ? "online-dot" : "offline-dot"} />
-            {config ? "Local engine connected" : "Connecting to engine"}
+            <span className={connection === "connected" ? "online-dot" : "offline-dot"} />
+            <span role="status">{connection === "connected" ? "Local engine connected" : connection === "disconnected" ? "Engine disconnected · retrying" : "Connecting to engine"}</span>
           </span>
         </header>
         <main id="main" tabIndex={-1} className={view === "guide" ? "wide-guide" : undefined}>
@@ -508,11 +538,11 @@ function App() {
               <Layers3 size={52} strokeWidth={1} />
             </span>
           </div>
-          {error && (
+          {(error || connectionError) && (
             <div className="error-banner" role="alert">
               <CircleHelp size={18} />
-              <span>{error}</span>
-              <button aria-label="Dismiss error" onClick={() => setError("")}>
+              <span>{error || connectionError}</span>
+              <button aria-label="Dismiss error" onClick={() => { setError(""); setConnectionError(""); }}>
                 <X size={17} />
               </button>
             </div>
@@ -523,16 +553,21 @@ function App() {
               converting.
             </p>
           )}
-          {(view === "convert" || view === "tools" || view === "download") && (
-            <div className="work-grid">
-              {view === "download" ? (
-                <div>
-                <label className="field-label" htmlFor="download-provider">Download provider</label>
-                <select id="download-provider" value={downloadProvider} onChange={(event) => setDownloadProvider(event.target.value)}>
-                  <option value="hf">Hugging Face</option>
-                  <option value="civitai">Civitai</option>
-                </select>
-                {downloadProvider === "hf" ? (
+            <div className="work-grid" hidden={!['convert', 'tools', 'download'].includes(view)}>
+                {/* Keep forms mounted so switching providers or views retains preparation. */}
+                <div className="download-column" hidden={view !== "download"}>
+                <div className="provider-panel">
+                  <p className="field-label" id="download-provider-label">Model source</p>
+                  <div className="provider-switch" role="group" aria-labelledby="download-provider-label">
+                    {[["hf", "Hugging Face"], ["civitai", "Civitai"]].map(([provider, label]) => (
+                      <button key={provider} type="button" aria-pressed={downloadProvider === provider}
+                        onClick={() => setDownloadProvider(provider)}>
+                        {label}<Check size={16} aria-hidden="true" className={downloadProvider === provider ? "" : "provider-check-hidden"} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div hidden={downloadProvider !== "hf"}>
                 <HuggingFaceForm
                   api={api}
                   destination={downloadDestination}
@@ -543,14 +578,21 @@ function App() {
                   submit={(body) => start(body, "hf/download")}
                   bytes={bytes}
                 />
-                ) : (<>
+                </div>
+                <div className="download-column" hidden={downloadProvider !== "civitai"}>
                   <CivitaiForm api={api} destination={downloadDestination} setDestination={setDownloadDestination}
                     browse={() => openPicker("destination")} disabled={busy || submitting || !config}
+                    authenticated={civitaiAuthenticated} configureCredentials={() => {
+                      const source = document.getElementById('civitai-source-select') as HTMLSelectElement | null;
+                      const target = source?.matches(':disabled') ? document.getElementById('credential-status-retry') : source;
+                      target?.focus({ preventScroll: true });
+                      target?.scrollIntoView({ block: 'center', behavior: 'instant' });
+                    }}
                     submit={(body) => start(body, "civitai/download")} bytes={bytes} />
-                  {config && <CivitaiCredentials api={api} />}
-                </>)}
+                  {config && <CivitaiCredentials api={api} onConfigured={setCivitaiAuthenticated} sessionToken={config.token} />}
                 </div>
-              ) : view === "tools" ? (
+                </div>
+              {view === "tools" ? (
                 <ToolForm
                   source={toolSource}
                   destination={toolDestination}
@@ -561,7 +603,7 @@ function App() {
                   disabled={busy || submitting || !config}
                   submit={start}
                 />
-              ) : (
+              ) : view === "convert" ? (
                 <section
                   className="conversion-panel"
                   aria-labelledby="conversion-title"
@@ -902,7 +944,7 @@ function App() {
                     </div>
                   </form>
                 </section>
-              )}
+              ) : null}
               <aside className="inspector">
                 {view === "convert" && (
                   <section className="preview-panel">
@@ -1130,9 +1172,16 @@ function App() {
                     </>
                   )}
                 </section>
+                {runningJob && selectedJob && terminal(selectedJob) && (
+                  <section className="preview-panel" aria-label="Selected previous job">
+                    <div className="panel-heading"><h2>Selected previous job</h2></div>
+                    <p>{filename(selectedJob.source)} · {selectedJob.status}</p>
+                    {selectedJob.output && <p className="output-path">{selectedJob.output}</p>}
+                    {selectedJob.error && <p className="picker-error">{selectedJob.error}</p>}
+                  </section>
+                )}
               </aside>
             </div>
-          )}
           {view === "activity" && (
             <section className="activity-panel">
               <div className="panel-heading">
