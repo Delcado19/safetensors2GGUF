@@ -10,6 +10,20 @@ on:
   workflow_dispatch:
 
 jobs:
+  linux-launcher:
+    name: Linux launcher
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Check shell syntax and launcher behavior
+        run: |
+          sh -n start_gui.sh
+          python -m unittest tests.test_start_gui -v
+
   test:
     name: Tests and lint
     runs-on: windows-latest

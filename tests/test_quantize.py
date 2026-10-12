@@ -44,25 +44,6 @@ class TestAllQuantChoicesLabels:
         for label, key in ALL_QUANT_CHOICES:
             assert "%" not in label, f"{key!r} label still has inline size copy: {label!r}"
 
-    def test_gui_llama_quantize_footnote_is_derived_from_registry(self):
-        from gui import _llama_quantize_footnote
-
-        expected_keys = [key for _, key in ALL_QUANT_CHOICES if key in LLAMA_QUANT_KEYS]
-        footnote = _llama_quantize_footnote()
-        assert footnote == f"requires external llama-quantize: {', '.join(expected_keys)}"
-        assert set(expected_keys) == set(LLAMA_QUANT_KEYS)
-
-    def test_gui_gguf_size_footnote_is_derived_from_size_ratios(self):
-        from gui import _gguf_size_reduction_footnote
-
-        expected_parts = [
-            f"{key} ~{round((1 - SIZE_RATIOS[key]) * 100)}%"
-            for _, key in ALL_QUANT_CHOICES
-            if key in SIZE_RATIOS and key not in {"F32", "F16", "BF16"}
-        ]
-        assert _gguf_size_reduction_footnote() == (
-            f"▸ ¹ GGUF size reduction: {', '.join(expected_parts)}"
-        )
 
 
 class TestRegistry:

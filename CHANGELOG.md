@@ -6,6 +6,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Remove: Legacy Gradio frontend and its dependency tree. Keep the React
+  Workbench and CLI conversion paths; run output-safety regression tests directly
+  against the shared conversion service.
+
+- Add: Linux `start_gui.sh` launcher with explicit uv and first-build Node/npm
+  checks, frozen dependencies, safe working-directory handling and direct server
+  signal/exit propagation. Keep shell files LF on Windows checkouts; add portable
+  stub-tool launcher tests and a lightweight Ubuntu CI gate.
+- Fix: Clarify launcher versus conversion-tool prerequisites, correct patch
+  download/application paths and safe line-ending normalization, and pin the
+  documented City96 patch revision. Document Linux binary selection and retain
+  the explicit boundary between build instructions and untested Linux runtime.
+
 - Change: Show environment variable and Windows credential names as readable
   text while masking direct API keys; never display resolved secret values.
 

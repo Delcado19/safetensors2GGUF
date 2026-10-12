@@ -1,9 +1,18 @@
 # React workbench migration
 
+Linux users can start with `sh ./start_gui.sh`. The launcher checks `uv`, reports
+missing first-build Node/npm prerequisites, builds a missing frontend using the
+lockfile, and executes the foreground server with `uv run --frozen`. It accepts
+invocation from other directories, including paths with spaces. Open the printed
+loopback URL manually; Ctrl+C stops the server. It does not install uv, open a
+browser automatically, or reuse an existing server. The CI Linux launcher job
+checks POSIX syntax and stub-tool startup/error behavior without installing model
+dependencies. This is launcher validation, not Linux conversion/runtime evidence.
+
 The React/TypeScript/Vite frontend and FastAPI backend now cover diffusion
 models, text encoders, extraction, GGUF repair and Hugging Face/Civitai downloads. Workflows use existing algorithms
 and atomic output writers.
-The classic Gradio frontend remains available during migration.
+The React workbench is the only web frontend; Gradio is no longer required.
 
 ## Run with uv
 
@@ -37,8 +46,7 @@ changing the development API port).
   native modal focus management, reduced motion/transparency and contrast support.
 - Advanced executable, thread, intermediate-file and overwrite settings.
 
-The classic Gradio UI remains available as an alternative. Native INT4 ConvRot
-mixed precision is offered for diffusion safetensors output.
+Native INT4 ConvRot mixed precision is offered for diffusion safetensors output.
 
 ## Format names and selection
 
@@ -62,7 +70,6 @@ names; the selected format's details and protection policy appear underneath,
 linked with `aria-describedby`. Even standard policy keeps mandatory loader/
 shape-compatible tensors. API format registries supply the allowed keys;
 display changes do not alter writers, output suffixes, metadata or API payloads.
-The classic Gradio UI retains its legacy descriptive choice labels.
 
 “Mixed” is used by upstream publishers (for example Comfy-Org's
 [`fp8mixed` files](https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/tree/main/split_files/diffusion_models)

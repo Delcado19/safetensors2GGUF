@@ -23,7 +23,7 @@ release for those.
 ## Text-encoder K-quants build automatically — you don't need this guide for them
 
 If you only want K-quants (`Q6_K`…`Q2_K`) for **text-encoder** conversion (the
-**Convert Text Encoder** tab), you don't need to follow this guide at
+Workbench's **Model type → Text encoder** selection), you don't need to follow this guide at
 all: `text_encoder_convert.ensure_plain_llama_quantize()` builds a **plain,
 unpatched** `llama-quantize` automatically the first time it's needed —
 from the same `llama.cpp` checkout already auto-cloned for
@@ -33,8 +33,8 @@ under `.llama.cpp/build-quantize/` afterward. No manual clone, no patch, no
 `cmake` commands to type — the tool runs them for you via `cmake -B` /
 `cmake --build`.
 
-The **only** thing you need to provide yourself is `cmake` and a C++
-compiler — the exact same toolchain as the "Prerequisites" and per-OS
+Provide Git for the converter checkout, plus `cmake` and a C++
+compiler — the same toolchain as the "Prerequisites" and per-OS
 install commands below (Linux `apt install build-essential cmake`, macOS
 `xcode-select --install` + `brew install cmake`, Windows MSYS2
 `pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake`, or a Visual Studio
@@ -56,6 +56,17 @@ binary.
 - `cmake` (3.14+)
 - A C++17-capable compiler toolchain (see per-OS section below)
 
+Install these **before** cloning/building. On Debian/Ubuntu:
+
+```bash
+sudo apt update
+sudo apt install build-essential cmake git curl
+```
+
+Use the corresponding packages on other Linux distributions. `curl` is used
+below to retrieve the patch. App launchers check uv and first-build Node/npm;
+they do not preflight optional conversion toolchains.
+
 You do **not** need this tool's own Python environment for the build step —
 only for running `convert.py`/the GUI afterward.
 
@@ -72,10 +83,11 @@ git checkout tags/b3962
 
 ## 2. Get and apply `lcpp.patch`
 
-Download the patch from `city96/ComfyUI-GGUF`:
+Remain inside the `llama.cpp` directory from step 1. Download the patch from
+the inspected `city96/ComfyUI-GGUF` revision, rather than moving `main`:
 
 ```bash
-curl -LO https://raw.githubusercontent.com/city96/ComfyUI-GGUF/main/tools/lcpp.patch
+curl -fL -o lcpp.patch https://raw.githubusercontent.com/city96/ComfyUI-GGUF/6ea2651e7df66d7585f6ffee804b20e92fb38b8a/tools/lcpp.patch
 ```
 
 If you cloned llama.cpp on Windows with `core.autocrlf` enabled, normalize the
@@ -84,27 +96,46 @@ repo) — a plain Python one-liner does the same thing as city96's
 `fix_lines_ending.py`:
 
 ```bash
-python -c "open('lcpp.patch','wb').write(open('lcpp.patch','rb').read().replace(b'\r\n', b'\n'))"
+python -c "from pathlib import Path; p=Path('lcpp.patch'); p.write_bytes(p.read_bytes().replace(b'\r\n', b'\n'))"
 ```
 
 Then apply it from inside the `llama.cpp` checkout:
 
 ```bash
-git apply ../lcpp.patch
+git apply --check lcpp.patch
+git apply lcpp.patch
 ```
+
+Stop if the compatibility check fails; do not apply with rejected hunks or swap
+in a different llama.cpp revision. This is a manual, network-dependent build
+recipe, not project-owned offline distribution of the llama.cpp toolchains.
+That dependency-ownership roadmap remains open; the pinned molbal Krea snapshot
+is separate from these patched/plain llama.cpp paths.
 
 ## 3. Build `llama-quantize`
 
 ### Linux
 
+Run from the patched `llama.cpp` checkout prepared in steps 1-2:
+
 ```bash
-sudo apt install build-essential cmake git   # Debian/Ubuntu; use your distro's equivalent
-mkdir build
-cmake -B build
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j"$(nproc)" --target llama-quantize
 ```
 
 Binary ends up at `build/bin/llama-quantize`.
+
+Test the built tool and select its absolute path in the app:
+
+```bash
+./build/bin/llama-quantize --help
+export LLAMA_QUANTIZE_PATH="$(pwd)/build/bin/llama-quantize"
+```
+
+Start the Workbench from this terminal so it inherits the environment variable.
+Alternatively choose the executable in the Workbench's Advanced file picker.
+This documentation follows the upstream patch/build contract; a Linux build and
+model-conversion runtime test have not yet been performed by this project.
 
 ### macOS
 

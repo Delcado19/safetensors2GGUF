@@ -13,16 +13,14 @@ or quantized safetensors.
 - **Safetensors output** — F16, scaled FP8, ComfyUI-compatible tensor-wise
   INT8 (ConvRot-rotated where possible), and NVFP4, each with a "mixed"
   variant that preserves critical layers at their source precision.
-- **Model Support tab** — a read-only table showing which quantization
-  formats are verified/caution/unknown for each detectable architecture;
-  click a cell to jump to the matching Convert tab with that format
-  pre-selected.
+- **Format guide** ? compatibility tables with model search and evidence filters;
+  select a cell to review details, then use **Use format** to prepare a conversion.
 - **Text-encoder → GGUF** — converts bare text-encoder checkpoints that lack
   `config.json`/tokenizer files, using a base model's HuggingFace repo ID; runs
   fully standalone, auto-cloning `llama.cpp` on first use.
 
-A Gradio web UI with file browser, quantization selector, live size estimate,
-and cancel button is included for all three pipelines.
+A React workbench with file browser, format selection, live size estimates,
+and cancellation is included for all conversion pipelines.
 
 ## Supported Architectures
 
@@ -54,6 +52,32 @@ and open http://127.0.0.1:8765. The launcher opens an existing Workbench instanc
 when one is already running. If the frontend build is missing, it installs its
 locked dependencies and builds it (Node.js/npm required once).
 After frontend source updates, run `npm run build` in `frontend` to refresh it.
+
+On Linux, run `sh ./start_gui.sh` from the repository, or use the script's absolute
+path from another directory. It checks for `uv` and prints installation guidance
+if missing; it does not install `uv` automatically. A missing frontend build also
+requires Node.js/npm and is built with `npm ci` and `npm run build`. With an
+existing build, Node/npm is not required. The server runs in the terminal at
+http://127.0.0.1:8765; open that URL in your browser and press Ctrl+C to stop it.
+Stop any existing Workbench on this port before starting another instance.
+The Linux launcher uses the frozen dependency lock. A successful launcher does
+not imply all conversion backends have been runtime-tested on Linux.
+
+Startup checks cover `uv` and first-build Node/npm only (Windows checks `npm`;
+the Linux launcher checks both `node` and `npm`). Conversion-specific prerequisites
+are checked when that backend runs:
+
+| Conversion path | Additional Linux prerequisites |
+| --- | --- |
+| Native safetensors and direct diffusion GGUF FP16/BF16/Q8_0 | No llama-quantize executable; Python dependencies are managed by uv |
+| Diffusion GGUF K-quants | City96-patched `llama-quantize`; build with Git, CMake and a C++ compiler |
+| Text-encoder GGUF float/Q8_0 | Git for the current llama.cpp converter checkout |
+| Text-encoder GGUF K-quants | Git, CMake and a C++ compiler; the app builds its separate plain executable |
+| Allowlisted Krea GGUF formats | Shipped pinned molbal Python backend; no separate C++ executable |
+
+See [Building llama-quantize](docs/building-llama-quantize.md) for package installation,
+the pinned diffusion patch recipe, binary location and `LLAMA_QUANTIZE_PATH`.
+Patched diffusion and plain text-encoder executables are not interchangeable.
 
 The local React/Vite/FastAPI workbench supports diffusion-model and text-encoder
 GGUF/safetensors conversion, local file browsing, inspection, progress,
@@ -113,8 +137,8 @@ generic entry. On other platforms use session/environment keys.
 **Format guide** includes the interactive diffusion/text-encoder support matrix,
 model search, evidence filters and visible compatibility explanations. Select a
 cell to review it, then **Use format** to prepare a conversion. Known unsupported
-combinations cannot be applied from the matrix. The classic Gradio interface
-remains available as an alternative. See [migration scope and validation](docs/web-workbench.md).
+combinations cannot be applied from the matrix. See
+[Workbench scope and validation](docs/web-workbench.md).
 
 The diffusion matrix includes selectable **INT4 + ConvRot / mixed precision**:
 SDXL has visible drift in the tested RealVisXL checkpoint; ZIT has a scoped
@@ -162,7 +186,7 @@ This project does not maintain a separate `requirements.txt`.
 <summary>Using pip instead</summary>
 
 ```bash
-pip install gguf torch safetensors tqdm gradio huggingface_hub transformers sentencepiece protobuf
+pip install gguf torch safetensors tqdm fastapi uvicorn huggingface_hub transformers sentencepiece protobuf
 ```
 
 </details>
@@ -177,42 +201,6 @@ pip install gguf torch safetensors tqdm gradio huggingface_hub transformers sent
   `llama.cpp` (for its `convert_hf_to_gguf.py`) into `.llama.cpp/` on first
   use — no ComfyUI installation required. See
   [Text-Encoder Conversion](#text-encoder-conversion) below.
-
-## Legacy Gradio UI
-
-`start_gui.bat` launches the new React workbench. To run the legacy Gradio UI,
-use the terminal command below.
-
-Or from the terminal:
-
-```bash
-uv run python gui.py
-```
-
-The UI provides:
-- **File browser** to select the source model without typing paths
-- **Quantization dropdown** with 10 curated levels (see table below)
-- **Live status bar** with percentage embedded in text; scroll-blocked so streaming updates never hijack the viewport
-- **Automatic pipeline** — K-quants trigger a 2-step convert → quantize run;
-  5D tensor insertion (HunyuanVideo / Wan) is chained automatically when needed
-- **SDXL component extraction** — analyze embedded VAE / CLIP-L / CLIP-G
-  against local standard files, then export selected components to the ComfyUI
-  `models\vae` and `models\clip` folders
-- **Advanced performance controls** — pass a fixed thread count to
-  `llama-quantize` and keep GUI tensor logging throttled during conversion
-- **llama-quantize picker** — the path is auto-detected or selected with a
-  native file dialog; manual path typing is disabled
-- **Model Support tab** — a colored table of every detectable architecture x
-  quantization format, marked verified / caution / unknown, with a legend.
-  Click a cell to jump to the matching Convert tab with that format
-  pre-selected (the GGUF column pre-selects `Q4_K_M`, since it stands for
-  every K-quant level collapsed into one cell)
-- **Download from HF tab** — enter a HuggingFace repo ID and a target folder,
-  click Download. Multi-shard checkpoints (`model-00001-of-0000N.safetensors`,
-  …) are downloaded into a resumable staging folder and streamed one
-  tensor at a time into a single `<repo-name>.safetensors` file — the shards are
-  deleted afterwards, so the target folder only ever ends up with the one
-  merged file the Convert tabs expect as input
 
 ## Output Safety
 
@@ -558,9 +546,9 @@ dequantized first and then cleanly re-quantized to your chosen target format
 with no recognizable `weight_scale`/`scale_weight`/`comfy_quant` sidecar at all, since
 there's no way to reconstruct the original magnitude without a scale.
 
-## Model Support Tab
+## Format Guide
 
-The **Model Support** tab shows, for every architecture this tool detects, a
+The **Format guide** shows, for every architecture this tool detects, a
 color-coded support level for each output format (GGUF, F16/F16_MIXED,
 FP8/FP8_MIXED, INT8/INT8_MIXED, NVFP4/NVFP4_MIXED), using four states:
 **✓ Verified** (actually converted, loaded, and rendered correctly in
@@ -580,17 +568,10 @@ Unknown means today — split apart 2026-08-13 because "never tried" and
 "tried, and it does something different" call for different reactions from
 a user picking a format: the former is a request for a test report, the
 latter a request to judge whether the tradeoff is acceptable for a given
-use case. Click a format cell to switch to the matching Convert tab with
-that format pre-selected — the GGUF column collapses every K-quant level
-into one cell, since a working F16 GGUF conversion carries over to all of
-them uniformly, so clicking it defaults to `Q4_K_M`. NVFP4/NVFP4_MIXED
-cells behave like any other Safetensors format now (see the Update note
-above) — clicking one switches to Convert → Safetensors with that format
-pre-selected. Once a source checkpoint is selected on either Convert
-tab, its format dropdown also gets a ⚠, ✗, or ? prefix on any entry that's
-Caution, Known-issue, or Unknown for the detected architecture (`gui.py`'s
-`annotate_safetensors_choices()`/`annotate_gguf_choices()`) — informational
-only, every entry stays selectable. The underlying support data (which model
+use case. Select a format cell to review its compatibility details, then choose
+**Use format** to prepare the conversion. Known unsupported combinations cannot
+be applied. The grouped GGUF cell defaults to `Q4_K_M`.
+The underlying support data (which model
 names map to which internal architecture key, and the four-state logic
 itself) lives in `model_support.py` and is documented there as an explicit
 editorial judgment call, open to correction.
@@ -661,12 +642,9 @@ matched every other format's baseline, but the generated motion's blink
 timing landed a few frames off — not a composition/identity failure, most
 likely ordinary seed-level sensitivity rather than INT8's usual
 `keys_hiprec`-protection gap (`INT8_MIXED`, same batch, matched exactly).
-Every other family still shows
-**? Unknown** across every column (never actually rendered). Both this table and the main one share one
-color legend — literal red/yellow/green, not reused from the app's teal
-accent color. Clicking a cell jumps to the Convert Text Encoder tab with that
-format pre-selected — unlike the diffusion-model table, NVFP4 isn't excluded
-here since it's a real, selectable format for text encoders.
+Every other family still shows **? Unknown** across every column (never actually
+rendered). The tables share one compatibility legend. Select a cell to review
+its details, then choose **Use format** to prepare a text-encoder conversion.
 
 ## Text-Encoder Conversion
 

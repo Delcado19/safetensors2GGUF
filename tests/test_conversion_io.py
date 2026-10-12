@@ -21,7 +21,7 @@ from conversion_io import atomic_output, iter_process_output, validate_output
 from convert import ConversionCancelled, convert_file
 from convert_safetensors import convert_to_safetensors
 from models.architectures import ModelTemplate, ModelWan
-import gui
+from conversion_service import _pipeline
 from quantize import run_quantize
 from text_encoder_convert import convert_text_encoder
 from fix_5d_tensors import fix_5d_tensors
@@ -112,24 +112,26 @@ def test_gguf_write_failure_preserves_existing_output(tmp_path):
 
 
 @pytest.mark.parametrize("quant_key", ["F16", "Q4_K_M"])
-def test_gui_refuses_existing_final_output_before_conversion(tmp_path, quant_key):
+def test_pipeline_refuses_existing_final_output_before_conversion(tmp_path, quant_key):
+    """Reject an existing destination before invoking either conversion path."""
     destination = tmp_path / "output.gguf"
     destination.write_bytes(b"original")
     with patch("conversion_service.convert_file") as convert:
         with pytest.raises(OSError, match="overwrite is disabled"):
-            gui._pipeline("source.safetensors", str(destination), quant_key, "", 0, False, False, queue.Queue())
+            _pipeline("source.safetensors", str(destination), quant_key, "", 0, False, False, queue.Queue())
     convert.assert_not_called()
     assert destination.read_bytes() == b"original"
 
 
 @pytest.mark.parametrize("overwrite", [False, True])
-def test_gui_forwards_overwrite_for_direct_gguf(tmp_path, overwrite):
+def test_pipeline_forwards_overwrite_for_direct_gguf(tmp_path, overwrite):
+    """Forward the explicit replacement policy through the shared pipeline."""
     source = tmp_path / 'source.safetensors'
     save_file({'double_blocks.0.img_attn.proj.weight': torch.ones(2, 2)}, str(source))
     destination = str(tmp_path / "output.gguf")
     arch = SimpleNamespace(arch="flux", fix_path=destination + ".5d.safetensors")
     with patch("conversion_service.convert_file", return_value=(destination, arch)) as convert:
-        assert gui._pipeline(str(source), destination, "F16", "", 0, False, overwrite, queue.Queue()) == destination
+        assert _pipeline(str(source), destination, "F16", "", 0, False, overwrite, queue.Queue()) == destination
     assert convert.call_args.kwargs["overwrite"] is overwrite
 
 
@@ -241,6 +243,7 @@ def test_gguf_repair_write_failure_preserves_existing_output(tmp_path, repair):
 
 
 def test_wan_pipeline_uses_only_current_jobs_5d_tensors(tmp_path, monkeypatch):
+    """Keep Wan shape restoration bound to this job rather than leftover sidecars."""
     monkeypatch.chdir(tmp_path)
     source, destination = tmp_path / "source.safetensors", tmp_path / "output.gguf"
     save_file({
@@ -255,7 +258,7 @@ def test_wan_pipeline_uses_only_current_jobs_5d_tensors(tmp_path, monkeypatch):
         shutil.copyfile(src, dst)
 
     with patch("conversion_service.run_quantize", side_effect=fake_quantize):
-        result = gui._pipeline(
+        result = _pipeline(
             str(source), str(destination), "Q4_K_M", "", 0, False, False, queue.Queue(),
         )
     reader = gguf.GGUFReader(result)
