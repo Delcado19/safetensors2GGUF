@@ -15,6 +15,8 @@ import struct
 import logging
 import argparse
 import uuid
+import tempfile
+from pathlib import Path
 
 import gguf
 import torch
@@ -529,12 +531,11 @@ def convert_file(
     model_arch._defer_nd_write = True
     _info(f"Output: {dst_path}  [{ftype_name}]")
 
-    # use_temp_file=True spills converted tensors to a tempfile-backed
-    # SpooledTemporaryFile (256 MiB RAM buffer, rest on disk) instead of
-    # accumulating every F16/BF16 tensor in self.tensors.  Required for the
-    # same reason _LazyStateDict is required on the read side: keeps peak RAM
-    # bounded when converting checkpoints larger than physical memory.
+    # Keep the large spool beside the output; system temp may be a small tmpfs.
     writer = gguf.GGUFWriter(path=None, arch=model_arch.arch, use_temp_file=True)
+    writer.temp_file = tempfile.SpooledTemporaryFile(
+        mode="w+b", max_size=256 * 1024 * 1024, dir=Path(dst_path).resolve().parent,
+    )
     writer.add_quantization_version(gguf.GGML_QUANT_VERSION)
     writer.add_file_type(ftype_gguf)
 

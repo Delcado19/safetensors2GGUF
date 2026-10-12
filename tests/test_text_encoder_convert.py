@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -328,9 +329,16 @@ class TestConvertTextEncoder:
         save_file({"layer.weight": torch.randn(4, 4)}, str(weights))
         script = tmp_path / "convert_hf_to_gguf.py"
         script.write_text("# stub")
+        temporary_directories = []
+        original_temporary_directory = tempfile.TemporaryDirectory
+
+        def temporary_directory(**kwargs):
+            temporary_directories.append(kwargs)
+            return original_temporary_directory(**kwargs)
 
         with patch("text_encoder_convert.find_convert_script", return_value=script), \
              patch("text_encoder_convert.fetch_base_config_files", return_value=["config.json"]), \
+             patch("text_encoder_convert.tempfile.TemporaryDirectory", side_effect=temporary_directory), \
              patch("text_encoder_convert.subprocess.Popen") as mock_popen:
             mock_proc = mock_popen.return_value
             mock_proc.stdout = iter(["INFO: done\n"])
@@ -353,6 +361,7 @@ class TestConvertTextEncoder:
         assert str(script) == called_cmd[1]
         assert "--outtype" in called_cmd
         assert "f16" in called_cmd
+        assert temporary_directories[0]["dir"] == tmp_path.resolve()
 
     def test_auto_detects_family_and_skips_repo_id_when_blank(self, tmp_path):
         # base_repo_id omitted entirely -- must fingerprint the weights and use the
@@ -650,9 +659,16 @@ class TestConvertTextEncoderKquant:
         dst = str(tmp_path / "out-Q4_K_M.gguf")
         exe = tmp_path / "llama-quantize"
         exe.write_bytes(b"stub")
+        temporary_directories = []
+        original_temporary_directory = tempfile.TemporaryDirectory
+
+        def temporary_directory(**kwargs):
+            temporary_directories.append(kwargs)
+            return original_temporary_directory(**kwargs)
 
         with patch("text_encoder_convert.convert_text_encoder") as mock_convert, \
              patch("text_encoder_convert.ensure_plain_llama_quantize", return_value=exe), \
+             patch("text_encoder_convert.tempfile.TemporaryDirectory", side_effect=temporary_directory), \
              patch("text_encoder_convert.run_quantize") as mock_quantize:
             out = convert_text_encoder_kquant(
                 str(weights), "Qwen/Qwen3-8B", dst_path=dst, quant_key="Q4_K_M",
@@ -666,6 +682,7 @@ class TestConvertTextEncoderKquant:
         assert quantize_args.args[1] == dst
         assert quantize_args.args[2] == "Q4_K_M"
         assert quantize_args.kwargs["exe"] == exe
+        assert temporary_directories[0]["dir"] == tmp_path.resolve()
 
 
 class TestConvertTextEncoderToSafetensors:

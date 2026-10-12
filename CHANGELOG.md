@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Fix: Store the streaming GGUF tensor spool, text-encoder model copy and F16
+  K-quant intermediate on the output filesystem instead of the system temporary
+  directory, avoiding failures on a small Linux `/tmp` tmpfs while retaining
+  bounded memory and atomic output.
+
 - Remove: Legacy Gradio frontend and its dependency tree. Keep the React
   Workbench and CLI conversion paths; run output-safety regression tests directly
   against the shared conversion service.

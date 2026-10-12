@@ -612,7 +612,10 @@ def convert_text_encoder(
     script = find_convert_script()
 
     with atomic_output(dst_path, overwrite) as temporary:
-        with tempfile.TemporaryDirectory(prefix="s2g_text_encoder_") as tmpdir:
+        # Model copies can exceed the small /tmp tmpfs common on Linux.
+        with tempfile.TemporaryDirectory(
+            prefix="s2g_text_encoder_", dir=Path(dst_path).resolve().parent,
+        ) as tmpdir:
             tmp_path = Path(tmpdir)
             if base_repo_id and base_repo_id.strip():
                 _log(f"INFO:  Fetching config/tokenizer for {base_repo_id}…")
@@ -681,7 +684,10 @@ def convert_text_encoder_kquant(
         dst_path = f"{weights_path.rsplit('.', 1)[0]}-{quant_key}.gguf"
 
     validate_output(weights_path, dst_path, overwrite)
-    with tempfile.TemporaryDirectory(prefix="s2g_te_kquant_") as tmpdir:
+    # The F16 intermediate is larger than the final quantized GGUF.
+    with tempfile.TemporaryDirectory(
+        prefix="s2g_te_kquant_", dir=Path(dst_path).resolve().parent,
+    ) as tmpdir:
         intermediate = str(Path(tmpdir) / "intermediate-f16.gguf")
         convert_text_encoder(
             weights_path, base_repo_id, dst_path=intermediate, outtype="f16",

@@ -25,6 +25,11 @@ Recorded roadmap (the final consolidation strategy remains open):
 - Then evaluate selectively consolidating implementations or maintaining forks
   of all three sources into one converter. A wholesale merge remains an
   alternative to assess.
+- Consider persistent Linux credential storage through Freedesktop Secret
+  Service where available. Retain session-only entry as the distribution-neutral
+  fallback and never silently fall back to plaintext storage.
+- Add a **New folder** action to the local source/output browser so users can
+  create a destination directory without leaving the Workbench.
 - Keep working conversion formats available throughout; do not replace a tested
   path solely because another backend offers more features.
 

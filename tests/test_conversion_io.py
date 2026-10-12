@@ -7,6 +7,7 @@ import queue
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -109,6 +110,25 @@ def test_gguf_write_failure_preserves_existing_output(tmp_path):
             convert_file(str(source), str(destination), interact=False, overwrite=True, on_log=lambda _: None)
     assert destination.read_bytes() == b"original"
     assert len(list(tmp_path.iterdir())) == 2
+
+
+def test_gguf_tensor_spool_uses_output_filesystem(tmp_path):
+    """Large conversions must not exhaust a small system temporary filesystem."""
+    source = tmp_path / "source.safetensors"
+    destination = tmp_path / "outputs" / "output.gguf"
+    destination.parent.mkdir()
+    save_file({"double_blocks.0.img_attn.proj.weight": torch.ones(2, 2)}, str(source))
+    calls = []
+    original_spool = tempfile.SpooledTemporaryFile
+
+    def spool(**kwargs):
+        calls.append(kwargs)
+        return original_spool(**kwargs)
+
+    with patch("convert.tempfile.SpooledTemporaryFile", side_effect=spool):
+        convert_file(str(source), str(destination), interact=False, on_log=lambda _: None)
+
+    assert calls[0]["dir"] == destination.parent.resolve()
 
 
 @pytest.mark.parametrize("quant_key", ["F16", "Q4_K_M"])
