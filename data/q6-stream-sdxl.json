@@ -1,0 +1,49 @@
+{
+  "status": "Full raw tensor check; not a complete GGUF model or loader test",
+  "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\checkpoints\\SDXL 1.0\\artaix_v30.safetensors",
+  "tensor": "model.diffusion_model.input_blocks.1.0.emb_layers.1.weight",
+  "shape": [
+    320,
+    1280
+  ],
+  "source_dtype": "F16",
+  "source_bytes": 6938040706,
+  "source_mtime_ns": 1781615196621238000,
+  "output": "I:\\safetensors2GGUF-q6-stream-2026-10-15\\sdxl-emb.q6k",
+  "output_bytes": 336000,
+  "chunks": 7,
+  "max_source_chunk_values": 65280,
+  "float32_input_sha256": "cb6d44a472e2a094258620e1726e68eebc596dda6fff81a6d4523b9d5ab8f375",
+  "payload_sha256": "9bb49d5eb80a86a642b69ec290458d6f69ac3ab6bc9a94257d1383fc30f2c73e",
+  "rmse": 0.00040688426055390375,
+  "max_abs_error": 0.00826263427734375,
+  "encode_seconds": 0.037222999995719874,
+  "total_seconds": 0.48500330000024405,
+  "float32_encode_mib_per_second": 41.976734819323156,
+  "numpy": "2.4.4",
+  "torch": "2.11.0+cpu",
+  "pilot_source_sha256": "f5b9eabf34c42faa1f605113aa6e857d2c29bec3ff3d0155b54b1d595f6b0b02",
+  "checker_source_sha256": "3e157af81d84f936c0cd4393616b4f8657256600463573e83a72567d6d719484",
+  "native_comparisons": 21,
+  "all_equal": true,
+  "references": [
+    {
+      "id": "llama-b3962",
+      "commit": "c8c07d658a6cefc5a50cfdf6be7d726503612303",
+      "archive_sha256": "13c8e23aedcc9a519cb3eafe95381e20dd9c4819ffee823b77c1b85a8d5cb6c4",
+      "executable_sha256": "04c285dc6757b6420a1b33481ec61dc87b765f9c1ae1bbdcb0f6c346842af119"
+    },
+    {
+      "id": "llama-text-installed",
+      "commit": "687e7789271ec1276e3470f158428e11a4f80b6f",
+      "archive_sha256": "0f2b731c16b0ab56f042779722f183bab401f3efb7af747219898c36a5171083",
+      "executable_sha256": "bc5469f22b88ddde3e1633d776f0b9691aac5da68f039649d5e383fe3d0186c4"
+    },
+    {
+      "id": "llama-current",
+      "commit": "8bb3cf0d216a5ae48360179f2931daf284be4d01",
+      "archive_sha256": "1b1a5bd079840425683ff6caebf3543e08d2dbcab7563782fabdf145030521a2",
+      "executable_sha256": "0c645698f19ecd969e8a0fa9f221f0a2ec71d4b27e257a938f9902fb8135b086"
+    }
+  ]
+}

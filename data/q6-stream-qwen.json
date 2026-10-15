@@ -1,0 +1,49 @@
+{
+  "status": "Full raw tensor check; not a complete GGUF model or loader test",
+  "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\text_encoders\\Z-Image\\BennyDaBall-Qwen3-4b-Engineer-V6.safetensors",
+  "tensor": "model.layers.0.self_attn.k_proj.weight",
+  "shape": [
+    1024,
+    2560
+  ],
+  "source_dtype": "F16",
+  "source_bytes": 8044981648,
+  "source_mtime_ns": 1787230464003803200,
+  "output": "I:\\safetensors2GGUF-q6-stream-2026-10-15\\qwen-k-proj.q6k",
+  "output_bytes": 2150400,
+  "chunks": 41,
+  "max_source_chunk_values": 64000,
+  "float32_input_sha256": "1a8eec4e9785161affd6e89d3bf63909d35f525d60f75b9a8832489b7a336b44",
+  "payload_sha256": "81303b2d177b997bfc0de20b1b53ad5ff57aef3258da8ac6d0a538dfb9e15fe8",
+  "rmse": 0.0004397150507671603,
+  "max_abs_error": 0.00434112548828125,
+  "encode_seconds": 0.27228449999165605,
+  "total_seconds": 2.501508499997726,
+  "float32_encode_mib_per_second": 36.7262918025317,
+  "numpy": "2.4.4",
+  "torch": "2.11.0+cpu",
+  "pilot_source_sha256": "f5b9eabf34c42faa1f605113aa6e857d2c29bec3ff3d0155b54b1d595f6b0b02",
+  "checker_source_sha256": "3e157af81d84f936c0cd4393616b4f8657256600463573e83a72567d6d719484",
+  "native_comparisons": 123,
+  "all_equal": true,
+  "references": [
+    {
+      "id": "llama-b3962",
+      "commit": "c8c07d658a6cefc5a50cfdf6be7d726503612303",
+      "archive_sha256": "13c8e23aedcc9a519cb3eafe95381e20dd9c4819ffee823b77c1b85a8d5cb6c4",
+      "executable_sha256": "04c285dc6757b6420a1b33481ec61dc87b765f9c1ae1bbdcb0f6c346842af119"
+    },
+    {
+      "id": "llama-text-installed",
+      "commit": "687e7789271ec1276e3470f158428e11a4f80b6f",
+      "archive_sha256": "0f2b731c16b0ab56f042779722f183bab401f3efb7af747219898c36a5171083",
+      "executable_sha256": "bc5469f22b88ddde3e1633d776f0b9691aac5da68f039649d5e383fe3d0186c4"
+    },
+    {
+      "id": "llama-current",
+      "commit": "8bb3cf0d216a5ae48360179f2931daf284be4d01",
+      "archive_sha256": "1b1a5bd079840425683ff6caebf3543e08d2dbcab7563782fabdf145030521a2",
+      "executable_sha256": "0c645698f19ecd969e8a0fa9f221f0a2ec71d4b27e257a938f9902fb8135b086"
+    }
+  ]
+}

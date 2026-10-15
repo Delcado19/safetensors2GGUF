@@ -87,8 +87,8 @@ def installed_weight_vectors(root, audit):
     return vectors, sources
 
 
-def check_pilot(reference_report, vectors=None):
-    """Require exact bytes; also retain reconstruction metrics and input hashes."""
+def verified_native_builds(reference_report):
+    """Require all three pinned source archives and unchanged native executables."""
     builds = reference_report['builds']
     expected = {item['id']: item for item in verify_references()['sources'] if item['id'] in NATIVE_SOURCES}
     if len(builds) != 3 or {build['id'] for build in builds} != set(NATIVE_SOURCES):
@@ -100,6 +100,12 @@ def check_pilot(reference_report, vectors=None):
         path = Path(build['executable'])
         if hashlib.sha256(path.read_bytes()).hexdigest() != build['executable_sha256']:
             raise ValueError('Native reference executable checksum mismatch')
+    return builds
+
+
+def check_pilot(reference_report, vectors=None):
+    """Require exact bytes; also retain reconstruction metrics and input hashes."""
+    builds = verified_native_builds(reference_report)
     report = {'status': 'Research Q6_K pilot; no model/preset dispatch or performance claim',
               'numpy': np.__version__, 'random_seed': 20261015,
               'pilot_source_sha256': hashlib.sha256((ROOT / 'scripts/reference_q6_k.py').read_bytes()).hexdigest(),

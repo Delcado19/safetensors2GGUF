@@ -131,6 +131,59 @@ there is no mid-chunk interruption. Do not mutate input during iteration. Tests
 cover chunk boundaries, independent buffers, reversed/transposed views, late
 failure, early close and restoring NumPy error settings before yielding.
 
+## Complete installed-tensor streaming check
+
+`scripts/check_q6_tensor_stream.py` reads one explicitly selected plain
+F16/BF16/F32 matrix from safetensors, expands row batches to float32 and packs
+Q6_K. Each batch is compared byte-for-byte with **all three verified native
+reference binaries** before writing. It does not select model/preset rules.
+
+The output is a raw `.q6k` block stream, **not a GGUF model**. Shape, dtype,
+checksums, source size/modification time, reference provenance, timings and
+reconstruction metrics live in the separate JSON report. The raw format has no
+embedded tensor header and cannot be passed to a ComfyUI model loader.
+
+Three complete matrices passed on 2026-10-15: **19,808,256 values, 304 chunks,
+912 native byte comparisons, zero mismatches**. Artifacts total 16,248,960 bytes
+under `I:\safetensors2GGUF-q6-stream-2026-10-15`; installed sources are unchanged.
+
+| Source / full matrix | Stored dtype | Shape | Native checks | RMSE | Encode time |
+| --- | --- | --- | --- | --- | --- |
+| FLUX.2 klein Base 9B / image attention projection | BF16 | 4096 x 4096 | 768 | 0.00037183 | 1.824 s |
+| Qwen3-4B Engineer V6 / layer 0 key projection | F16 | 1024 x 2560 | 123 | 0.00043972 | 0.272 s |
+| SDXL artaix v30 / embedding projection | F16 | 320 x 1280 | 21 | 0.00040688 | 0.037 s |
+
+Exact tensor names and metrics are retained in
+[`q6-stream-flux.json`](../data/q6-stream-flux.json),
+[`q6-stream-qwen.json`](../data/q6-stream-qwen.json) and
+[`q6-stream-sdxl.json`](../data/q6-stream-sdxl.json).
+Encoding alone measured approximately 35–42 MiB/s of expanded float32 input on
+this Windows CPU run. Those are single-run observations, excluding source
+reconstruction, native comparisons and disk I/O; not a warmed benchmark or a
+comparison with native throughput. Total wall time includes all those checks.
+
+Source batches contain at most 65,536 values or one full row, whichever is
+larger. The encoder's internal chunk bound still applies. Whole-file mapping
+and OS page residency are not a measured peak-memory guarantee.
+
+The writer reuses `validate_output` and `atomic_output`: it rejects originals,
+aliases and existing destinations, writes beside the destination and publishes
+only after checking expected byte count, disk readback SHA256, unchanged source
+size/mtime and cancellation. Late invalid values, native mismatch, I/O errors,
+changed source, readback corruption and cancellation remove the temporary output.
+Sources with `.comfy_quant` markers are rejected rather than reinterpreted.
+
+```bash
+python -m scripts.check_q6_tensor_stream --source "path/to/model.safetensors" --tensor "exact.weight.name" --output "I:/tensor.q6k" --report tensor-report.json
+```
+
+The source/output/report parent directories must already exist. Outputs and
+reports never overwrite existing files; choose fresh names when reproducing.
+Report publication is separate from the raw artifact, so a failed report write
+can leave a successfully verified raw output. Regression tests use tiny local
+fixtures and stub native execution; the committed reports record the actual
+installed-model/native-program runs.
+
 ## Remaining integration gates
 
 The current explicit overflow guard rejects extreme finite inputs if native-style scale-search
@@ -143,6 +196,7 @@ must remain compatible before enabling any production path. The prototype has
 not been wired into the Workbench or conversion services.
 
 Other K encoders, IQ, ConvRot/safetensors formats, importance-matrix variants,
-production streaming/cancellation integration, full-model files/loading/render fidelity, Linux native
-execution, throughput and peak memory remain outside this pilot's evidence.
+production streaming/cancellation integration, full-model files/loading/render fidelity,
+Linux native execution, comparative throughput benchmarking and measured peak
+memory remain outside this pilot's evidence.
 Do not infer those capabilities from matching Q6_K block bytes.

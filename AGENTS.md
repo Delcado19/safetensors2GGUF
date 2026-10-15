@@ -45,7 +45,10 @@ NumPy Q6_K encoder matches all three frozen native references on 166 inputs
 (498 byte comparisons), including 21 small weight slices from seven installed
 floating-point families. Bounded chunk iteration also preserves bytes in 332
 additional comparisons and supports consumer-driven early close. It is not
-connected to production dispatch. Measured peak memory/throughput,
+connected to production dispatch. Three complete installed matrices additionally
+match in 912 native chunk comparisons, with atomic raw `.q6k` artifacts on `I:\`;
+these are not loadable GGUF models. Per-run encoding times are recorded.
+Measured peak memory/comparative throughput,
 extreme-range policy, other encoders and full-model integration remain
 open; preserve separate model/preset rules and the implementation-language choice.
 

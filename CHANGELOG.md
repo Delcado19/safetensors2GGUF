@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Research-only full-matrix Q6_K streaming validation with atomic raw-block
+  output, disk readback checksums and cancellation/source-change guards. Three
+  complete installed tensors match all native references in 912 comparisons;
+  record reconstruction and encoding-time evidence without enabling model export.
+
 - Add: Bounded Q6_K research encoding with incremental chunks, including strided
   input without full tensor copies. Preserve the array API and native golden
   bytes; verify chunk boundaries, early close and late invalid-input handling.
