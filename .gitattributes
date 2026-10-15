@@ -4,3 +4,5 @@
 third_party/converter_references/*-LICENSE* -text whitespace=-blank-at-eof
 # Keep native probe source checksums stable across Windows/Linux checkouts.
 tools/converter-reference/* text eol=lf
+# The research pilot report records this source file's checksum.
+scripts/reference_q6_k.py text eol=lf

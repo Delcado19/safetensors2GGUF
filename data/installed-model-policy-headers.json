@@ -1,0 +1,953 @@
+{
+  "status": "Header-only stored shapes; not dequantized eligibility, conversion or render validation",
+  "models": [
+    {
+      "path": "diffusion_models/Flux.2 klein/9B/snofsSexNudesAndOtherFunStuff_distilledV12Fp8.safetensors",
+      "category": "diffusion_models",
+      "bytes": 9078612168,
+      "header_bytes": 30912,
+      "tensor_count": 201,
+      "canonical_header_sha256": "7c626b7c902cfa641b82ccff3a221489ef03a4fe547470c23ee272db4dad7a31",
+      "dtype_tensor_counts": {
+        "F8_E4M3": 201
+      },
+      "stored_matrix_count_over_1024": 121,
+      "stored_k_row_aligned_matrix_count": 120,
+      "stored_k_row_unaligned_examples": [
+        "model.diffusion_model.img_in.weight"
+      ],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "flux",
+      "protected_pattern_count": 11
+    },
+    {
+      "path": "diffusion_models/Flux.2 klein/9B - Base/flux-2-klein-base-9b.safetensors",
+      "category": "diffusion_models",
+      "bytes": 18157185168,
+      "header_bytes": 22664,
+      "tensor_count": 201,
+      "canonical_header_sha256": "c7ea40445243000f64929f810a6d589fa432fb92536460b4f66ba530129366f3",
+      "dtype_tensor_counts": {
+        "BF16": 201
+      },
+      "stored_matrix_count_over_1024": 121,
+      "stored_k_row_aligned_matrix_count": 120,
+      "stored_k_row_unaligned_examples": [
+        "img_in.weight"
+      ],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "flux",
+      "protected_pattern_count": 11
+    },
+    {
+      "path": "diffusion_models/Flux.2 klein/9B - Base/snofsSexNudesAndOther_v14Base.safetensors",
+      "category": "diffusion_models",
+      "bytes": 18157185200,
+      "header_bytes": 22696,
+      "tensor_count": 201,
+      "canonical_header_sha256": "a80f1fb41701c85eaaf29f1ffe2324f6f26b4b3258f52de0d32b0d6173bea9c7",
+      "dtype_tensor_counts": {
+        "BF16": 201
+      },
+      "stored_matrix_count_over_1024": 121,
+      "stored_k_row_aligned_matrix_count": 120,
+      "stored_k_row_unaligned_examples": [
+        "img_in.weight"
+      ],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "flux",
+      "protected_pattern_count": 11
+    },
+    {
+      "path": "diffusion_models/HiDream/hidream_i1_dev-NVFP4_MIXED.safetensors",
+      "category": "diffusion_models",
+      "bytes": 9626163512,
+      "header_bytes": 615184,
+      "tensor_count": 3871,
+      "canonical_header_sha256": "1da8529e6467a2f877602ee537cf3199f196d78795849ecde31ea8c6f99ac524",
+      "dtype_tensor_counts": {
+        "F32": 1128,
+        "F16": 487,
+        "F8_E4M3": 1128,
+        "U8": 1128
+      },
+      "stored_matrix_count_over_1024": 1176,
+      "stored_k_row_aligned_matrix_count": 966,
+      "stored_k_row_unaligned_examples": [
+        "double_stream_blocks.0.block.ff_i.experts.0.w2.weight",
+        "double_stream_blocks.0.block.ff_i.experts.1.w2.weight",
+        "double_stream_blocks.0.block.ff_i.experts.2.w2.weight",
+        "double_stream_blocks.0.block.ff_i.experts.3.w2.weight",
+        "double_stream_blocks.0.block.ff_t.w2.weight",
+        "double_stream_blocks.1.block.ff_i.experts.0.w2.weight",
+        "double_stream_blocks.1.block.ff_i.experts.1.w2.weight",
+        "double_stream_blocks.1.block.ff_i.experts.2.w2.weight",
+        "double_stream_blocks.1.block.ff_i.experts.3.w2.weight",
+        "double_stream_blocks.1.block.ff_t.w2.weight",
+        "double_stream_blocks.10.block.ff_i.experts.0.w2.weight",
+        "double_stream_blocks.10.block.ff_i.experts.1.w2.weight"
+      ],
+      "has_raw_byte_tensors": true,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "hidream",
+      "protected_pattern_count": 2
+    },
+    {
+      "path": "diffusion_models/Krea 2/Krea2 - RAW/lustifyNSFWCheckpoint_v10Krea2.safetensors",
+      "category": "diffusion_models",
+      "bytes": 13148974712,
+      "header_bytes": 96728,
+      "tensor_count": 686,
+      "canonical_header_sha256": "5ad7b5fbd644899681d208523231f3d18663c12a59bf69cba1f7b65caeeab8f0",
+      "dtype_tensor_counts": {
+        "F32": 256,
+        "BF16": 174,
+        "I8": 256
+      },
+      "stored_matrix_count_over_1024": 263,
+      "stored_k_row_aligned_matrix_count": 262,
+      "stored_k_row_unaligned_examples": [
+        "first.weight"
+      ],
+      "has_raw_byte_tensors": true,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "krea2",
+      "protected_pattern_count": 8
+    },
+    {
+      "path": "diffusion_models/Krea 2/Krea2 - Turbo/bf95Krea2DarkRealism_v4.safetensors",
+      "category": "diffusion_models",
+      "bytes": 13141772744,
+      "header_bytes": 116904,
+      "tensor_count": 942,
+      "canonical_header_sha256": "d3bb6f3674e3f25b1a27e0467f358e4cbbcd7353475ee7390805aa36a537716a",
+      "dtype_tensor_counts": {
+        "F32": 256,
+        "BF16": 174,
+        "F8_E4M3": 256,
+        "U8": 256
+      },
+      "stored_matrix_count_over_1024": 263,
+      "stored_k_row_aligned_matrix_count": 262,
+      "stored_k_row_unaligned_examples": [
+        "model.diffusion_model.first.weight"
+      ],
+      "has_raw_byte_tensors": true,
+      "comfy_quant_tensor_count": 256,
+      "architecture": "krea2",
+      "protected_pattern_count": 8
+    },
+    {
+      "path": "diffusion_models/Krea 2/Krea2 - Turbo/DasiwaKrea2TurboRaw_darkdesireV3TurboUC_fp8Mixed.safetensors",
+      "category": "diffusion_models",
+      "bytes": 13784925704,
+      "header_bytes": 122320,
+      "tensor_count": 942,
+      "canonical_header_sha256": "d94aa0491df4f15ff798c4895e5abf03064ae1298874d84b3275e26aa72fe046",
+      "dtype_tensor_counts": {
+        "F32": 430,
+        "F8_E4M3": 256,
+        "U8": 256
+      },
+      "stored_matrix_count_over_1024": 263,
+      "stored_k_row_aligned_matrix_count": 262,
+      "stored_k_row_unaligned_examples": [
+        "first.weight"
+      ],
+      "has_raw_byte_tensors": true,
+      "comfy_quant_tensor_count": 256,
+      "architecture": "krea2",
+      "protected_pattern_count": 8
+    },
+    {
+      "path": "diffusion_models/Krea 2/Krea2 - Turbo/intorealismKrea2_v10_3079211.safetensors",
+      "category": "diffusion_models",
+      "bytes": 12820220436,
+      "header_bytes": 136000,
+      "tensor_count": 942,
+      "canonical_header_sha256": "cc9957fa5017667a3f44ffd88f4de7b26a74509ead23cc202e9fdec66f158a4d",
+      "dtype_tensor_counts": {
+        "F32": 256,
+        "F8_E4M3": 430,
+        "U8": 256
+      },
+      "stored_matrix_count_over_1024": 263,
+      "stored_k_row_aligned_matrix_count": 262,
+      "stored_k_row_unaligned_examples": [
+        "model.diffusion_model.first.weight"
+      ],
+      "has_raw_byte_tensors": true,
+      "comfy_quant_tensor_count": 256,
+      "architecture": "krea2",
+      "protected_pattern_count": 8
+    },
+    {
+      "path": "diffusion_models/Krea 2/Krea2 - Turbo/rebelsW4a8sComfyui_allModelsMoreComing_3098992.safetensors",
+      "category": "diffusion_models",
+      "bytes": 7226824858,
+      "header_bytes": 167256,
+      "tensor_count": 1474,
+      "canonical_header_sha256": "c9b373456da55f0f6a7e38f16503794f1f4941faea6fca3608443416d9604f96",
+      "dtype_tensor_counts": {
+        "F32": 691,
+        "I8": 261,
+        "F8_E4M3": 261,
+        "U8": 261
+      },
+      "stored_matrix_count_over_1024": 263,
+      "stored_k_row_aligned_matrix_count": 257,
+      "stored_k_row_unaligned_examples": [
+        "first.weight",
+        "tmlp.0.weight",
+        "txtfusion.layerwise_blocks.0.mlp.down.weight",
+        "txtfusion.layerwise_blocks.1.mlp.down.weight",
+        "txtfusion.refiner_blocks.0.mlp.down.weight",
+        "txtfusion.refiner_blocks.1.mlp.down.weight"
+      ],
+      "has_raw_byte_tensors": true,
+      "comfy_quant_tensor_count": 261,
+      "architecture": "krea2",
+      "protected_pattern_count": 8
+    },
+    {
+      "path": "diffusion_models/Krea 2/Krea2 - Turbo/solstice_v2_fp8.safetensors",
+      "category": "diffusion_models",
+      "bytes": 13141730784,
+      "header_bytes": 85312,
+      "tensor_count": 686,
+      "canonical_header_sha256": "cfd5d254a66718ac745c7763fff951444b87a4399ade0d7ff706b9c5321c7c15",
+      "dtype_tensor_counts": {
+        "F32": 256,
+        "BF16": 174,
+        "F8_E4M3": 256
+      },
+      "stored_matrix_count_over_1024": 263,
+      "stored_k_row_aligned_matrix_count": 262,
+      "stored_k_row_unaligned_examples": [
+        "first.weight"
+      ],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "krea2",
+      "protected_pattern_count": 8
+    },
+    {
+      "path": "diffusion_models/Qwen Image 2.1/qwenImage21Nvfp4Q4_nvfp4.safetensors",
+      "category": "diffusion_models",
+      "bytes": 4197590768,
+      "header_bytes": 108584,
+      "tensor_count": 841,
+      "canonical_header_sha256": "ad09cbd9e0820ed1f90228706d87444bc1c8de110ef860527587f0cb5e088845",
+      "dtype_tensor_counts": {
+        "F32": 192,
+        "BF16": 9,
+        "F16": 64,
+        "F8_E4M3": 192,
+        "U8": 384
+      },
+      "stored_matrix_count_over_1024": 200,
+      "stored_k_row_aligned_matrix_count": 199,
+      "stored_k_row_unaligned_examples": [
+        "img_in.weight"
+      ],
+      "has_raw_byte_tensors": true,
+      "comfy_quant_tensor_count": 192,
+      "detection_error": "Unknown model architecture. Checked: ['qwen_image', 'flux', 'sd3', 'aura', 'hidream', 'cosmos', 'ltxv', 'hyvid', 'wan', 'sdxl', 'sd1', 'lumina2', 'ernie_image', 'krea2']. If this is a standalone text encoder (not a diffusion checkpoint), use the 'Convert Text Encoder' tab instead -- this list only covers diffusion-model UNet/DiT architectures."
+    },
+    {
+      "path": "diffusion_models/Qwen Image Edit 2511/qwen_image_edit_2511_fp8.safetensors",
+      "category": "diffusion_models",
+      "bytes": 20448075055,
+      "header_bytes": 722576,
+      "tensor_count": 4457,
+      "canonical_header_sha256": "39218aed7e3bfadfdd0a6c5b4f1b7f3904d69db35e958a02be2f57095c83bf7c",
+      "dtype_tensor_counts": {
+        "F32": 2772,
+        "F16": 1,
+        "F8_E4M3": 1684
+      },
+      "stored_matrix_count_over_1024": 846,
+      "stored_k_row_aligned_matrix_count": 845,
+      "stored_k_row_unaligned_examples": [
+        "img_in.weight"
+      ],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "qwen_image",
+      "protected_pattern_count": 6
+    },
+    {
+      "path": "diffusion_models/Wan 2.2/DaSiWa_Wan22_I2V_14B_SnatchKiss_v11_HIGH_fp8_mixed.safetensors",
+      "category": "diffusion_models",
+      "bytes": 19457051552,
+      "header_bytes": 366896,
+      "tensor_count": 1655,
+      "canonical_header_sha256": "04aa98aa2585360b4cec5331970429814577e3bd1a23b4f54266b66b744bbd80",
+      "dtype_tensor_counts": {
+        "F32": 282,
+        "BF16": 772,
+        "F16": 41,
+        "F8_E4M3": 280,
+        "U8": 280
+      },
+      "stored_matrix_count_over_1024": 406,
+      "stored_k_row_aligned_matrix_count": 406,
+      "stored_k_row_unaligned_examples": [],
+      "has_raw_byte_tensors": true,
+      "comfy_quant_tensor_count": 280,
+      "architecture": "wan",
+      "protected_pattern_count": 5
+    },
+    {
+      "path": "diffusion_models/Wan 2.2/DaSiWa_Wan22_I2V_14B_SnatchKiss_v11_LOW_fp8_mixed.safetensors",
+      "category": "diffusion_models",
+      "bytes": 19457051552,
+      "header_bytes": 366896,
+      "tensor_count": 1655,
+      "canonical_header_sha256": "ea88bc43272078cda1caabdf92eabbd9137c8773b04e166216441761fa5aeacc",
+      "dtype_tensor_counts": {
+        "F32": 282,
+        "BF16": 772,
+        "F16": 41,
+        "F8_E4M3": 280,
+        "U8": 280
+      },
+      "stored_matrix_count_over_1024": 406,
+      "stored_k_row_aligned_matrix_count": 406,
+      "stored_k_row_unaligned_examples": [],
+      "has_raw_byte_tensors": true,
+      "comfy_quant_tensor_count": 280,
+      "architecture": "wan",
+      "protected_pattern_count": 5
+    },
+    {
+      "path": "diffusion_models/Z-Image Base/juggernautZ_v10ByRundiffusion.safetensors",
+      "category": "diffusion_models",
+      "bytes": 12309866400,
+      "header_bytes": 48920,
+      "tensor_count": 453,
+      "canonical_header_sha256": "8f06af53b997cf5ea3babe210989f7b1a5593c94ee6cee214098615a5859a02c",
+      "dtype_tensor_counts": {
+        "BF16": 453
+      },
+      "stored_matrix_count_over_1024": 208,
+      "stored_k_row_aligned_matrix_count": 207,
+      "stored_k_row_unaligned_examples": [
+        "x_embedder.weight"
+      ],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "lumina2",
+      "protected_pattern_count": 10
+    },
+    {
+      "path": "diffusion_models/Z-Image Base/nsgirlZImage_002.safetensors",
+      "category": "diffusion_models",
+      "bytes": 12309866400,
+      "header_bytes": 48920,
+      "tensor_count": 453,
+      "canonical_header_sha256": "8f06af53b997cf5ea3babe210989f7b1a5593c94ee6cee214098615a5859a02c",
+      "dtype_tensor_counts": {
+        "BF16": 453
+      },
+      "stored_matrix_count_over_1024": 208,
+      "stored_k_row_aligned_matrix_count": 207,
+      "stored_k_row_unaligned_examples": [
+        "x_embedder.weight"
+      ],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "lumina2",
+      "protected_pattern_count": 10
+    },
+    {
+      "path": "diffusion_models/Z-Image Base/zImageBase.safetensors",
+      "category": "diffusion_models",
+      "bytes": 12309866400,
+      "header_bytes": 48920,
+      "tensor_count": 453,
+      "canonical_header_sha256": "8f06af53b997cf5ea3babe210989f7b1a5593c94ee6cee214098615a5859a02c",
+      "dtype_tensor_counts": {
+        "BF16": 453
+      },
+      "stored_matrix_count_over_1024": 208,
+      "stored_k_row_aligned_matrix_count": 207,
+      "stored_k_row_unaligned_examples": [
+        "x_embedder.weight"
+      ],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "lumina2",
+      "protected_pattern_count": 10
+    },
+    {
+      "path": "diffusion_models/Z-Image Turbo/jibMixZIT_v10.safetensors",
+      "category": "diffusion_models",
+      "bytes": 6154976328,
+      "header_bytes": 63744,
+      "tensor_count": 454,
+      "canonical_header_sha256": "017c493aef395a32edc745c65d4dc8b2c8a1fe35a985d44cb800a476fc91ded3",
+      "dtype_tensor_counts": {
+        "F8_E5M2": 454
+      },
+      "stored_matrix_count_over_1024": 208,
+      "stored_k_row_aligned_matrix_count": 207,
+      "stored_k_row_unaligned_examples": [
+        "model.diffusion_model.x_embedder.weight"
+      ],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "lumina2",
+      "protected_pattern_count": 10
+    },
+    {
+      "path": "diffusion_models/Z-Image Turbo/jibMixZIT_v20.safetensors",
+      "category": "diffusion_models",
+      "bytes": 12309889008,
+      "header_bytes": 71528,
+      "tensor_count": 453,
+      "canonical_header_sha256": "0379afaecea7ff4ac8199fd7dea1dafc9dad7a94356bca29a9cff1038e00550b",
+      "dtype_tensor_counts": {
+        "BF16": 453
+      },
+      "stored_matrix_count_over_1024": 208,
+      "stored_k_row_aligned_matrix_count": 207,
+      "stored_k_row_unaligned_examples": [
+        "model.diffusion_model.x_embedder.weight"
+      ],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "lumina2",
+      "protected_pattern_count": 10
+    },
+    {
+      "path": "diffusion_models/Z-Image Turbo/z_image_turbo_bf16.safetensors",
+      "category": "diffusion_models",
+      "bytes": 12309866400,
+      "header_bytes": 48920,
+      "tensor_count": 453,
+      "canonical_header_sha256": "8f06af53b997cf5ea3babe210989f7b1a5593c94ee6cee214098615a5859a02c",
+      "dtype_tensor_counts": {
+        "BF16": 453
+      },
+      "stored_matrix_count_over_1024": 208,
+      "stored_k_row_aligned_matrix_count": 207,
+      "stored_k_row_unaligned_examples": [
+        "x_embedder.weight"
+      ],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "lumina2",
+      "protected_pattern_count": 10
+    },
+    {
+      "path": "diffusion_models/Z-Image Turbo/zImageturboVISIONARY_zitBf16V02.safetensors",
+      "category": "diffusion_models",
+      "bytes": 12309886168,
+      "header_bytes": 61008,
+      "tensor_count": 454,
+      "canonical_header_sha256": "245c98529e48259a41db7120750b86096915d9026a2d6c63819bd2d622435e24",
+      "dtype_tensor_counts": {
+        "F16": 454
+      },
+      "stored_matrix_count_over_1024": 208,
+      "stored_k_row_aligned_matrix_count": 207,
+      "stored_k_row_unaligned_examples": [
+        "model.diffusion_model.x_embedder.weight"
+      ],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "lumina2",
+      "protected_pattern_count": 10
+    },
+    {
+      "path": "text_encoders/Flux.2 Dev/mistral_3_small_flux2_nvfp4_mixed.safetensors",
+      "category": "text_encoders",
+      "bytes": 10740492999,
+      "header_bytes": 98976,
+      "tensor_count": 692,
+      "canonical_header_sha256": "5e402d2f2b68d811b6ade1cbbf4c9c81713c078da47542cb161bfa0a8612e4d4",
+      "dtype_tensor_counts": {
+        "F32": 210,
+        "BF16": 60,
+        "F16": 1,
+        "F8_E4M3": 210,
+        "U8": 211
+      },
+      "stored_matrix_count_over_1024": 211,
+      "stored_k_row_aligned_matrix_count": 211,
+      "stored_k_row_unaligned_examples": [],
+      "has_raw_byte_tensors": true,
+      "comfy_quant_tensor_count": 0,
+      "family": null
+    },
+    {
+      "path": "text_encoders/Flux.2 klein 9b/qwen3-8b-heretic_fp8_e4m3fn.safetensors",
+      "category": "text_encoders",
+      "bytes": 9435845548,
+      "header_bytes": 126368,
+      "tensor_count": 903,
+      "canonical_header_sha256": "a4b3d94f49c69eaf207b5ca7a8c9434394ad3b67461c02d56e5723978c9ba32a",
+      "dtype_tensor_counts": {
+        "F32": 252,
+        "BF16": 147,
+        "F8_E4M3": 252,
+        "U8": 252
+      },
+      "stored_matrix_count_over_1024": 254,
+      "stored_k_row_aligned_matrix_count": 254,
+      "stored_k_row_unaligned_examples": [],
+      "has_raw_byte_tensors": true,
+      "comfy_quant_tensor_count": 252,
+      "family": "qwen3-8b"
+    },
+    {
+      "path": "text_encoders/Flux.2 klein 9b/Qwen3-8b-vanilla.safetensors",
+      "category": "text_encoders",
+      "bytes": 16381517176,
+      "header_bytes": 46448,
+      "tensor_count": 399,
+      "canonical_header_sha256": "7d500c699455d241c83d5e83f1476eb0c311eaed15c6c25bcdaee90b98dba185",
+      "dtype_tensor_counts": {
+        "BF16": 399
+      },
+      "stored_matrix_count_over_1024": 254,
+      "stored_k_row_aligned_matrix_count": 254,
+      "stored_k_row_unaligned_examples": [],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "family": "qwen3-8b"
+    },
+    {
+      "path": "text_encoders/HiDream/clip_g_hidream.safetensors",
+      "category": "text_encoders",
+      "bytes": 1389743104,
+      "header_bytes": 62456,
+      "tensor_count": 517,
+      "canonical_header_sha256": "9e1d8258be78c82255e3d37b982808b0411ce4b56d27f9f0e63f688c3ea4b896",
+      "dtype_tensor_counts": {
+        "F16": 517
+      },
+      "stored_matrix_count_over_1024": 195,
+      "stored_k_row_aligned_matrix_count": 195,
+      "stored_k_row_unaligned_examples": [],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "family": "clip-bigg"
+    },
+    {
+      "path": "text_encoders/HiDream/clip_l_hidream.safetensors",
+      "category": "text_encoders",
+      "bytes": 247586528,
+      "header_bytes": 23256,
+      "tensor_count": 197,
+      "canonical_header_sha256": "0fcc2ae8f2ec519acd0b1d404b763094763e229fbc58f623977256fc292a65b4",
+      "dtype_tensor_counts": {
+        "F16": 197
+      },
+      "stored_matrix_count_over_1024": 75,
+      "stored_k_row_aligned_matrix_count": 75,
+      "stored_k_row_unaligned_examples": [],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "family": "clip-l"
+    },
+    {
+      "path": "text_encoders/Krea 2/Huihui-Qwen3-4b-VL.safetensors",
+      "category": "text_encoders",
+      "bytes": 8875719384,
+      "header_bytes": 87760,
+      "tensor_count": 713,
+      "canonical_header_sha256": "573dc42b124e3d268f69df0e74a389f81e58ffc54093315dccccfef43be034f2",
+      "dtype_tensor_counts": {
+        "BF16": 713
+      },
+      "stored_matrix_count_over_1024": 358,
+      "stored_k_row_aligned_matrix_count": 358,
+      "stored_k_row_unaligned_examples": [],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "detection_error": "Unsupported Qwen3-VL-4B vision-language text encoder detected: this is not the text-only qwen3-4b family, and Krea 2's text encoder is not wired for quantization yet."
+    },
+    {
+      "path": "text_encoders/Qwen Image 2.1/qwen3vl_8b_w4a8.safetensors",
+      "category": "text_encoders",
+      "bytes": 6312105364,
+      "header_bytes": 200832,
+      "tensor_count": 1762,
+      "canonical_header_sha256": "16342ae89a5a485f184c8be48fd99db08c5eda904a321ea8b68c4a1e923ba49a",
+      "dtype_tensor_counts": {
+        "F32": 506,
+        "BF16": 496,
+        "F8_E4M3": 252,
+        "I8": 254,
+        "U8": 254
+      },
+      "stored_matrix_count_over_1024": 371,
+      "stored_k_row_aligned_matrix_count": 262,
+      "stored_k_row_unaligned_examples": [
+        "model.visual.blocks.0.attn.proj.weight",
+        "model.visual.blocks.0.attn.qkv.weight",
+        "model.visual.blocks.0.mlp.linear_fc1.weight",
+        "model.visual.blocks.0.mlp.linear_fc2.weight",
+        "model.visual.blocks.1.attn.proj.weight",
+        "model.visual.blocks.1.attn.qkv.weight",
+        "model.visual.blocks.1.mlp.linear_fc1.weight",
+        "model.visual.blocks.1.mlp.linear_fc2.weight",
+        "model.visual.blocks.10.attn.proj.weight",
+        "model.visual.blocks.10.attn.qkv.weight",
+        "model.visual.blocks.10.mlp.linear_fc1.weight",
+        "model.visual.blocks.10.mlp.linear_fc2.weight"
+      ],
+      "has_raw_byte_tensors": true,
+      "comfy_quant_tensor_count": 254,
+      "family": "qwen3-8b"
+    },
+    {
+      "path": "text_encoders/Qwen Image Edit 2511/qwen2.5_vl_7b_huihui_abliterated_fp8.safetensors",
+      "category": "text_encoders",
+      "bytes": 9386369832,
+      "header_bytes": 155016,
+      "tensor_count": 1087,
+      "canonical_header_sha256": "b43077f97df65d5ab53e9b3f0609f92aaad5044d110ee08ef7b9748544bea772",
+      "dtype_tensor_counts": {
+        "F32": 726,
+        "F16": 3,
+        "F8_E4M3": 358
+      },
+      "stored_matrix_count_over_1024": 360,
+      "stored_k_row_aligned_matrix_count": 328,
+      "stored_k_row_unaligned_examples": [
+        "visual.blocks.0.mlp.down_proj.weight",
+        "visual.blocks.1.mlp.down_proj.weight",
+        "visual.blocks.10.mlp.down_proj.weight",
+        "visual.blocks.11.mlp.down_proj.weight",
+        "visual.blocks.12.mlp.down_proj.weight",
+        "visual.blocks.13.mlp.down_proj.weight",
+        "visual.blocks.14.mlp.down_proj.weight",
+        "visual.blocks.15.mlp.down_proj.weight",
+        "visual.blocks.16.mlp.down_proj.weight",
+        "visual.blocks.17.mlp.down_proj.weight",
+        "visual.blocks.18.mlp.down_proj.weight",
+        "visual.blocks.19.mlp.down_proj.weight"
+      ],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "family": "qwen2.5-vl-7b"
+    },
+    {
+      "path": "text_encoders/Wan 2.2/umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "category": "text_encoders",
+      "bytes": 6735906897,
+      "header_bytes": 48848,
+      "tensor_count": 412,
+      "canonical_header_sha256": "4e3fa720eac1408dc0c234f861d0aace354423cce42d13b1cf5839465402d804",
+      "dtype_tensor_counts": {
+        "F32": 168,
+        "F16": 74,
+        "F8_E4M3": 169,
+        "U8": 1
+      },
+      "stored_matrix_count_over_1024": 193,
+      "stored_k_row_aligned_matrix_count": 169,
+      "stored_k_row_unaligned_examples": [
+        "encoder.block.0.layer.0.SelfAttention.relative_attention_bias.weight",
+        "encoder.block.1.layer.0.SelfAttention.relative_attention_bias.weight",
+        "encoder.block.10.layer.0.SelfAttention.relative_attention_bias.weight",
+        "encoder.block.11.layer.0.SelfAttention.relative_attention_bias.weight",
+        "encoder.block.12.layer.0.SelfAttention.relative_attention_bias.weight",
+        "encoder.block.13.layer.0.SelfAttention.relative_attention_bias.weight",
+        "encoder.block.14.layer.0.SelfAttention.relative_attention_bias.weight",
+        "encoder.block.15.layer.0.SelfAttention.relative_attention_bias.weight",
+        "encoder.block.16.layer.0.SelfAttention.relative_attention_bias.weight",
+        "encoder.block.17.layer.0.SelfAttention.relative_attention_bias.weight",
+        "encoder.block.18.layer.0.SelfAttention.relative_attention_bias.weight",
+        "encoder.block.19.layer.0.SelfAttention.relative_attention_bias.weight"
+      ],
+      "has_raw_byte_tensors": true,
+      "comfy_quant_tensor_count": 0,
+      "family": "umt5-xxl"
+    },
+    {
+      "path": "text_encoders/Z-Image/BennyDaBall-Qwen3-4b-Engineer-V6.safetensors",
+      "category": "text_encoders",
+      "bytes": 8044981648,
+      "header_bytes": 45448,
+      "tensor_count": 398,
+      "canonical_header_sha256": "a789f0aa079d44a87d6d30d76ff6ead4003c830bf127e0eb1c78213ce32dbc5e",
+      "dtype_tensor_counts": {
+        "F16": 398
+      },
+      "stored_matrix_count_over_1024": 253,
+      "stored_k_row_aligned_matrix_count": 253,
+      "stored_k_row_unaligned_examples": [],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "family": "qwen3-4b"
+    },
+    {
+      "path": "text_encoders/Z-Image/Huihui-Qwen3-4B-abliterated-v2.safetensors",
+      "category": "text_encoders",
+      "bytes": 8044982048,
+      "header_bytes": 45848,
+      "tensor_count": 398,
+      "canonical_header_sha256": "c9a3adb952a818967ae3e1270b021184e45cd66f14f180a64b674a6c121cf837",
+      "dtype_tensor_counts": {
+        "BF16": 398
+      },
+      "stored_matrix_count_over_1024": 253,
+      "stored_k_row_aligned_matrix_count": 253,
+      "stored_k_row_unaligned_examples": [],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "family": "qwen3-4b"
+    },
+    {
+      "path": "text_encoders/Z-Image/Josiefied-Qwen3-4B-abliterated-v1.safetensors",
+      "category": "text_encoders",
+      "bytes": 8044982048,
+      "header_bytes": 45848,
+      "tensor_count": 398,
+      "canonical_header_sha256": "c9a3adb952a818967ae3e1270b021184e45cd66f14f180a64b674a6c121cf837",
+      "dtype_tensor_counts": {
+        "BF16": 398
+      },
+      "stored_matrix_count_over_1024": 253,
+      "stored_k_row_aligned_matrix_count": 253,
+      "stored_k_row_unaligned_examples": [],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "family": "qwen3-4b"
+    },
+    {
+      "path": "text_encoders/Z-Image/Lockout-Qwen3-4b-heretic-v2.safetensors",
+      "category": "text_encoders",
+      "bytes": 8044982048,
+      "header_bytes": 45848,
+      "tensor_count": 398,
+      "canonical_header_sha256": "c9a3adb952a818967ae3e1270b021184e45cd66f14f180a64b674a6c121cf837",
+      "dtype_tensor_counts": {
+        "BF16": 398
+      },
+      "stored_matrix_count_over_1024": 253,
+      "stored_k_row_aligned_matrix_count": 253,
+      "stored_k_row_unaligned_examples": [],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "family": "qwen3-4b"
+    },
+    {
+      "path": "text_encoders/Z-Image/Vanilla-Qwen3-4b.safetensors",
+      "category": "text_encoders",
+      "bytes": 8044982048,
+      "header_bytes": 45848,
+      "tensor_count": 398,
+      "canonical_header_sha256": "c9a3adb952a818967ae3e1270b021184e45cd66f14f180a64b674a6c121cf837",
+      "dtype_tensor_counts": {
+        "BF16": 398
+      },
+      "stored_matrix_count_over_1024": 253,
+      "stored_k_row_aligned_matrix_count": 253,
+      "stored_k_row_unaligned_examples": [],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "family": "qwen3-4b"
+    },
+    {
+      "path": "checkpoints/SDXL 1.0/artaix_v30.safetensors",
+      "category": "checkpoints",
+      "bytes": 6938040706,
+      "header_bytes": 364808,
+      "tensor_count": 2515,
+      "canonical_header_sha256": "f07e16fd4797b50a8fd235d7362fca0afa0b9be3bdf7d8389d4e2344b747950a",
+      "dtype_tensor_counts": {
+        "F16": 2515
+      },
+      "stored_matrix_count_over_1024": 914,
+      "stored_k_row_aligned_matrix_count": 833,
+      "stored_k_row_unaligned_examples": [
+        "model.diffusion_model.input_blocks.4.1.proj_in.weight",
+        "model.diffusion_model.input_blocks.4.1.proj_out.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_k.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_out.0.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_q.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_v.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn2.to_out.0.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn2.to_q.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.ff.net.0.proj.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.1.attn1.to_k.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.1.attn1.to_out.0.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.1.attn1.to_q.weight"
+      ],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "sdxl",
+      "protected_pattern_count": 0
+    },
+    {
+      "path": "checkpoints/SDXL 1.0/jibMixRealisticXL_v180SkinSupreme.safetensors",
+      "category": "checkpoints",
+      "bytes": 6938070306,
+      "header_bytes": 393944,
+      "tensor_count": 2515,
+      "canonical_header_sha256": "732734a86358594c735bf184f0210aee983f37b857a1bf7099a300fc0c38f333",
+      "dtype_tensor_counts": {
+        "I64": 1,
+        "F32": 1,
+        "BF16": 248,
+        "F16": 2265
+      },
+      "stored_matrix_count_over_1024": 914,
+      "stored_k_row_aligned_matrix_count": 833,
+      "stored_k_row_unaligned_examples": [
+        "model.diffusion_model.input_blocks.4.1.proj_in.weight",
+        "model.diffusion_model.input_blocks.4.1.proj_out.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_k.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_out.0.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_q.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_v.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn2.to_out.0.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn2.to_q.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.ff.net.0.proj.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.1.attn1.to_k.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.1.attn1.to_out.0.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.1.attn1.to_q.weight"
+      ],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "sdxl",
+      "protected_pattern_count": 0
+    },
+    {
+      "path": "checkpoints/SDXL 1.0/latexverse_sdxl.safetensors",
+      "category": "checkpoints",
+      "bytes": 6938040576,
+      "header_bytes": 364680,
+      "tensor_count": 2514,
+      "canonical_header_sha256": "85525b17c3fe9a6b523897d9c3b34cd82e7c911af7991b2f8127c43558eb6cab",
+      "dtype_tensor_counts": {
+        "F16": 2514
+      },
+      "stored_matrix_count_over_1024": 914,
+      "stored_k_row_aligned_matrix_count": 833,
+      "stored_k_row_unaligned_examples": [
+        "model.diffusion_model.input_blocks.4.1.proj_in.weight",
+        "model.diffusion_model.input_blocks.4.1.proj_out.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_k.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_out.0.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_q.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_v.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn2.to_out.0.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn2.to_q.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.ff.net.0.proj.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.1.attn1.to_k.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.1.attn1.to_out.0.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.1.attn1.to_q.weight"
+      ],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "sdxl",
+      "protected_pattern_count": 0
+    },
+    {
+      "path": "checkpoints/SDXL 1.0/realvisxlV50_v50LightningBakedvae.safetensors",
+      "category": "checkpoints",
+      "bytes": 6938065512,
+      "header_bytes": 365768,
+      "tensor_count": 2526,
+      "canonical_header_sha256": "3587db4de5cb6376bac6582f7823f05946fc826a83f35525bdc1e8133e8a77da",
+      "dtype_tensor_counts": {
+        "F16": 2526
+      },
+      "stored_matrix_count_over_1024": 914,
+      "stored_k_row_aligned_matrix_count": 833,
+      "stored_k_row_unaligned_examples": [
+        "model.diffusion_model.input_blocks.4.1.proj_in.weight",
+        "model.diffusion_model.input_blocks.4.1.proj_out.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_k.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_out.0.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_q.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_v.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn2.to_out.0.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn2.to_q.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.ff.net.0.proj.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.1.attn1.to_k.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.1.attn1.to_out.0.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.1.attn1.to_q.weight"
+      ],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "sdxl",
+      "protected_pattern_count": 0
+    },
+    {
+      "path": "checkpoints/SDXL 1.0/sdxlNijiSeven.safetensors",
+      "category": "checkpoints",
+      "bytes": 7140771858,
+      "header_bytes": 404936,
+      "tensor_count": 2515,
+      "canonical_header_sha256": "33364a41bb88a76495115c4682bcfa02345568d8fa391984efffa4e53b19542c",
+      "dtype_tensor_counts": {
+        "I64": 1,
+        "F32": 5,
+        "BF16": 248,
+        "F16": 2261
+      },
+      "stored_matrix_count_over_1024": 914,
+      "stored_k_row_aligned_matrix_count": 833,
+      "stored_k_row_unaligned_examples": [
+        "model.diffusion_model.input_blocks.4.1.proj_in.weight",
+        "model.diffusion_model.input_blocks.4.1.proj_out.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_k.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_out.0.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_q.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_v.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn2.to_out.0.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn2.to_q.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.ff.net.0.proj.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.1.attn1.to_k.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.1.attn1.to_out.0.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.1.attn1.to_q.weight"
+      ],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "sdxl",
+      "protected_pattern_count": 0
+    },
+    {
+      "path": "checkpoints/SDXL 1.0/wildcardxXLFusion_fusionOG.safetensors",
+      "category": "checkpoints",
+      "bytes": 7105370872,
+      "header_bytes": 387248,
+      "tensor_count": 2515,
+      "canonical_header_sha256": "74a138f8a438806278264fed07fdb9c967f7c2097c107bd457b6d38e6991ac1d",
+      "dtype_tensor_counts": {
+        "F32": 248,
+        "F16": 2267
+      },
+      "stored_matrix_count_over_1024": 914,
+      "stored_k_row_aligned_matrix_count": 833,
+      "stored_k_row_unaligned_examples": [
+        "model.diffusion_model.input_blocks.4.1.proj_in.weight",
+        "model.diffusion_model.input_blocks.4.1.proj_out.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_k.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_out.0.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_q.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn1.to_v.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn2.to_out.0.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.attn2.to_q.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.0.ff.net.0.proj.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.1.attn1.to_k.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.1.attn1.to_out.0.weight",
+        "model.diffusion_model.input_blocks.4.1.transformer_blocks.1.attn1.to_q.weight"
+      ],
+      "has_raw_byte_tensors": false,
+      "comfy_quant_tensor_count": 0,
+      "architecture": "sdxl",
+      "protected_pattern_count": 0
+    }
+  ]
+}

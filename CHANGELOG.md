@@ -6,6 +6,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: A research-only shared NumPy Q6_K encoder ported from frozen GGML reference
+  math. Preserve exact bytes across 166 inputs and all three native references,
+  including 21 read-only slices from seven installed floating-point model
+  families. Add numerical/input guards and golden-byte regression coverage;
+  production conversion and preset policies are unchanged.
+
+- Add: Native model/preset policy probes with 84 small GGUF conversions and
+  2,502 tensor decisions, including order sensitivity, shape fallback and T5
+  mixed-policy differences. Add a header-only inventory of 41 installed models
+  and guarded standalone City96 patch application for nested build directories.
+
 - Add: Reproducible offline native CPU reference probes for three frozen llama.cpp
   sources, including Q2_K/Q3_K. Preserve 360 comparison cases and build provenance;
   all 95 valid probes per source produce identical bytes. Confirm Molbal's affine

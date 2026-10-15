@@ -99,3 +99,5 @@ These research probes do not complete production offline dependency packaging.
 
 Next: add model/preset decision vectors and design a shared encoder against the
 native baseline. Preserve the working production routes until those gates pass.
+The [policy follow-up](converter-policy-comparison.md) now provides the initial
+decision-vector evidence; it does not establish full-model parity.

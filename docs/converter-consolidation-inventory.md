@@ -7,6 +7,10 @@ resolution and initial small encoder probes were added on 2026-10-15; see
 [native block comparison](converter-native-reference-comparison.md) found identical
 bytes across all three llama.cpp refs for 95 valid probes each. Complete converter
 parity, backend replacement and hardware optimization remain open.
+The subsequent [policy probes](converter-policy-comparison.md) record 84 real
+quantizer executions on schematic inputs and 41 installed-model header summaries.
+The first [shared Q6_K math pilot](shared-q6-pilot.md) matches the three native
+references on 166 inputs; it remains separate from production dispatch.
 
 ## Objective and boundaries
 

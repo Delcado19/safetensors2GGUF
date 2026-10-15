@@ -25,6 +25,10 @@ and cancellation is included for all conversion pipelines.
 The planned shared conversion core is documented in the
 [unified converter source inventory](docs/converter-consolidation-inventory.md).
 It is research work; current conversion backends remain active.
+See the [policy comparison](docs/converter-policy-comparison.md) for measured
+tensor-selection differences and the installed-model header audit.
+The first [shared Q6_K mathematical pilot](docs/shared-q6-pilot.md) now reproduces
+the native reference bytes on synthetic vectors and small installed-weight slices.
 
 ## Supported Architectures
 

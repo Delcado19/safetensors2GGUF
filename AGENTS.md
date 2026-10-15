@@ -32,6 +32,21 @@ across b3962 and both frozen text refs. Read
 `docs/converter-native-reference-comparison.md`. Full model/policy parity and
 Linux native execution remain open; production dispatch is unchanged.
 
+Policy follow-up (2026-10-15): read `docs/converter-policy-comparison.md`.
+84 schematic native CLI conversions record tensor-order sensitivity, image
+fallbacks and T5 mixed-policy differences; 41 installed safetensors headers were
+audited without loading weights. The user designated
+`G:\ComfyUI-Easy-Install\ComfyUI\models` as local sources and `I:\` for test model
+conversion artifacts. Recheck free space before large runs; preserve originals.
+Full-model conversion/render fidelity and Linux native execution remain open.
+
+Shared-math pilot (2026-10-15): read `docs/shared-q6-pilot.md`. A research-only
+NumPy Q6_K encoder matches all three frozen native references on 166 inputs
+(498 byte comparisons), including 21 small weight slices from seven installed
+floating-point families. It is not connected to production dispatch. Bounded
+chunking, extreme-range policy, other encoders and full-model integration remain
+open; preserve separate model/preset rules and the implementation-language choice.
+
 Recorded roadmap (the final consolidation strategy remains open):
 - First provide one application with a shared format registry, model checks,
   precision protection, progress/cancellation and safe output handling.
