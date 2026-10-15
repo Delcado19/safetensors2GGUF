@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Bounded Q6_K research encoding with incremental chunks, including strided
+  input without full tensor copies. Preserve the array API and native golden
+  bytes; verify chunk boundaries, early close and late invalid-input handling.
+  Production dispatch and full-model writing remain unchanged.
+
 - Add: A research-only shared NumPy Q6_K encoder ported from frozen GGML reference
   math. Preserve exact bytes across 166 inputs and all three native references,
   including 21 read-only slices from seven installed floating-point model

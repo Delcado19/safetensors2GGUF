@@ -2,7 +2,7 @@
   "status": "Research Q6_K pilot; no model/preset dispatch or performance claim",
   "numpy": "2.4.4",
   "random_seed": 20261015,
-  "pilot_source_sha256": "a93454169d97c4c71a84752884a99fcb2c841d837c30625df51ccc7cb3a4a572",
+  "pilot_source_sha256": "f5b9eabf34c42faa1f605113aa6e857d2c29bec3ff3d0155b54b1d595f6b0b02",
   "references": [
     {
       "id": "llama-b3962",
@@ -32,6 +32,16 @@
       ],
       "input_sha256": "e5a00aa9991ac8a5ee3109844d84a55583bd20572ad3ffcd42792f3c36b183ad",
       "payload_sha256": "de1da8f3791deb5ea5a11c9a67179b1e240aa14979524a3cc28add0e3612c0fe",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0,
       "references": [
         {
@@ -62,6 +72,16 @@
       ],
       "input_sha256": "a89e0a67ce8466e2f70e3d022978d0e520804d7d30ffcefcd93f4825af344740",
       "payload_sha256": "2b6654f8e945ca492a0cf2b14aacb996928f398174a38b172ef22cbaac4022e9",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0,
       "references": [
         {
@@ -92,6 +112,16 @@
       ],
       "input_sha256": "cb3d70534bdcf2d55a8784c63a2a30cc2a3a379a6a5fa1f361e24ad922992e66",
       "payload_sha256": "bc78a1475814ebc4f90bebce5d6e84e5479f0ab4eb82c5ef2c7c6b8f65fc6cfd",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0,
       "references": [
         {
@@ -122,6 +152,16 @@
       ],
       "input_sha256": "f6822562b76d317415204551de2fa6f3c1601c1407d12017945b3fa7548d2f99",
       "payload_sha256": "963bb22e07510414f2a533194e495ef3f48266beec8e90a82142f88f1957db5b",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.010492389526599482,
       "references": [
         {
@@ -152,6 +192,16 @@
       ],
       "input_sha256": "5172a74f436920ac0c6f0a42916c66d50b37e07285e23d86f7fe423bdbe525d6",
       "payload_sha256": "c3d43972cd45f41fb769bfae48bf9d8ac94c20ce9381715c804b95f0fa12639f",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0,
       "references": [
         {
@@ -182,6 +232,16 @@
       ],
       "input_sha256": "0f277d72b645c8740c6ed3de0c33d37152f73daa370ac8266ff5c20bea8ecac3",
       "payload_sha256": "46ae3ecf2a89a1348ffc2669d1bd423eeb53e40bcbf0a7c264a8a7ac38719412",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00971740840883464,
       "references": [
         {
@@ -212,6 +272,16 @@
       ],
       "input_sha256": "f8fbcb0e3521ae62c9c8a02fc07501efea14ffd5796b52a542379256223903e1",
       "payload_sha256": "acfe49e0c4116c67dcb86d1f877e40a3ab8ccca4f4dde2263441b8f1b1653176",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.009606458070367582,
       "references": [
         {
@@ -242,6 +312,16 @@
       ],
       "input_sha256": "f4a3dc310d01d87f7c19fa3aa93588956f14ee27dafa432c6b35f9f60f9f26a8",
       "payload_sha256": "46a7b9d04bd40b777880cac39213abbb31b100b5a25e585d9e5a0b0853233fc7",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.011311528775374358,
       "references": [
         {
@@ -272,6 +352,16 @@
       ],
       "input_sha256": "21729b1385e353dcc33ba5764ca37433dea819933d7a4094aadce58c3e300c53",
       "payload_sha256": "680bc0cf31eac1f0a78eebe0eacfef148b8d8c040218b407b93d6f0181cf9c8b",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.01048519913870677,
       "references": [
         {
@@ -302,6 +392,16 @@
       ],
       "input_sha256": "d65d816a807c6db84565352690873be9e372369ddce1a1f4c89a00bbc2c628df",
       "payload_sha256": "129b66543c0adf32e66a8c0a11d9fa4de08c24b5fd16ada6375dba4d4f9d9fd8",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 9.999999974752427e-07,
       "references": [
         {
@@ -332,6 +432,16 @@
       ],
       "input_sha256": "e20a4daf2e7bee7b0a1e04ce9ad1df722594fed083581c0b0c8904bf80b054ee",
       "payload_sha256": "9e33403d6e41598a790d339e0efdb72ed9b1700e04655543a888a30a50c9f517",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 1.0000000168623835e-16,
       "references": [
         {
@@ -362,6 +472,16 @@
       ],
       "input_sha256": "f32da64de7e0e79c8b13fecaf928925a93c120fa32d11caeca29855a8fb83f8d",
       "payload_sha256": "9e33403d6e41598a790d339e0efdb72ed9b1700e04655543a888a30a50c9f517",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 1.0000000036274937e-15,
       "references": [
         {
@@ -392,6 +512,16 @@
       ],
       "input_sha256": "5b77168e27b5f5612545b0f14adc6abcedce04c1e7d006996b5e79d314cc2ffe",
       "payload_sha256": "18550c662e8c75cb38c8a4951c5856496ca33daf4f63be2d505fa266d7d90db7",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00784295820518018,
       "references": [
         {
@@ -422,6 +552,16 @@
       ],
       "input_sha256": "5b4c0969f26c8ce4d3078faff96f2d8030d4a8458019a733c03baf5ac1b47c82",
       "payload_sha256": "34f9f4c89e95f99948b48d1552e3ca71f2b65e8a531f60f4fd5ca37a5434548f",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00784295820518018,
       "references": [
         {
@@ -452,6 +592,16 @@
       ],
       "input_sha256": "50989cc276e170fbe7fac9c6b7534a99da6942a03fcd0b6112abc8542fd5257a",
       "payload_sha256": "268e9cbbd4af2ca3255de1f00977e71ecacfdb7e03e35436e4d17e184468dfc4",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.008202686936264558,
       "references": [
         {
@@ -482,6 +632,16 @@
       ],
       "input_sha256": "53338d57e2fe48168528a5f6f3a3901f91ae3514c66d6a5b01070047b5162460",
       "payload_sha256": "63c9d969efa9eaba02ab1fe3917a2e7e892d79e242d2e7a87ae88a2193b939ba",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.01671576731247891,
       "references": [
         {
@@ -513,6 +673,16 @@
       ],
       "input_sha256": "784c5501c96ae024877383814f771587e6f03389b55e665f32b6ac34adc0f648",
       "payload_sha256": "1a203555beb1395048e5c9028857f29f7706d63d632288d516ac0793c2b588ad",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.017884941946103915,
       "references": [
         {
@@ -543,6 +713,16 @@
       ],
       "input_sha256": "696cfb53a279c76191bc3d7d26464aacedfe2f0207c2376cd909fc7fcf657eec",
       "payload_sha256": "ff5f3c40c89ec5f3a911ef29b06dcf5839639a24d9b0d9e979a470e67cd604ce",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.16355146856765357,
       "references": [
         {
@@ -573,6 +753,16 @@
       ],
       "input_sha256": "9cc3e094bb457f27ea444b8c2e9035aa49fe17996c9452744c1ba84147a05ff8",
       "payload_sha256": "e601088633b7f16a149a4bdd9c66feb58d9d52cb6a8adbfd64529e67bc478916",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 46.74975981921373,
       "references": [
         {
@@ -603,6 +793,16 @@
       ],
       "input_sha256": "33958183c366f4cad57edd956e70eeaab379263a7ddfd4fed62dfa973e7f48c0",
       "payload_sha256": "14282e5315d12f932eda691b0a234f5da062cc6e445d6f037c9ed2c3855c0e36",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0013537987766671072,
       "references": [
         {
@@ -633,6 +833,16 @@
       ],
       "input_sha256": "47e52bc4ca7fa802bcd873d739bde1303af65c549717fe02d5cb62c1ae41a649",
       "payload_sha256": "48bf70b8ff7ff8ce82db3db134c7cd2f132c1d2eb3d541157235c3e3ff914eb8",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0019704386203279276,
       "references": [
         {
@@ -663,6 +873,16 @@
       ],
       "input_sha256": "9d184d64d457a1000ff814e502bcc292406575a8300b5ee068775c991a8471b1",
       "payload_sha256": "be6eeb41ec91502a33b1e2656081edb877a627e0e1892956dec9557b600b56c5",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 3.205945082187534e-06,
       "references": [
         {
@@ -693,6 +913,16 @@
       ],
       "input_sha256": "60b84684704b1ac9c98b69feb1c1171ace60b0b0346724707057abe28b68a1bd",
       "payload_sha256": "84caa4d3de11cefd55abc7c94ec3e356a2e815a95a4094904e91601f39bc4626",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00021155169379113693,
       "references": [
         {
@@ -723,6 +953,16 @@
       ],
       "input_sha256": "41e1b143df5b7040f3ada0ba47bb275a1d4f8ee689b6ad998fa389447b0b234a",
       "payload_sha256": "a57fa643d1653ef60c93c5905a51f643c2df3cd89643a373b0185e21ab814ced",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 1.0677189165788637e-05,
       "references": [
         {
@@ -753,6 +993,16 @@
       ],
       "input_sha256": "10fd2f93cce54beaad582dcd30bc0d4ad71fe893b6889cef642fe0fe6d781d60",
       "payload_sha256": "329679a966c1a60e4096a6a253f75214103dbf9cdfa6d19657cb64136376f02c",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.007580888664414721,
       "references": [
         {
@@ -783,6 +1033,16 @@
       ],
       "input_sha256": "68c2d74bff09810651929235dd3be3aed19a97ac9ff7c8dc32f4c09b184095c0",
       "payload_sha256": "176323ad709e2ad0fbe3b0709c71bffbc63d09ee8fdb2086516d5399f1f7420c",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 1.454992160339861e-05,
       "references": [
         {
@@ -813,6 +1073,16 @@
       ],
       "input_sha256": "6bee12612dd7006de34014dbee4edf11522bed664e1cd3bcf56fd9f9a5573e34",
       "payload_sha256": "29dafd9ea5cbf3389cca9d5f8045cd44931ebf1eafb812da071ac6383bf002d4",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 1.7415817231872324,
       "references": [
         {
@@ -843,6 +1113,16 @@
       ],
       "input_sha256": "484beb76b0a5f8f6cdcb677c0bdae28dcc70781a81fdd9078da1ebd2c7e74c43",
       "payload_sha256": "8ef187bd31c019f282f1075490ccf78ad0dc786114273539e28b0c77da394d22",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 4.1378372688998,
       "references": [
         {
@@ -873,6 +1153,16 @@
       ],
       "input_sha256": "03cb46b3c1156dcd86870be5451a0800076d6615d737e287ed75788ee54ca17c",
       "payload_sha256": "ca157a2d3a3474a9b8989a6de1270d7b1f1ac360af53ccec39b1f49598129141",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 2.213682832116588,
       "references": [
         {
@@ -903,6 +1193,16 @@
       ],
       "input_sha256": "5caaef650306e7277960576402a4cbeb968e509b18e63a25c315bf6cfe65e920",
       "payload_sha256": "a84f725037a3860e67a5f7ae5a1f62fc7c6783a65611d1fcb471368e018baa9c",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 1.282629166243404e-05,
       "references": [
         {
@@ -933,6 +1233,16 @@
       ],
       "input_sha256": "668751157205fbeae82e5ff2b58ef49734921f070e977508c978305fcd77e752",
       "payload_sha256": "d25152d291c6273d2d964912e4198f2481d71110fc93a82e44fd6e75b6bbbe99",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.000734506027283872,
       "references": [
         {
@@ -963,6 +1273,16 @@
       ],
       "input_sha256": "be31f28227a22038863b596bad93c2204542f6b53885f85b7226bfb6359f70e5",
       "payload_sha256": "3d1e448062df9ea8be599ecdbd3a5e65c6dfd9631bf44b0554e0b21250fbd63e",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0012767159626783683,
       "references": [
         {
@@ -993,6 +1313,16 @@
       ],
       "input_sha256": "30c86b8b12906db231bbc00531ba5514485631e529f6a0b4a6a81546cabad0a3",
       "payload_sha256": "08e76f36970d1109c3da5f587d0710b7e1dfcc6aab7ae156bd4340c78db981ff",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 9.82077013091201,
       "references": [
         {
@@ -1023,6 +1353,16 @@
       ],
       "input_sha256": "03e75cb6ba39be7417c9b86f2d2060b95ced20478ab46f64b7ac4be5948865f8",
       "payload_sha256": "c8fef3514610aaf21569ca741d2fa594b4be6e3c1463025e74e1ebe6dd3c35cb",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 22.118434868787674,
       "references": [
         {
@@ -1053,6 +1393,16 @@
       ],
       "input_sha256": "a96ba81727ee2371b1366fc3a19b586986d4b09d834a43c6e2f7343f516f52d1",
       "payload_sha256": "fa4bf724f537f20f872b0ad02719681d514a6f1ae4e72c1b80923d998b7e047c",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0016825061954763392,
       "references": [
         {
@@ -1083,6 +1433,16 @@
       ],
       "input_sha256": "1b0a8f516fef582669002a9bd05df273a6a572b177736c88dea3b14ecaaa83bf",
       "payload_sha256": "571b1bb93caa5b066d70e0c0c12ba1d0578f4dd7c140d9b77717da0081788f66",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 55.03728416409008,
       "references": [
         {
@@ -1113,6 +1473,16 @@
       ],
       "input_sha256": "d1d4b757a9c950a85027f661fd25830276817c2a9c98d4a08adf284b5cf283d9",
       "payload_sha256": "e9267c73820ae9acfaa9bb8441cb41cdc9ee9e96c6582ba990b557e7b0332dbe",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0014381144625394094,
       "references": [
         {
@@ -1143,6 +1513,16 @@
       ],
       "input_sha256": "cfedde7510151b0ac028f1d057510cc4be85b51d3209456f1ac4b53d662b8d83",
       "payload_sha256": "64e6eb1453e0c2bf7c28fc1b907929aad6bc77e32de8094c37cbdea8e9264807",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.008601776286780261,
       "references": [
         {
@@ -1173,6 +1553,16 @@
       ],
       "input_sha256": "b03836343a9d55146bb711c7ae48cb0797d986f98371e9b2e56bb0c39fe7c6ef",
       "payload_sha256": "728e93f170ac947f7281be9bb3026ef392e319dd94d9a1da82204ba46524ba6c",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 6.923515513078881e-06,
       "references": [
         {
@@ -1203,6 +1593,16 @@
       ],
       "input_sha256": "c8ef8325a68a7f05b3dd468018e31be3f5fad7f8d69ebe5b1fd1f09103def0ec",
       "payload_sha256": "4c8c82dacc4a8d68a4b061bfc4447a734e0c72a2ea42fecfff6c0545a329fb10",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00047897839577998004,
       "references": [
         {
@@ -1233,6 +1633,16 @@
       ],
       "input_sha256": "a854c007b34a99406feeaa7ee7e52ed7dde14c6b3d8976ffe3d8f9b10dd7f915",
       "payload_sha256": "bc9f66444d1866f2b058b546e853029ccda0461940defed90c653b78ebfa7a86",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0022710391371441084,
       "references": [
         {
@@ -1263,6 +1673,16 @@
       ],
       "input_sha256": "8b1a5ff40c15e45dd0b85c609612b3534b6255db2a75bf33a555906db2fd801b",
       "payload_sha256": "87f659768825dbb71d9057dff7ea86085425291d2a2ba2fc0734dbb367d72fa9",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.04423086956807163,
       "references": [
         {
@@ -1293,6 +1713,16 @@
       ],
       "input_sha256": "8c2d019a4577103a903b5acd3ad3fc59fab6381cadf0a62d4fd6e7bd3fec60fe",
       "payload_sha256": "57a892861f7f414c08d23658aa8b753a5bdcbb9b997fa2faa07b49827f719057",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.05628955883804948,
       "references": [
         {
@@ -1323,6 +1753,16 @@
       ],
       "input_sha256": "62135a8453d23e9c9e1ff94522e4aae81c88310de6323f26eff4810a8ad9a212",
       "payload_sha256": "07735b50f52ff18d05e8896b77b423779bc3fb64215a6b1a3971457aedd69398",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 1.0004475696392872,
       "references": [
         {
@@ -1353,6 +1793,16 @@
       ],
       "input_sha256": "72d83d1867120f610376a47c78db94c44745e83f5d123e7bc85a4913ffc98f4a",
       "payload_sha256": "0edcb209a1b9de0c120f67ff09a62eb08ac0f4698739ffbe4347d77ed06a8e62",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 9.417309335383512,
       "references": [
         {
@@ -1383,6 +1833,16 @@
       ],
       "input_sha256": "9e7d8bb2d01cfa183bf35cca0aa115af4eec7643b6f21223eb2254d42c8385be",
       "payload_sha256": "7ce89b30dd9e99dd0e1805b638100dc310cb620f1b4b5737e97611c09f9c8a6f",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 6.323118356704091e-05,
       "references": [
         {
@@ -1413,6 +1873,16 @@
       ],
       "input_sha256": "58cc8c1ef72519e5764e1721a253c4e04ebe1610fe7b3dcaa89ddc54984a6c8b",
       "payload_sha256": "092716c2ac9444cea109e437b89b24a9c2ddb98cd58370f998aa956579d36ece",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 7.109402209420982e-06,
       "references": [
         {
@@ -1443,6 +1913,16 @@
       ],
       "input_sha256": "497537a35f9f19648dd633ec801e8c939d79fe4c45f204bec7b1ee7166d16bfc",
       "payload_sha256": "4848ec0b90df0d22c7c3fa8e7137a90436390cf9177e11181e215433a7439f1b",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.10528574747340487,
       "references": [
         {
@@ -1473,6 +1953,16 @@
       ],
       "input_sha256": "62e31598ddab49f7659a41de763f0fd9c6634f37e6eda0fd08d48a38cf4cf2f5",
       "payload_sha256": "8539ddd76d8850c3e48e0e292f4a38535d8df3a3b2541434ad5195349d32f19f",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.02877019163398853,
       "references": [
         {
@@ -1503,6 +1993,16 @@
       ],
       "input_sha256": "6e47a3c9a796524999a26ce42e6898e6aa71211bd77e72e3329c576abd29fd5c",
       "payload_sha256": "1f60853204586d1205da834f3c6051b6fb7c43b1abea14aae7530ca9b3e22178",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.03941684247432932,
       "references": [
         {
@@ -1533,6 +2033,16 @@
       ],
       "input_sha256": "f0b0a361cdf956b6b23268eec3d6ce90506e4e8c87d4f118cd7e79854272d957",
       "payload_sha256": "3e55328c3736dcb543609b683f553f0e11309748ce7e5fe3cdf7d9104e094cda",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.01365408162341544,
       "references": [
         {
@@ -1563,6 +2073,16 @@
       ],
       "input_sha256": "dfb2c01daab80846f6f41a521050b1b0804056927f9fb0014e6e558acb1ab6fd",
       "payload_sha256": "59c78a9ea4644cc5d4b10727bb9f002485622012799985d5b954bb89fb94173c",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 5.7999467408886604e-05,
       "references": [
         {
@@ -1593,6 +2113,16 @@
       ],
       "input_sha256": "af9ef77c060d302de30c01dc8348052ed5da7caad92b82509bf8785ba9050d1d",
       "payload_sha256": "37397724635b08cab6d0b91f84df8056895f82436420a92c3fcab2c3c4b46bd0",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 5.552402492277087e-05,
       "references": [
         {
@@ -1623,6 +2153,16 @@
       ],
       "input_sha256": "3d1f7ee5fe5d80fe5b8398a4d0f96e0cbd83aee4ef2aa09023225506ba9cf443",
       "payload_sha256": "ceee1919e186f869dc9ec9b12799269101c90d4f745b4c078149c11be64ac31a",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 2.9252805933676797e-05,
       "references": [
         {
@@ -1653,6 +2193,16 @@
       ],
       "input_sha256": "1eb877a66c532cd65a7b033588b463a998d7fb0d34fef5ab1769e288a58f8a72",
       "payload_sha256": "9d73e0b321cc92068fdcb729f929c888cd99651311c3ddad8d9ab62dd1ac083f",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 158.00820213496237,
       "references": [
         {
@@ -1683,6 +2233,16 @@
       ],
       "input_sha256": "4f477a52866c3db0de157db3f4568baa00c2c72257f9228ee4a410bfa25296c9",
       "payload_sha256": "ed50aea5dd04283c700de4539727d617ef61a408bd174f706ba5ecb9b5381346",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 9.152716666086791e-06,
       "references": [
         {
@@ -1713,6 +2273,16 @@
       ],
       "input_sha256": "bbaa55c80f80976693e10cb553e5584ba465e6512e9b4193eae34e72d94dae61",
       "payload_sha256": "f8878f225d9d80796aaa65613b8ed2acaacf58aabca93303cf2153aa6b252560",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.2780957169593972,
       "references": [
         {
@@ -1743,6 +2313,16 @@
       ],
       "input_sha256": "e3a092717564286d23804f68fec99dc30c0c81c555fffde1146c53cdfab47ac3",
       "payload_sha256": "1aecc4ebb0a4f853ba7396380dbd24e0b14eb9fabf2ba4b2cad3d33c16ca9269",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.008220848990291081,
       "references": [
         {
@@ -1773,6 +2353,16 @@
       ],
       "input_sha256": "91425d7ed3f2c86537a81db6b1efb63c440b6ae3720cf677366443687f1ad958",
       "payload_sha256": "8ed54fdd7b4bb8beb3ab4b6ccbf20bd0a924c32784470a330cb687ab272a5587",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 5.103002921384866e-05,
       "references": [
         {
@@ -1803,6 +2393,16 @@
       ],
       "input_sha256": "ee167aee12232cac69080cd261d0ae4e1db823cd37e55fca7d18ae990e37c560",
       "payload_sha256": "ae71d89908183cb4c489f0f388a1c02374059dafea4e1bd6c27ac68113747553",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 8.603069575816727e-06,
       "references": [
         {
@@ -1833,6 +2433,16 @@
       ],
       "input_sha256": "582889506919e65aba59bf19701e34e75ee9c44c672458a952b2f31ec4446aba",
       "payload_sha256": "d8a0c7f3b2c495f97a464f671ceb846066c212f1439221cb6529ff1919706884",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 2.4969537678297584,
       "references": [
         {
@@ -1863,6 +2473,16 @@
       ],
       "input_sha256": "4e049f67b28b442d087c9bb60ef2b8653435e1eb71232a9dd30d037c5bd914e6",
       "payload_sha256": "5d1549dcf92c000b6f2b2649bd51208ef9958df193701cfeeff4ad14f93397e7",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.034475401252663185,
       "references": [
         {
@@ -1893,6 +2513,16 @@
       ],
       "input_sha256": "df718df66655be20cfd866dec1849a93080a0a81535b7558161828b170f65da2",
       "payload_sha256": "cdc07fa4f1648d13f5b8407ca6a96cd3454dff895da8f247641c4b667c11bda7",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 1.7818554769852345e-05,
       "references": [
         {
@@ -1923,6 +2553,16 @@
       ],
       "input_sha256": "062f2c3991112f42a22c225ae8876ce13448bf83c173b0b42ac7d6f054b19076",
       "payload_sha256": "588536227b556d59f5fab05d42ec580ccd14ac10843c4228d378f311e3b3dbe9",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00031785565882700323,
       "references": [
         {
@@ -1953,6 +2593,16 @@
       ],
       "input_sha256": "a7b16a2d81d3d58b43241a1e7dda02eccac1caea0cf1f16091f7ec071b283856",
       "payload_sha256": "46b3da0f2a2d1de2905b268c587d47bfef3f6a8a5aedd1cc4b2982cdb426b99b",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 4.0411372079759916e-05,
       "references": [
         {
@@ -1983,6 +2633,16 @@
       ],
       "input_sha256": "b26aaab8b1d04d771b4a40cef6678548e121874c49c1d058c6170a56c5fc1fc6",
       "payload_sha256": "e96a49bacede0aeb881a6835f6014c79833f0fe5f080fd120e86620a0687aa1b",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0007598092871260173,
       "references": [
         {
@@ -2013,6 +2673,16 @@
       ],
       "input_sha256": "37a5fd48e6534300ca27a6d262014e9b919e85efad24126499cf2978ba2a0a17",
       "payload_sha256": "13501e7d1ae93cb6afe420884e64ba5b0a6894b04f492580915ee3943a325a28",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00010868845229867811,
       "references": [
         {
@@ -2043,6 +2713,16 @@
       ],
       "input_sha256": "d7a928ef45cc9d3aff494d47264f7b49560aae22692c8efaea99171f1b165dbe",
       "payload_sha256": "3a341bb3bbd2b2ab4aa2241ee579dfcfe282669b4f79fde6a070b9b893cc560b",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.016330244794154666,
       "references": [
         {
@@ -2073,6 +2753,16 @@
       ],
       "input_sha256": "e8bc82ce22950c88fd6bba61b7491f0cd1e8409c28dbe9e46c5fbc3d149bd6cd",
       "payload_sha256": "342f39245b8e1c3a46b26685a9f8d7e04feb32c915015f622ecba63aec1da304",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.010552864935022265,
       "references": [
         {
@@ -2103,6 +2793,16 @@
       ],
       "input_sha256": "c192174dcd86dd9edc3faa5f00b7bff23935e8f049184dd28f9659acd8caf77c",
       "payload_sha256": "2ce64cc30d8f3e93d52491712efad92155e5adf4bfc00aa18dbf2b5deb204e5f",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.007265284502112254,
       "references": [
         {
@@ -2133,6 +2833,16 @@
       ],
       "input_sha256": "4e4569be86f5bae0f8dd955add5dfe3cc97f1331e83ade1dc31a7278d5e50b99",
       "payload_sha256": "98df12a1faeefdb9d8f71061a5d471c266ef7e3d2bdc71b77008b328c8398137",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 1.676249018197721e-05,
       "references": [
         {
@@ -2163,6 +2873,16 @@
       ],
       "input_sha256": "77e460ffd2a541d99389b125be46975101c2a0871530c60ca0357cdaead4f4f3",
       "payload_sha256": "400b566e35d726672a0c6008ae0d6d178c58c238946bac079f11bee044c3bf1e",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.018220242800668494,
       "references": [
         {
@@ -2193,6 +2913,16 @@
       ],
       "input_sha256": "fedaefb94e45ef941c59a3caf344d9bd58d8c9413cab5a6e0190ac8f6094d476",
       "payload_sha256": "fa06ccd149e741a7cd24116fef504f74d12016c6c59f3d9ff69f54e2d5bb0989",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 20.551999114102262,
       "references": [
         {
@@ -2223,6 +2953,16 @@
       ],
       "input_sha256": "a795a3b1909b45c3a8d2ef39a9e5a5cf067503ecee479aa33fbebf1a9ed802c8",
       "payload_sha256": "b71b0fd5783375b7193e0773888c7a29ccfa618f223a33b6ea224cb52d9119df",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 3.1213331121471324,
       "references": [
         {
@@ -2253,6 +2993,16 @@
       ],
       "input_sha256": "91ebfbfd2b0d7b501425c8db6c0ca07d13ae6ce96b81df6177f574427d6a3623",
       "payload_sha256": "0b8ee97e57aa3f58fee24ae99f2c8a9a70ecc001f2456eed477a063fc3a19b2d",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00010884341097765387,
       "references": [
         {
@@ -2283,6 +3033,16 @@
       ],
       "input_sha256": "3ec1cfcabac6d8a9574ebf7b559a39c979e11797996024e61d466683798d045c",
       "payload_sha256": "87eab4eb92c62d214a46a40f7ef5be5d9ef0f84762d709566ea18f8c62c294ec",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 27.592386990548395,
       "references": [
         {
@@ -2313,6 +3073,16 @@
       ],
       "input_sha256": "5bae61523b9f2469228b1211a0beaf7c7920909b0ffdaffc4155e80e31fb750c",
       "payload_sha256": "09d2e31a97026434a0ae26bdcef88f412ae15ddb835ac241571cda87258d831d",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.17065943734126673,
       "references": [
         {
@@ -2343,6 +3113,16 @@
       ],
       "input_sha256": "a4140cf79ab356c9752736e424493b4e70e2116a4c6013ea5a486f14809fb2f5",
       "payload_sha256": "5e8f8c22ab57b095e0c32d94238bba17172b9f1034d120fa478e1bf282eb6be9",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.03842011952565793,
       "references": [
         {
@@ -2373,6 +3153,16 @@
       ],
       "input_sha256": "7fd98b6b8db7121e838ef3c0c9904db70669dc27c1701d86820fdf79d5338ccc",
       "payload_sha256": "eef522f69f5390dbd22c55428a467cee43996817d628586a91ec57ca662caf8a",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0021982387449573323,
       "references": [
         {
@@ -2403,6 +3193,16 @@
       ],
       "input_sha256": "b2d8a7dd7c8e07474577e7cc5a43cf02675d4c1f7f2dc86a5663f43e19d117d1",
       "payload_sha256": "afb193ecd029b5e90a637757ae85a3bdca85466c1a07b87b049780e6e6e2fe84",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0004015430089209758,
       "references": [
         {
@@ -2433,6 +3233,16 @@
       ],
       "input_sha256": "6dd654685b4a09b585a847a5cd749c74d76eced46ab46a7ed5744c8484219d5f",
       "payload_sha256": "5d5df8b57594492c85135a8725b8f3b40e7eed9ae330949cc816416ffed01c2a",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 1.5892926542146754e-05,
       "references": [
         {
@@ -2463,6 +3273,16 @@
       ],
       "input_sha256": "b5702789cc2c17727246f84c99614aebfd98f3400f770d280faaa8f6852c5029",
       "payload_sha256": "911f766b79e26b37681ffc8c771fcecc4ef331eddd5e5eb350329d60069bd756",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 12.685856373935747,
       "references": [
         {
@@ -2493,6 +3313,16 @@
       ],
       "input_sha256": "6313ba750302fe0719cef02a9c97b91193bd38331f7fcf73fbdcbe5f096cd758",
       "payload_sha256": "df9741e6a8c2d870787a9558a18954e4d22529a7f2429b86bb314c4454c8fa04",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0003754333719144288,
       "references": [
         {
@@ -2523,6 +3353,16 @@
       ],
       "input_sha256": "d11b82ef2d944a333c88d43ba9a3af8f39b4a1966f79ad26516167c108bf7e23",
       "payload_sha256": "974586532b7a241f0eb2b4ac7097642152b5ef57678576efcb5e252536624210",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.06284564027793159,
       "references": [
         {
@@ -2553,6 +3393,16 @@
       ],
       "input_sha256": "480cc41c692ce5c1a3993cc35e13c2ad79dc76c1da55beb6e809ef5d8421960c",
       "payload_sha256": "d962e6e0f94ac1e55e50562723efff6811e981ecb9512080fd2e6c2d430e5812",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.041046099079953643,
       "references": [
         {
@@ -2583,6 +3433,16 @@
       ],
       "input_sha256": "a69754d8d94588a3117fa76d87610a2bd968a83a28f085805e086b7dcd08b5ba",
       "payload_sha256": "84aef595e4ac35fb18071ad006d08d73b122b8051aa589d7690ad44e4246b18e",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.007095512181097342,
       "references": [
         {
@@ -2613,6 +3473,16 @@
       ],
       "input_sha256": "fc4df483101f6a79d2988362718ebcab3d0d86d1751775110a206315d01177eb",
       "payload_sha256": "6e1579c78af74c06c5bbe2bb794d08bad219735eee79f569c0eeca3842de358f",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.019925225307665616,
       "references": [
         {
@@ -2643,6 +3513,16 @@
       ],
       "input_sha256": "a156de2755ab738dfb9c36693a4187313d823bb004885f48f7cfa05a153a0a8e",
       "payload_sha256": "1032b11e76da0cd6bb8ea2c8edf689ca192137ccb631665dc20fd3317ded33ab",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 32.03864616971564,
       "references": [
         {
@@ -2673,6 +3553,16 @@
       ],
       "input_sha256": "0e67d99b319c6b2241a353513d303e4d654e83021830703dad264add635cc5f5",
       "payload_sha256": "edc99d4706da7c2f3a1e325a5ed9d6acf9d1cfc8858d882735f8d4fad3db00dc",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.019733479584948258,
       "references": [
         {
@@ -2703,6 +3593,16 @@
       ],
       "input_sha256": "dfabc19d5731b4247836e10862e903284c0d7953962229afff5727eaf2eb1eba",
       "payload_sha256": "4f5d90b57d31924c0db2d977b13d86b1cbe484ece10c2d4071bc661ac2ec0a8d",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 1.1019822655168552e-05,
       "references": [
         {
@@ -2733,6 +3633,16 @@
       ],
       "input_sha256": "0344eab55ed7a74e1168834951f7ae8bb85640166febd43c9d6fd6a1a2a26fde",
       "payload_sha256": "696d9d0bb0b73309bbea60dd8bc460c7f2ac5e19f1dcc0b5ecbc1c6859a03a74",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 5.306786808556728e-05,
       "references": [
         {
@@ -2763,6 +3673,16 @@
       ],
       "input_sha256": "a8f0261147eb825519c247c6f98bf90fb2268374508b3cc5f92ae4306d8327dd",
       "payload_sha256": "582347cac15e545851645f83315ffd71eaaf1a982f4ff2fdd72f406a7f498710",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 1.364199801946134e-05,
       "references": [
         {
@@ -2793,6 +3713,16 @@
       ],
       "input_sha256": "fe173895d792e79d4a56b43b0996913cd580790eab22f1f099a505de83c9d58e",
       "payload_sha256": "1c511afe2c7159e426c2db88d2820b18dacc2fde5d1954ec4dd9a5105e3d53a7",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.07528772220097238,
       "references": [
         {
@@ -2823,6 +3753,16 @@
       ],
       "input_sha256": "636586bd340a3f351a3ed0b6d5d5a4060fd958624c9ff63d7588aaa282279e52",
       "payload_sha256": "e6e81ef8e1b6db9a815f8fb38c28dd6000862a9ed2a2b17f62c8626445c4834c",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00441599411366673,
       "references": [
         {
@@ -2853,6 +3793,16 @@
       ],
       "input_sha256": "79d3d262f292f785fd1f296458fb8f1119c4da372219560fa0bf3872ba89519b",
       "payload_sha256": "0097944acdf449abbc86fd3e13308d74f8e6b8848b957f42d0cf1d12b409cbc2",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 2.072575039386201,
       "references": [
         {
@@ -2883,6 +3833,16 @@
       ],
       "input_sha256": "a706c75b72ec6170395ef4ca25bbcdb4f9b8f948e1828a95a25db908652d6a1a",
       "payload_sha256": "caefb937ca321a4662a9f9d7cd6aacb809637d2b8510e34afbd4c8d5191e5cf2",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 16.96778721306642,
       "references": [
         {
@@ -2913,6 +3873,16 @@
       ],
       "input_sha256": "c7259c65b7728674f99ea3b73b174bd3ec9e11c76487e76388c549860a3ec7dd",
       "payload_sha256": "ed5e53b1090416f9b96ff4b2c5688356c9694282f6c8c64e4c57f0cf5d0f01b2",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.11555203735430365,
       "references": [
         {
@@ -2943,6 +3913,16 @@
       ],
       "input_sha256": "0888e08c2655678aa32965d82a54a2f025b0379f2cff3be9d754197b3d9ed4da",
       "payload_sha256": "f7b42ca8040d1c4ecb90cccbeebe622cb7bbf284b0e725e2f20598c4c08adc29",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 3.97233629810344,
       "references": [
         {
@@ -2973,6 +3953,16 @@
       ],
       "input_sha256": "9a3ecbdf52b28a224bd1ae2a5e7a4db0fb1052032d6eec822f040b68aae06300",
       "payload_sha256": "e555313377ac198252a2e7784b5e709391b3301f0846ac6e5e0716773e1a6354",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 6.806352513846585e-06,
       "references": [
         {
@@ -3003,6 +3993,16 @@
       ],
       "input_sha256": "106272d7025988e1f5d3321dea739afbc9f45e7206907f778e9c1ca9c9051325",
       "payload_sha256": "d5819add3a26f309f258ddc0d634d205f1f2103816a0689dc9d425c0a9fb7b64",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.005001115267856466,
       "references": [
         {
@@ -3033,6 +4033,16 @@
       ],
       "input_sha256": "0202fb366ebf914d549550cf33eb45e986472b4f4262062b4312155e624edfc2",
       "payload_sha256": "6517f008d4e0668c6442caeabf82367d3f1dc830e0b314dca3ec4d8d71d69354",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 1.5771279910204554e-05,
       "references": [
         {
@@ -3063,6 +4073,16 @@
       ],
       "input_sha256": "da54180739cfbafb5d3a2cf4d6ff271dccae02fcd877a9a24153078981126ad6",
       "payload_sha256": "f153b0fa143485dd42fc8ce474d80b845385ae89f14f5a110e235c10145efc56",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 8.294604285927075e-06,
       "references": [
         {
@@ -3093,6 +4113,16 @@
       ],
       "input_sha256": "5937b88e83840726e4c4a3d9edcf1fe517b6ef205363d3615cc7bec83049ac58",
       "payload_sha256": "de94d5ff5683203a6b575b9530a0ce9d4523c2577d25e8de6cf7e2a133febeb0",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.25050633408083295,
       "references": [
         {
@@ -3123,6 +4153,16 @@
       ],
       "input_sha256": "44cf0f1d8616ef635a5b3a8b1021212c515edf50423ff33f8b6cbcaa7813818d",
       "payload_sha256": "54ed04ae441862cfa2279c7322c5f0434b52beaee83650c0d81195d405917815",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 19.645180492377538,
       "references": [
         {
@@ -3153,6 +4193,16 @@
       ],
       "input_sha256": "b0e11b01bee5da407f86ec1205b4733269ced9095be17cb7f318fa6aa404b509",
       "payload_sha256": "a246f07677646b249edefd9fcd410074f52bb3003e564e8965a0c5436a86cf8d",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 2.374281554468865e-05,
       "references": [
         {
@@ -3183,6 +4233,16 @@
       ],
       "input_sha256": "824e4e1f19f3e17af4966a6318f3182aa347d9a4e9faa9268ca7bfdb262a65fa",
       "payload_sha256": "de01b007e6ee00f70dc640b4cdc627d2d5b2f730950fb14e381b211d04e25221",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 9.258939292374095e-06,
       "references": [
         {
@@ -3213,6 +4273,16 @@
       ],
       "input_sha256": "5d163160c12c3a1cc8d145ad159b724836760123c33bb19fa1534bcec308bd84",
       "payload_sha256": "11a0a87071eca703dd461b6e356a6b767ef10af9016a45796eb52b7548e0b692",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 2.417033007821502e-05,
       "references": [
         {
@@ -3243,6 +4313,16 @@
       ],
       "input_sha256": "e5900ac49b505724521a7cbe7416a7e8fd38629a8e36801f2c0378966e75a04c",
       "payload_sha256": "041506f065647e56b7b70971b6e912e4db20e786382a496de64ae42536e33fe9",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 51.81469998917709,
       "references": [
         {
@@ -3273,6 +4353,16 @@
       ],
       "input_sha256": "c567a3deb982db81e48754cf1db870773295ededb77f899a5cba900943e714bf",
       "payload_sha256": "7fa7b1426f4f900a25a7ed47f34183cad7b5e2d6786bd660816d86d97e1f4d10",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.030889433673595222,
       "references": [
         {
@@ -3303,6 +4393,16 @@
       ],
       "input_sha256": "b26212875038de8e47e9d3454f24fca96e53394d25dfb43d57cb50c75c2cae1b",
       "payload_sha256": "ac897ae4162cd201b79fc69d276cdc3ee62521039d99a033c619f4734319822b",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 1.825206531925862e-05,
       "references": [
         {
@@ -3333,6 +4433,16 @@
       ],
       "input_sha256": "205103197514bcf8ba5bdf6aab8f850ee6a588993f9a7d94f42b189fc642811c",
       "payload_sha256": "13c0dcc873e3c22db42f7151eab39a3502a2aa4c4c8291393793e01673aa6bad",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.32107897183456596,
       "references": [
         {
@@ -3363,6 +4473,16 @@
       ],
       "input_sha256": "8f7388f8e6bdb6224ac60be6cbd140f069bd04679cdddc879f9d31196031dfee",
       "payload_sha256": "e38614890c87cc8904e013e10aaa401c5c62d9207bac4787db335e69786be466",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.2664469502297698,
       "references": [
         {
@@ -3393,6 +4513,16 @@
       ],
       "input_sha256": "16292951d61bfa9ba1b28e2a4555236206f77ccc42f247b250ad8f05b9045316",
       "payload_sha256": "f0cb0a56d97579ac04243c3a40c324e6897a2de70e4b49b99a09c922dc126426",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.012641926008865679,
       "references": [
         {
@@ -3423,6 +4553,16 @@
       ],
       "input_sha256": "9c7019542b2f860d766354c0f0a2988d87489134d349e3a87c6d8270ca47eb63",
       "payload_sha256": "d1d5a4ba94e1b1b1b6bf873ffa0204921423f6cc338a7bfc354c2c14b32e8ecb",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 8.740097196026102e-06,
       "references": [
         {
@@ -3453,6 +4593,16 @@
       ],
       "input_sha256": "7a936caf1643f51c03241984b3a7935e51db1f459a058190a8063388c0ea3a58",
       "payload_sha256": "a17ec5a976fc1d51f3dd304e1e65a41713d8f04fedfb90dc1bc7c658669ed7af",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 25.278618496545167,
       "references": [
         {
@@ -3483,6 +4633,16 @@
       ],
       "input_sha256": "3c8b3a0940bf63f913a4f129e7c55d70cd3a3b962215daf71ea928057af699bf",
       "payload_sha256": "215e5f0ccbe3e1b57025dad835b0b05a1160a3cfcc5f55c0891409a273757758",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0017008437497746311,
       "references": [
         {
@@ -3513,6 +4673,16 @@
       ],
       "input_sha256": "4f267de10ae39f2b574a96f2de55c21aa9e039c84ff22db7675a167b563ae388",
       "payload_sha256": "d0e2f28b7a7be03ba4fd7ca24891359dbf05ca978853d1ea61e91357e2878be3",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.18367711721384775,
       "references": [
         {
@@ -3543,6 +4713,16 @@
       ],
       "input_sha256": "d5d506f54d40ded54e37446c265f400984d9e11c581cdcac4a5a0791a0289b2e",
       "payload_sha256": "82b6f2b8bf73dfc772aa85ec46c7d95af2781df497bc2268520be5fee8ec7c2a",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 14.414012521498236,
       "references": [
         {
@@ -3573,6 +4753,16 @@
       ],
       "input_sha256": "e6e9f97e21e8f6e72c1000ae0b4f2a00e2ff473233170402ee933e0264a2bd96",
       "payload_sha256": "b936d15bf4b57afb973d35ce3c01b9c24b5c01dbbaa231545125dac84015080b",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.6665805633537563,
       "references": [
         {
@@ -3603,6 +4793,16 @@
       ],
       "input_sha256": "5f73a00deab6c1bb76cb92ead38388ff6ed76099ce79b742ad2ec847ea709028",
       "payload_sha256": "5ab61300b64c3cd70f1994d8a8c1fe35bfb9afceee1cf5ca3f66eaadc147f910",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 9.364674270347598,
       "references": [
         {
@@ -3633,6 +4833,16 @@
       ],
       "input_sha256": "1cb78700ee2419e4fa683ddd204977daee1266934b4169df1237460c68ca9eca",
       "payload_sha256": "a046d8ce4a79219c85a41a38ef00449b9cf9f89784414b1d915684d392ac0d96",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0019885307054350963,
       "references": [
         {
@@ -3663,6 +4873,16 @@
       ],
       "input_sha256": "2972597e41bd3e20f61fabe58fa350a4c123469230dd2ee3acaf2a454b4c6dc4",
       "payload_sha256": "9a8162148c709f83da4c29513f7e4542ab864a4dccd943af927816ccc65dfc0f",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.21022391747443442,
       "references": [
         {
@@ -3693,6 +4913,16 @@
       ],
       "input_sha256": "7f97383f73e95185347766ec3c41dc1dea0a6b54c0a234baabcea0f68f0cfc2e",
       "payload_sha256": "25b5e366b8c239a1201f09ceedc3c77308e78a2549cddb5fcc7841e0f4bf3f89",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.15733072605929915,
       "references": [
         {
@@ -3723,6 +4953,16 @@
       ],
       "input_sha256": "a7647bc006d5060c003148793d82cef044a0c4885d66dc47d9aba8a73571a07e",
       "payload_sha256": "b47f90da94e24768d1c31ad61f97fab495fe1b68753e838c73b74c421cb8fc09",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00017567226215068065,
       "references": [
         {
@@ -3753,6 +4993,16 @@
       ],
       "input_sha256": "74454e0a484e7196834e97fda5d11a2b4f5885bc20612847b1f0a70ae52826e9",
       "payload_sha256": "142347f2da8cb09fa909e5bae3c65ddc326726a32e6a0c3d45064c57c45e9c37",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0008529274879833708,
       "references": [
         {
@@ -3783,6 +5033,16 @@
       ],
       "input_sha256": "8f1d2abdebe6db2246f182bde4a043ee958fccae137db4b252b00e49354620b4",
       "payload_sha256": "f02eb8a9b8fcb33a6e261ed5fbe2e66a7ea97e92d92d8cd79197bdbc9bde2196",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 2.2408124817130375,
       "references": [
         {
@@ -3813,6 +5073,16 @@
       ],
       "input_sha256": "5ab97ebeb2ee82eb68247e614aca485754ba7cc2448ad700db8548c002f32c53",
       "payload_sha256": "f39460793e4b65ee6f53b6804e9d364b1415e4fedd73d1cd4cc6e22127a95750",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 8.767548470752442e-05,
       "references": [
         {
@@ -3843,6 +5113,16 @@
       ],
       "input_sha256": "3ab53f0f9df2aec4159502b5f58309647c177f41c190ad3b21815cf9568d05a0",
       "payload_sha256": "437fce61bf20428c0356cae5b23b5dff4e09004613b75c4018f270af325d9a55",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0048200386436144105,
       "references": [
         {
@@ -3873,6 +5153,16 @@
       ],
       "input_sha256": "f82e584ea8fcc47dc0a92575675a486adfd72cde4069bda6e0d2a96b4e5b63cf",
       "payload_sha256": "5f82a13e9372c1dfac96daaf0b7a5944b2ffdbe6119b4996af74bb52e0e88c52",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.47445108985193624,
       "references": [
         {
@@ -3903,6 +5193,16 @@
       ],
       "input_sha256": "2d3a0ab24e68e7f4193bf5917f7f48ba15090826f69b5b0f93eb7174e5cf4d55",
       "payload_sha256": "4e4e2366333c8cb71aacdc59ce680f74ef102d97560dc0b8a44f9b8f8d98c557",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.02852856519582041,
       "references": [
         {
@@ -3933,6 +5233,16 @@
       ],
       "input_sha256": "4acf7f1f7ef93ab80bee7d6b367c371a0c25461f39367a2ad4f13b5155d72274",
       "payload_sha256": "67338e5585a09a8bd3ff634c806aa2eee17a947e5fb00210982e9e6fde0031c9",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 3.0973693575506026e-06,
       "references": [
         {
@@ -3963,6 +5273,16 @@
       ],
       "input_sha256": "1c4655a718637b4638002ee9c0eafbb57e069b31f91f1f3f4a6218bf0f61b85e",
       "payload_sha256": "6be5822f3c6a14a649dfc909487112cf6abc4714a328d20c320b27b25fe6a6c3",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00033311505917094737,
       "references": [
         {
@@ -3993,6 +5313,16 @@
       ],
       "input_sha256": "867fd1649502c94d2d23aee6dea0d5df038e3c50d244db9a76d3caa3191a7885",
       "payload_sha256": "02a65e4b07fcdcac308edb925e5a8b130969ba7d92e0907a9b6cef24ae444586",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 17.530059103679175,
       "references": [
         {
@@ -4023,6 +5353,16 @@
       ],
       "input_sha256": "357583cce8885a425013c41076921ceb06f3b54e3db3aa121c956f000d261c99",
       "payload_sha256": "49dd4f2e02c98e95b9b340c4af4cd47417b66bf262f13059553e41f7571ebebb",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 72.9355890509462,
       "references": [
         {
@@ -4053,6 +5393,16 @@
       ],
       "input_sha256": "60c60e303a8be56cba565df8f2ccb62b7189ce38c3872eac9aab62f709ae6232",
       "payload_sha256": "9eb97fa7461c4cfdb511a86189d45649ff2f491ef7080652000f79f0df9f37bd",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.005500161749257259,
       "references": [
         {
@@ -4083,6 +5433,16 @@
       ],
       "input_sha256": "50ef9fb7fe7682bb552684b8be6cb2e988a07eef4725a5bc3b7abf8b23d3f4af",
       "payload_sha256": "1611e23758bce7656e33219000736ba2ce679ca0f3541bf15d799c065ce037f5",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 1.4357246144044054e-05,
       "references": [
         {
@@ -4113,6 +5473,16 @@
       ],
       "input_sha256": "3a075c5b49e4bb0c328b8c5f4d9a59a28610c0afe45adf210b65f5f06c9cbd2b",
       "payload_sha256": "7a54743200853033c89698f565307e797a95fa6a473ee7a4271fd32b4bf260cb",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0006978318765593844,
       "references": [
         {
@@ -4143,6 +5513,16 @@
       ],
       "input_sha256": "8ddeb9dfda597a42f14e9611f5fe136924c261057eabe916496d694506f017c6",
       "payload_sha256": "3c51ff73fac31b80ad22b2d181ab51baba85bb1c1a62865f2db9117e806c6d73",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 23.25594694837482,
       "references": [
         {
@@ -4173,6 +5553,16 @@
       ],
       "input_sha256": "066c576c7a8f5fde09280ee23b5658367c557461e329d3c12f84e49f316a7c0c",
       "payload_sha256": "ced8ca69b829669e4ddd9bd544cf0433015cb0ed3637d74a8d89f71c968cbaba",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 3.630797218563744,
       "references": [
         {
@@ -4203,6 +5593,16 @@
       ],
       "input_sha256": "2cb4e0b2de93c746a37d823bf447be2eb150119720673bcfb3412bbf2247eb07",
       "payload_sha256": "d4f1b586e996f4ab3a3e50dc87575a8cb81aedb90b2e16bde2e4b58f1062f80a",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 3.195905919112677e-05,
       "references": [
         {
@@ -4233,6 +5633,16 @@
       ],
       "input_sha256": "b464a5206ae984587c335c27fcf2d0e46ab1191fa0fdd594779cef083f0c3161",
       "payload_sha256": "3beca785eaea3dbcf84e49a185e634864af238614f636703a4f5471b5690ba13",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 18.9580611814017,
       "references": [
         {
@@ -4263,6 +5673,16 @@
       ],
       "input_sha256": "319bc499bdcbd445fcebcdce7d0474398d3f72cfc8dda1bfde9d0ab733fd1849",
       "payload_sha256": "019a325d3e419438ab5316cc30e442c552a7386855b376ee2bd72ac2dcf03434",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 6.004842369308555e-06,
       "references": [
         {
@@ -4293,6 +5713,16 @@
       ],
       "input_sha256": "4cc211ae8f700f742ac4f524b7b331734c6f95b8831efd662353a8f2130e7eca",
       "payload_sha256": "c4db5505da48fa7bb90190810f9519f80c2afd61ea2a67c1f23a7fc35b4f840d",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0048120286097678875,
       "references": [
         {
@@ -4323,6 +5753,16 @@
       ],
       "input_sha256": "fbb8d6cd2fb48c0f2b564e2bda3e009f2b06112459cf0ecaa82b809c89d381d7",
       "payload_sha256": "65e064cdc2a2e7d0efd428941e1ec5077eea57f764db7f4acd628dc6caf51687",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 71.63989137015069,
       "references": [
         {
@@ -4353,6 +5793,16 @@
       ],
       "input_sha256": "6382781f23ea08148233f7d277854f6671e5cd8d7513cae73a0a29e6a10101f7",
       "payload_sha256": "aaa22783ccc1738f36cdd14e4d84537aeee5621acd130782f2cd4e512039584f",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.6493863511783013,
       "references": [
         {
@@ -4383,6 +5833,16 @@
       ],
       "input_sha256": "501ae2f0a098f23e78d90ca681bc9fcdc1a71c69983cd6b22d5cb61a2a6f24a0",
       "payload_sha256": "3cd1a2fcb6e0b8be93dc753666d19551938fcd16d6b1e429c025288c3b117a63",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00043072219344982444,
       "references": [
         {
@@ -4435,6 +5895,16 @@
       ],
       "input_sha256": "417ec36a2f14925194ba5a213d8d26c1d16a992aa3de70fd901b5af30ec3e385",
       "payload_sha256": "7951cd9ea67963f4a5d8190104d0cc9c48adb99f39e5e16c897a11e68da7304d",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00041341333484657403,
       "references": [
         {
@@ -4487,6 +5957,16 @@
       ],
       "input_sha256": "7baaae71aef5ab0da06766ae537f6caea72829ba7aca265480936a52471eb22f",
       "payload_sha256": "1990f8887944360bf60463054711e83bcb7b1362677281accbe55b0f8bab706a",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0003525983453645019,
       "references": [
         {
@@ -4539,6 +6019,16 @@
       ],
       "input_sha256": "95d775264237934e1d7a4d1e48cafb706ca8ff3d27e97b8b02fe7541f6e5f368",
       "payload_sha256": "944b7b6f06c33036d2d817d1e43897b5d6c25a25b9c2815ff6295f874f69aa33",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00332744767588182,
       "references": [
         {
@@ -4591,6 +6081,16 @@
       ],
       "input_sha256": "a01e5122f9d5319610878f9435169205e322360fc66fa5ce2f92b5b1c0080bdc",
       "payload_sha256": "7a258d417534834e73c505631c781537779b7f019c6857122c9633f0e0288e90",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.003849185456300441,
       "references": [
         {
@@ -4643,6 +6143,16 @@
       ],
       "input_sha256": "cfe8859d05c25fbc9c687048f12efa3e9a2da08022163a684f99eeaa0798b415",
       "payload_sha256": "efefebd5543f91e87e1f9abbc85b4846ed4680fae6dee7daf7cd777707ed6c16",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0031582083775158255,
       "references": [
         {
@@ -4695,6 +6205,16 @@
       ],
       "input_sha256": "edb154ff8e82c811b36c8836c1e6a9ecfff9fe89ba626fa173856235504c2784",
       "payload_sha256": "9cc9f29fc16f6248876bf7bcd5a913c6ef27e421e263c2e729f779a109813b5e",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0004731109424917818,
       "references": [
         {
@@ -4747,6 +6267,16 @@
       ],
       "input_sha256": "3a57c63a86351fda6bed3e951c3496e2f6ae178c9f3d3f3dbe1ff243f17badb1",
       "payload_sha256": "88eb76dabb51121697b272a397f97c5d46f7afe9ca818881475b3026cfe4869c",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0006823033061927828,
       "references": [
         {
@@ -4799,6 +6329,16 @@
       ],
       "input_sha256": "321b1448d72169d69a0db07a5b8ce018c24dfa618d768772d5c8cb16d7748921",
       "payload_sha256": "3e606132fd9daa70382c79a3886ae3d9ac969a534e91a71b69f145204dbab7f1",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00043786136518462635,
       "references": [
         {
@@ -4851,6 +6391,16 @@
       ],
       "input_sha256": "60785f9937043426884d164bc64494892daa9dd1e8137b3d59a9c42c9283770f",
       "payload_sha256": "09ee803b85ca209e2dcf189668dc3e4c74e45246e613a79233dd3f96affb9a77",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00043064130380945773,
       "references": [
         {
@@ -4903,6 +6453,16 @@
       ],
       "input_sha256": "34e5eb685be2627479c17011c1c47909cb7f2e93b2540af103a92510ced31932",
       "payload_sha256": "8f68b1894082799714b98318383d026aa8d6054800b109d52e32a12a215a6436",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00028731439459127556,
       "references": [
         {
@@ -4955,6 +6515,16 @@
       ],
       "input_sha256": "fcf0377cc1edd825cf4051b7b27c0adaae585661fbe0479b0215981770086b22",
       "payload_sha256": "1ca1f8b9f8b519e8b177f961570a5ba1544bf1372d92ceb3496bdddded33fdc9",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0002713478750718697,
       "references": [
         {
@@ -5007,6 +6577,16 @@
       ],
       "input_sha256": "0a89c03e27b636932df900dbdb7a3a6a5684bbe001c4ba1e37033a6a832b46b4",
       "payload_sha256": "17fddd405ad9819f41246714a42fdedad72ca66ca6a9f93af4231491381e7197",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00021187254064992592,
       "references": [
         {
@@ -5059,6 +6639,16 @@
       ],
       "input_sha256": "49b40aa4e7d61d55d71e666012bfd76ed75911570d043a3cbc7d3cd784d76054",
       "payload_sha256": "c7e1723b35596abd01c31a9e549e363757aec59596568ec05b94b4ac05418df7",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00026909077676488916,
       "references": [
         {
@@ -5111,6 +6701,16 @@
       ],
       "input_sha256": "545cb2784a5b1ba9c53d6fab0a7b9fa9af5f5bf9389a71262ed23d063e054f31",
       "payload_sha256": "e83d87a48d5fda301e32fc7e824e3de9b2a98fca00894993c0d86740362fe2c3",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0002949684351611106,
       "references": [
         {
@@ -5163,6 +6763,16 @@
       ],
       "input_sha256": "470def873ead6925163c504e3318715f3203fcbf8c9f603353cd19dc0ee54992",
       "payload_sha256": "2101fce8ffd897b7219d30f4bbb336f3ef03ea144c29502af5f9a7ad16663720",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.000532769414151336,
       "references": [
         {
@@ -5215,6 +6825,16 @@
       ],
       "input_sha256": "4de5d37723a4a6194bf32ab0e0230144014eacff690f91e32f65c6a19ffd0909",
       "payload_sha256": "8c91b7569d5c1ed4360e8772c05073aa8ae786ce6479c84cb15393b27e023108",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0017339090644549584,
       "references": [
         {
@@ -5267,6 +6887,16 @@
       ],
       "input_sha256": "5e0bdfa4d79e94b8953595aecff75124b3ad3df8c959f3a1ec5ef3189eba28a8",
       "payload_sha256": "b7a6a89dd7e0284f65f2676e7e13b49404fd20568185d837dce80d9295a96950",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00047837686230739923,
       "references": [
         {
@@ -5319,6 +6949,16 @@
       ],
       "input_sha256": "92e24e57fc0a2c18e4e10bf8037a5645eb6cabd2ca520b166dcfc36165b7b5dc",
       "payload_sha256": "08eef08ae4eb7165ff2116d1bedb1586d1955468be9a27f1dbc1cd4845c061b1",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0003629029985776955,
       "references": [
         {
@@ -5371,6 +7011,16 @@
       ],
       "input_sha256": "efcb0a428c1352e77319e76d7e39ac198621837dbf6e69e9f1d8a3092dc29e46",
       "payload_sha256": "5754ce791861a9ad3975031d0e8b1b39c3674392ff845ad1edf180c1fbd7ae32",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.0002611464998176002,
       "references": [
         {
@@ -5423,6 +7073,16 @@
       ],
       "input_sha256": "7a18ac05b05c857118b8a88211acd9001193521bf0b07104aa18c49e5bed972f",
       "payload_sha256": "6db7ac1db479c7a2badca353743b8a4d21f258fd3cd2a7437f32bd8781ac02fb",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
       "rmse": 0.00046000264917267985,
       "references": [
         {

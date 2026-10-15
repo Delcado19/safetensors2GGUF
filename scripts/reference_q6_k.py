@@ -8,6 +8,8 @@ quantize_row_q6_K_ref. Upstream MIT notice is preserved in
 third_party/converter_references/llama-b3962-LICENSE.
 Model eligibility, mixed presets and file writing are separate responsibilities.
 """
+import operator
+
 import numpy as np
 
 
@@ -48,28 +50,62 @@ def _fit_groups(groups):
     return scales, encoded
 
 
-def quantize_q6_k(data):
+def quantize_q6_k(data, *, chunk_blocks=256):
     """Encode finite float32 rows in GGUF Q6_K layout (256 values / 210 bytes).
 
     Returns uint8 with the last dimension replaced by its packed byte length.
     Rejects empty/misaligned input and numerical overflow instead of changing
     dtype or silently choosing a different precision. Does not mutate input.
-    This is a correctness prototype, not a production or performance contract.
+    Working arrays are bounded by chunk_blocks; the complete packed output is
+    still allocated. Use iter_q6_k for incremental consumption instead.
     """
     data = np.asarray(data)
     if data.dtype != np.float32 or data.ndim == 0 or data.size == 0 or data.shape[-1] % 256:
         raise ValueError('Q6_K requires nonempty float32 rows divisible by 256')
-    if not np.isfinite(data).all():
-        raise ValueError('Q6_K requires finite input')
+    chunks = iter_q6_k(data, chunk_blocks=chunk_blocks)
+    result = np.empty(data.size // 256 * 210, dtype=np.uint8)
+    offset = 0
+    for chunk in chunks:
+        result[offset:offset + chunk.size] = chunk.ravel()
+        offset += chunk.size
+    return result.reshape(*data.shape[:-1], data.shape[-1] // 256 * 210)
+
+
+def iter_q6_k(data, *, chunk_blocks=256):
+    """Yield independent (blocks, 210) uint8 chunks in logical C order.
+
+    Only the current input chunk is copied, including for strided views.
+    Validation occurs during iteration: a later invalid chunk can fail after
+    earlier chunks were yielded. File consumers must publish output atomically.
+    Stop/close the iterator between chunks to cancel; input must remain unchanged
+    while consuming it. Memory is bounded only if consumers release old chunks.
+    """
+    data = np.asarray(data)
+    if data.dtype != np.float32 or data.ndim == 0 or data.size == 0 or data.shape[-1] % 256:
+        raise ValueError('Q6_K requires nonempty float32 rows divisible by 256')
+    if isinstance(chunk_blocks, (bool, np.bool_)):
+        raise ValueError('chunk_blocks must be a positive integer')
     try:
-        with np.errstate(over='raise', invalid='raise', divide='raise'):
-            return _encode(data)
-    except FloatingPointError as error:
-        raise ValueError('Q6_K input exceeds the reference prototype numerical range') from error
+        chunk_blocks = operator.index(chunk_blocks)
+    except TypeError as error:
+        raise ValueError('chunk_blocks must be a positive integer') from error
+    if chunk_blocks <= 0:
+        raise ValueError('chunk_blocks must be a positive integer')
+    for start in range(0, data.size, chunk_blocks * 256):
+        # flat slicing copies only this window, unlike reshaping a strided tensor.
+        chunk = data.flat[start:start + chunk_blocks * 256].reshape(-1, 256)
+        if not np.isfinite(chunk).all():
+            raise ValueError('Q6_K requires finite input')
+        try:
+            with np.errstate(over='raise', invalid='raise', divide='raise'):
+                encoded = _encode(chunk)
+        except FloatingPointError as error:
+            raise ValueError('Q6_K input exceeds the reference prototype numerical range') from error
+        # Do not keep a process-wide NumPy error state active across a yield.
+        yield encoded
 
 
 def _encode(data):
-    # shortcut: fits all groups in memory; chunk before using on full-model tensors.
     blocks = data.reshape(-1, 256)
     scales, codes = _fit_groups(blocks.reshape(-1, 16))
     scales = scales.reshape(-1, 16)

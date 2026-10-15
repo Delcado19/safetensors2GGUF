@@ -43,8 +43,10 @@ Full-model conversion/render fidelity and Linux native execution remain open.
 Shared-math pilot (2026-10-15): read `docs/shared-q6-pilot.md`. A research-only
 NumPy Q6_K encoder matches all three frozen native references on 166 inputs
 (498 byte comparisons), including 21 small weight slices from seven installed
-floating-point families. It is not connected to production dispatch. Bounded
-chunking, extreme-range policy, other encoders and full-model integration remain
+floating-point families. Bounded chunk iteration also preserves bytes in 332
+additional comparisons and supports consumer-driven early close. It is not
+connected to production dispatch. Measured peak memory/throughput,
+extreme-range policy, other encoders and full-model integration remain
 open; preserve separate model/preset rules and the implementation-language choice.
 
 Recorded roadmap (the final consolidation strategy remains open):

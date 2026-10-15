@@ -115,6 +115,9 @@ def check_pilot(reference_report, vectors=None):
         row = {'vector': label, 'shape': list(data.shape),
                'input_sha256': hashlib.sha256(data.tobytes()).hexdigest(),
                'payload_sha256': hashlib.sha256(actual.tobytes()).hexdigest(),
+               'chunk_checks': [{'chunk_blocks': limit,
+                                 'equal_bytes': np.array_equal(actual, quantize_q6_k(data, chunk_blocks=limit))}
+                                for limit in (1, 3)],
                'rmse': float(np.sqrt(np.mean(error ** 2))), 'references': []}
         for build in builds:
             expected, difference = native_encode(build['executable'], data.reshape(-1, data.shape[-1]), qtype)
@@ -125,7 +128,8 @@ def check_pilot(reference_report, vectors=None):
         report['results'].append(row)
     if not report['results']:
         raise ValueError('At least one Q6_K vector is required')
-    report['all_equal'] = all(item['equal_bytes'] for row in report['results'] for item in row['references'])
+    report['all_equal'] = all(item['equal_bytes'] for row in report['results']
+                              for item in row['references'] + row['chunk_checks'])
     return report
 
 

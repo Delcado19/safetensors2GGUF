@@ -31,7 +31,7 @@ Important details retained from native GGML:
   fitted codes. Zero groups and entirely zero blocks are distinct cases.
 - Low/high bit planes and little-endian FP16 scale bytes use GGML's exact layout.
 
-The function needs only NumPy, already installed by the project. It does not
+The functions need only NumPy, already installed by the project. They do not
 call an external executable, import Molbal, choose a model policy or write a file.
 The separate checker invokes native executables solely as validation oracles.
 Production conversion dispatch and all existing format allowlists are unchanged.
@@ -46,6 +46,11 @@ retained SHA256 values, and their commits/archive hashes must match the frozen
 manifest. An incomplete reference set, empty probe set or changed provenance
 cannot establish a passing comparison. A byte mismatch produces a report and a
 nonzero checker exit status.
+
+The same 166 tensors also match with chunk limits of one and three blocks:
+332 additional chunk-boundary comparisons against the default 256-block path.
+These checks are recorded per input in `chunk_checks`; they are included in the
+checker's overall pass/fail result.
 
 | Input group | Tensors | Coverage |
 | --- | --- | --- |
@@ -104,11 +109,31 @@ recorded native results, without requiring a compiler, external executables or
 installed model files. Separate tests exercise invalid dtype/shape/non-finite
 input, read-only views, numerical overflow and comparison failure handling.
 
+## Bounded mathematical processing
+
+`iter_q6_k(data, chunk_blocks=256)` yields independent `(blocks, 210)` uint8 arrays
+in logical C order. Each block contains 256 values. The default copies at most
+256 KiB of float32 input per iteration; fitting and packing working arrays scale
+with that fixed chunk size. Flat slicing copies only the current window even for
+reversed/transposed NumPy views, avoiding a full contiguous source copy. This is
+a structural working-set bound, not a measured process peak-RSS claim. Source
+storage and chunks retained by the consumer are additional memory.
+
+`quantize_q6_k` retains its existing result shape and input contracts, and uses
+the same iterator internally. It still allocates the entire packed result.
+Consumers that need bounded output memory must consume/release iterator chunks
+instead of collecting them. No full-model writer has been added.
+
+Iteration validates source values per chunk. An invalid later chunk can fail
+after earlier chunks were returned; consumers must use atomic file publication
+and discard incomplete output. Consumers can stop/close between chunks to cancel;
+there is no mid-chunk interruption. Do not mutate input during iteration. Tests
+cover chunk boundaries, independent buffers, reversed/transposed views, late
+failure, early close and restoring NumPy error settings before yielding.
+
 ## Remaining integration gates
 
-This is an in-memory correctness prototype. It fits all groups at once; bounded
-chunking is required before using it on full-model tensors. The current explicit
-overflow guard rejects extreme finite inputs if native-style scale-search
+The current explicit overflow guard rejects extreme finite inputs if native-style scale-search
 arithmetic overflows. It does not silently pick a different precision or claim
 support for the entire float32 range.
 
@@ -118,6 +143,6 @@ must remain compatible before enabling any production path. The prototype has
 not been wired into the Workbench or conversion services.
 
 Other K encoders, IQ, ConvRot/safetensors formats, importance-matrix variants,
-streaming/cancellation, full-model files/loading/render fidelity, Linux native
+production streaming/cancellation integration, full-model files/loading/render fidelity, Linux native
 execution, throughput and peak memory remain outside this pilot's evidence.
 Do not infer those capabilities from matching Q6_K block bytes.
