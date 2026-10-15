@@ -5,17 +5,17 @@ import json
 from pathlib import Path
 import tarfile
 
-import gguf
 import numpy as np
 
 from scripts.compare_converter_policies import fixture_tensors, write_fixture
 from scripts.compare_native_reference_vectors import ROOT, run_command
 from scripts.inventory_converter_sources import verify_references, REFERENCES
 from scripts.requantize_flux_q6 import requantize
+from scripts.compare_gguf_outputs import compare_files
 
 
-def compare_path(artifacts, references):
-    """Require pinned provenance, then compare types/shapes/bytes and all metadata."""
+def verified_flux_reference(references):
+    """Return the pinned patched b3962 build after archive/executable checks."""
     manifest = verify_references()
     build = next(build for build in references['builds'] if build['id'] == 'llama-b3962')
     source = next(item for item in manifest['sources'] if item['id'] == 'llama-b3962')
@@ -28,6 +28,13 @@ def compare_path(artifacts, references):
             or build['city96_patch_sha256'] != patch_hash
             or hashlib.sha256(executable.read_bytes()).hexdigest() != build['executable_sha256']):
         raise ValueError('Patched native reference provenance mismatch')
+    return build
+
+
+def compare_path(artifacts, references):
+    """Require pinned provenance, then compare types/shapes/bytes and all metadata."""
+    build = verified_flux_reference(references)
+    executable = Path(build['executable'])
     artifacts.mkdir(parents=True, exist_ok=False)
     report = {'status': 'FLUX quantizer-stage file parity; schematic inputs, not inference models',
               'native': {key: build[key] for key in ('commit', 'archive_sha256', 'city96_patch_sha256',
@@ -51,30 +58,15 @@ def compare_path(artifacts, references):
                 native.with_suffix('.log').write_text(result.stdout + result.stderr, encoding='utf-8')
                 if result.returncode:
                     raise RuntimeError(f'Native conversion failed: {native.with_suffix(".log")}')
-                left, right = gguf.GGUFReader.__new__(gguf.GGUFReader), gguf.GGUFReader.__new__(gguf.GGUFReader)
-                try:
-                    left.__init__(str(ours))
-                    right.__init__(str(native))
-                    matches = [{'name': a.name, 'type': a.tensor_type.name,
-                                'equal': a.name == b.name and a.tensor_type == b.tensor_type
-                                and np.array_equal(a.shape, b.shape) and a.data.tobytes() == b.data.tobytes()}
-                               for a, b in zip(left.tensors, right.tensors)]
-                    def metadata(reader):
-                        return {key: field.contents() for key, field in reader.fields.items()
-                                if not key.startswith('GGUF.') and key != 'general.alignment'}
-                    equal_metadata = metadata(left) == metadata(right)
-                    report['results'].append({'scenario': label, 'tensors': matches,
-                                              'input_sha256': hashlib.sha256(src.read_bytes()).hexdigest(),
-                                              'python_sha256': hashlib.sha256(ours.read_bytes()).hexdigest(),
-                                              'native_sha256': hashlib.sha256(native.read_bytes()).hexdigest(),
-                                              'metadata_equal': equal_metadata,
-                                              'tensor_counts_equal': len(left.tensors) == len(right.tensors)})
-                finally:
-                    for reader in (left, right):
-                        mapping = getattr(reader, 'data', None)
-                        if mapping is not None:
-                            mapping._mmap.close()
-    report['all_equal'] = all(row['metadata_equal'] and row['tensor_counts_equal']
+                comparison = compare_files(ours, native)
+                report['results'].append({'scenario': label, 'tensors': comparison['tensors'],
+                                          'input_sha256': hashlib.sha256(src.read_bytes()).hexdigest(),
+                                          'python_sha256': comparison['left_sha256'],
+                                          'native_sha256': comparison['right_sha256'],
+                                          'metadata_equal': comparison['metadata_equal'],
+                                          'alignment_equal': comparison['alignment_equal'],
+                                          'tensor_counts_equal': comparison['tensor_counts_equal']})
+    report['all_equal'] = all(row['metadata_equal'] and row['alignment_equal'] and row['tensor_counts_equal']
                               and all(tensor['equal'] for tensor in row['tensors']) for row in report['results'])
     return report
 

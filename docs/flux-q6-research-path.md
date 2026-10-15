@@ -93,9 +93,11 @@ Neither tool implicitly downloads or updates upstream tools/models.
 
 ## Remaining gates
 
-No complete installed FLUX checkpoint has passed this path yet. Full-model
-source preparation, metadata/model completeness, loader behavior, image quality,
-LoRA/offload behavior and peak memory/throughput still need separate evidence.
+One complete installed FLUX.2 klein Base 9B checkpoint now passes
+[full-model numeric validation](flux-q6-full-model-validation.md): all 201 tensor
+payloads/types/shapes and metadata match the native reference after common float
+preparation. Loader behavior, image quality, LoRA/offload behavior and isolated
+peak memory/throughput still need separate evidence.
 This change authorizes no renders. BF16 input, other architectures, shape repair,
 text-encoder metadata/policies and other quantization formats remain separate
 work. Keep the tested native production path available.

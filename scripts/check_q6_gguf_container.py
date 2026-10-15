@@ -9,6 +9,7 @@ import numpy as np
 
 from conversion_io import atomic_output, validate_output
 from convert import ConversionCancelled
+from scripts.gguf_research_io import open_gguf
 
 
 def _cancel(event):
@@ -26,10 +27,7 @@ def _file_hash(path, cancel_event=None):
 
 
 def _verify_container(path, records, cancel_event):
-    # Keep access to the mmap even if parsing fails, so Windows can remove temps.
-    reader = gguf.GGUFReader.__new__(gguf.GGUFReader)
-    try:
-        reader.__init__(str(path))
+    with open_gguf(path) as reader:
         if len(reader.tensors) != len(records):
             raise ValueError('GGUF tensor count mismatch')
         results = []
@@ -51,10 +49,6 @@ def _verify_container(path, records, cancel_event):
                             'type': tensor.tensor_type.name, 'bytes': tensor.n_bytes,
                             'data_offset': tensor.data_offset, 'payload_sha256': digest.hexdigest()})
         return results
-    finally:
-        mapping = getattr(reader, 'data', None)
-        if mapping is not None:
-            mapping._mmap.close()
 
 
 def package_tensors(report_paths, destination, *, cancel_event=None):
@@ -73,7 +67,9 @@ def package_tensors(report_paths, destination, *, cancel_event=None):
     for path in map(Path, report_paths):
         _cancel(cancel_event)
         validate_output(path, destination)
-        report_bytes = path.read_bytes()
+        # Git normalizes text to LF; host newline translation must not change
+        # embedded provenance when identical reports are checked out on Linux.
+        report_bytes = path.read_bytes().replace(b'\r\n', b'\n')
         report = json.loads(report_bytes)
         shape = report['shape']
         if (report['all_equal'] is not True or len(shape) != 2
@@ -134,6 +130,7 @@ def package_tensors(report_paths, destination, *, cancel_event=None):
             'output': str(destination), 'file_sha256': container_hash,
             'architecture': 's2gguf_q6_research', 'tensor_count': len(tensors), 'tensors': tensors,
             'source_report_sha256': [record['report_sha256'] for record in records], 'all_equal': True,
+            'source_report_hash_normalization': 'CRLF-to-LF',
             'checker_source_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
 
 

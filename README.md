@@ -36,6 +36,9 @@ test container is not a loadable model.
 An explicit [FLUX Q6_K research file path](docs/flux-q6-research-path.md) also
 matches the patched native quantizer on schematic files. Production conversion
 continues to use the existing backends.
+The [full FLUX.2 klein Base 9B numeric comparison](docs/flux-q6-full-model-validation.md)
+also matches all 201 native tensor payloads/types/shapes; loader/render validation
+remains separate.
 
 ## Supported Architectures
 

@@ -9,5 +9,7 @@ scripts/reference_q6_k.py text eol=lf
 scripts/check_q6_tensor_stream.py text eol=lf
 scripts/check_q6_gguf_container.py text eol=lf
 scripts/requantize_flux_q6.py text eol=lf
+scripts/compare_gguf_outputs.py text eol=lf
+scripts/gguf_research_io.py text eol=lf
 # GGUF container provenance embeds byte hashes of these evidence reports.
 data/q6-stream-*.json text eol=lf

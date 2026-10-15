@@ -196,15 +196,19 @@ confirmed all tensor names, logical shapes, Q6_K types, byte counts, 32-byte
 alignment and payload SHA256 values. The combined payload contains 16,248,960
 bytes; the GGUF adds 800 bytes of header/metadata. Evidence is retained in
 [`q6-gguf-container.json`](../data/q6-gguf-container.json), and the actual file is
-`I:\safetensors2GGUF-q6-stream-2026-10-15\q6-research-tensors.gguf`.
+`I:\safetensors2GGUF-q6-stream-2026-10-15\q6-research-tensors-portable.gguf`.
 
 **This is a container-layout test, not a complete model.** It deliberately mixes
 three source models and uses `general.architecture = s2gguf_q6_research` plus an
 explicit research-only flag. It must not be offered to a model loader. The raw
 stream reports provide trusted source semantics; container readback establishes
 layout/payload preservation, not independent revalidation of their native runs.
-The GGUF embeds SHA256 values of the exact input reports. Report LF endings are
-pinned so these hashes remain stable across Windows/Linux checkouts.
+The GGUF embeds SHA256 values of the input report text after CRLF-to-LF
+normalization. Report LF endings are also pinned in Git. Normalizing at the read
+boundary is necessary because a Windows-generated working file can still contain
+CRLF before checkout, even when its Git blob uses LF. A regression test proves
+that LF/CRLF forms produce identical container bytes. The portable evidence was
+regenerated from the same three verified payloads; earlier artifacts remain on I:.
 
 The tool rejects failing reports, incompatible shapes, duplicate names,
 truncated/extended/corrupt raw files and existing output files. Copy-time byte
@@ -228,8 +232,9 @@ establish a peak-RSS guarantee or eliminate OS page-cache residency.
 
 An explicit [FLUX Q6_K research file path](flux-q6-research-path.md) now connects
 the encoder to the prepared float-GGUF boundary. Eight schematic files match
-patched b3962 on 196 tensor payload/type/shape decisions; full-model and runtime
-gates below remain open.
+patched b3962 on 196 tensor payload/type/shape decisions. The subsequent
+[full FLUX checkpoint comparison](flux-q6-full-model-validation.md) also passes
+all 201 tensor payloads/types/shapes; runtime gates below remain open.
 
 The current explicit overflow guard rejects extreme finite inputs if native-style scale-search
 arithmetic overflows. It does not silently pick a different precision or claim
@@ -241,7 +246,7 @@ must remain compatible before enabling any production path. The prototype has
 not been wired into the Workbench or conversion services.
 
 Other K encoders, IQ, ConvRot/safetensors formats, importance-matrix variants,
-production streaming/cancellation integration, full-model files/loading/render fidelity,
+production streaming/cancellation integration, broader full-model coverage/loading/render fidelity,
 Linux native execution, comparative throughput benchmarking and measured peak
 memory remain outside this pilot's evidence.
 Do not infer those capabilities from matching Q6_K block bytes.

@@ -1,7 +1,7 @@
 {
   "status": "GGUF container roundtrip only; no model conversion or loader compatibility claim",
-  "output": "I:\\safetensors2GGUF-q6-stream-2026-10-15\\q6-research-tensors.gguf",
-  "file_sha256": "d394b660befe5e77c9909ffa7bb39e75adc0fa4e2413fc0a08c577306333d465",
+  "output": "I:\\safetensors2GGUF-q6-stream-2026-10-15\\q6-research-tensors-portable.gguf",
+  "file_sha256": "a3a25e7e1d5da7d69b3fd3dbdbd1324bf573985b4698d908073a18d957e4899b",
   "architecture": "s2gguf_q6_research",
   "tensor_count": 3,
   "tensors": [
@@ -40,10 +40,11 @@
     }
   ],
   "source_report_sha256": [
-    "2f5f20ae4fdb43e74331353c1f13249ef6ea139de46e10b20372904bab2a11cd",
-    "9b5fcf7f41ff2e2b0e2da0fb5da36f8f1a407f6cb849e596efe8c4e12527f685",
-    "88113c2b26859fa4d22f53c1c5aa2d004d7a27808245ed52053a368eb5ace361"
+    "2781b778953b611b37fafc4e86c70092689754e2ee1e68c46fd35280fe8b672c",
+    "a347e79cd30897fe45fb2de1d37ff7c1b9ffee18b44036dc221529cffdc95289",
+    "700ea1e3d3579d63837465ef265063e291682335c64be1c2d1016114919736c6"
   ],
   "all_equal": true,
-  "checker_source_sha256": "9c0cd7f93d1c334b5ad9f3424aa143105fd5ebbb8559d19ecaa04a3161edf47c"
+  "source_report_hash_normalization": "CRLF-to-LF",
+  "checker_source_sha256": "2ae4677445d9ce4c585d87a9e62fdf9fea5941a03c1a2c7130df175844eb3b04"
 }

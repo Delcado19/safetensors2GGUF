@@ -55,6 +55,12 @@ An explicit FLUX F16/F32 GGUF-to-Q6_K research path additionally matches patched
 b3962 on eight schematic files (196 tensor comparisons), with metadata/protection
 and row-fallback checks. Read `docs/flux-q6-research-path.md`. It does not add a
 production route or prove complete-model loading/rendering.
+Full-checkpoint numeric follow-up: one installed FLUX.2 klein Base 9B checkpoint
+passes all 201 tensor payload/type/shape comparisons and metadata against native
+b3962 after common float preparation. The full run exposed a Windows NumPy uint32
+alignment/large-offset overflow; shared research reader normalization and >2/4 GiB
+regressions fix it. Read `docs/flux-q6-full-model-validation.md`. Loader/render,
+isolated memory/throughput and broader architecture coverage remain open.
 Measured peak memory/comparative throughput,
 extreme-range policy, other encoders and full-model integration remain
 open; preserve separate model/preset rules and the implementation-language choice.

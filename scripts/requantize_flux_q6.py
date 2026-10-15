@@ -17,6 +17,7 @@ import numpy as np
 from conversion_io import atomic_output, validate_output
 from scripts.check_q6_gguf_container import _cancel, _file_hash
 from scripts.reference_q6_k import iter_q6_k
+from scripts.gguf_research_io import open_gguf
 
 
 def flux_q6_type(name, shape, source_type):
@@ -50,9 +51,7 @@ def requantize(source, destination, *, cancel_event=None, on_progress=None):
     source, destination = Path(source), Path(destination)
     validate_output(source, destination)
     before = source.stat()
-    reader = gguf.GGUFReader.__new__(gguf.GGUFReader)
-    try:
-        reader.__init__(str(source))
+    with open_gguf(source) as reader:
         if reader.endianess != gguf.GGUFEndian.LITTLE:
             raise ValueError('Research FLUX path requires little-endian input')
         arch = reader.get_field('general.architecture')
@@ -132,9 +131,7 @@ def requantize(source, destination, *, cancel_event=None, on_progress=None):
             if (before.st_size, before.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
                 raise ValueError('Source changed during requantization')
             # Mixed-precision readback must preserve float bytes as well as Q6 blocks.
-            check = gguf.GGUFReader.__new__(gguf.GGUFReader)
-            try:
-                check.__init__(str(temporary))
+            with open_gguf(temporary) as check:
                 if len(check.tensors) != len(plan):
                     raise ValueError('GGUF tensor count mismatch')
                 for tensor, row in zip(check.tensors, plan):
@@ -149,16 +146,8 @@ def requantize(source, destination, *, cancel_event=None, on_progress=None):
                         digest.update(data[start:start + 1024 * 1024].tobytes())
                     if digest.hexdigest() != row['payload_sha256']:
                         raise ValueError('GGUF tensor readback mismatch')
-            finally:
-                mapping = getattr(check, 'data', None)
-                if mapping is not None:
-                    mapping._mmap.close()
             checksum = _file_hash(temporary, cancel_event)
             _cancel(cancel_event)
-    finally:
-        mapping = getattr(reader, 'data', None)
-        if mapping is not None:
-            mapping._mmap.close()
     return {'status': 'Research FLUX Q6_K requantizer; no production dispatch or render claim',
             'output': str(destination), 'source': str(source), 'file_sha256': checksum, 'tensors': plan}
 

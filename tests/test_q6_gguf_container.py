@@ -133,10 +133,25 @@ def test_retained_container_evidence_matches_stream_payloads():
     sources = [data / f'q6-stream-{name}.json' for name in ('flux', 'qwen', 'sdxl')]
     assert result['all_equal'] and result['tensor_count'] == 3
     assert result['architecture'] == 's2gguf_q6_research'
-    assert result['source_report_sha256'] == [hashlib.sha256(path.read_bytes()).hexdigest() for path in sources]
+    assert result['source_report_hash_normalization'] == 'CRLF-to-LF'
+    assert result['source_report_sha256'] == [
+        hashlib.sha256(path.read_bytes().replace(b'\r\n', b'\n')).hexdigest() for path in sources]
     for tensor, source in zip(result['tensors'], sources):
         report = json.loads(source.read_text())
         assert tensor['shape'] == report['shape'] and tensor['name'] == report['tensor']
         assert tensor['payload_sha256'] == report['payload_sha256']
         assert tensor['bytes'] == report['output_bytes'] and tensor['data_offset'] % 32 == 0
         assert tensor['type'] == 'Q6_K'
+
+
+def test_report_newline_translation_preserves_embedded_provenance(tmp_path, inputs):
+    """The same report in a Windows or Linux checkout must produce identical GGUF."""
+    reports, _ = inputs
+    for path in reports:
+        path.write_bytes(path.read_bytes().replace(b'\r\n', b'\n'))
+    lf = container.package_tensors(reports, tmp_path / 'lf.gguf')
+    for path in reports:
+        path.write_bytes(path.read_bytes().replace(b'\n', b'\r\n'))
+    crlf = container.package_tensors(reports, tmp_path / 'crlf.gguf')
+    assert lf['source_report_sha256'] == crlf['source_report_sha256']
+    assert lf['file_sha256'] == crlf['file_sha256']

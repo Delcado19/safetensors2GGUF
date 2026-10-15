@@ -110,6 +110,9 @@ The first architecture-specific [FLUX Q6_K research path](flux-q6-research-path.
 now passes eight schematic native-versus-Python file comparisons (196 tensors).
 It preserves the existing float-GGUF boundary and remains outside production
 dispatch; this is not full-model or loader validation.
+The subsequent [full FLUX checkpoint comparison](flux-q6-full-model-validation.md)
+passes all 201 tensor payload/type/shape comparisons and metadata for one installed
+9B checkpoint. Runtime compatibility and broader model coverage remain open.
 
 1. Extract explicit effective rules for the supported model families, including
    inherited rules, tensor transformations and C++ preset choices.

@@ -6,6 +6,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Fix: Normalize research GGUF alignment to Python integers before large-offset
+  arithmetic, preventing Windows overflow above 2 GiB. Share reader cleanup and
+  cover >2 GiB, >4 GiB and parse/cancellation error paths. Normalize report text
+  provenance to LF so Windows/Linux checkouts produce identical test containers.
+
+- Add: Bounded GGUF output comparison and full installed FLUX.2 klein Base 9B
+  numeric evidence: all 201 tensor payloads/types/shapes and metadata match pinned
+  b3962 after common float preparation. Production dispatch and render claims
+  remain unchanged.
+
 - Add: Explicit research FLUX float-GGUF to Q6_K conversion using the shared
   NumPy encoder, preserved metadata/protected tensors, native F16 row fallback
   and atomic checked output. Eight schematic files match patched b3962 in 196
