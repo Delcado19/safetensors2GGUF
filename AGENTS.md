@@ -23,6 +23,15 @@ Kompute gitlink, license/hash verification and static model rules are preserved.
 Normal conversion still uses the existing backends; offline builds, dependency
 packaging, numerical parity, new loader work and language selection remain open.
 
+Reference analysis updated (2026-10-15): read
+`docs/converter-reference-analysis.md` for resolved static inheritance, precision
+policy differences and 96 small encoder probes. Frozen Molbal Q4_K/Q5_K math
+clips positive-only ramps; do not adopt it unchanged. Follow-up native CPU probes
+cover 360 cases: all 95 valid encodings per llama.cpp source are byte-identical
+across b3962 and both frozen text refs. Read
+`docs/converter-native-reference-comparison.md`. Full model/policy parity and
+Linux native execution remain open; production dispatch is unchanged.
+
 Recorded roadmap (the final consolidation strategy remains open):
 - First provide one application with a shared format registry, model checks,
   precision protection, progress/cancellation and safe output handling.

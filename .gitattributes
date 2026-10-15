@@ -2,3 +2,5 @@
 *.sh text eol=lf
 # Preserve upstream license bytes for archive verification on every platform.
 third_party/converter_references/*-LICENSE* -text whitespace=-blank-at-eof
+# Keep native probe source checksums stable across Windows/Linux checkouts.
+tools/converter-reference/* text eol=lf

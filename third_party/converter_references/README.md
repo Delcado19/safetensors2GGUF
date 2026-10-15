@@ -31,6 +31,10 @@ The archives total approximately 104 MiB. There are no additional gitlinks in
 the saved upstream trees, including the Kompute source. Snapshotting tracked
 source does not bundle Python wheels, SDKs, compiler tools, or optional build-time
 downloads. A verified source snapshot is not proof of a fully offline build.
-New builds, output parity and runtime compatibility remain pending.
+Production offline builds and runtime compatibility remain pending. Small native
+CPU math probes were built separately; see
+[their scope and results](../../docs/converter-native-reference-comparison.md).
 
 See [the consolidation inventory](../../docs/converter-consolidation-inventory.md).
+Effective-rule resolution and the executable math probe boundary are documented
+in [the reference analysis](../../docs/converter-reference-analysis.md).

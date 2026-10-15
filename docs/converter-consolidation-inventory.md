@@ -1,8 +1,12 @@
 # Unified converter: frozen source inventory
 
 Date: 2026-10-12. Branch: `research/unified-converter-inventory`.
-Status: source preservation and static inventory complete; numerical comparison,
-backend replacement and hardware optimization have not started.
+Status: source preservation and static inventory complete. Effective declaration
+resolution and initial small encoder probes were added on 2026-10-15; see
+[the reference analysis](converter-reference-analysis.md). A subsequent
+[native block comparison](converter-native-reference-comparison.md) found identical
+bytes across all three llama.cpp refs for 95 valid probes each. Complete converter
+parity, backend replacement and hardware optimization remain open.
 
 ## Objective and boundaries
 
@@ -98,9 +102,14 @@ Next, before replacing a backend:
 
 1. Extract explicit effective rules for the supported model families, including
    inherited rules, tensor transformations and C++ preset choices.
+   Static inheritance/method ownership and policy source spans are now recorded;
+   executable policy-decision parity remains open.
 2. Build small encoder/dequantizer vectors for zero, constant, outlier, aligned
    and incompatible-shape tensors. Specify rounding, byte layout and fallback
    behavior; equality claims need measured results.
+   The initial 96-case probe report exists. Molbal Q4_K/Q5_K clips positive-only
+   ramps and must not be adopted unchanged. The subsequent 360-case native block
+   comparison includes Q2_K/Q3_K; full model/policy parity remains open.
 3. Compare Molbal Q4_K/Q5_K/Q6_K with patched b3962 and both text references.
    Compare S/M policies separately from each individual tensor encoding.
 4. Preserve source precision, tokenizer/metadata and atomic output/cancellation

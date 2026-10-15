@@ -6,6 +6,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Reproducible offline native CPU reference probes for three frozen llama.cpp
+  sources, including Q2_K/Q3_K. Preserve 360 comparison cases and build provenance;
+  all 95 valid probes per source produce identical bytes. Confirm Molbal's affine
+  saturation against native block encoders without changing production dispatch.
+
+- Add: Offline effective-rule analysis with inherited field/method provenance and
+  pinned C++ policy locations. Add 96 CPU encoder probes with byte-layout,
+  determinism and reconstruction checks; document frozen Molbal Q4_K/Q5_K
+  positive-range clipping before any production integration.
+
 - Add: Frozen converter analysis sources for patched b3962, installed/current
   text llama.cpp and current Molbal, including the b3962 Kompute submodule,
   licenses, provenance and checksums. Add an offline static inventory verifier

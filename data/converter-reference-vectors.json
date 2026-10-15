@@ -1,0 +1,1575 @@
+{
+  "status": "Encoder probes only; no native parity or model-quality claim",
+  "molbal": {
+    "commit": "b77b9d8124656aa1a548d95c617da4d16cab1a2e",
+    "archive_sha256": "a7184fe471fe301af0d154dc7f357a52b2a29aade876d59a625dff42e6cb47e5",
+    "file": "tools/convert.py",
+    "functions": {
+      "_pack_k_scales": [
+        1274,
+        1282
+      ],
+      "_pack_fp16_pair": [
+        1285,
+        1289
+      ],
+      "_quantize_k_affine": [
+        1292,
+        1335
+      ],
+      "_quantize_k_q6": [
+        1338,
+        1369
+      ],
+      "quantize_k": [
+        1372,
+        1377
+      ]
+    }
+  },
+  "runtime": {
+    "numpy": "2.4.4",
+    "gguf": "0.19.0",
+    "byteorder": "little",
+    "decoder_sha256": "db403c3b2292d3f2c5cfef4109d4b5745f437b5599c7afc94d4b97feca7e9247"
+  },
+  "results": [
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q8_0",
+      "vector": "zero",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "e5a00aa9991ac8a5ee3109844d84a55583bd20572ad3ffcd42792f3c36b183ad",
+      "status": "encoded",
+      "bytes": 544,
+      "payload_sha256": "44ddd2f478477ebd1c1cd5b99400af48cd46033c59173195f48870e608cec810",
+      "reconstructed_min": 0.0,
+      "reconstructed_max": 0.0,
+      "rmse": 0.0,
+      "max_absolute_error": 0.0
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q8_0",
+      "vector": "constant_positive",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "a89e0a67ce8466e2f70e3d022978d0e520804d7d30ffcefcd93f4825af344740",
+      "status": "encoded",
+      "bytes": 544,
+      "payload_sha256": "3d4fca3fcff8eb3e4024b4705d056ab762c33dd039bacf1230d76b86fadbcd41",
+      "reconstructed_min": 0.7499542236328125,
+      "reconstructed_max": 0.7499542236328125,
+      "rmse": 4.57763671875e-05,
+      "max_absolute_error": 4.57763671875e-05
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q8_0",
+      "vector": "constant_negative",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "cb3d70534bdcf2d55a8784c63a2a30cc2a3a379a6a5fa1f361e24ad922992e66",
+      "status": "encoded",
+      "bytes": 544,
+      "payload_sha256": "b700805e29fc526fb0d205f1932109a49d1fb3f08ab7138ba315143e84a86596",
+      "reconstructed_min": -0.7499542236328125,
+      "reconstructed_max": -0.7499542236328125,
+      "rmse": 4.57763671875e-05,
+      "max_absolute_error": 4.57763671875e-05
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q8_0",
+      "vector": "ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f6822562b76d317415204551de2fa6f3c1601c1407d12017945b3fa7548d2f99",
+      "status": "encoded",
+      "bytes": 544,
+      "payload_sha256": "51917e9a2555d7de081cfb0d5c5895be1466732abb7825895a6264e2b26999bb",
+      "reconstructed_min": -1.9998779296875,
+      "reconstructed_max": 1.9998779296875,
+      "rmse": 0.0028039969276241017,
+      "max_absolute_error": 0.0077056884765625
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q8_0",
+      "vector": "outliers",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "5172a74f436920ac0c6f0a42916c66d50b37e07285e23d86f7fe423bdbe525d6",
+      "status": "encoded",
+      "bytes": 544,
+      "payload_sha256": "71befffa3f45729dc9337255a330c761e7f8a55811690ffb12631219d93bc765",
+      "reconstructed_min": -100.02490234375,
+      "reconstructed_max": 100.02490234375,
+      "rmse": 0.001556396484375,
+      "max_absolute_error": 0.02490234375
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q8_0",
+      "vector": "positive_ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "0f277d72b645c8740c6ed3de0c33d37152f73daa370ac8266ff5c20bea8ecac3",
+      "status": "encoded",
+      "bytes": 544,
+      "payload_sha256": "5745d7b29268ba7b5fd639788badba9008c5d420977afebd202b4165e9f003f6",
+      "reconstructed_min": 1.00250244140625,
+      "reconstructed_max": 1.9998779296875,
+      "rmse": 0.00351221465840204,
+      "max_absolute_error": 0.007903814315795898
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q8_0",
+      "vector": "negative_ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f8fbcb0e3521ae62c9c8a02fc07501efea14ffd5796b52a542379256223903e1",
+      "status": "encoded",
+      "bytes": 544,
+      "payload_sha256": "62034c460fc7d25c3be0f950a90331f044b9584c33ca7b5206680078dd944a86",
+      "reconstructed_min": -1.9998779296875,
+      "reconstructed_max": -1.00250244140625,
+      "rmse": 0.00351221465840204,
+      "max_absolute_error": 0.007903814315795898
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q8_0",
+      "vector": "rounding_probe",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f4a3dc310d01d87f7c19fa3aa93588956f14ee27dafa432c6b35f9f60f9f26a8",
+      "status": "encoded",
+      "bytes": 544,
+      "payload_sha256": "1daf9ef687ea7ecbce8cf5d7f5840bfb4d306599ea216a69e47ca872b4c453cc",
+      "reconstructed_min": -1.499908447265625,
+      "reconstructed_max": 1.499908447265625,
+      "rmse": 0.002806041109300889,
+      "max_absolute_error": 0.00396728515625
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q8_0",
+      "vector": "one_block",
+      "shape": [
+        1,
+        256
+      ],
+      "input_sha256": "21729b1385e353dcc33ba5764ca37433dea819933d7a4094aadce58c3e300c53",
+      "status": "encoded",
+      "bytes": 272,
+      "payload_sha256": "50422b501bf0d44ad9ed78a4d3a85e545f5c6115599cddfea8604756615edd8a",
+      "reconstructed_min": -1.9998779296875,
+      "reconstructed_max": -0.00388336181640625,
+      "rmse": 0.0028039969276241017,
+      "max_absolute_error": 0.0077056884765625
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q8_0",
+      "vector": "standard_block_only",
+      "shape": [
+        2,
+        32
+      ],
+      "input_sha256": "1031f29f3ce849d7b82011271790d9021425684ed73fe578a8cc992b7511e2b7",
+      "status": "encoded",
+      "bytes": 68,
+      "payload_sha256": "78153263022ccedee007cc37d0b056cf3d31116c1dd503ccebb31a9a31504bb4",
+      "reconstructed_min": -1.9998779296875,
+      "reconstructed_max": 0.24659347534179688,
+      "rmse": 0.003567439324060024,
+      "max_absolute_error": 0.0077056884765625
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q8_0",
+      "vector": "incompatible_rows",
+      "shape": [
+        256,
+        2
+      ],
+      "input_sha256": "f6822562b76d317415204551de2fa6f3c1601c1407d12017945b3fa7548d2f99",
+      "status": "rejected_incompatible_row",
+      "error": "QuantError"
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q8_0",
+      "vector": "unaligned",
+      "shape": [
+        2,
+        255
+      ],
+      "input_sha256": "a19be5b7e8ded6e5719c91aba21ae66c8c3266e0ebc19c765ad5c7562752686c",
+      "status": "rejected_incompatible_row",
+      "error": "QuantError"
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_0",
+      "vector": "zero",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "e5a00aa9991ac8a5ee3109844d84a55583bd20572ad3ffcd42792f3c36b183ad",
+      "status": "encoded",
+      "bytes": 288,
+      "payload_sha256": "2555f15e33335a8f393c23b8f5a0d928e937b278c0b74723cb5e4d9d82d9b4ca",
+      "reconstructed_min": -0.0,
+      "reconstructed_max": -0.0,
+      "rmse": 0.0,
+      "max_absolute_error": 0.0
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_0",
+      "vector": "constant_positive",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "a89e0a67ce8466e2f70e3d022978d0e520804d7d30ffcefcd93f4825af344740",
+      "status": "encoded",
+      "bytes": 288,
+      "payload_sha256": "e04318fc069946e4031d66f284e759476eb272874d4744e091e7db00fb06bb60",
+      "reconstructed_min": 0.75,
+      "reconstructed_max": 0.75,
+      "rmse": 0.0,
+      "max_absolute_error": 0.0
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_0",
+      "vector": "constant_negative",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "cb3d70534bdcf2d55a8784c63a2a30cc2a3a379a6a5fa1f361e24ad922992e66",
+      "status": "encoded",
+      "bytes": 288,
+      "payload_sha256": "6c9119a5059989b22791e1ee69d491c77cae19e439aab409e1b93b2ec9d33529",
+      "reconstructed_min": -0.75,
+      "reconstructed_max": -0.75,
+      "rmse": 0.0,
+      "max_absolute_error": 0.0
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_0",
+      "vector": "ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f6822562b76d317415204551de2fa6f3c1601c1407d12017945b3fa7548d2f99",
+      "status": "encoded",
+      "bytes": 288,
+      "payload_sha256": "845fbb3284588fdd9554d188edb5defe8858cf80a5941f712426f99c7910c359",
+      "reconstructed_min": -2.0,
+      "reconstructed_max": 2.0,
+      "rmse": 0.044466311703807083,
+      "max_absolute_error": 0.1247553825378418
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_0",
+      "vector": "outliers",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "5172a74f436920ac0c6f0a42916c66d50b37e07285e23d86f7fe423bdbe525d6",
+      "status": "encoded",
+      "bytes": 288,
+      "payload_sha256": "0689d6d09cc25b223b2753c6b4ee2be3404ef61e9f5b92298b37bad1924d0603",
+      "reconstructed_min": -100.0,
+      "reconstructed_max": 100.0,
+      "rmse": 0.0,
+      "max_absolute_error": 0.0
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_0",
+      "vector": "positive_ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "0f277d72b645c8740c6ed3de0c33d37152f73daa370ac8266ff5c20bea8ecac3",
+      "status": "encoded",
+      "bytes": 288,
+      "payload_sha256": "4837e9973a889dbdb6d018576d542a77a97991bf2757c361b5b484e6836e6899",
+      "reconstructed_min": 1.060546875,
+      "reconstructed_max": 2.0,
+      "rmse": 0.035256721290676,
+      "max_absolute_error": 0.061034202575683594
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_0",
+      "vector": "negative_ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f8fbcb0e3521ae62c9c8a02fc07501efea14ffd5796b52a542379256223903e1",
+      "status": "encoded",
+      "bytes": 288,
+      "payload_sha256": "a56705488b51872be84522708a6109be2d28105b7ff297fdf938d8d830c5fb0c",
+      "reconstructed_min": -2.0,
+      "reconstructed_max": -1.060546875,
+      "rmse": 0.035256721290676,
+      "max_absolute_error": 0.061034202575683594
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_0",
+      "vector": "rounding_probe",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f4a3dc310d01d87f7c19fa3aa93588956f14ee27dafa432c6b35f9f60f9f26a8",
+      "status": "encoded",
+      "bytes": 288,
+      "payload_sha256": "9323f77fcb0510295c20a154dbe5f44f6863b79ecaf25d9aef1edfc2c00b7886",
+      "reconstructed_min": -1.5,
+      "reconstructed_max": 1.3125,
+      "rmse": 0.10364452469860624,
+      "max_absolute_error": 0.1875
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_0",
+      "vector": "one_block",
+      "shape": [
+        1,
+        256
+      ],
+      "input_sha256": "21729b1385e353dcc33ba5764ca37433dea819933d7a4094aadce58c3e300c53",
+      "status": "encoded",
+      "bytes": 144,
+      "payload_sha256": "8fab2a69e945ba7170a6c2a4a8f24244ef4a5cded1331b83e4c92dab21819be3",
+      "reconstructed_min": -2.0,
+      "reconstructed_max": 0.0,
+      "rmse": 0.044466311703807083,
+      "max_absolute_error": 0.1247553825378418
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_0",
+      "vector": "standard_block_only",
+      "shape": [
+        2,
+        32
+      ],
+      "input_sha256": "1031f29f3ce849d7b82011271790d9021425684ed73fe578a8cc992b7511e2b7",
+      "status": "encoded",
+      "bytes": 36,
+      "payload_sha256": "5b688aad4148ceaad3f2b757ae5754c201069be384de2cceed210cc080451995",
+      "reconstructed_min": -2.0,
+      "reconstructed_max": 0.24658203125,
+      "rmse": 0.05140241618080287,
+      "max_absolute_error": 0.1247553825378418
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_0",
+      "vector": "incompatible_rows",
+      "shape": [
+        256,
+        2
+      ],
+      "input_sha256": "f6822562b76d317415204551de2fa6f3c1601c1407d12017945b3fa7548d2f99",
+      "status": "rejected_incompatible_row",
+      "error": "QuantError"
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_0",
+      "vector": "unaligned",
+      "shape": [
+        2,
+        255
+      ],
+      "input_sha256": "a19be5b7e8ded6e5719c91aba21ae66c8c3266e0ebc19c765ad5c7562752686c",
+      "status": "rejected_incompatible_row",
+      "error": "QuantError"
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_1",
+      "vector": "zero",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "e5a00aa9991ac8a5ee3109844d84a55583bd20572ad3ffcd42792f3c36b183ad",
+      "status": "encoded",
+      "bytes": 320,
+      "payload_sha256": "7b6436b0c98f62380866d9432c2af0ee08ce16a171bda6951aecd95ee1307d61",
+      "reconstructed_min": 0.0,
+      "reconstructed_max": 0.0,
+      "rmse": 0.0,
+      "max_absolute_error": 0.0
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_1",
+      "vector": "constant_positive",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "a89e0a67ce8466e2f70e3d022978d0e520804d7d30ffcefcd93f4825af344740",
+      "status": "encoded",
+      "bytes": 320,
+      "payload_sha256": "54442ff4caff95a725b247e8775417bf66b3eba6edc27e40a088aa960f594aea",
+      "reconstructed_min": 0.75,
+      "reconstructed_max": 0.75,
+      "rmse": 0.0,
+      "max_absolute_error": 0.0
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_1",
+      "vector": "constant_negative",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "cb3d70534bdcf2d55a8784c63a2a30cc2a3a379a6a5fa1f361e24ad922992e66",
+      "status": "encoded",
+      "bytes": 320,
+      "payload_sha256": "2891070a468cdeba11722929310f02fe878d581deb4ebbc7ef9362022932691a",
+      "reconstructed_min": -0.75,
+      "reconstructed_max": -0.75,
+      "rmse": 0.0,
+      "max_absolute_error": 0.0
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_1",
+      "vector": "ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f6822562b76d317415204551de2fa6f3c1601c1407d12017945b3fa7548d2f99",
+      "status": "encoded",
+      "bytes": 320,
+      "payload_sha256": "6b4eac1220735bdc9fd1cc685f600ea61e6391f3ef809bfdf88600df5f73e09a",
+      "reconstructed_min": -2.0,
+      "reconstructed_max": 2.00042724609375,
+      "rmse": 0.004592348491547946,
+      "max_absolute_error": 0.008268356323242188
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_1",
+      "vector": "outliers",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "5172a74f436920ac0c6f0a42916c66d50b37e07285e23d86f7fe423bdbe525d6",
+      "status": "encoded",
+      "bytes": 320,
+      "payload_sha256": "ea23aa42d9fe5a6a2fddf2b093b5dde13d2fbc40ebb1f1f41a5485f378225a2e",
+      "reconstructed_min": -100.0,
+      "reconstructed_max": 100.01953125,
+      "rmse": 0.0048828125,
+      "max_absolute_error": 0.01953125
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_1",
+      "vector": "positive_ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "0f277d72b645c8740c6ed3de0c33d37152f73daa370ac8266ff5c20bea8ecac3",
+      "status": "encoded",
+      "bytes": 320,
+      "payload_sha256": "c33ada712c99e1ea2e4ee4a3c0d13996f67b27e8f8afb261509c289caac9853d",
+      "reconstructed_min": 1.0,
+      "reconstructed_max": 2.0001068115234375,
+      "rmse": 0.0011813986158032334,
+      "max_absolute_error": 0.002432584762573242
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_1",
+      "vector": "negative_ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f8fbcb0e3521ae62c9c8a02fc07501efea14ffd5796b52a542379256223903e1",
+      "status": "encoded",
+      "bytes": 320,
+      "payload_sha256": "ec967eba0f07726a5b7434de98cd690e98ce6e0139578f37ca2fa6c4e26bee8d",
+      "reconstructed_min": -2.0,
+      "reconstructed_max": -0.9998931884765625,
+      "rmse": 0.0011813986158032334,
+      "max_absolute_error": 0.002432584762573242
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_1",
+      "vector": "rounding_probe",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f4a3dc310d01d87f7c19fa3aa93588956f14ee27dafa432c6b35f9f60f9f26a8",
+      "status": "encoded",
+      "bytes": 320,
+      "payload_sha256": "bb1885c0b0499a668f0ba6672924631c2e5f5db854a8a564acb5d3bfe8006bd2",
+      "reconstructed_min": -1.5,
+      "reconstructed_max": 1.499267578125,
+      "rmse": 0.0004567452864714284,
+      "max_absolute_error": 0.000732421875
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_1",
+      "vector": "one_block",
+      "shape": [
+        1,
+        256
+      ],
+      "input_sha256": "21729b1385e353dcc33ba5764ca37433dea819933d7a4094aadce58c3e300c53",
+      "status": "encoded",
+      "bytes": 160,
+      "payload_sha256": "683869a3779c29f5e25977f42d314b2de13ebaffa5b3ce559862a50da1bbdd52",
+      "reconstructed_min": -2.0,
+      "reconstructed_max": -0.00396728515625,
+      "rmse": 0.004592478048717612,
+      "max_absolute_error": 0.008268356323242188
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_1",
+      "vector": "standard_block_only",
+      "shape": [
+        2,
+        32
+      ],
+      "input_sha256": "1031f29f3ce849d7b82011271790d9021425684ed73fe578a8cc992b7511e2b7",
+      "status": "encoded",
+      "bytes": 40,
+      "payload_sha256": "a397b1f04677139eb386d1eda2e1d7b82decb9af7cf71d69b25c4ec96086c41b",
+      "reconstructed_min": -2.0,
+      "reconstructed_max": 0.24652862548828125,
+      "rmse": 0.004586634828305555,
+      "max_absolute_error": 0.007827803492546082
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_1",
+      "vector": "incompatible_rows",
+      "shape": [
+        256,
+        2
+      ],
+      "input_sha256": "f6822562b76d317415204551de2fa6f3c1601c1407d12017945b3fa7548d2f99",
+      "status": "rejected_incompatible_row",
+      "error": "QuantError"
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q4_1",
+      "vector": "unaligned",
+      "shape": [
+        2,
+        255
+      ],
+      "input_sha256": "a19be5b7e8ded6e5719c91aba21ae66c8c3266e0ebc19c765ad5c7562752686c",
+      "status": "rejected_incompatible_row",
+      "error": "QuantError"
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_0",
+      "vector": "zero",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "e5a00aa9991ac8a5ee3109844d84a55583bd20572ad3ffcd42792f3c36b183ad",
+      "status": "encoded",
+      "bytes": 352,
+      "payload_sha256": "99af7a302158a007f385bffd0f11826261f2e6c087b9809aff197bf35e7f5684",
+      "reconstructed_min": -0.0,
+      "reconstructed_max": -0.0,
+      "rmse": 0.0,
+      "max_absolute_error": 0.0
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_0",
+      "vector": "constant_positive",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "a89e0a67ce8466e2f70e3d022978d0e520804d7d30ffcefcd93f4825af344740",
+      "status": "encoded",
+      "bytes": 352,
+      "payload_sha256": "1cd544bc19e0d764cedc931c25c0b7e7055ac4e23f9aad6c2d9b30c9487e8d18",
+      "reconstructed_min": 0.75,
+      "reconstructed_max": 0.75,
+      "rmse": 0.0,
+      "max_absolute_error": 0.0
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_0",
+      "vector": "constant_negative",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "cb3d70534bdcf2d55a8784c63a2a30cc2a3a379a6a5fa1f361e24ad922992e66",
+      "status": "encoded",
+      "bytes": 352,
+      "payload_sha256": "3ea4324f0bcf3be68ffec39c96799cdfd6cd48558b356dcd69a4977f10fc646f",
+      "reconstructed_min": -0.75,
+      "reconstructed_max": -0.75,
+      "rmse": 0.0,
+      "max_absolute_error": 0.0
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_0",
+      "vector": "ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f6822562b76d317415204551de2fa6f3c1601c1407d12017945b3fa7548d2f99",
+      "status": "encoded",
+      "bytes": 352,
+      "payload_sha256": "9c72a21dccf34f7c2d5cf6088d5f8710218b66eb3aabdbb1eb395056e3cdac4c",
+      "reconstructed_min": -2.0,
+      "reconstructed_max": 2.0,
+      "rmse": 0.02260036110361687,
+      "max_absolute_error": 0.0623776912689209
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_0",
+      "vector": "outliers",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "5172a74f436920ac0c6f0a42916c66d50b37e07285e23d86f7fe423bdbe525d6",
+      "status": "encoded",
+      "bytes": 352,
+      "payload_sha256": "2f59b086f8529452850b52366dcec8fff0ba0f811b121da9da6fae8680242b36",
+      "reconstructed_min": -100.0,
+      "reconstructed_max": 100.0,
+      "rmse": 0.0,
+      "max_absolute_error": 0.0
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_0",
+      "vector": "positive_ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "0f277d72b645c8740c6ed3de0c33d37152f73daa370ac8266ff5c20bea8ecac3",
+      "status": "encoded",
+      "bytes": 352,
+      "payload_sha256": "3a2d0767f101660cc1455abacbd4dfc4dee882f54c22719844d908ed7d103cc2",
+      "reconstructed_min": 0.9942626953125,
+      "reconstructed_max": 2.0,
+      "rmse": 0.030059710595232242,
+      "max_absolute_error": 0.06066536903381348
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_0",
+      "vector": "negative_ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f8fbcb0e3521ae62c9c8a02fc07501efea14ffd5796b52a542379256223903e1",
+      "status": "encoded",
+      "bytes": 352,
+      "payload_sha256": "0b9a6a0ddc7d3bebb95932df5808e1a5dc72215984c8edd7d63192c310ceb24e",
+      "reconstructed_min": -2.0,
+      "reconstructed_max": -0.9942626953125,
+      "rmse": 0.030059710595232242,
+      "max_absolute_error": 0.06066536903381348
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_0",
+      "vector": "rounding_probe",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f4a3dc310d01d87f7c19fa3aa93588956f14ee27dafa432c6b35f9f60f9f26a8",
+      "status": "encoded",
+      "bytes": 352,
+      "payload_sha256": "e8396e888963124eb1f04fae7c595bc1ca947dc4a700af7c0d20b7d2c1e1bd82",
+      "reconstructed_min": -1.5,
+      "reconstructed_max": 1.40625,
+      "rmse": 0.05182226234930312,
+      "max_absolute_error": 0.09375
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_0",
+      "vector": "one_block",
+      "shape": [
+        1,
+        256
+      ],
+      "input_sha256": "21729b1385e353dcc33ba5764ca37433dea819933d7a4094aadce58c3e300c53",
+      "status": "encoded",
+      "bytes": 176,
+      "payload_sha256": "d7a46a4de9daa7a957025ece19930d070682675d803c68f32f4e25ef850a7f7c",
+      "reconstructed_min": -2.0,
+      "reconstructed_max": 0.0,
+      "rmse": 0.02260036110361687,
+      "max_absolute_error": 0.0623776912689209
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_0",
+      "vector": "standard_block_only",
+      "shape": [
+        2,
+        32
+      ],
+      "input_sha256": "1031f29f3ce849d7b82011271790d9021425684ed73fe578a8cc992b7511e2b7",
+      "status": "encoded",
+      "bytes": 44,
+      "payload_sha256": "571717d3a0b9fa1c422ab562b89c324f16bd139409f073a2d324bcb6772003bb",
+      "reconstructed_min": -2.0,
+      "reconstructed_max": 0.24658203125,
+      "rmse": 0.025762126316468133,
+      "max_absolute_error": 0.0623776912689209
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_0",
+      "vector": "incompatible_rows",
+      "shape": [
+        256,
+        2
+      ],
+      "input_sha256": "f6822562b76d317415204551de2fa6f3c1601c1407d12017945b3fa7548d2f99",
+      "status": "rejected_incompatible_row",
+      "error": "QuantError"
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_0",
+      "vector": "unaligned",
+      "shape": [
+        2,
+        255
+      ],
+      "input_sha256": "a19be5b7e8ded6e5719c91aba21ae66c8c3266e0ebc19c765ad5c7562752686c",
+      "status": "rejected_incompatible_row",
+      "error": "QuantError"
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_1",
+      "vector": "zero",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "e5a00aa9991ac8a5ee3109844d84a55583bd20572ad3ffcd42792f3c36b183ad",
+      "status": "encoded",
+      "bytes": 384,
+      "payload_sha256": "a1a4f5721c1c4610af7f71078f3a68c330536d679803b0e0507ee8dc10c5dfca",
+      "reconstructed_min": 0.0,
+      "reconstructed_max": 0.0,
+      "rmse": 0.0,
+      "max_absolute_error": 0.0
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_1",
+      "vector": "constant_positive",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "a89e0a67ce8466e2f70e3d022978d0e520804d7d30ffcefcd93f4825af344740",
+      "status": "encoded",
+      "bytes": 384,
+      "payload_sha256": "4c9d7f3e3511aea5d428de8595231af3d68b84f8a09f456661f3ee153521159d",
+      "reconstructed_min": 0.75,
+      "reconstructed_max": 0.75,
+      "rmse": 0.0,
+      "max_absolute_error": 0.0
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_1",
+      "vector": "constant_negative",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "cb3d70534bdcf2d55a8784c63a2a30cc2a3a379a6a5fa1f361e24ad922992e66",
+      "status": "encoded",
+      "bytes": 384,
+      "payload_sha256": "6a10f4fe2a0ad6f3fc56b2ce61236e9a4eab283dc390bc6d122a87be6e1333e8",
+      "reconstructed_min": -0.75,
+      "reconstructed_max": -0.75,
+      "rmse": 0.0,
+      "max_absolute_error": 0.0
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_1",
+      "vector": "ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f6822562b76d317415204551de2fa6f3c1601c1407d12017945b3fa7548d2f99",
+      "status": "encoded",
+      "bytes": 384,
+      "payload_sha256": "8c091db5167a5cd70b6467661a7d1bda196fa174c0f99cb1849090e748d0a802",
+      "reconstructed_min": -2.0,
+      "reconstructed_max": 2.0004730224609375,
+      "rmse": 0.0002402063872242286,
+      "max_absolute_error": 0.00048732757568359375
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_1",
+      "vector": "outliers",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "5172a74f436920ac0c6f0a42916c66d50b37e07285e23d86f7fe423bdbe525d6",
+      "status": "encoded",
+      "bytes": 384,
+      "payload_sha256": "dab8a71d42dcc4283e82e407bf806388733b54e2aacacd47f98a49c2fe9826a1",
+      "reconstructed_min": -100.0,
+      "reconstructed_max": 100.0234375,
+      "rmse": 0.005859375,
+      "max_absolute_error": 0.0234375
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_1",
+      "vector": "positive_ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "0f277d72b645c8740c6ed3de0c33d37152f73daa370ac8266ff5c20bea8ecac3",
+      "status": "encoded",
+      "bytes": 384,
+      "payload_sha256": "d8e47e8c8efdb689a6196f2ac2fd7133713a1518c06bfd7cab04c2e361cdedaa",
+      "reconstructed_min": 1.0,
+      "reconstructed_max": 2.0001182556152344,
+      "rmse": 0.0002856017119379389,
+      "max_absolute_error": 0.00048732757568359375
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_1",
+      "vector": "negative_ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f8fbcb0e3521ae62c9c8a02fc07501efea14ffd5796b52a542379256223903e1",
+      "status": "encoded",
+      "bytes": 384,
+      "payload_sha256": "bfd3b0088b4c70b781be3d2ef0f41806a19c6d7b1e36edf4defb4b5853244584",
+      "reconstructed_min": -2.0,
+      "reconstructed_max": -0.9998817443847656,
+      "rmse": 0.0002856017119379389,
+      "max_absolute_error": 0.00048732757568359375
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_1",
+      "vector": "rounding_probe",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f4a3dc310d01d87f7c19fa3aa93588956f14ee27dafa432c6b35f9f60f9f26a8",
+      "status": "encoded",
+      "bytes": 384,
+      "payload_sha256": "6108e2c4b2be6d8b42880e0b77e090704a99079466d759847150b019f3b32875",
+      "reconstructed_min": -1.5,
+      "reconstructed_max": 1.5008544921875,
+      "rmse": 0.02292306911735963,
+      "max_absolute_error": 0.0328369140625
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_1",
+      "vector": "one_block",
+      "shape": [
+        1,
+        256
+      ],
+      "input_sha256": "21729b1385e353dcc33ba5764ca37433dea819933d7a4094aadce58c3e300c53",
+      "status": "encoded",
+      "bytes": 192,
+      "payload_sha256": "a020d355d5c3e387c425bef052503693933e79890ce8eda53a6823e58e877d97",
+      "reconstructed_min": -2.0,
+      "reconstructed_max": -0.0039215087890625,
+      "rmse": 0.0002429854912721629,
+      "max_absolute_error": 0.00048732757568359375
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_1",
+      "vector": "standard_block_only",
+      "shape": [
+        2,
+        32
+      ],
+      "input_sha256": "1031f29f3ce849d7b82011271790d9021425684ed73fe578a8cc992b7511e2b7",
+      "status": "encoded",
+      "bytes": 48,
+      "payload_sha256": "8b5d87d057c8b2d80b7a887e4760b874bc8b8c81e374a31d3f48fca078e48706",
+      "reconstructed_min": -2.0,
+      "reconstructed_max": 0.24657440185546875,
+      "rmse": 5.516449320439329e-07,
+      "max_absolute_error": 9.5367431640625e-07
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_1",
+      "vector": "incompatible_rows",
+      "shape": [
+        256,
+        2
+      ],
+      "input_sha256": "f6822562b76d317415204551de2fa6f3c1601c1407d12017945b3fa7548d2f99",
+      "status": "rejected_incompatible_row",
+      "error": "QuantError"
+    },
+    {
+      "encoder": "installed-gguf-py",
+      "type": "Q5_1",
+      "vector": "unaligned",
+      "shape": [
+        2,
+        255
+      ],
+      "input_sha256": "a19be5b7e8ded6e5719c91aba21ae66c8c3266e0ebc19c765ad5c7562752686c",
+      "status": "rejected_incompatible_row",
+      "error": "QuantError"
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q4_K",
+      "vector": "zero",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "e5a00aa9991ac8a5ee3109844d84a55583bd20572ad3ffcd42792f3c36b183ad",
+      "status": "encoded",
+      "bytes": 288,
+      "payload_sha256": "ad36c621a9ff57ff4e611081a798f8c26a822389dca4449bf1d8031061924402",
+      "reconstructed_min": 0.0,
+      "reconstructed_max": 0.0,
+      "rmse": 0.0,
+      "max_absolute_error": 0.0
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q4_K",
+      "vector": "constant_positive",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "a89e0a67ce8466e2f70e3d022978d0e520804d7d30ffcefcd93f4825af344740",
+      "status": "encoded",
+      "bytes": 288,
+      "payload_sha256": "aa47f2158ad35d392b4312132018ea02bb42bc8462a99a133e2869ab2459b1d4",
+      "reconstructed_min": 0.7335948944091797,
+      "reconstructed_max": 0.7335948944091797,
+      "rmse": 0.016405105590820312,
+      "max_absolute_error": 0.016405105590820312
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q4_K",
+      "vector": "constant_negative",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "cb3d70534bdcf2d55a8784c63a2a30cc2a3a379a6a5fa1f361e24ad922992e66",
+      "status": "encoded",
+      "bytes": 288,
+      "payload_sha256": "82e8eb5a99bfabf38fc112f244ef336e38b32bfd96925ed4a0b7d5a5f6288806",
+      "reconstructed_min": -0.74981689453125,
+      "reconstructed_max": -0.74981689453125,
+      "rmse": 0.00018310546875,
+      "max_absolute_error": 0.00018310546875
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q4_K",
+      "vector": "ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f6822562b76d317415204551de2fa6f3c1601c1407d12017945b3fa7548d2f99",
+      "status": "encoded",
+      "bytes": 288,
+      "payload_sha256": "322df1fa000e4196be57525d630dee5e4b9cf680851cc4e51ef993875f1da323",
+      "reconstructed_min": -1.99951171875,
+      "reconstructed_max": 0.24265408515930176,
+      "rmse": 0.6741015318748532,
+      "max_absolute_error": 1.7573459148406982
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q4_K",
+      "vector": "outliers",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "5172a74f436920ac0c6f0a42916c66d50b37e07285e23d86f7fe423bdbe525d6",
+      "status": "encoded",
+      "bytes": 288,
+      "payload_sha256": "5d2f9bbb168d1ca736af03c96984504892b948a5bf0f5f3aa0fbf3e1c21d4143",
+      "reconstructed_min": -99.9755859375,
+      "reconstructed_max": 100.0140380859375,
+      "rmse": 0.009543149703594255,
+      "max_absolute_error": 0.0384521484375
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q4_K",
+      "vector": "positive_ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "0f277d72b645c8740c6ed3de0c33d37152f73daa370ac8266ff5c20bea8ecac3",
+      "status": "encoded",
+      "bytes": 288,
+      "payload_sha256": "c8eb69c07aa17625cf1573c3681dc708cbad5c7d7fb8a0a4727d1062d0a64e72",
+      "reconstructed_min": 0.06066352128982544,
+      "reconstructed_max": 0.06066352128982544,
+      "rmse": 1.468110686973703,
+      "max_absolute_error": 1.9393364787101746
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q4_K",
+      "vector": "negative_ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f8fbcb0e3521ae62c9c8a02fc07501efea14ffd5796b52a542379256223903e1",
+      "status": "encoded",
+      "bytes": 288,
+      "payload_sha256": "8ab7dacb75d44dabd912d5ebd0d50914877a169b6defd3a0a36e9fbcdfb3c9a3",
+      "reconstructed_min": -1.99951171875,
+      "reconstructed_max": -1.0098168849945068,
+      "rmse": 0.0018325838181757353,
+      "max_absolute_error": 0.011532783508300781
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q4_K",
+      "vector": "rounding_probe",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f4a3dc310d01d87f7c19fa3aa93588956f14ee27dafa432c6b35f9f60f9f26a8",
+      "status": "encoded",
+      "bytes": 288,
+      "payload_sha256": "56440ede6a0681368463b1ce07db7ba0cfa4c9be5611b5890d8c11a10601decd",
+      "reconstructed_min": -1.4996337890625,
+      "reconstructed_max": 1.4996337890625,
+      "rmse": 0.0002729575167846423,
+      "max_absolute_error": 0.0003662109375
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q4_K",
+      "vector": "one_block",
+      "shape": [
+        1,
+        256
+      ],
+      "input_sha256": "21729b1385e353dcc33ba5764ca37433dea819933d7a4094aadce58c3e300c53",
+      "status": "encoded",
+      "bytes": 144,
+      "payload_sha256": "5ca7b958c1b90d260899c928961fd03d45394f0e2b8932c30a93948c6848433d",
+      "reconstructed_min": -1.99951171875,
+      "reconstructed_max": -0.011252164840698242,
+      "rmse": 0.004915751124689553,
+      "max_absolute_error": 0.01417231559753418
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q4_K",
+      "vector": "standard_block_only",
+      "shape": [
+        2,
+        32
+      ],
+      "input_sha256": "1031f29f3ce849d7b82011271790d9021425684ed73fe578a8cc992b7511e2b7",
+      "status": "rejected_incompatible_row",
+      "error": "ValueError"
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q4_K",
+      "vector": "incompatible_rows",
+      "shape": [
+        256,
+        2
+      ],
+      "input_sha256": "f6822562b76d317415204551de2fa6f3c1601c1407d12017945b3fa7548d2f99",
+      "status": "rejected_incompatible_row",
+      "error": "ValueError"
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q4_K",
+      "vector": "unaligned",
+      "shape": [
+        2,
+        255
+      ],
+      "input_sha256": "a19be5b7e8ded6e5719c91aba21ae66c8c3266e0ebc19c765ad5c7562752686c",
+      "status": "rejected_incompatible_row",
+      "error": "ValueError"
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q5_K",
+      "vector": "zero",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "e5a00aa9991ac8a5ee3109844d84a55583bd20572ad3ffcd42792f3c36b183ad",
+      "status": "encoded",
+      "bytes": 352,
+      "payload_sha256": "7a5e204fed2879c5eadb2f8ac45d1558ebdf7fc8ea6560fe6c65ac58d00477f5",
+      "reconstructed_min": 0.0,
+      "reconstructed_max": 0.0,
+      "rmse": 0.0,
+      "max_absolute_error": 0.0
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q5_K",
+      "vector": "constant_positive",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "a89e0a67ce8466e2f70e3d022978d0e520804d7d30ffcefcd93f4825af344740",
+      "status": "encoded",
+      "bytes": 352,
+      "payload_sha256": "f8dcda82d18d9d68367ea2c4a4ea907b2309392d6e2c44775e8d4adcf952780d",
+      "reconstructed_min": 0.7420663833618164,
+      "reconstructed_max": 0.7420663833618164,
+      "rmse": 0.007933616638183594,
+      "max_absolute_error": 0.007933616638183594
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q5_K",
+      "vector": "constant_negative",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "cb3d70534bdcf2d55a8784c63a2a30cc2a3a379a6a5fa1f361e24ad922992e66",
+      "status": "encoded",
+      "bytes": 352,
+      "payload_sha256": "280a40016ce37c96841205340a6780df2db2e088d0aad5b0f0532fb4d3bbb1ab",
+      "reconstructed_min": -0.74981689453125,
+      "reconstructed_max": -0.74981689453125,
+      "rmse": 0.00018310546875,
+      "max_absolute_error": 0.00018310546875
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q5_K",
+      "vector": "ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f6822562b76d317415204551de2fa6f3c1601c1407d12017945b3fa7548d2f99",
+      "status": "encoded",
+      "bytes": 352,
+      "payload_sha256": "797e50863cf881938f5481584cfde7542c34c6fc78ca25832289cf720167579a",
+      "reconstructed_min": -1.99951171875,
+      "reconstructed_max": 0.24259400367736816,
+      "rmse": 0.6741296609045215,
+      "max_absolute_error": 1.7574059963226318
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q5_K",
+      "vector": "outliers",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "5172a74f436920ac0c6f0a42916c66d50b37e07285e23d86f7fe423bdbe525d6",
+      "status": "encoded",
+      "bytes": 352,
+      "payload_sha256": "2d73375d45791611c59b81a506608f757101d9f8c60e71ac33f696e8644af9e8",
+      "reconstructed_min": -99.9755859375,
+      "reconstructed_max": 100.01019287109375,
+      "rmse": 0.00859537217695569,
+      "max_absolute_error": 0.03460693359375
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q5_K",
+      "vector": "positive_ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "0f277d72b645c8740c6ed3de0c33d37152f73daa370ac8266ff5c20bea8ecac3",
+      "status": "encoded",
+      "bytes": 352,
+      "payload_sha256": "d31a343412d3a17568c3e84bbf7c3ac0a234c0645022067d48afec3c1847e4a3",
+      "reconstructed_min": 0.06064850091934204,
+      "reconstructed_max": 0.06064850091934204,
+      "rmse": 1.4681254129556953,
+      "max_absolute_error": 1.939351499080658
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q5_K",
+      "vector": "negative_ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f8fbcb0e3521ae62c9c8a02fc07501efea14ffd5796b52a542379256223903e1",
+      "status": "encoded",
+      "bytes": 352,
+      "payload_sha256": "dbd86512ecd297e87dc31f55d2ecd8e44388cb76991b316bc3494f9e77e8b15e",
+      "reconstructed_min": -1.99951171875,
+      "reconstructed_max": -1.0098319053649902,
+      "rmse": 0.001554666670736539,
+      "max_absolute_error": 0.011532783508300781
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q5_K",
+      "vector": "rounding_probe",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f4a3dc310d01d87f7c19fa3aa93588956f14ee27dafa432c6b35f9f60f9f26a8",
+      "status": "encoded",
+      "bytes": 352,
+      "payload_sha256": "1362db24feacc122216f96d0c6452f6f1490378ee0c50b37f42984d49cc1d774",
+      "reconstructed_min": -1.4996337890625,
+      "reconstructed_max": 1.5008955001831055,
+      "rmse": 0.022885759771674164,
+      "max_absolute_error": 0.032982826232910156
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q5_K",
+      "vector": "one_block",
+      "shape": [
+        1,
+        256
+      ],
+      "input_sha256": "21729b1385e353dcc33ba5764ca37433dea819933d7a4094aadce58c3e300c53",
+      "status": "encoded",
+      "bytes": 176,
+      "payload_sha256": "6d6e36017d73fc95e90f0e98159038d10fb98bc122b5c74513b3170290afd027",
+      "reconstructed_min": -1.99951171875,
+      "reconstructed_max": -0.011312246322631836,
+      "rmse": 0.002786710720847548,
+      "max_absolute_error": 0.014232397079467773
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q5_K",
+      "vector": "standard_block_only",
+      "shape": [
+        2,
+        32
+      ],
+      "input_sha256": "1031f29f3ce849d7b82011271790d9021425684ed73fe578a8cc992b7511e2b7",
+      "status": "rejected_incompatible_row",
+      "error": "ValueError"
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q5_K",
+      "vector": "incompatible_rows",
+      "shape": [
+        256,
+        2
+      ],
+      "input_sha256": "f6822562b76d317415204551de2fa6f3c1601c1407d12017945b3fa7548d2f99",
+      "status": "rejected_incompatible_row",
+      "error": "ValueError"
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q5_K",
+      "vector": "unaligned",
+      "shape": [
+        2,
+        255
+      ],
+      "input_sha256": "a19be5b7e8ded6e5719c91aba21ae66c8c3266e0ebc19c765ad5c7562752686c",
+      "status": "rejected_incompatible_row",
+      "error": "ValueError"
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q6_K",
+      "vector": "zero",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "e5a00aa9991ac8a5ee3109844d84a55583bd20572ad3ffcd42792f3c36b183ad",
+      "status": "encoded",
+      "bytes": 420,
+      "payload_sha256": "0d67b79e0d476a3507ba4c8e6cd4703baf35c68f8ebed0233413cc8ff0ec469f",
+      "reconstructed_min": 0.0,
+      "reconstructed_max": 0.0,
+      "rmse": 0.0,
+      "max_absolute_error": 0.0
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q6_K",
+      "vector": "constant_positive",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "a89e0a67ce8466e2f70e3d022978d0e520804d7d30ffcefcd93f4825af344740",
+      "status": "encoded",
+      "bytes": 420,
+      "payload_sha256": "d55da2246f212c707dcdeacf5443dcf5e11f275fef984db330d86776e85aaf51",
+      "reconstructed_min": 0.7499845027923584,
+      "reconstructed_max": 0.7499845027923584,
+      "rmse": 1.5497207641601562e-05,
+      "max_absolute_error": 1.5497207641601562e-05
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q6_K",
+      "vector": "constant_negative",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "cb3d70534bdcf2d55a8784c63a2a30cc2a3a379a6a5fa1f361e24ad922992e66",
+      "status": "encoded",
+      "bytes": 420,
+      "payload_sha256": "2b081106b7683cb3b70abd701020e107a9edb8ba3032d14927d0c826b31d12e9",
+      "reconstructed_min": -0.7499845027923584,
+      "reconstructed_max": -0.7499845027923584,
+      "rmse": 1.5497207641601562e-05,
+      "max_absolute_error": 1.5497207641601562e-05
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q6_K",
+      "vector": "ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f6822562b76d317415204551de2fa6f3c1601c1407d12017945b3fa7548d2f99",
+      "status": "encoded",
+      "bytes": 420,
+      "payload_sha256": "ab1923baaa2a9a8e65a92c369eaa8c0c7ced2b1a5af52dfd2a912667889ab1f2",
+      "reconstructed_min": -1.9993329048156738,
+      "reconstructed_max": 1.9993329048156738,
+      "rmse": 0.010977910238030419,
+      "max_absolute_error": 0.03064405918121338
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q6_K",
+      "vector": "outliers",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "5172a74f436920ac0c6f0a42916c66d50b37e07285e23d86f7fe423bdbe525d6",
+      "status": "encoded",
+      "bytes": 420,
+      "payload_sha256": "da027a39e66e5c2b001f0536126969ae522095fa6ec2b373d1ec576c92692933",
+      "reconstructed_min": -100.02296447753906,
+      "reconstructed_max": 100.02296447753906,
+      "rmse": 0.0014352798461914062,
+      "max_absolute_error": 0.0229644775390625
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q6_K",
+      "vector": "positive_ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "0f277d72b645c8740c6ed3de0c33d37152f73daa370ac8266ff5c20bea8ecac3",
+      "status": "encoded",
+      "bytes": 420,
+      "payload_sha256": "cdcd49d9d5039e4240d3e97ddba6dbbbc4a113c818b03f19d0a35e1d6e5ed24b",
+      "reconstructed_min": 0.9937691688537598,
+      "reconstructed_max": 1.9993329048156738,
+      "rmse": 0.01421893654352769,
+      "max_absolute_error": 0.028687119483947754
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q6_K",
+      "vector": "negative_ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f8fbcb0e3521ae62c9c8a02fc07501efea14ffd5796b52a542379256223903e1",
+      "status": "encoded",
+      "bytes": 420,
+      "payload_sha256": "34941c5ad0834c458fa8d2f54f32144de402544b22f749582c9ee0476242562d",
+      "reconstructed_min": -1.9993329048156738,
+      "reconstructed_max": -0.9937691688537598,
+      "rmse": 0.01421893654352769,
+      "max_absolute_error": 0.028687119483947754
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q6_K",
+      "vector": "rounding_probe",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f4a3dc310d01d87f7c19fa3aa93588956f14ee27dafa432c6b35f9f60f9f26a8",
+      "status": "encoded",
+      "bytes": 420,
+      "payload_sha256": "71da25d4f9c722744e3cb7cf261ae54e019a31fbabdc5a5e5020c3298783ff9b",
+      "reconstructed_min": -1.4999690055847168,
+      "reconstructed_max": 1.4999690055847168,
+      "rmse": 0.011412038922361777,
+      "max_absolute_error": 0.01613903045654297
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q6_K",
+      "vector": "one_block",
+      "shape": [
+        1,
+        256
+      ],
+      "input_sha256": "21729b1385e353dcc33ba5764ca37433dea819933d7a4094aadce58c3e300c53",
+      "status": "encoded",
+      "bytes": 210,
+      "payload_sha256": "5395a62790051c9a604cf69aeca19c52b870d74b5768ef1327b47a6697287250",
+      "reconstructed_min": -1.9993329048156738,
+      "reconstructed_max": -0.004062652587890625,
+      "rmse": 0.010977910238030419,
+      "max_absolute_error": 0.03064405918121338
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q6_K",
+      "vector": "standard_block_only",
+      "shape": [
+        2,
+        32
+      ],
+      "input_sha256": "1031f29f3ce849d7b82011271790d9021425684ed73fe578a8cc992b7511e2b7",
+      "status": "rejected_incompatible_row",
+      "error": "ValueError"
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q6_K",
+      "vector": "incompatible_rows",
+      "shape": [
+        256,
+        2
+      ],
+      "input_sha256": "f6822562b76d317415204551de2fa6f3c1601c1407d12017945b3fa7548d2f99",
+      "status": "rejected_incompatible_row",
+      "error": "ValueError"
+    },
+    {
+      "encoder": "molbal",
+      "type": "Q6_K",
+      "vector": "unaligned",
+      "shape": [
+        2,
+        255
+      ],
+      "input_sha256": "a19be5b7e8ded6e5719c91aba21ae66c8c3266e0ebc19c765ad5c7562752686c",
+      "status": "rejected_incompatible_row",
+      "error": "ValueError"
+    }
+  ]
+}
