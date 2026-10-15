@@ -106,6 +106,11 @@ Completed:
 
 Next, before replacing a backend:
 
+The first architecture-specific [FLUX Q6_K research path](flux-q6-research-path.md)
+now passes eight schematic native-versus-Python file comparisons (196 tensors).
+It preserves the existing float-GGUF boundary and remains outside production
+dispatch; this is not full-model or loader validation.
+
 1. Extract explicit effective rules for the supported model families, including
    inherited rules, tensor transformations and C++ preset choices.
    Static inheritance/method ownership and policy source spans are now recorded;

@@ -1,0 +1,1074 @@
+{
+  "status": "FLUX quantizer-stage file parity; schematic inputs, not inference models",
+  "native": {
+    "commit": "c8c07d658a6cefc5a50cfdf6be7d726503612303",
+    "archive_sha256": "13c8e23aedcc9a519cb3eafe95381e20dd9c4819ffee823b77c1b85a8d5cb6c4",
+    "city96_patch_sha256": "3f486d5be5a359061daa3ff208acae5afe6233262894b44103843914d7b986fa",
+    "executable_sha256": "7a602564316ecce6bae05c678050edc94802a820e2c45c4bdefa0c557406fb3c"
+  },
+  "encoder_sha256": "f5b9eabf34c42faa1f605113aa6e857d2c29bec3ff3d0155b54b1d595f6b0b02",
+  "requantizer_sha256": "8b16692b9e9f0b26fcfeaea5665bb43646fa6561c687f17c446415980d041a5e",
+  "results": [
+    {
+      "scenario": "float16-reverse-False-unaligned-False",
+      "tensors": [
+        {
+          "name": "blocks.0.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.1.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.2.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.3.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.4.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.5.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.6.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.7.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn.qkv.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.ffn_down.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_output.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "img_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "patch_embedding.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "norm.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "small.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "spatial.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "txt_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "time_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "vector_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "guidance_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "final_layer.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_norm.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.ffn_gate_inp.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_rel_b.weight",
+          "type": "F16",
+          "equal": true
+        }
+      ],
+      "input_sha256": "58254309286a12d548a610b4fc9464ad02a4d028155d2b125a5b09d2ef158aec",
+      "python_sha256": "e76b74e227b278c9a285e682c5fd1695c7769bea8cc61381af6c626270f1d323",
+      "native_sha256": "03fd4836c0babfc9e432e4fd7df42656fdfaac4f07072ea684feb02d1aa42945",
+      "metadata_equal": true,
+      "tensor_counts_equal": true
+    },
+    {
+      "scenario": "float16-reverse-False-unaligned-True",
+      "tensors": [
+        {
+          "name": "blocks.0.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.1.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.2.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.3.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.4.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.5.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.6.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.7.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn.qkv.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.ffn_down.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_output.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "img_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "patch_embedding.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "norm.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "small.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "spatial.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "odd.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "txt_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "time_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "vector_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "guidance_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "final_layer.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_norm.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.ffn_gate_inp.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_rel_b.weight",
+          "type": "F16",
+          "equal": true
+        }
+      ],
+      "input_sha256": "634bf9478a3cf0d9451ef611610195fc5bc56578a0073118419b22edaae40f1a",
+      "python_sha256": "ef9c2ab79e84efcd92eca80c1c7a48f735066cd8a72713761d9bfb7f6dace1f6",
+      "native_sha256": "9d874d88eabb46920ff5cfb46d55bb997ebf3eff5800d42940cc24502c942288",
+      "metadata_equal": true,
+      "tensor_counts_equal": true
+    },
+    {
+      "scenario": "float16-reverse-True-unaligned-False",
+      "tensors": [
+        {
+          "name": "spatial.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "small.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "norm.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "patch_embedding.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "img_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_output.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.ffn_down.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn.qkv.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.7.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.6.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.5.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.4.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.3.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.2.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.1.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "txt_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "time_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "vector_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "guidance_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "final_layer.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_norm.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.ffn_gate_inp.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_rel_b.weight",
+          "type": "F16",
+          "equal": true
+        }
+      ],
+      "input_sha256": "a134eb485fc4e4d8eb52b89cbd814974a5d0487c33648dcbc96fc2498494aa8d",
+      "python_sha256": "b7ae78416948c0f27e81e082982f2bf05882bab046b6a527e199b066d648e72d",
+      "native_sha256": "91d34fa305cfae821de3d949fccf011b5cf3317360a02d04354c3cd8aff33f16",
+      "metadata_equal": true,
+      "tensor_counts_equal": true
+    },
+    {
+      "scenario": "float16-reverse-True-unaligned-True",
+      "tensors": [
+        {
+          "name": "odd.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "spatial.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "small.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "norm.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "patch_embedding.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "img_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_output.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.ffn_down.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn.qkv.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.7.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.6.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.5.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.4.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.3.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.2.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.1.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "txt_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "time_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "vector_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "guidance_in.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "final_layer.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_norm.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.ffn_gate_inp.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_rel_b.weight",
+          "type": "F16",
+          "equal": true
+        }
+      ],
+      "input_sha256": "d73350e97ed545f60119713c6603c7fa0781dd467a9815f02bba9dc4ec4b1204",
+      "python_sha256": "8e3992611ef0c52149de3e7f40d5cdde3ad0dabe8688614d0fb0e848d36d0a6b",
+      "native_sha256": "c4fe432122d79fb1e27014438bf8812fa5c71a3316464b4eea14cd35e0f2fa01",
+      "metadata_equal": true,
+      "tensor_counts_equal": true
+    },
+    {
+      "scenario": "float32-reverse-False-unaligned-False",
+      "tensors": [
+        {
+          "name": "blocks.0.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.1.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.2.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.3.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.4.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.5.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.6.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.7.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn.qkv.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.ffn_down.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_output.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "img_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "patch_embedding.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "norm.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "small.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "spatial.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "txt_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "time_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "vector_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "guidance_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "final_layer.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_norm.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.ffn_gate_inp.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_rel_b.weight",
+          "type": "F32",
+          "equal": true
+        }
+      ],
+      "input_sha256": "ca7e09bf931646d673c560e779ecf9175c619816a64e3c2d5a7d43b38b40b88e",
+      "python_sha256": "bc177630ef833d8a6cb2927f3e1ac71e5333097554e7665a96391ea431803cec",
+      "native_sha256": "0d1f2f38410f44ed192a76ce94f8a0a8b8a5098b6c66f158a5c7f942c07ed68c",
+      "metadata_equal": true,
+      "tensor_counts_equal": true
+    },
+    {
+      "scenario": "float32-reverse-False-unaligned-True",
+      "tensors": [
+        {
+          "name": "blocks.0.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.1.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.2.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.3.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.4.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.5.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.6.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.7.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn.qkv.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.ffn_down.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_output.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "img_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "patch_embedding.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "norm.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "small.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "spatial.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "odd.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "txt_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "time_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "vector_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "guidance_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "final_layer.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_norm.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.ffn_gate_inp.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_rel_b.weight",
+          "type": "F32",
+          "equal": true
+        }
+      ],
+      "input_sha256": "eecbc405279fb5d2bc0ee4023a739ad9202b856e701856f19df7db52ee7c0edd",
+      "python_sha256": "0a8144d7646962f0699b4ebd995ee1d2787eafad2dbf68b358a96a89785ba543",
+      "native_sha256": "7c9f7e89b65a3b9bc45f03510c52c4bc35cd5f9c0f51ea8959c9eef7fe0cf085",
+      "metadata_equal": true,
+      "tensor_counts_equal": true
+    },
+    {
+      "scenario": "float32-reverse-True-unaligned-False",
+      "tensors": [
+        {
+          "name": "spatial.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "small.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "norm.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "patch_embedding.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "img_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_output.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.ffn_down.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn.qkv.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.7.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.6.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.5.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.4.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.3.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.2.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.1.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "txt_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "time_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "vector_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "guidance_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "final_layer.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_norm.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.ffn_gate_inp.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_rel_b.weight",
+          "type": "F32",
+          "equal": true
+        }
+      ],
+      "input_sha256": "4906b93e8758c01323d92364f396a76b766bf2a6e698505d757383df9988677d",
+      "python_sha256": "073cd2760807b59b9e5f9f998ceb31ac6125dff0f56ec7c01ea96d5933553ddc",
+      "native_sha256": "df05fb700e22bbb1c0ca27bae7e670596ae34177c8fa9409cc6dc975d166ec20",
+      "metadata_equal": true,
+      "tensor_counts_equal": true
+    },
+    {
+      "scenario": "float32-reverse-True-unaligned-True",
+      "tensors": [
+        {
+          "name": "odd.weight",
+          "type": "F16",
+          "equal": true
+        },
+        {
+          "name": "spatial.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "small.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "norm.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "patch_embedding.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "img_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_output.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.ffn_down.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn.qkv.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.7.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.6.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.5.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.4.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.3.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.2.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.1.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn.to_v.weight",
+          "type": "Q6_K",
+          "equal": true
+        },
+        {
+          "name": "txt_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "time_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "vector_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "guidance_in.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "final_layer.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_norm.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.ffn_gate_inp.weight",
+          "type": "F32",
+          "equal": true
+        },
+        {
+          "name": "blocks.0.attn_rel_b.weight",
+          "type": "F32",
+          "equal": true
+        }
+      ],
+      "input_sha256": "703d5b79583e3a56dc28603601b35ff6424bd0224bb6be37709fc8c5a502c72a",
+      "python_sha256": "c6d6f0032966741a415ca3559a97bf0b64ec5a88e14b49d2109a1a626928574e",
+      "native_sha256": "5cb553c8d7321c8620c11a3a7f104cd1fe43612d6744864ee2c7ec826955544f",
+      "metadata_equal": true,
+      "tensor_counts_equal": true
+    }
+  ],
+  "all_equal": true
+}

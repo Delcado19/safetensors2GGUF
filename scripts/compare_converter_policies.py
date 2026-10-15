@@ -120,11 +120,13 @@ def fixture_tensors(architecture, reverse=False, incompatible=False):
     return dict(tensors)
 
 
-def write_fixture(path, architecture, tensors):
-    """Write small F16 inputs with enough metadata to exercise CLI policy logic."""
+def write_fixture(path, architecture, tensors, *, dtype=np.float16):
+    """Write small F16/F32 inputs with enough metadata for CLI policy probes."""
+    if dtype not in (np.float16, np.float32):
+        raise ValueError('Policy fixtures require F16 or F32 input')
     writer = gguf.GGUFWriter(str(path), architecture)
     writer.add_name('Schematic converter policy probe; not for inference')
-    writer.add_file_type(gguf.LlamaFileType.MOSTLY_F16)
+    writer.add_file_type(gguf.LlamaFileType.MOSTLY_F16 if dtype == np.float16 else gguf.LlamaFileType.ALL_F32)
     if architecture not in ('flux', 'sd3', 'sdxl', 'wan'):
         writer.add_context_length(512)
         # Old b3962 requires an explicit vocabulary count (or token list).
@@ -143,7 +145,7 @@ def write_fixture(path, architecture, tensors):
             writer.add_relative_attn_buckets_count(32)
     try:
         for name, shape in tensors.items():
-            data = np.linspace(-1, 1, math.prod(shape), dtype=np.float16).reshape(shape)
+            data = np.linspace(-1, 1, math.prod(shape), dtype=dtype).reshape(shape)
             writer.add_tensor(name, data)
         writer.write_header_to_file()
         writer.write_kv_data_to_file()

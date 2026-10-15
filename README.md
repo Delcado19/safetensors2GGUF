@@ -33,6 +33,9 @@ and three complete streamed matrices. These remain research checks; raw tensor
 artifacts do not add a production model conversion path.
 The same payloads also survive a research GGUF container roundtrip; that mixed
 test container is not a loadable model.
+An explicit [FLUX Q6_K research file path](docs/flux-q6-research-path.md) also
+matches the patched native quantizer on schematic files. Production conversion
+continues to use the existing backends.
 
 ## Supported Architectures
 

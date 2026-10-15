@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Explicit research FLUX float-GGUF to Q6_K conversion using the shared
+  NumPy encoder, preserved metadata/protected tensors, native F16 row fallback
+  and atomic checked output. Eight schematic files match patched b3962 in 196
+  tensor comparisons; production dispatch and runtime support are unchanged.
+
 - Add: Research Q6_K GGUF container roundtrip for the three verified full-tensor
   streams. Preserve payload hashes/shapes with bounded copy buffers, explicit
   research metadata, atomic publication and Windows-safe reader cleanup. Test

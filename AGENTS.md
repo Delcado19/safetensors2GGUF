@@ -51,6 +51,10 @@ these are not loadable GGUF models. Per-run encoding times are recorded.
 The same three payloads also pass a combined research-only GGUF container
 roundtrip (shape/type/alignment/checksum); its mixed-source research architecture
 is not a model loader target. Read `data/q6-gguf-container.json` for evidence.
+An explicit FLUX F16/F32 GGUF-to-Q6_K research path additionally matches patched
+b3962 on eight schematic files (196 tensor comparisons), with metadata/protection
+and row-fallback checks. Read `docs/flux-q6-research-path.md`. It does not add a
+production route or prove complete-model loading/rendering.
 Measured peak memory/comparative throughput,
 extreme-range policy, other encoders and full-model integration remain
 open; preserve separate model/preset rules and the implementation-language choice.

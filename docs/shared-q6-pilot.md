@@ -226,6 +226,11 @@ establish a peak-RSS guarantee or eliminate OS page-cache residency.
 
 ## Remaining integration gates
 
+An explicit [FLUX Q6_K research file path](flux-q6-research-path.md) now connects
+the encoder to the prepared float-GGUF boundary. Eight schematic files match
+patched b3962 on 196 tensor payload/type/shape decisions; full-model and runtime
+gates below remain open.
+
 The current explicit overflow guard rejects extreme finite inputs if native-style scale-search
 arithmetic overflows. It does not silently pick a different precision or claim
 support for the entire float32 range.
