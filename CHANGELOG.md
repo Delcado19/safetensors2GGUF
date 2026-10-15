@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Isolated direct compiled Q4_K/Q5_K/Q6_K CPU kernel pilot using preserved
+  b3962 math through a bounded C ABI. All 498 golden comparisons pass; a FLUX
+  slice runs about 3.0-3.2 times faster than current NumPy and within about 2%
+  of the same kernel called directly. No application integration or full-model
+  speed claim; Linux and binary distribution remain untested.
+
 - Change: Use column-contiguous working input in shared Q4_K/Q5_K affine fitting,
   preserving sequential float32 arithmetic and all native golden bytes. Seven
   alternating slice measurements show approximately 22%/19% lower encoder time;

@@ -1,0 +1,357 @@
+{
+  "scope": "Research C ABI only; no application integration or full-model speed claim",
+  "python": "3.13.14 (main, Jul 23 2026, 14:44:10) [MSC v.1944 64 bit (AMD64)]",
+  "numpy": "2.4.4",
+  "platform": "win32",
+  "library": "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\kernel-pilot-2026-10-16\\build\\Release\\converter-kernel.dll",
+  "library_sha256": "fe2cb792e03538ccafad0d84419efd7d5ff94b81662cbd5335880f7244e1662d",
+  "build": {
+    "commit": "c8c07d658a6cefc5a50cfdf6be7d726503612303",
+    "archive_sha256": "13c8e23aedcc9a519cb3eafe95381e20dd9c4819ffee823b77c1b85a8d5cb6c4",
+    "library_sha256": "fe2cb792e03538ccafad0d84419efd7d5ff94b81662cbd5335880f7244e1662d",
+    "commands": [
+      [
+        "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe",
+        "-S",
+        "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\tools\\converter-kernel",
+        "-B",
+        "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\kernel-pilot-2026-10-16\\build",
+        "-DREFERENCE_SOURCE=C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\kernel-pilot-2026-10-16\\source",
+        "-DCMAKE_BUILD_TYPE=Release"
+      ],
+      [
+        "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe",
+        "--build",
+        "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\kernel-pilot-2026-10-16\\build",
+        "--config",
+        "Release",
+        "--target",
+        "converter-kernel",
+        "-j",
+        "2"
+      ]
+    ],
+    "compiler": "set(CMAKE_C_COMPILER \"C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe\")\nset(CMAKE_C_COMPILER_ARG1 \"\")\nset(CMAKE_C_COMPILER_ID \"MSVC\")\nset(CMAKE_C_COMPILER_VERSION \"19.51.36260.0\")\nset(CMAKE_C_COMPILER_VERSION_INTERNAL \"\")\nset(CMAKE_C_COMPILER_WRAPPER \"\")\nset(CMAKE_C_STANDARD_COMPUTED_DEFAULT \"90\")\nset(CMAKE_C_EXTENSIONS_COMPUTED_DEFAULT \"OFF\")\nset(CMAKE_C_STANDARD_LATEST \"23\")\nset(CMAKE_C_COMPILE_FEATURES \"c_std_90;c_function_prototypes;c_std_99;c_restrict;c_variadic_macros;c_std_11;c_static_assert;c_std_17;c_std_23\")\nset(CMAKE_C90_COMPILE_FEATURES \"c_std_90;c_function_prototypes\")\nset(CMAKE_C99_COMPILE_FEATURES \"c_std_99;c_restrict;c_variadic_macros\")\nset(CMAKE_C11_COMPILE_FEATURES \"c_std_11;c_static_assert\")\nset(CMAKE_C17_COMPILE_FEATURES \"c_std_17\")\nset(CMAKE_C23_COMPILE_FEATURES \"c_std_23\")\n\nset(CMAKE_C_PLATFORM_ID \"Windows\")\nset(CMAKE_C_SIMULATE_ID \"\")\nset(CMAKE_C_COMPILER_FRONTEND_VARIANT \"MSVC\")\nset(CMAKE_C_COMPILER_APPLE_SYSROOT \"\")\nset(CMAKE_C_SIMULATE_VERSION \"\")\nset(CMAKE_C_COMPILER_ARCHITECTURE_ID \"x64\")\n\nset(MSVC_C_ARCHITECTURE_ID x64)\n\n\nset(CMAKE_AR \"C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/lib.exe\")\nset(CMAKE_C_COMPILER_AR \"\")\nset(CMAKE_RANLIB \":\")\nset(CMAKE_C_COMPILER_RANLIB \"\")\nset(CMAKE_LINKER \"C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/link.exe\")\nset(CMAKE_LINKER_LINK \"C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/link.exe\")\nset(CMAKE_LINKER_LLD \"lld-link\")\nset(CMAKE_C_COMPILER_LINKER \"C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/HostX64/x64/link.exe\")\nset(CMAKE_C_COMPILER_LINKER_ID \"MSVC\")\nset(CMAKE_C_COMPILER_LINKER_VERSION 14.51.36260.0)\nset(CMAKE_C_COMPILER_LINKER_FRONTEND_VARIANT MSVC)\nset(CMAKE_MT \"CMAKE_MT-NOTFOUND\")\nset(CMAKE_TAPI \"\")\nset(CMAKE_COMPILER_IS_GNUCC )\nset(CMAKE_C_COMPILER_LOADED 1)\nset(CMAKE_C_COMPILER_WORKS TRUE)\nset(CMAKE_C_ABI_COMPILED TRUE)\n\nset(CMAKE_C_COMPILER_ENV_VAR \"CC\")\n\nset(CMAKE_C_COMPILER_ID_RUN 1)\nset(CMAKE_C_SOURCE_FILE_EXTENSIONS c;m)\nset(CMAKE_C_IGNORE_EXTENSIONS h;H;o;O;obj;OBJ;def;DEF;rc;RC)\nset(CMAKE_C_LINKER_PREFERENCE 10)\nset(CMAKE_C_LINKER_DEPFILE_SUPPORTED )\nset(CMAKE_LINKER_PUSHPOP_STATE_SUPPORTED )\nset(CMAKE_C_LINKER_PUSHPOP_STATE_SUPPORTED )\n\n# Save compiler ABI information.\nset(CMAKE_C_SIZEOF_DATA_PTR \"8\")\nset(CMAKE_C_COMPILER_ABI \"\")\nset(CMAKE_C_BYTE_ORDER \"LITTLE_ENDIAN\")\nset(CMAKE_C_LIBRARY_ARCHITECTURE \"\")\n\nif(CMAKE_C_SIZEOF_DATA_PTR)\n  set(CMAKE_SIZEOF_VOID_P \"${CMAKE_C_SIZEOF_DATA_PTR}\")\nendif()\n\nif(CMAKE_C_COMPILER_ABI)\n  set(CMAKE_INTERNAL_PLATFORM_ABI \"${CMAKE_C_COMPILER_ABI}\")\nendif()\n\nif(CMAKE_C_LIBRARY_ARCHITECTURE)\n  set(CMAKE_LIBRARY_ARCHITECTURE \"\")\nendif()\n\nset(CMAKE_C_CL_SHOWINCLUDES_PREFIX \"\")\nif(CMAKE_C_CL_SHOWINCLUDES_PREFIX)\n  set(CMAKE_CL_SHOWINCLUDES_PREFIX \"${CMAKE_C_CL_SHOWINCLUDES_PREFIX}\")\nendif()\n\n\n\n\n\nset(CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES \"\")\nset(CMAKE_C_IMPLICIT_LINK_LIBRARIES \"\")\nset(CMAKE_C_IMPLICIT_LINK_DIRECTORIES \"\")\nset(CMAKE_C_IMPLICIT_LINK_FRAMEWORK_DIRECTORIES \"\")\n",
+    "cache": "# This is the CMakeCache file.\n# For build in directory: c:/Users/Delcado/Documents/Software_Projects/ComfyUI/safetensors2GGUF/build/kernel-pilot-2026-10-16/build\n# It was generated by CMake: C:/Program Files/Microsoft Visual Studio/18/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe\n# You can edit this file to change values found and used by cmake.\n# If you do not want to change any of the values, simply exit the editor.\n# If you do want to change a value, simply edit, save, and exit the editor.\n# The syntax for the file is as follows:\n# KEY:TYPE=VALUE\n# KEY is the name of a variable in the cache.\n# TYPE is a hint to GUIs for the type of VALUE, DO NOT EDIT TYPE!.\n# VALUE is the current value for the KEY.\n\n########################\n# EXTERNAL cache entries\n########################\n\n//ggml: build shared libraries\nBUILD_SHARED_LIBS:BOOL=OFF\n\n//Path to a program.\nCMAKE_AR:FILEPATH=C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/lib.exe\n\n//No help, variable specified on the command line.\nCMAKE_BUILD_TYPE:UNINITIALIZED=Release\n\n//Semicolon separated list of supported configuration types, only\n// supports Debug, Release, MinSizeRel, and RelWithDebInfo, anything\n// else will be ignored.\nCMAKE_CONFIGURATION_TYPES:STRING=Debug;Release;MinSizeRel;RelWithDebInfo\n\n//Flags used by the CXX compiler during all build types.\nCMAKE_CXX_FLAGS:STRING=/DWIN32 /D_WINDOWS /EHsc\n\n//Flags used by the CXX compiler during DEBUG builds.\nCMAKE_CXX_FLAGS_DEBUG:STRING=/Ob0 /Od /RTC1\n\n//Flags used by the CXX compiler during MINSIZEREL builds.\nCMAKE_CXX_FLAGS_MINSIZEREL:STRING=/O1 /Ob1 /DNDEBUG\n\n//Flags used by the CXX compiler during RELEASE builds.\nCMAKE_CXX_FLAGS_RELEASE:STRING=/O2 /Ob2 /DNDEBUG\n\n//Flags used by the CXX compiler during RELWITHDEBINFO builds.\nCMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=/O2 /Ob1 /DNDEBUG\n\n//Libraries linked by default with all C++ applications.\nCMAKE_CXX_STANDARD_LIBRARIES:STRING=kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib\n\n//Flags used by the C compiler during all build types.\nCMAKE_C_FLAGS:STRING=/DWIN32 /D_WINDOWS\n\n//Flags used by the C compiler during DEBUG builds.\nCMAKE_C_FLAGS_DEBUG:STRING=/Ob0 /Od /RTC1\n\n//Flags used by the C compiler during MINSIZEREL builds.\nCMAKE_C_FLAGS_MINSIZEREL:STRING=/O1 /Ob1 /DNDEBUG\n\n//Flags used by the C compiler during RELEASE builds.\nCMAKE_C_FLAGS_RELEASE:STRING=/O2 /Ob2 /DNDEBUG\n\n//Flags used by the C compiler during RELWITHDEBINFO builds.\nCMAKE_C_FLAGS_RELWITHDEBINFO:STRING=/O2 /Ob1 /DNDEBUG\n\n//Libraries linked by default with all C applications.\nCMAKE_C_STANDARD_LIBRARIES:STRING=kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib\n\n//Flags used by the linker during all build types.\nCMAKE_EXE_LINKER_FLAGS:STRING=/machine:x64\n\n//Flags used by the linker during DEBUG builds.\nCMAKE_EXE_LINKER_FLAGS_DEBUG:STRING=/debug /INCREMENTAL\n\n//Flags used by the linker during MINSIZEREL builds.\nCMAKE_EXE_LINKER_FLAGS_MINSIZEREL:STRING=/INCREMENTAL:NO\n\n//Flags used by the linker during RELEASE builds.\nCMAKE_EXE_LINKER_FLAGS_RELEASE:STRING=/INCREMENTAL:NO\n\n//Flags used by the linker during RELWITHDEBINFO builds.\nCMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO:STRING=/debug /INCREMENTAL\n\n//Value Computed by CMake.\nCMAKE_FIND_PACKAGE_REDIRECTS_DIR:STATIC=C:/Users/Delcado/Documents/Software_Projects/ComfyUI/safetensors2GGUF/build/kernel-pilot-2026-10-16/build/CMakeFiles/pkgRedirects\n\n//User executables (bin)\nCMAKE_INSTALL_BINDIR:PATH=bin\n\n//Read-only architecture-independent data (DATAROOTDIR)\nCMAKE_INSTALL_DATADIR:PATH=\n\n//Read-only architecture-independent data root (share)\nCMAKE_INSTALL_DATAROOTDIR:PATH=share\n\n//Documentation root (DATAROOTDIR/doc/PROJECT_NAME)\nCMAKE_INSTALL_DOCDIR:PATH=\n\n//C header files (include)\nCMAKE_INSTALL_INCLUDEDIR:PATH=include\n\n//Info documentation (DATAROOTDIR/info)\nCMAKE_INSTALL_INFODIR:PATH=\n\n//Object code libraries (lib)\nCMAKE_INSTALL_LIBDIR:PATH=lib\n\n//Program executables (libexec)\nCMAKE_INSTALL_LIBEXECDIR:PATH=libexec\n\n//Locale-dependent data (DATAROOTDIR/locale)\nCMAKE_INSTALL_LOCALEDIR:PATH=\n\n//Modifiable single-machine data (var)\nCMAKE_INSTALL_LOCALSTATEDIR:PATH=var\n\n//Man documentation (DATAROOTDIR/man)\nCMAKE_INSTALL_MANDIR:PATH=\n\n//C header files for non-gcc (/usr/include)\nCMAKE_INSTALL_OLDINCLUDEDIR:PATH=/usr/include\n\n//Install path prefix, prepended onto install directories.\nCMAKE_INSTALL_PREFIX:PATH=C:/Program Files (x86)/converter_kernel\n\n//Run-time variable data (LOCALSTATEDIR/run)\nCMAKE_INSTALL_RUNSTATEDIR:PATH=\n\n//System admin executables (sbin)\nCMAKE_INSTALL_SBINDIR:PATH=sbin\n\n//Modifiable architecture-independent data (com)\nCMAKE_INSTALL_SHAREDSTATEDIR:PATH=com\n\n//Read-only single-machine data (etc)\nCMAKE_INSTALL_SYSCONFDIR:PATH=etc\n\n//Path to a program.\nCMAKE_LINKER:FILEPATH=C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/link.exe\n\n//Flags used by the linker during the creation of modules during\n// all build types.\nCMAKE_MODULE_LINKER_FLAGS:STRING=/machine:x64\n\n//Flags used by the linker during the creation of modules during\n// DEBUG builds.\nCMAKE_MODULE_LINKER_FLAGS_DEBUG:STRING=/debug /INCREMENTAL\n\n//Flags used by the linker during the creation of modules during\n// MINSIZEREL builds.\nCMAKE_MODULE_LINKER_FLAGS_MINSIZEREL:STRING=/INCREMENTAL:NO\n\n//Flags used by the linker during the creation of modules during\n// RELEASE builds.\nCMAKE_MODULE_LINKER_FLAGS_RELEASE:STRING=/INCREMENTAL:NO\n\n//Flags used by the linker during the creation of modules during\n// RELWITHDEBINFO builds.\nCMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO:STRING=/debug /INCREMENTAL\n\n//Path to a program.\nCMAKE_MT:FILEPATH=CMAKE_MT-NOTFOUND\n\n//Value Computed by CMake\nCMAKE_PROJECT_COMPAT_VERSION:STATIC=\n\n//Value Computed by CMake\nCMAKE_PROJECT_DESCRIPTION:STATIC=\n\n//Value Computed by CMake\nCMAKE_PROJECT_HOMEPAGE_URL:STATIC=\n\n//Value Computed by CMake\nCMAKE_PROJECT_NAME:STATIC=converter_kernel\n\n//Value Computed by CMake\nCMAKE_PROJECT_SPDX_LICENSE:STATIC=\n\n//RC compiler\nCMAKE_RC_COMPILER:FILEPATH=rc\n\n//Flags for Windows Resource Compiler during all build types.\nCMAKE_RC_FLAGS:STRING=-DWIN32\n\n//Flags for Windows Resource Compiler during DEBUG builds.\nCMAKE_RC_FLAGS_DEBUG:STRING=-D_DEBUG\n\n//Flags for Windows Resource Compiler during MINSIZEREL builds.\nCMAKE_RC_FLAGS_MINSIZEREL:STRING=\n\n//Flags for Windows Resource Compiler during RELEASE builds.\nCMAKE_RC_FLAGS_RELEASE:STRING=\n\n//Flags for Windows Resource Compiler during RELWITHDEBINFO builds.\nCMAKE_RC_FLAGS_RELWITHDEBINFO:STRING=\n\n//Flags used by the linker during the creation of shared libraries\n// during all build types.\nCMAKE_SHARED_LINKER_FLAGS:STRING=/machine:x64\n\n//Flags used by the linker during the creation of shared libraries\n// during DEBUG builds.\nCMAKE_SHARED_LINKER_FLAGS_DEBUG:STRING=/debug /INCREMENTAL\n\n//Flags used by the linker during the creation of shared libraries\n// during MINSIZEREL builds.\nCMAKE_SHARED_LINKER_FLAGS_MINSIZEREL:STRING=/INCREMENTAL:NO\n\n//Flags used by the linker during the creation of shared libraries\n// during RELEASE builds.\nCMAKE_SHARED_LINKER_FLAGS_RELEASE:STRING=/INCREMENTAL:NO\n\n//Flags used by the linker during the creation of shared libraries\n// during RELWITHDEBINFO builds.\nCMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO:STRING=/debug /INCREMENTAL\n\n//If set, runtime paths are not added when installing shared libraries,\n// but are added when building.\nCMAKE_SKIP_INSTALL_RPATH:BOOL=NO\n\n//If set, runtime paths are not added when using shared libraries.\nCMAKE_SKIP_RPATH:BOOL=NO\n\n//Flags used by the archiver during the creation of static libraries\n// during all build types.\nCMAKE_STATIC_LINKER_FLAGS:STRING=/machine:x64\n\n//Flags used by the archiver during the creation of static libraries\n// during DEBUG builds.\nCMAKE_STATIC_LINKER_FLAGS_DEBUG:STRING=\n\n//Flags used by the archiver during the creation of static libraries\n// during MINSIZEREL builds.\nCMAKE_STATIC_LINKER_FLAGS_MINSIZEREL:STRING=\n\n//Flags used by the archiver during the creation of static libraries\n// during RELEASE builds.\nCMAKE_STATIC_LINKER_FLAGS_RELEASE:STRING=\n\n//Flags used by the archiver during the creation of static libraries\n// during RELWITHDEBINFO builds.\nCMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO:STRING=\n\n//If this value is on, makefiles will be generated without the\n// .SILENT directive, and all commands will be echoed to the console\n// during the make.  This is useful for debugging only. With Visual\n// Studio IDE projects all commands are done without /nologo.\nCMAKE_VERBOSE_MAKEFILE:BOOL=FALSE\n\n//ggml: enable Accelerate framework\nGGML_ACCELERATE:BOOL=ON\n\n//ggml: enable all compiler warnings\nGGML_ALL_WARNINGS:BOOL=ON\n\n//ggml: enable all compiler warnings in 3rd party libs\nGGML_ALL_WARNINGS_3RD_PARTY:BOOL=OFF\n\n//ggml: use AMX\nGGML_AMX:BOOL=OFF\n\n//ggml: enable AMX-BF16\nGGML_AMX_BF16:BOOL=OFF\n\n//ggml: enable AMX-INT8\nGGML_AMX_INT8:BOOL=OFF\n\n//ggml: enable AMX-TILE\nGGML_AMX_TILE:BOOL=OFF\n\n//ggml: enable AVX\nGGML_AVX:BOOL=OFF\n\n//ggml: enable AVX2\nGGML_AVX2:BOOL=OFF\n\n//ggml: enable AVX512\nGGML_AVX512:BOOL=OFF\n\n//ggml: enable AVX512-BF16\nGGML_AVX512_BF16:BOOL=OFF\n\n//ggml: enable AVX512-VBMI\nGGML_AVX512_VBMI:BOOL=OFF\n\n//ggml: enable AVX512-VNNI\nGGML_AVX512_VNNI:BOOL=OFF\n\n//ggml: use BLAS\nGGML_BLAS:BOOL=OFF\n\n//ggml: BLAS library vendor\nGGML_BLAS_VENDOR:STRING=Generic\n\n//ggml: build examples\nGGML_BUILD_EXAMPLES:BOOL=OFF\n\n//ggml: build tests\nGGML_BUILD_TESTS:BOOL=OFF\n\n//ggml: use ccache if available\nGGML_CCACHE:BOOL=OFF\n\n//ggml: use memkind for CPU HBM\nGGML_CPU_HBM:BOOL=OFF\n\n//ggml: use CUDA\nGGML_CUDA:BOOL=OFF\n\n//ggml: x stride for dmmv CUDA kernels\nGGML_CUDA_DMMV_X:STRING=32\n\n//ggml: use 16 bit floats for some calculations\nGGML_CUDA_F16:BOOL=OFF\n\n//ggml: compile all quants for FlashAttention\nGGML_CUDA_FA_ALL_QUANTS:BOOL=OFF\n\n//ggml: always use cuBLAS instead of mmq kernels\nGGML_CUDA_FORCE_CUBLAS:BOOL=OFF\n\n//ggml: use dmmv instead of mmvq CUDA kernels\nGGML_CUDA_FORCE_DMMV:BOOL=OFF\n\n//ggml: use mmq kernels instead of cuBLAS\nGGML_CUDA_FORCE_MMQ:BOOL=OFF\n\n//ggml: use CUDA graphs (llama.cpp only)\nGGML_CUDA_GRAPHS:BOOL=OFF\n\n//ggml: iters./thread per block for Q2_K/Q6_K\nGGML_CUDA_KQUANTS_ITER:STRING=2\n\n//ggml: y block size for mmv CUDA kernels\nGGML_CUDA_MMV_Y:STRING=1\n\n//ggml: do not use peer to peer copies\nGGML_CUDA_NO_PEER_COPY:BOOL=OFF\n\n//ggml: do not try to use CUDA VMM\nGGML_CUDA_NO_VMM:BOOL=OFF\n\n//ggml: max. batch size for using peer access\nGGML_CUDA_PEER_MAX_BATCH_SIZE:STRING=128\n\nGGML_F16C:BOOL=OFF\n\n//ggml: enable -Werror flag\nGGML_FATAL_WARNINGS:BOOL=OFF\n\n//ggml: enable FMA\nGGML_FMA:BOOL=OFF\n\n//ggml: enable gprof\nGGML_GPROF:BOOL=OFF\n\n//ggml: use hipBLAS\nGGML_HIPBLAS:BOOL=OFF\n\n//ggml: use HIP unified memory architecture\nGGML_HIP_UMA:BOOL=OFF\n\n//ggml: use Kompute\nGGML_KOMPUTE:BOOL=OFF\n\n//ggml: enable lasx\nGGML_LASX:BOOL=ON\n\n//ggml: use LLAMAFILE\nGGML_LLAMAFILE:BOOL=OFF\n\n//ggml: enable lsx\nGGML_LSX:BOOL=ON\n\n//ggml: enable link time optimization\nGGML_LTO:BOOL=OFF\n\n//ggml: use Metal\nGGML_METAL:BOOL=OFF\n\n//ggml: embed Metal library\nGGML_METAL_EMBED_LIBRARY:BOOL=OFF\n\n//ggml: metal minimum macOS version\nGGML_METAL_MACOSX_VERSION_MIN:STRING=\n\n//ggml: disable Metal debugging\nGGML_METAL_NDEBUG:BOOL=OFF\n\n//ggml: compile Metal with -fno-fast-math\nGGML_METAL_SHADER_DEBUG:BOOL=OFF\n\n//ggml: metal standard version (-std flag)\nGGML_METAL_STD:STRING=\n\n//ggml: use MUSA\nGGML_MUSA:BOOL=OFF\n\n//ggml: enable -march=native flag\nGGML_NATIVE:BOOL=OFF\n\n//ggml: use OpenMP\nGGML_OPENMP:BOOL=OFF\n\n//ggml: use RPC\nGGML_RPC:BOOL=OFF\n\n//ggml: enable address sanitizer\nGGML_SANITIZE_ADDRESS:BOOL=OFF\n\n//ggml: enable thread sanitizer\nGGML_SANITIZE_THREAD:BOOL=OFF\n\n//ggml: enable undefined sanitizer\nGGML_SANITIZE_UNDEFINED:BOOL=OFF\n\n//ggml: max input copies for pipeline parallelism\nGGML_SCHED_MAX_COPIES:STRING=4\n\n//ggml: static link libraries\nGGML_STATIC:BOOL=OFF\n\n//ggml: enable SVE\nGGML_SVE:BOOL=OFF\n\n//ggml: use SYCL\nGGML_SYCL:BOOL=OFF\n\n//ggml: use 16 bit floats for sycl calculations\nGGML_SYCL_F16:BOOL=OFF\n\n//ggml: sycl target device\nGGML_SYCL_TARGET:STRING=INTEL\n\n//ggml: use Vulkan\nGGML_VULKAN:BOOL=OFF\n\n//ggml: run Vulkan op checks\nGGML_VULKAN_CHECK_RESULTS:BOOL=OFF\n\n//ggml: enable Vulkan debug output\nGGML_VULKAN_DEBUG:BOOL=OFF\n\n//ggml: enable Vulkan memory debug output\nGGML_VULKAN_MEMORY_DEBUG:BOOL=OFF\n\n//ggml: enable Vulkan perf output\nGGML_VULKAN_PERF:BOOL=OFF\n\n//ggml: run Vulkan tests\nGGML_VULKAN_RUN_TESTS:BOOL=OFF\n\n//ggml: enable Vulkan shader debug info\nGGML_VULKAN_SHADER_DEBUG_INFO:BOOL=OFF\n\n//ggml: enable Vulkan validation\nGGML_VULKAN_VALIDATE:BOOL=OFF\n\n//ggml: Windows Version\nGGML_WIN_VER:STRING=0x602\n\n//Path to a library.\nMATH_LIBRARY:FILEPATH=MATH_LIBRARY-NOTFOUND\n\n//No help, variable specified on the command line.\nREFERENCE_SOURCE:UNINITIALIZED=C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\kernel-pilot-2026-10-16\\source\n\n//Value Computed by CMake\nconverter_kernel_BINARY_DIR:STATIC=C:/Users/Delcado/Documents/Software_Projects/ComfyUI/safetensors2GGUF/build/kernel-pilot-2026-10-16/build\n\n//Value Computed by CMake\nconverter_kernel_IS_TOP_LEVEL:STATIC=ON\n\n//Value Computed by CMake\nconverter_kernel_SOURCE_DIR:STATIC=C:/Users/Delcado/Documents/Software_Projects/ComfyUI/safetensors2GGUF/tools/converter-kernel\n\n//Value Computed by CMake\nggml_BINARY_DIR:STATIC=C:/Users/Delcado/Documents/Software_Projects/ComfyUI/safetensors2GGUF/build/kernel-pilot-2026-10-16/build/ggml\n\n//Value Computed by CMake\nggml_IS_TOP_LEVEL:STATIC=OFF\n\n//Value Computed by CMake\nggml_SOURCE_DIR:STATIC=C:/Users/Delcado/Documents/Software_Projects/ComfyUI/safetensors2GGUF/build/kernel-pilot-2026-10-16/source/ggml\n\n\n########################\n# INTERNAL cache entries\n########################\n\n//ADVANCED property for variable: CMAKE_AR\nCMAKE_AR-ADVANCED:INTERNAL=1\n//This is the directory where this CMakeCache.txt was created\nCMAKE_CACHEFILE_DIR:INTERNAL=c:/Users/Delcado/Documents/Software_Projects/ComfyUI/safetensors2GGUF/build/kernel-pilot-2026-10-16/build\n//Major version of cmake used to create the current loaded cache\nCMAKE_CACHE_MAJOR_VERSION:INTERNAL=4\n//Minor version of cmake used to create the current loaded cache\nCMAKE_CACHE_MINOR_VERSION:INTERNAL=3\n//Patch version of cmake used to create the current loaded cache\nCMAKE_CACHE_PATCH_VERSION:INTERNAL=1\n//Path to CMake executable.\nCMAKE_COMMAND:INTERNAL=C:/Program Files/Microsoft Visual Studio/18/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe\n//Path to cpack program executable.\nCMAKE_CPACK_COMMAND:INTERNAL=C:/Program Files/Microsoft Visual Studio/18/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cpack.exe\n//Path to ctest program executable.\nCMAKE_CTEST_COMMAND:INTERNAL=C:/Program Files/Microsoft Visual Studio/18/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/ctest.exe\n//ADVANCED property for variable: CMAKE_CXX_FLAGS\nCMAKE_CXX_FLAGS-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_CXX_FLAGS_DEBUG\nCMAKE_CXX_FLAGS_DEBUG-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_CXX_FLAGS_MINSIZEREL\nCMAKE_CXX_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_CXX_FLAGS_RELEASE\nCMAKE_CXX_FLAGS_RELEASE-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_CXX_FLAGS_RELWITHDEBINFO\nCMAKE_CXX_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_CXX_STANDARD_LIBRARIES\nCMAKE_CXX_STANDARD_LIBRARIES-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_C_FLAGS\nCMAKE_C_FLAGS-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_C_FLAGS_DEBUG\nCMAKE_C_FLAGS_DEBUG-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_C_FLAGS_MINSIZEREL\nCMAKE_C_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_C_FLAGS_RELEASE\nCMAKE_C_FLAGS_RELEASE-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_C_FLAGS_RELWITHDEBINFO\nCMAKE_C_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_C_STANDARD_LIBRARIES\nCMAKE_C_STANDARD_LIBRARIES-ADVANCED:INTERNAL=1\n//Executable file format\nCMAKE_EXECUTABLE_FORMAT:INTERNAL=Unknown\n//ADVANCED property for variable: CMAKE_EXE_LINKER_FLAGS\nCMAKE_EXE_LINKER_FLAGS-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_EXE_LINKER_FLAGS_DEBUG\nCMAKE_EXE_LINKER_FLAGS_DEBUG-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_EXE_LINKER_FLAGS_MINSIZEREL\nCMAKE_EXE_LINKER_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_EXE_LINKER_FLAGS_RELEASE\nCMAKE_EXE_LINKER_FLAGS_RELEASE-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO\nCMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1\n//Name of external makefile project generator.\nCMAKE_EXTRA_GENERATOR:INTERNAL=\n//Name of generator.\nCMAKE_GENERATOR:INTERNAL=Visual Studio 18 2026\n//Generator instance identifier.\nCMAKE_GENERATOR_INSTANCE:INTERNAL=C:/Program Files/Microsoft Visual Studio/18/Community\n//Name of generator platform.\nCMAKE_GENERATOR_PLATFORM:INTERNAL=\n//Name of generator toolset.\nCMAKE_GENERATOR_TOOLSET:INTERNAL=\n//Test CMAKE_HAVE_LIBC_PTHREAD\nCMAKE_HAVE_LIBC_PTHREAD:INTERNAL=\n//Have library pthreads\nCMAKE_HAVE_PTHREADS_CREATE:INTERNAL=\n//Have library pthread\nCMAKE_HAVE_PTHREAD_CREATE:INTERNAL=\n//Source directory with the top level CMakeLists.txt file for this\n// project\nCMAKE_HOME_DIRECTORY:INTERNAL=C:/Users/Delcado/Documents/Software_Projects/ComfyUI/safetensors2GGUF/tools/converter-kernel\n//ADVANCED property for variable: CMAKE_INSTALL_BINDIR\nCMAKE_INSTALL_BINDIR-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_INSTALL_DATADIR\nCMAKE_INSTALL_DATADIR-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_INSTALL_DATAROOTDIR\nCMAKE_INSTALL_DATAROOTDIR-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_INSTALL_DOCDIR\nCMAKE_INSTALL_DOCDIR-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_INSTALL_INCLUDEDIR\nCMAKE_INSTALL_INCLUDEDIR-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_INSTALL_INFODIR\nCMAKE_INSTALL_INFODIR-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_INSTALL_LIBDIR\nCMAKE_INSTALL_LIBDIR-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_INSTALL_LIBEXECDIR\nCMAKE_INSTALL_LIBEXECDIR-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_INSTALL_LOCALEDIR\nCMAKE_INSTALL_LOCALEDIR-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_INSTALL_LOCALSTATEDIR\nCMAKE_INSTALL_LOCALSTATEDIR-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_INSTALL_MANDIR\nCMAKE_INSTALL_MANDIR-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_INSTALL_OLDINCLUDEDIR\nCMAKE_INSTALL_OLDINCLUDEDIR-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_INSTALL_RUNSTATEDIR\nCMAKE_INSTALL_RUNSTATEDIR-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_INSTALL_SBINDIR\nCMAKE_INSTALL_SBINDIR-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_INSTALL_SHAREDSTATEDIR\nCMAKE_INSTALL_SHAREDSTATEDIR-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_INSTALL_SYSCONFDIR\nCMAKE_INSTALL_SYSCONFDIR-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_LINKER\nCMAKE_LINKER-ADVANCED:INTERNAL=1\n//Name of CMakeLists files to read\nCMAKE_LIST_FILE_NAME:INTERNAL=CMakeLists.txt\n//ADVANCED property for variable: CMAKE_MODULE_LINKER_FLAGS\nCMAKE_MODULE_LINKER_FLAGS-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_MODULE_LINKER_FLAGS_DEBUG\nCMAKE_MODULE_LINKER_FLAGS_DEBUG-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_MODULE_LINKER_FLAGS_MINSIZEREL\nCMAKE_MODULE_LINKER_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_MODULE_LINKER_FLAGS_RELEASE\nCMAKE_MODULE_LINKER_FLAGS_RELEASE-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO\nCMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_MT\nCMAKE_MT-ADVANCED:INTERNAL=1\n//number of local generators\nCMAKE_NUMBER_OF_MAKEFILES:INTERNAL=3\n//Platform information initialized\nCMAKE_PLATFORM_INFO_INITIALIZED:INTERNAL=1\n//noop for ranlib\nCMAKE_RANLIB:INTERNAL=:\n//ADVANCED property for variable: CMAKE_RC_COMPILER\nCMAKE_RC_COMPILER-ADVANCED:INTERNAL=1\nCMAKE_RC_COMPILER_WORKS:INTERNAL=1\n//ADVANCED property for variable: CMAKE_RC_FLAGS\nCMAKE_RC_FLAGS-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_RC_FLAGS_DEBUG\nCMAKE_RC_FLAGS_DEBUG-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_RC_FLAGS_MINSIZEREL\nCMAKE_RC_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_RC_FLAGS_RELEASE\nCMAKE_RC_FLAGS_RELEASE-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_RC_FLAGS_RELWITHDEBINFO\nCMAKE_RC_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1\n//Path to CMake installation.\nCMAKE_ROOT:INTERNAL=C:/Program Files/Microsoft Visual Studio/18/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.3\n//ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS\nCMAKE_SHARED_LINKER_FLAGS-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS_DEBUG\nCMAKE_SHARED_LINKER_FLAGS_DEBUG-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL\nCMAKE_SHARED_LINKER_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS_RELEASE\nCMAKE_SHARED_LINKER_FLAGS_RELEASE-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO\nCMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_SKIP_INSTALL_RPATH\nCMAKE_SKIP_INSTALL_RPATH-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_SKIP_RPATH\nCMAKE_SKIP_RPATH-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_STATIC_LINKER_FLAGS\nCMAKE_STATIC_LINKER_FLAGS-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_STATIC_LINKER_FLAGS_DEBUG\nCMAKE_STATIC_LINKER_FLAGS_DEBUG-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_STATIC_LINKER_FLAGS_MINSIZEREL\nCMAKE_STATIC_LINKER_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_STATIC_LINKER_FLAGS_RELEASE\nCMAKE_STATIC_LINKER_FLAGS_RELEASE-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO\nCMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1\n//ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE\nCMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1\n//Details about finding Threads\nFIND_PACKAGE_MESSAGE_DETAILS_Threads:INTERNAL=[TRUE][v()]\n//CMAKE_INSTALL_PREFIX during last run\n_GNUInstallDirs_LAST_CMAKE_INSTALL_PREFIX:INTERNAL=C:/Program Files (x86)/converter_kernel\n\n"
+  },
+  "source_code_sha256": {
+    "tools/converter-kernel/kernel.c": "eb21a040b39aca8c13925cec6f87553e95ab801f8e07429259d7391feb7dd8bb",
+    "tools/converter-kernel/CMakeLists.txt": "ee50079ca6e7804d31babb563395844d4ba588b0bfa5776a0dac7f2e0135e313",
+    "scripts/check_compiled_kernel.py": "503cf93dfecf484aa33817bd2104a3555bf41489a24478f1b95844c1f197494f",
+    "scripts/reference_q4_k.py": "f63aa898721a1a6f9e2cd7a4e4f672df69176e61120bebb59fe0381b2f315e56",
+    "scripts/reference_q5_k.py": "6086dcc86cf3673c076aa5ba3d4302d9afb26f284f9a940b7545b2c8c8359390",
+    "scripts/reference_q6_k.py": "f5b9eabf34c42faa1f605113aa6e857d2c29bec3ff3d0155b54b1d595f6b0b02"
+  },
+  "native_reference": {
+    "id": "llama-b3962",
+    "commit": "c8c07d658a6cefc5a50cfdf6be7d726503612303",
+    "archive_sha256": "13c8e23aedcc9a519cb3eafe95381e20dd9c4819ffee823b77c1b85a8d5cb6c4",
+    "executable_sha256": "04c285dc6757b6420a1b33481ec61dc87b765f9c1ae1bbdcb0f6c346842af119",
+    "compiler": {
+      "CMAKE_C_COMPILER": "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe",
+      "CMAKE_C_COMPILER_ID": "MSVC",
+      "CMAKE_C_COMPILER_VERSION": "19.51.36260.0"
+    },
+    "flags": [
+      "BUILD_SHARED_LIBS:BOOL=OFF",
+      "CMAKE_BUILD_TYPE:UNINITIALIZED=Release",
+      "CMAKE_CXX_FLAGS:STRING=/DWIN32 /D_WINDOWS /EHsc",
+      "CMAKE_CXX_FLAGS_DEBUG:STRING=/Ob0 /Od /RTC1",
+      "CMAKE_CXX_FLAGS_MINSIZEREL:STRING=/O1 /Ob1 /DNDEBUG",
+      "CMAKE_CXX_FLAGS_RELEASE:STRING=/O2 /Ob2 /DNDEBUG",
+      "CMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=/O2 /Ob1 /DNDEBUG",
+      "CMAKE_C_FLAGS:STRING=/DWIN32 /D_WINDOWS",
+      "CMAKE_C_FLAGS_DEBUG:STRING=/Ob0 /Od /RTC1",
+      "CMAKE_C_FLAGS_MINSIZEREL:STRING=/O1 /Ob1 /DNDEBUG",
+      "CMAKE_C_FLAGS_RELEASE:STRING=/O2 /Ob2 /DNDEBUG",
+      "CMAKE_C_FLAGS_RELWITHDEBINFO:STRING=/O2 /Ob1 /DNDEBUG",
+      "GGML_ACCELERATE:BOOL=ON",
+      "GGML_ALL_WARNINGS:BOOL=ON",
+      "GGML_ALL_WARNINGS_3RD_PARTY:BOOL=OFF",
+      "GGML_AMX:BOOL=OFF",
+      "GGML_AMX_BF16:BOOL=OFF",
+      "GGML_AMX_INT8:BOOL=OFF",
+      "GGML_AMX_TILE:BOOL=OFF",
+      "GGML_AVX:BOOL=OFF",
+      "GGML_AVX2:BOOL=OFF",
+      "GGML_AVX512:BOOL=OFF",
+      "GGML_AVX512_BF16:BOOL=OFF",
+      "GGML_AVX512_VBMI:BOOL=OFF",
+      "GGML_AVX512_VNNI:BOOL=OFF",
+      "GGML_BLAS:BOOL=OFF",
+      "GGML_BLAS_VENDOR:STRING=Generic",
+      "GGML_BUILD_EXAMPLES:BOOL=OFF",
+      "GGML_BUILD_TESTS:BOOL=OFF",
+      "GGML_CCACHE:BOOL=OFF",
+      "GGML_CPU_HBM:BOOL=OFF",
+      "GGML_CUDA:BOOL=OFF",
+      "GGML_CUDA_DMMV_X:STRING=32",
+      "GGML_CUDA_F16:BOOL=OFF",
+      "GGML_CUDA_FA_ALL_QUANTS:BOOL=OFF",
+      "GGML_CUDA_FORCE_CUBLAS:BOOL=OFF",
+      "GGML_CUDA_FORCE_DMMV:BOOL=OFF",
+      "GGML_CUDA_FORCE_MMQ:BOOL=OFF",
+      "GGML_CUDA_GRAPHS:BOOL=OFF",
+      "GGML_CUDA_KQUANTS_ITER:STRING=2",
+      "GGML_CUDA_MMV_Y:STRING=1",
+      "GGML_CUDA_NO_PEER_COPY:BOOL=OFF",
+      "GGML_CUDA_NO_VMM:BOOL=OFF",
+      "GGML_CUDA_PEER_MAX_BATCH_SIZE:STRING=128",
+      "GGML_F16C:BOOL=OFF",
+      "GGML_FATAL_WARNINGS:BOOL=OFF",
+      "GGML_FMA:BOOL=OFF",
+      "GGML_GPROF:BOOL=OFF",
+      "GGML_HIPBLAS:BOOL=OFF",
+      "GGML_HIP_UMA:BOOL=OFF",
+      "GGML_KOMPUTE:BOOL=OFF",
+      "GGML_LASX:BOOL=ON",
+      "GGML_LLAMAFILE:BOOL=OFF",
+      "GGML_LSX:BOOL=ON",
+      "GGML_LTO:BOOL=OFF",
+      "GGML_METAL:BOOL=OFF",
+      "GGML_METAL_EMBED_LIBRARY:BOOL=OFF",
+      "GGML_METAL_MACOSX_VERSION_MIN:STRING=",
+      "GGML_METAL_NDEBUG:BOOL=OFF",
+      "GGML_METAL_SHADER_DEBUG:BOOL=OFF",
+      "GGML_METAL_STD:STRING=",
+      "GGML_MUSA:BOOL=OFF",
+      "GGML_NATIVE:BOOL=OFF",
+      "GGML_OPENMP:BOOL=OFF",
+      "GGML_RPC:BOOL=OFF",
+      "GGML_SANITIZE_ADDRESS:BOOL=OFF",
+      "GGML_SANITIZE_THREAD:BOOL=OFF",
+      "GGML_SANITIZE_UNDEFINED:BOOL=OFF",
+      "GGML_SCHED_MAX_COPIES:STRING=4",
+      "GGML_STATIC:BOOL=OFF",
+      "GGML_SVE:BOOL=OFF",
+      "GGML_SYCL:BOOL=OFF",
+      "GGML_SYCL_F16:BOOL=OFF",
+      "GGML_SYCL_TARGET:STRING=INTEL",
+      "GGML_VULKAN:BOOL=OFF",
+      "GGML_VULKAN_CHECK_RESULTS:BOOL=OFF",
+      "GGML_VULKAN_DEBUG:BOOL=OFF",
+      "GGML_VULKAN_MEMORY_DEBUG:BOOL=OFF",
+      "GGML_VULKAN_PERF:BOOL=OFF",
+      "GGML_VULKAN_RUN_TESTS:BOOL=OFF",
+      "GGML_VULKAN_SHADER_DEBUG_INFO:BOOL=OFF",
+      "GGML_VULKAN_VALIDATE:BOOL=OFF",
+      "GGML_WIN_VER:STRING=0x602",
+      "CMAKE_CXX_FLAGS-ADVANCED:INTERNAL=1",
+      "CMAKE_CXX_FLAGS_DEBUG-ADVANCED:INTERNAL=1",
+      "CMAKE_CXX_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1",
+      "CMAKE_CXX_FLAGS_RELEASE-ADVANCED:INTERNAL=1",
+      "CMAKE_CXX_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1",
+      "CMAKE_C_FLAGS-ADVANCED:INTERNAL=1",
+      "CMAKE_C_FLAGS_DEBUG-ADVANCED:INTERNAL=1",
+      "CMAKE_C_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1",
+      "CMAKE_C_FLAGS_RELEASE-ADVANCED:INTERNAL=1",
+      "CMAKE_C_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1",
+      "CMAKE_GENERATOR:INTERNAL=Visual Studio 18 2026"
+    ],
+    "commands": [
+      [
+        "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe",
+        "-S",
+        "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\tools\\converter-reference",
+        "-B",
+        "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\converter-reference\\run-s8or7vf0\\llama-b3962\\build",
+        "-DREFERENCE_SOURCE=C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\converter-reference\\run-s8or7vf0\\llama-b3962\\source",
+        "-DCMAKE_BUILD_TYPE=Release"
+      ],
+      [
+        "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe",
+        "--build",
+        "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\converter-reference\\run-s8or7vf0\\llama-b3962\\build",
+        "--config",
+        "Release",
+        "--target",
+        "converter-reference",
+        "-j",
+        "2"
+      ]
+    ],
+    "executable": "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\converter-reference\\run-s8or7vf0\\llama-b3962\\build\\Release\\converter-reference.exe",
+    "probe_sha256": "202c59d1fb451e7e44c2b43a9ad776f5d10ef126455349ada26a82288d6376bd",
+    "cmake_project_sha256": "449b9ccbccc42d6688de48989176768e1b7fd2ab2868a373f88eca145160c4ff",
+    "protocol_checks": [
+      {
+        "case": "unknown_format",
+        "exit_code": 2,
+        "status": "rejected"
+      },
+      {
+        "case": "negative_dimension",
+        "exit_code": 2,
+        "status": "rejected"
+      },
+      {
+        "case": "excessive_dimensions",
+        "exit_code": 2,
+        "status": "rejected"
+      },
+      {
+        "case": "incompatible_row",
+        "exit_code": 2,
+        "status": "rejected"
+      },
+      {
+        "case": "short_payload",
+        "exit_code": 3,
+        "status": "rejected"
+      },
+      {
+        "case": "extra_payload",
+        "exit_code": 3,
+        "status": "rejected"
+      },
+      {
+        "case": "nonfinite_input",
+        "exit_code": 3,
+        "status": "rejected"
+      }
+    ]
+  },
+  "guard_checks": 10,
+  "parity": [
+    {
+      "format": "Q4_K",
+      "golden_inputs": 166,
+      "all_equal": true
+    },
+    {
+      "format": "Q5_K",
+      "golden_inputs": 166,
+      "all_equal": true
+    },
+    {
+      "format": "Q6_K",
+      "golden_inputs": 166,
+      "all_equal": true
+    }
+  ],
+  "source": "I:\\safetensors2GGUF-flux-q6-full-2026-10-15\\prepared-F16.gguf",
+  "source_stat_stable": true,
+  "tensor": "double_blocks.0.img_attn.proj.weight",
+  "values": 1048576,
+  "chunk_blocks": 256,
+  "input_sha256": "1828b452f631cfdca996bc7b6dc41c6e8c595e4980a22ac96f669ebf12342ada",
+  "benchmarks": [
+    {
+      "format": "Q4_K",
+      "seconds": {
+        "numpy": [
+          0.13771119999000803,
+          0.1391769000038039,
+          0.1370628000004217,
+          0.13636670001142193,
+          0.1364398000005167,
+          0.1324964999948861,
+          0.13201269999262877
+        ],
+        "compiled": [
+          0.043013800008338876,
+          0.04309890000149608,
+          0.043140599998878315,
+          0.04287859999749344,
+          0.04337679999298416,
+          0.04235050000716001,
+          0.04250999999931082
+        ],
+        "native_direct": [
+          0.042448200008948334,
+          0.04263949999585748,
+          0.042678999991039746,
+          0.042889399992418475,
+          0.044222399999853224,
+          0.04212589999951888,
+          0.0421282000024803
+        ]
+      },
+      "median_seconds": {
+        "numpy": 0.1364398000005167,
+        "compiled": 0.043013800008338876,
+        "native_direct": 0.04263949999585748
+      },
+      "payload_sha256": "9c8d2bd215583eec372705c6df74c8f822262dda6fb8af8c9f6eb78950288aa8",
+      "native_equal": true
+    },
+    {
+      "format": "Q5_K",
+      "seconds": {
+        "numpy": [
+          0.11188380001112819,
+          0.11166580001008697,
+          0.11069270000734832,
+          0.11339280000538565,
+          0.12390360000426881,
+          0.1110054000018863,
+          0.11017359999823384
+        ],
+        "compiled": [
+          0.03719289999571629,
+          0.0373095000104513,
+          0.03689509999821894,
+          0.037585400001262315,
+          0.041800299994065426,
+          0.03641710001102183,
+          0.03667620000487659
+        ],
+        "native_direct": [
+          0.03661080000165384,
+          0.036593400000128895,
+          0.0373020999977598,
+          0.03667299999506213,
+          0.035938499990152195,
+          0.03598919999785721,
+          0.03620789998967666
+        ]
+      },
+      "median_seconds": {
+        "numpy": 0.11166580001008697,
+        "compiled": 0.03719289999571629,
+        "native_direct": 0.036593400000128895
+      },
+      "payload_sha256": "3f72bc73333bbdfeaf33bff1afed76bae53966c1afa6503aa1268648a7323f36",
+      "native_equal": true
+    },
+    {
+      "format": "Q6_K",
+      "seconds": {
+        "numpy": [
+          0.08232870000938419,
+          0.0821387999894796,
+          0.08106880000559613,
+          0.08232219998899382,
+          0.0806556999887107,
+          0.08239450000110082,
+          0.0817067999887513
+        ],
+        "compiled": [
+          0.02652690000832081,
+          0.02640429999155458,
+          0.026305599996703677,
+          0.026361000011092983,
+          0.02642280000145547,
+          0.02660660000401549,
+          0.0263353000045754
+        ],
+        "native_direct": [
+          0.026288900000508875,
+          0.02644020000298042,
+          0.02605690000928007,
+          0.026152799997362308,
+          0.026206700000329874,
+          0.026256900004227646,
+          0.026405399999930523
+        ]
+      },
+      "median_seconds": {
+        "numpy": 0.0821387999894796,
+        "compiled": 0.02640429999155458,
+        "native_direct": 0.026256900004227646
+      },
+      "payload_sha256": "c8055821ea6f50060158033c35aa6961adcd4479f5a82c4b105bc79dc32fc8b9",
+      "native_equal": true
+    }
+  ]
+}

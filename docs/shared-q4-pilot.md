@@ -57,6 +57,11 @@ rewrite was slower, so neither was adopted. Native-speed conversion remains an
 open target; fused compiled fitting and bounded parallel execution need separate
 parity, cancellation, packaging and memory measurements before adoption.
 
+The next isolated [compiled-kernel pilot](compiled-kernel-pilot.md) reuses pinned
+b3962 CPU kernels directly from Python. It records native-byte parity and slice
+throughput close to the same directly called kernel; full-model writer integration
+and platform distribution remain pending.
+
 `iter_q4_k` accepts explicit nonempty float32 rows divisible by 256, preserves
 strided logical C order and only copies bounded windows. Each yielded chunk owns
 its data. Consumers must use atomic publication and close/stop between chunks

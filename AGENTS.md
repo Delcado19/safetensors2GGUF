@@ -2,6 +2,14 @@
 
 ## Persistent project TODO — load at every session start
 
+CPU performance follow-up (2026-10-16): read `docs/compiled-kernel-pilot.md`.
+Direct Python calls to the archived b3962 Q4_K/Q5_K/Q6_K C kernels pass 498
+golden comparisons and run within about 2% of the same directly called kernel on
+one prepared FLUX slice. This is an isolated research DLL, not an application
+backend. Full-model bounded-writer integration, cancellation/atomic-output checks,
+binary packaging and Linux/macOS validation remain pending. Keep native-speed
+conversion as a measured target; slice timings do not prove full-model wall time.
+
 **Open: Build one unified model converter.** Preserve the tested diffusion and
 text-encoder GGUF paths while integrating the additional model/format capabilities
 of `molbal/ComfyUI-GGUF`.

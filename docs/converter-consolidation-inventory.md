@@ -13,6 +13,11 @@ The first [shared Q6_K math pilot](shared-q6-pilot.md) matches the three native
 references on 166 inputs and three complete streamed matrices; it remains
 separate from production dispatch. Full-tensor checks compare every chunk with
 the native references and publish raw research artifacts atomically.
+An isolated [compiled CPU kernel pilot](compiled-kernel-pilot.md) now calls pinned
+b3962 Q4_K/Q5_K/Q6_K kernels directly from Python. All 498 golden inputs match;
+bounded-call slice timings are within about 2% of the same directly called C
+kernel. Full-model writer integration, packaging and non-Windows execution remain
+open; this does not replace the production backends or settle the final language.
 
 ## Objective and boundaries
 
