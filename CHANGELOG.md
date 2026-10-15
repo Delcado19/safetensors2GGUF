@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Frozen converter analysis sources for patched b3962, installed/current
+  text llama.cpp and current Molbal, including the b3962 Kompute submodule,
+  licenses, provenance and checksums. Add an offline static inventory verifier
+  and a consolidation matrix; production backends remain unchanged.
+
 - Fix: Close the output-local GGUF tensor spool on success, errors and cancellation,
   preventing Windows temporary-file leaks after failed writes. Add forced disk
   rollover regression coverage for every exit path.

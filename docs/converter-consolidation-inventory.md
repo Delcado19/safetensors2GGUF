@@ -1,0 +1,114 @@
+# Unified converter: frozen source inventory
+
+Date: 2026-10-12. Branch: `research/unified-converter-inventory`.
+Status: source preservation and static inventory complete; numerical comparison,
+backend replacement and hardware optimization have not started.
+
+## Objective and boundaries
+
+Build one project-controlled conversion implementation with shared quantization
+algorithms, explicit precision policies, model adapters and format writers.
+Implementation language is undecided. CPU is the baseline; NVIDIA, AMD and Intel
+Arc acceleration are later execution backends, subject to measured benefit and
+platform availability. Tensor cores are relevant to eligible matrix operations,
+not automatically to rounding, scale search or bit packing.
+
+GGUF and safetensors loader development is a separate companion workstream.
+Whether ComfyUI exposes one combined loader or separate loader nodes remains
+open. Existing workflows and validated conversion paths must remain usable.
+
+## Frozen references
+
+Full upstream tracked-source archives and root licenses are preserved in
+[`third_party/converter_references`](../third_party/converter_references/README.md).
+The machine-readable manifest contains authoritative full commit IDs and hashes.
+
+| Source | Revision | Role |
+| --- | --- | --- |
+| llama.cpp b3962 | `c8c07d658a6cefc5a50cfdf6be7d726503612303` | Diffusion quantizer base, 2024-10-22 |
+| City96 ComfyUI-GGUF | `6ea2651e7df66d7585f6ffee804b20e92fb38b8a` | Diffusion tensor rules and custom llama.cpp patch |
+| Existing text llama.cpp | `687e7789271ec1276e3470f158428e11a4f80b6f` | Actual local checkout, 2026-08-09 |
+| Current llama.cpp | `8bb3cf0d216a5ae48360179f2931daf284be4d01` | New upstream comparison, 2026-10-12 |
+| Current Molbal | `b77b9d8124656aa1a548d95c617da4d16cab1a2e` | Additional adapters, Python K encoders and loader rules |
+| b3962 Kompute submodule | `4565194ed7c32d1d2efa32ceab4d3c6cae006306` | Complete separately pinned optional GPU source |
+
+Production `third_party/molbal` remains at `5a0a3ff`. The current Molbal reference
+is not automatically used by Krea jobs. Neither llama.cpp reference changes the
+existing text-encoder cache or its first-use network behavior.
+
+## Responsibilities to consolidate
+
+| Layer | Existing project / City96 path | Molbal reference | Consolidation decision |
+| --- | --- | --- | --- |
+| Source decoding | Safetensors/CKPT, native-quant reconstruction | Scaled INT8/ConvRot metadata reconstruction, streamed Safetensors | Preserve reconstruction before re-quantization; reject unsupported packed layouts |
+| Diffusion adapters | `models/architectures.py`, shape handling, protected keys | `Model*` classes in `tools/convert.py` | Merge explicit rules, retain transformations as adapter code |
+| Text adapters | Config/tokenizer staging then llama.cpp converter | Selected Qwen/MiniMax paths | Preserve full config/tokenizer/projector semantics; do not infer export support from loader support |
+| Precision selection | Mandatory fallbacks, architecture protection, mixed profiles; City96 C++ preset rules | `plan_k_quantization`, target-size planning, `keys_noquant`/`keys_hiprec` | Separate mathematical encoders from model-level S/M and mixed policies |
+| Quantization math | gguf-py / PyTorch and two llama-quantize variants | Standard gguf-py plus local K encoders and CR transformations | Share one encoder per exact format; compare rounding and optimization before replacement |
+| Output | Atomic GGUF and safetensors publication, validated shape/metadata | Upstream GGUF output wrapped by our Krea adapter | Keep common cancellation, validation, overwrite and atomic-publish contracts |
+| Runtime | ComfyUI native safetensors and City96 loaders | Additional architectures, CR/Dynamic VRAM and experimental K decoding | Separate storage encoding from runtime kernels; require loader-specific proof |
+
+## Format coverage and gaps
+
+| Family | Current application | Molbal Python reference | Work required |
+| --- | --- | --- | --- |
+| Float GGUF | F32/F16/BF16 | F16/BF16 advertised map | Preserve all current float types |
+| Standard GGUF | Q8_0; Krea also Q4_0/Q4_1/Q5_0/Q5_1 | Q8_0/Q4_0/Q4_1/Q5_0/Q5_1 | Establish encoder reference vectors |
+| K GGUF | Q2_K/Q3_K_M/Q4_K_S/Q4_K_M/Q5_K_M/Q6_K | Q4_K/Q5_K/Q6_K plus Q4_K_S/M and Q5_K_S/M | Q2_K/Q3_K encoder gap; compare all preset rules rather than just output labels |
+| IQ GGUF | Not offered | Not in the converter's explicit quantization map | Future option, not current required coverage; decoding support is not an encoder |
+| Native safetensors | FP16 and mixed; FP8/INT8/NVFP4 and mixed; diffusion INT4 ConvRot mixed | No corresponding safetensors export path | Keep native math, metadata and source precision protection |
+| CR GGUF | Not offered by our Krea allowlist | Q8_CR/Q4_CR/Q4_CR_W4A4 | Distinct storage/runtime contracts; not aliases for standard Q8_0/Q4_0 |
+
+Molbal K encoder entrypoints are `quantize_k`, `_quantize_k_affine` and
+`_quantize_k_q6`. Source CR math uses `quantize_int8_convrot` and
+`quantize_int4_cr_w4a4`. Target-size and LoRA fusion are separate optional
+features, not prerequisites for a shared mathematical core.
+
+## Models and special rules
+
+The generated [JSON inventory](../data/converter-source-inventory.json) records
+model class names, source lines, base classes, registrations, declared tensor
+patterns and transformation method names. It does not execute third-party code
+or resolve inheritance. An empty declared rule does not imply no inherited rule.
+
+Initial static counts: City96 has 12 model declarations including its template;
+Molbal has 22 including its template. Old llama.cpp has 49 registered/declarative
+classes; the installed and current text references have 200 and 247 respectively.
+These are code declaration counts, not counts of compatible models or validated
+checkpoints. Modern llama.cpp adapters live in `conversion/*.py`; preserving just
+the `convert_hf_to_gguf.py` CLI would miss those implementations.
+
+Prioritize diffusion Krea, Ideogram, Qwen Image 2.1 and MiniMax adapters alongside
+existing FLUX/SD/Wan/LTX families. For text encoders, compare only the application's
+offered families first, then optional new families. Protection patterns differ:
+Molbal's Krea rules are anchored and must not be silently substituted for our
+broader substring policies. Qwen3-VL's special Q8_CR export drops the vision tower;
+it is not a full multimodal replacement for the llama.cpp path.
+
+## Validation gates and next work
+
+Completed:
+
+- Hash/file-count/license verification for all six archives, with path/link checks.
+- Preservation of the b3962 gitlink source; no other gitlinks found at these refs.
+- Read-only City96 patch compatibility check against archived b3962 files.
+- Offline static model/format inventory and corruption/parser regression tests.
+
+Next, before replacing a backend:
+
+1. Extract explicit effective rules for the supported model families, including
+   inherited rules, tensor transformations and C++ preset choices.
+2. Build small encoder/dequantizer vectors for zero, constant, outlier, aligned
+   and incompatible-shape tensors. Specify rounding, byte layout and fallback
+   behavior; equality claims need measured results.
+3. Compare Molbal Q4_K/Q5_K/Q6_K with patched b3962 and both text references.
+   Compare S/M policies separately from each individual tensor encoding.
+4. Preserve source precision, tokenizer/metadata and atomic output/cancellation
+   behavior through the proposed shared interfaces.
+5. Implement one common path and compare files, loading, memory and speed before
+   enabling production dispatch. New model renders require an explicit request.
+
+No new ComfyUI models or nodes were installed, no model weights were downloaded,
+and no inference or native build was started. Optional SDK/download dependencies,
+offline installation, native binaries, full-source algorithm parity and the
+implementation-language choice remain open.

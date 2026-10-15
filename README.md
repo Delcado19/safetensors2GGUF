@@ -22,6 +22,10 @@ or quantized safetensors.
 A React workbench with file browser, format selection, live size estimates,
 and cancellation is included for all conversion pipelines.
 
+The planned shared conversion core is documented in the
+[unified converter source inventory](docs/converter-consolidation-inventory.md).
+It is research work; current conversion backends remain active.
+
 ## Supported Architectures
 
 | Architecture | Format |

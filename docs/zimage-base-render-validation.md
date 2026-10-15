@@ -1,5 +1,10 @@
 # Z-Image Base converted-model render comparison
 
+**Artifact cleanup (2026-10-10):** At the user's request, all batch PNGs,
+temporary preview images and contact sheets were permanently deleted. Written
+findings, metrics, workflow/API snapshots and logs remain. Gallery image links
+are no longer available; reproducing pictures requires a newly authorized render.
+
 Date: 2026-10-09. Status: all ten existing conversions and the independent
 repeated source completed; 36 PNGs retained. Visual assessment is recorded below.
 No models are converted or deleted during this task.

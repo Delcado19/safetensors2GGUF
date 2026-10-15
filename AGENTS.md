@@ -16,6 +16,13 @@ Normal conversion must use the shipped/pinned tools; upstream access belongs to
 explicit maintenance/update work, not an implicit fetch of moving HEAD on first
 use. Separate this requirement from optional user-requested model downloads.
 
+Analysis started (2026-10-12) on `research/unified-converter-inventory`.
+Read `docs/converter-consolidation-inventory.md` and the frozen source manifest in
+`third_party/converter_references`. Complete tracked-source references, the old
+Kompute gitlink, license/hash verification and static model rules are preserved.
+Normal conversion still uses the existing backends; offline builds, dependency
+packaging, numerical parity, new loader work and language selection remain open.
+
 Recorded roadmap (the final consolidation strategy remains open):
 - First provide one application with a shared format registry, model checks,
   precision protection, progress/cancellation and safe output handling.
@@ -32,6 +39,12 @@ Recorded roadmap (the final consolidation strategy remains open):
   create a destination directory without leaving the Workbench.
 - Keep working conversion formats available throughout; do not replace a tested
   path solely because another backend offers more features.
+- Idea (2026-10-12): Develop shared ComfyUI loader nodes that can load both
+  city96-compatible and molbal-specific GGUF models. Evaluate explicit backend
+  selection or validated architecture/format dispatch, with unique node IDs to
+  avoid registration collisions. Preserve existing city96 workflows; do not
+  assume either backend can interpret every format. Implementation and runtime
+  validation are future work, not authorized by recording this idea.
 
 Krea preparation completed: the complete molbal source at commit
 `5a0a3ffa0e3eae5c6af8b0b981b660a24d5fbc04` is tracked in `third_party/molbal`
@@ -165,7 +178,8 @@ to check Kitchen storage compatibility without model inference. Runtime evidence
 is checkpoint/workflow-specific; do not start new ComfyUI renders unless requested.
 Latest additional Base evidence: read `docs/zimage-base-render-validation.md`
 for the 2026-10-09 ten-format portrait batch, including plain NVFP4 anatomy failure.
-Retained local gallery: `runtime-results/zimage-base-2026-10-09/index.html`.
+The user requested deletion of the Base batch images on 2026-10-10; only
+workflow/API snapshots, metrics, logs and the written findings remain.
 
 ### Standard visual comparison prompt
 

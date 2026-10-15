@@ -1,0 +1,119 @@
+{
+  "snapshot_date": "2026-10-12",
+  "status": "Analysis references only; production dispatch unchanged; builds and numerical parity pending",
+  "sources": [
+    {
+      "id": "llama-b3962",
+      "repository": "https://github.com/ggml-org/llama.cpp",
+      "commit": "c8c07d658a6cefc5a50cfdf6be7d726503612303",
+      "purpose": "Diffusion base before City96 patch",
+      "archive": "llama-b3962.tar.gz",
+      "archive_root": "llama.cpp-c8c07d658a6cefc5a50cfdf6be7d726503612303",
+      "sha256": "13c8e23aedcc9a519cb3eafe95381e20dd9c4819ffee823b77c1b85a8d5cb6c4",
+      "size_bytes": 19194790,
+      "file_count": 989,
+      "license_files": [
+        "LICENSE",
+        "gguf-py/LICENSE"
+      ],
+      "download_url": "https://codeload.github.com/ggml-org/llama.cpp/tar.gz/c8c07d658a6cefc5a50cfdf6be7d726503612303"
+    },
+    {
+      "id": "city96-patch",
+      "repository": "https://github.com/city96/ComfyUI-GGUF",
+      "commit": "6ea2651e7df66d7585f6ffee804b20e92fb38b8a",
+      "purpose": "Diffusion patch and conversion reference",
+      "archive": "city96-patch.tar.gz",
+      "archive_root": "ComfyUI-GGUF-6ea2651e7df66d7585f6ffee804b20e92fb38b8a",
+      "sha256": "688126d5c2b8c4ff061f56b23c3c6791ac01dc366e98d41ef1aaef374c36f283",
+      "size_bytes": 31636,
+      "file_count": 16,
+      "license_files": [
+        "LICENSE"
+      ],
+      "download_url": "https://codeload.github.com/city96/ComfyUI-GGUF/tar.gz/6ea2651e7df66d7585f6ffee804b20e92fb38b8a"
+    },
+    {
+      "id": "llama-text-installed",
+      "repository": "https://github.com/ggml-org/llama.cpp",
+      "commit": "687e7789271ec1276e3470f158428e11a4f80b6f",
+      "purpose": "Existing local text-encoder reference",
+      "archive": "llama-text-installed.tar.gz",
+      "archive_root": "llama.cpp-687e7789271ec1276e3470f158428e11a4f80b6f",
+      "sha256": "0f2b731c16b0ab56f042779722f183bab401f3efb7af747219898c36a5171083",
+      "size_bytes": 36738317,
+      "file_count": 3372,
+      "license_files": [
+        "LICENSE",
+        "cmake/license.cmake",
+        "gguf-py/LICENSE",
+        "licenses/LICENSE-jsonhpp",
+        "tools/ui/src/lib/vendors/big-integer/LICENSE",
+        "tools/ui/src/lib/vendors/nerdamer-prime/LICENSE",
+        "vendor/cpp-httplib/LICENSE"
+      ],
+      "download_url": "https://codeload.github.com/ggml-org/llama.cpp/tar.gz/687e7789271ec1276e3470f158428e11a4f80b6f"
+    },
+    {
+      "id": "llama-current",
+      "repository": "https://github.com/ggml-org/llama.cpp",
+      "commit": "8bb3cf0d216a5ae48360179f2931daf284be4d01",
+      "purpose": "Current upstream text-encoder comparison",
+      "archive": "llama-current.tar.gz",
+      "archive_root": "llama.cpp-8bb3cf0d216a5ae48360179f2931daf284be4d01",
+      "sha256": "1b1a5bd079840425683ff6caebf3543e08d2dbcab7563782fabdf145030521a2",
+      "size_bytes": 38101469,
+      "file_count": 3774,
+      "license_files": [
+        "LICENSE",
+        "cmake/license.cmake",
+        "gguf-py/LICENSE",
+        "licenses/LICENSE-jsonhpp",
+        "tools/ui/src/lib/vendors/big-integer/LICENSE",
+        "tools/ui/src/lib/vendors/nerdamer-prime/LICENSE",
+        "vendor/cpp-httplib/LICENSE",
+        "vendor/hash/rotate-bits/LICENSE.md",
+        "vendor/hash/sha256/LICENSE",
+        "vendor/hash/xxhash/LICENSE"
+      ],
+      "download_url": "https://codeload.github.com/ggml-org/llama.cpp/tar.gz/8bb3cf0d216a5ae48360179f2931daf284be4d01"
+    },
+    {
+      "id": "molbal-current",
+      "repository": "https://github.com/molbal/ComfyUI-GGUF",
+      "commit": "b77b9d8124656aa1a548d95c617da4d16cab1a2e",
+      "purpose": "Current Molbal comparison; not production adapter update",
+      "archive": "molbal-current.tar.gz",
+      "archive_root": "ComfyUI-GGUF-b77b9d8124656aa1a548d95c617da4d16cab1a2e",
+      "sha256": "a7184fe471fe301af0d154dc7f357a52b2a29aade876d59a625dff42e6cb47e5",
+      "size_bytes": 925274,
+      "file_count": 53,
+      "license_files": [
+        "LICENSE"
+      ],
+      "download_url": "https://codeload.github.com/molbal/ComfyUI-GGUF/tar.gz/b77b9d8124656aa1a548d95c617da4d16cab1a2e"
+    },
+    {
+      "id": "kompute-b3962",
+      "repository": "https://github.com/nomic-ai/kompute",
+      "commit": "4565194ed7c32d1d2efa32ceab4d3c6cae006306",
+      "purpose": "Pinned b3962 ggml/src/kompute submodule",
+      "archive": "kompute-b3962.tar.gz",
+      "archive_root": "kompute-4565194ed7c32d1d2efa32ceab4d3c6cae006306",
+      "sha256": "9d82278dd8b14f40d78605beb619736623b2c858fadd31b9bfb45b307b9420bf",
+      "size_bytes": 13540661,
+      "file_count": 297,
+      "license_files": [
+        "LICENSE"
+      ],
+      "download_url": "https://codeload.github.com/nomic-ai/kompute/tar.gz/4565194ed7c32d1d2efa32ceab4d3c6cae006306"
+    }
+  ],
+  "submodules": [
+    {
+      "parent": "llama-b3962",
+      "path": "ggml/src/kompute",
+      "source": "kompute-b3962"
+    }
+  ]
+}
