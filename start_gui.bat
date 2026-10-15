@@ -38,8 +38,8 @@ echo The browser will open automatically.
 echo Close this window to stop the server.
 echo.
 
-start "" "http://127.0.0.1:8765"
-uv run python web_api.py
+rem The server opens the browser only after its HTTP endpoint is ready.
+uv run python web_api.py --open-browser
 
 if errorlevel 1 (
     echo.

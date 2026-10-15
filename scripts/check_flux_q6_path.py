@@ -1,4 +1,4 @@
-"""Compare the research FLUX Q6_K file path with pinned patched b3962."""
+"""Compare the research FLUX Q6_K/Q5_K_M file path with pinned patched b3962."""
 import argparse
 import hashlib
 import json
@@ -31,15 +31,19 @@ def verified_flux_reference(references):
     return build
 
 
-def compare_path(artifacts, references):
+def compare_path(artifacts, references, *, preset="Q6_K"):
     """Require pinned provenance, then compare types/shapes/bytes and all metadata."""
+    if preset not in ("Q6_K", "Q5_K_M"):
+        raise ValueError("Unsupported FLUX research preset")
     build = verified_flux_reference(references)
     executable = Path(build['executable'])
     artifacts.mkdir(parents=True, exist_ok=False)
     report = {'status': 'FLUX quantizer-stage file parity; schematic inputs, not inference models',
+              'preset': preset,
               'native': {key: build[key] for key in ('commit', 'archive_sha256', 'city96_patch_sha256',
                                                     'executable_sha256')},
-              'encoder_sha256': hashlib.sha256((ROOT / 'scripts/reference_q6_k.py').read_bytes()).hexdigest(),
+              'encoder_sha256': hashlib.sha256((ROOT / ('scripts/reference_q6_k.py' if preset == 'Q6_K' else 'scripts/reference_q5_k.py')).read_bytes()).hexdigest(),
+              'q6_encoder_sha256': hashlib.sha256((ROOT / 'scripts/reference_q6_k.py').read_bytes()).hexdigest(),
               'requantizer_sha256': hashlib.sha256((ROOT / 'scripts/requantize_flux_q6.py').read_bytes()).hexdigest(),
               'results': []}
     for dtype in (np.float16, np.float32):
@@ -53,8 +57,8 @@ def compare_path(artifacts, references):
                                 ('txt_in', 'time_in', 'vector_in', 'guidance_in', 'final_layer',
                                  'blocks.0.attn_norm', 'blocks.0.ffn_gate_inp', 'blocks.0.attn_rel_b')})
                 write_fixture(src, 'flux', tensors, dtype=dtype)
-                requantize(str(src), str(ours))
-                result = run_command([str(executable), str(src), str(native), 'Q6_K', '1'], text=True)
+                requantize(str(src), str(ours), preset=preset)
+                result = run_command([str(executable), str(src), str(native), preset, '1'], text=True)
                 native.with_suffix('.log').write_text(result.stdout + result.stderr, encoding='utf-8')
                 if result.returncode:
                     raise RuntimeError(f'Native conversion failed: {native.with_suffix(".log")}')
@@ -74,13 +78,14 @@ def compare_path(artifacts, references):
 def main():
     """Write native/Python fixture artifacts into a fresh explicit directory."""
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--preset', choices=('Q6_K', 'Q5_K_M'), default='Q6_K')
     parser.add_argument('--artifacts', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--references', type=Path, default=ROOT / 'data/converter-policy-comparison.json')
     args = parser.parse_args()
     if args.output.exists():
         parser.error('Choose a new evidence report path')
-    report = compare_path(args.artifacts, json.loads(args.references.read_text()))
+    report = compare_path(args.artifacts, json.loads(args.references.read_text()), preset=args.preset)
     args.output.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
     raise SystemExit(0 if report['all_equal'] else 1)
 

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Research-only FLUX float-GGUF to Q6_K path; production dispatch is unchanged.
+"""Experimental FLUX float-GGUF to Q6_K/Q5_K_M path; native remains the application default.
 
 Policy port adapted from City96/ComfyUI-GGUF lcpp.patch at 6ea2651 and the
 MIT-licensed llama.cpp b3962 general exclusions. Preserved license notices:
@@ -17,16 +17,19 @@ import numpy as np
 from conversion_io import atomic_output, validate_output
 from scripts.check_q6_gguf_container import _cancel, _file_hash
 from scripts.reference_q6_k import iter_q6_k
+from scripts.reference_q5_k import iter_q5_k
 from scripts.gguf_research_io import open_gguf
 
 
-def flux_q6_type(name, shape, source_type):
-    """Apply frozen City96/b3962 Q6_K eligibility to a canonical float tensor.
+def flux_q6_type(name, shape, source_type, *, preset="Q6_K"):
+    """Apply frozen City96/b3962 eligibility and mixed-preset rules to a canonical float tensor.
 
     This quantizer-stage policy follows lcpp.patch at 6ea2651, plus b3962's
     general exclusions. Source preparation/architecture transformations remain
-    the existing converter's responsibility. Only FLUX and Q6_K are covered.
+    the existing converter's responsibility. Only FLUX Q6_K and Q5_K_M are covered.
     """
+    if preset not in ("Q6_K", "Q5_K_M"):
+        raise ValueError("FLUX research presets are Q6_K and Q5_K_M only")
     protected = ('txt_in.', 'img_in.', 'time_in.', 'vector_in.', 'guidance_in.', 'final_layer.',
                  '_norm.weight', 'ffn_gate_inp.weight', 'ssm_conv1d.weight', 'time_mix_first.weight',
                  'time_mix_w1.weight', 'time_mix_w2.weight', 'time_mix_decay_w1.weight',
@@ -36,20 +39,35 @@ def flux_q6_type(name, shape, source_type):
     if any(part in name for part in ('model.diffusion_model.', 'first_stage_model.',
                                     'single_transformer_blocks.', 'joint_transformer_blocks.')):
         raise ValueError('FLUX tensor namespace has not been prepared for City96')
-    return gguf.GGMLQuantizationType.F16 if shape[-1] % 256 else gguf.GGMLQuantizationType.Q6_K
+    if shape[-1] % 256:
+        return gguf.GGMLQuantizationType.F16
+    # City96 promotes every matching tensor here; text-model layer heuristics do not apply.
+    promoted = ('attn_v.weight', '.to_v.weight', '.v.weight', '.attn.w1v.weight',
+                '.attn.w2v.weight', '_attn.v_proj.weight', 'attn_qkv.weight',
+                'attn.qkv.weight', 'attention.qkv.weight', 'ffn_down', '.ffn.2.weight',
+                '.ff.net.2.weight', '.mlp.layer2.weight', '.adaln_modulation_mlp.2.weight',
+                '.feed_forward.w2.weight')
+    if preset == 'Q6_K' or any(part in name for part in promoted) or (
+            'experts.' in name and '.w2.weight' in name):
+        return gguf.GGMLQuantizationType.Q6_K
+    return gguf.GGMLQuantizationType.Q5_K
 
 
-def requantize(source, destination, *, cancel_event=None, on_progress=None):
+def requantize(source, destination, *, cancel_event=None, on_progress=None, overwrite=False, preset="Q6_K"):
     """Atomically requantize a little-endian, single-file FLUX F16/F32 GGUF.
 
     Preserve metadata and tensor order; only file type/quantization version are
-    updated. Use bounded copies and Q6 chunks, preserving noneligible bytes.
+    updated. Use bounded copies and Q5/Q6 chunks, preserving noneligible bytes.
     Reject quantized/BF16 input, sidecars, shards, empty tensors and leading unit
     dimensions requiring GGML rank canonicalization. No source reconstruction,
     shape repair, tokenizer conversion or runtime compatibility is inferred.
+    Existing output requires overwrite=True and is replaced only after readback;
+    failure or cancellation preserves it. Source aliases are always rejected.
     """
+    if preset not in ("Q6_K", "Q5_K_M"):
+        raise ValueError("FLUX research presets are Q6_K and Q5_K_M only")
     source, destination = Path(source), Path(destination)
-    validate_output(source, destination)
+    validate_output(source, destination, overwrite)
     before = source.stat()
     with open_gguf(source) as reader:
         if reader.endianess != gguf.GGUFEndian.LITTLE:
@@ -67,13 +85,14 @@ def requantize(source, destination, *, cancel_event=None, on_progress=None):
             if (tensor.tensor_type not in (gguf.GGMLQuantizationType.F16, gguf.GGMLQuantizationType.F32)
                     or not shape or len(shape) > 4 or min(shape) <= 0 or (len(shape) > 1 and shape[0] == 1)):
                 raise ValueError('Require canonical nonempty F16/F32 tensors; rank repair is not implemented')
-            target = flux_q6_type(tensor.name, shape, tensor.tensor_type)
-            size = tensor.n_elements // 256 * 210 if target == gguf.GGMLQuantizationType.Q6_K else (
+            target = flux_q6_type(tensor.name, shape, tensor.tensor_type, preset=preset)
+            size = tensor.n_elements // 256 * gguf.GGML_QUANT_SIZES[target][1] if target in (
+                gguf.GGMLQuantizationType.Q6_K, gguf.GGMLQuantizationType.Q5_K) else (
                 tensor.n_elements * 2 if target == gguf.GGMLQuantizationType.F16 else tensor.n_bytes)
             plan.append({'name': tensor.name, 'shape': shape, 'source_type': tensor.tensor_type.name,
                          'type': target.name, 'bytes': size})
         _cancel(cancel_event)
-        with atomic_output(destination) as temporary:
+        with atomic_output(destination, overwrite=overwrite) as temporary:
             writer = gguf.GGUFWriter(temporary, 'flux')
             try:
                 writer.add_custom_alignment(reader.alignment)
@@ -85,7 +104,8 @@ def requantize(source, destination, *, cancel_event=None, on_progress=None):
                         raise ValueError('Nested GGUF metadata arrays are not supported')
                     writer.add_key_value(name, field.contents(), field.types[0],
                                          field.types[1] if len(field.types) == 2 else None)
-                writer.add_file_type(gguf.LlamaFileType.MOSTLY_Q6_K)
+                writer.add_file_type(gguf.LlamaFileType.MOSTLY_Q6_K if preset == "Q6_K"
+                                     else gguf.LlamaFileType.MOSTLY_Q5_K_M)
                 writer.add_quantization_version(gguf.GGML_QUANT_VERSION)
                 for row in plan:
                     writer.add_tensor_info(row['name'], row['shape'], np.dtype(np.float32), row['bytes'],
@@ -108,6 +128,8 @@ def requantize(source, destination, *, cancel_event=None, on_progress=None):
                             raise ValueError('Source contains nonfinite values')
                         if row['type'] == 'Q6_K':
                             payloads = iter_q6_k(chunk.astype(np.float32))
+                        elif row['type'] == 'Q5_K':
+                            payloads = iter_q5_k(chunk.astype(np.float32))
                         elif row['type'] != row['source_type']:
                             with np.errstate(over='raise', invalid='raise'):
                                 payloads = [chunk.astype('<f2')]
@@ -148,7 +170,7 @@ def requantize(source, destination, *, cancel_event=None, on_progress=None):
                         raise ValueError('GGUF tensor readback mismatch')
             checksum = _file_hash(temporary, cancel_event)
             _cancel(cancel_event)
-    return {'status': 'Research FLUX Q6_K requantizer; no production dispatch or render claim',
+    return {'status': f'Experimental FLUX {preset} requantizer; native remains the default',
             'output': str(destination), 'source': str(source), 'file_sha256': checksum, 'tensors': plan}
 
 
@@ -157,8 +179,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', required=True)
     parser.add_argument('--output', required=True)
+    parser.add_argument('--preset', choices=('Q6_K', 'Q5_K_M'), default='Q6_K')
+    parser.add_argument('--overwrite', action='store_true', help='Atomically replace output after successful validation')
     args = parser.parse_args()
-    print(json.dumps(requantize(args.source, args.output), indent=2))
+    print(json.dumps(requantize(args.source, args.output, overwrite=args.overwrite, preset=args.preset), indent=2))
 
 
 if __name__ == '__main__':

@@ -6,6 +6,35 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Research NumPy Q5_K affine block encoder with bounded streaming, exact
+  native rounding/packing and signed-zero compatibility. All 166 inputs match
+  three frozen native references (498 byte checks, 332 chunk checks). Reuse the
+  Q6 pilot checker with explicit format selection and atomic fresh report output;
+  FLUX Q5_K_M research file policies also match patched b3962 in eight schematic
+  exports (196 tensors). Full Q5 checkpoint/inference and app integration remain open.
+
+- Add: Isolated Q6_K chunk-size CPU timing/peak-RSS measurements on a real FLUX
+  weight slice, with native-prefix byte validation. The existing 256-block default
+  wins among the five tested candidates; conversion settings remain unchanged.
+
+- Fix: Windows launcher waits for HTTP readiness before opening the browser;
+  entry HTML disables caching across frontend rebuilds. Technical log follows
+  new output, pauses while reading earlier lines and resumes at the bottom,
+  including the 400-line rolling buffer. Headless Edge regression checks pass.
+
+- Add: Opt-in experimental Python FLUX/Q6_K backend in Workbench Advanced
+  settings and conversion API. Reuse F16 preparation, validate supported requests
+  before work, preserve transactional outputs/cancellation/progress and respect
+  intermediate retention. Native remains the default; no implicit error fallback.
+
+- Add: Explicit atomic overwrite for the research FLUX Q6_K API/CLI, preserving
+  existing outputs on cancellation or failed conversion and always rejecting
+  source aliases. Production backend dispatch remains unchanged.
+
+- Add: Retain user-generated FLUX.2 klein Base 9B Python-Q6_K/original PNG
+  workflow metadata and checksums. Confirm matching settings and two enabled
+  LoRAs; document scoped visual evidence and the next service integration boundary.
+
 - Fix: Normalize research GGUF alignment to Python integers before large-offset
   arithmetic, preventing Windows overflow above 2 GiB. Share reader cleanup and
   cover >2 GiB, >4 GiB and parse/cancellation error paths. Normalize report text

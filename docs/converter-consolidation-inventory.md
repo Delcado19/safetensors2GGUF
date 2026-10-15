@@ -112,7 +112,16 @@ It preserves the existing float-GGUF boundary and remains outside production
 dispatch; this is not full-model or loader validation.
 The subsequent [full FLUX checkpoint comparison](flux-q6-full-model-validation.md)
 passes all 201 tensor payload/type/shape comparisons and metadata for one installed
-9B checkpoint. Runtime compatibility and broader model coverage remain open.
+9B checkpoint. A subsequent user-generated PNG comparison confirms inference
+with two enabled LoRAs for this checkpoint and matching saved settings. The
+full-model guide retains evidence and the concrete service integration boundary;
+offload, Linux and broader model coverage remain open. An opt-in Workbench/API
+`python_flux_q6` backend now integrates the existing F16 preparation with this
+writer; default/native routes and format registries remain unchanged.
+
+The subsequent [Q5_K block pilot](shared-q5-pilot.md) matches all three native
+references in 498 comparisons and 332 chunk-size checks. Q5_K_M model policies
+and full-model integration remain separate gates.
 
 1. Extract explicit effective rules for the supported model families, including
    inherited rules, tensor transformations and C++ preset choices.
@@ -135,3 +144,7 @@ No new ComfyUI models or nodes were installed, no model weights were downloaded,
 and no inference or native build was started. Optional SDK/download dependencies,
 offline installation, native binaries, full-source algorithm parity and the
 implementation-language choice remain open.
+
+FLUX Q5_K_M research file export also matches patched b3962 in eight schematic
+comparisons (196 tensors); see [Q5 pilot](shared-q5-pilot.md). Full Q5 model/inference validation
+and application integration remain open.

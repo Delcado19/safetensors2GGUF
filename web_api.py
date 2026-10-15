@@ -28,7 +28,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from conversion_service import _pipeline, _resolve_dst_st, _strip_model_suffix
+from conversion_service import _pipeline, _resolve_dst_st, _strip_model_suffix, validate_gguf_backend
 from convert import ConversionCancelled, load_state_dict
 from conversion_io import validate_output
 from civitai_credentials import CivitaiCredentials, CredentialError
@@ -85,7 +85,7 @@ def filesystem_locations():
 
 
 class ConversionRequest(BaseModel):
-    """Validated local conversion parameters; format keys come from the registry."""
+    """Local conversion parameters; native is default, Python FLUX Q6_K is explicit."""
 
     model_config = ConfigDict(extra='forbid')
     model_kind: Literal['diffusion', 'text_encoder'] = 'diffusion'
@@ -97,6 +97,7 @@ class ConversionRequest(BaseModel):
     precision_profile: Literal['auto', 'conservative', 'qwen_edit_2511', 'z_image_turbo'] = 'auto'
     overwrite: bool = False
     keep_intermediate: bool = False
+    gguf_backend: Literal['native', 'python_flux_q6'] = 'native'
     threads: int = Field(default=0, ge=0, le=1024)
     executable: str = Field(default='', max_length=4096)
 
@@ -219,7 +220,7 @@ class Job:
                 # The shared pipeline only needs queue.put; no polling thread.
                 output = _pipeline(params.source, params.destination, params.format,
                                    params.executable, params.threads, params.keep_intermediate,
-                                   params.overwrite, self, self.cancel)
+                                   params.overwrite, self, self.cancel, gguf_backend=params.gguf_backend)
             else:
                 output, _ = convert_to_safetensors(
                     params.source, params.destination, target_key=params.format,
@@ -423,6 +424,14 @@ def create_app() -> FastAPI:
         if not source.is_file() or source.suffix.lower() not in MODEL_SUFFIXES - {'.gguf'}:
             raise HTTPException(400, 'Choose an existing safetensors or checkpoint source')
         params.source = str(source.resolve())
+        if params.gguf_backend != 'native':
+            if params.model_kind != 'diffusion' or params.container != 'gguf' or params.precision_profile != 'auto':
+                raise HTTPException(400, 'Python Q6_K applies only to diffusion GGUF with the default precision profile')
+            try:
+                validate_gguf_backend(params.source, params.format, params.gguf_backend,
+                                      executable=params.executable, threads=params.threads)
+            except Exception as exc:
+                raise HTTPException(400, str(exc)) from exc
         choices = TEXT_ENCODER_FORMAT_CHOICES if params.model_kind == 'text_encoder' else (
             ALL_QUANT_CHOICES if params.container == 'gguf' else SAFETENSORS_DTYPE_CHOICES)
         if params.model_kind == 'diffusion' and params.container == 'gguf':
@@ -525,7 +534,7 @@ def create_app() -> FastAPI:
                     raise ValueError('This GGUF format is available only for Krea models.')
             except Exception as exc:
                 raise HTTPException(400, str(exc)) from exc
-        if params.model_kind == 'diffusion' and params.container == 'gguf' and params.format in LLAMA_QUANT_KEYS:
+        if params.model_kind == 'diffusion' and params.container == 'gguf' and params.format in LLAMA_QUANT_KEYS and params.gguf_backend == 'native':
             executable = Path(params.executable) if params.executable else find_exe()
             if not executable or not Path(executable).is_file():
                 raise HTTPException(400, 'This format requires llama-quantize. Set its path in Advanced.')
@@ -696,11 +705,30 @@ def create_app() -> FastAPI:
         """Serve the built workbench or explain the missing build."""
         if not (DIST / 'index.html').is_file():
             raise HTTPException(503, 'Build the frontend first: cd frontend && npm ci && npm run build')
-        return FileResponse(DIST / 'index.html')
+        return FileResponse(DIST / 'index.html', headers={'Cache-Control': 'no-store'})
 
     if (DIST / 'assets').is_dir():
         app.mount('/assets', StaticFiles(directory=DIST / 'assets'), name='assets')
     return app
+
+
+def open_browser_when_ready(url, timeout=60):
+    """Open the launcher URL only after HTTP startup, never before server binding."""
+    import urllib.error
+    import urllib.request
+    import webbrowser
+
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            with urllib.request.urlopen(url, timeout=1) as response:
+                ready = response.status == 200
+        except (OSError, urllib.error.URLError):
+            ready = False
+        if ready:
+            return webbrowser.open(url)
+        time.sleep(0.2)
+    return False
 
 
 app = create_app()
@@ -709,5 +737,8 @@ if __name__ == '__main__':
     import uvicorn
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--port', type=int, default=8765)
+    parser.add_argument('--open-browser', action='store_true', help='Open the browser once HTTP startup completes')
     args = parser.parse_args()
+    if args.open_browser:
+        threading.Thread(target=open_browser_when_ready, args=(f'http://127.0.0.1:{args.port}/',), daemon=True).start()
     uvicorn.run(app, host='127.0.0.1', port=args.port)

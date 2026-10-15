@@ -136,3 +136,79 @@ def test_fixture_and_comparison_provenance_guards(tmp_path):
     with pytest.raises(ValueError, match='provenance mismatch'):
         compare_path(tmp_path / 'artifacts', report)
     assert not (tmp_path / 'artifacts').exists()
+
+
+@pytest.mark.parametrize('outcome', ['success', 'cancel', 'invalid'])
+def test_explicit_overwrite_is_transactional(tmp_path, outcome):
+    """An existing model survives cancellation and invalid values after partial writes."""
+    source, destination = tmp_path / 'source.gguf', tmp_path / 'q6.gguf'
+    extra = {'late.weight': np.full((8, 256), np.nan, dtype=np.float16)} if outcome == 'invalid' else None
+    _source(source, extra=extra)
+    original_source = source.read_bytes()
+    destination.write_bytes(b'existing model')
+    event = threading.Event()
+    callback = (lambda *_: event.set()) if outcome == 'cancel' else None
+    if outcome == 'success':
+        result = requantize(source, destination, overwrite=True)
+        import hashlib
+        assert hashlib.sha256(destination.read_bytes()).hexdigest() == result['file_sha256']
+        assert destination.read_bytes() != b'existing model'
+    else:
+        with pytest.raises(ConversionCancelled if outcome == 'cancel' else ValueError):
+            requantize(source, destination, overwrite=True, cancel_event=event, on_progress=callback)
+        assert destination.read_bytes() == b'existing model'
+    assert source.read_bytes() == original_source
+    assert not list(tmp_path.glob('.q6.gguf.*'))
+    with pytest.raises(ValueError, match='different files'):
+        requantize(source, source, overwrite=True)
+
+
+@pytest.mark.parametrize('name', [
+    'x.attn_v.weight', 'x.to_v.weight', 'x.v.weight', 'x.attn.w1v.weight',
+    'x.attn.w2v.weight', 'x_attn.v_proj.weight', 'x.attn_qkv.weight',
+    'x.attn.qkv.weight', 'x.attention.qkv.weight', 'x.ffn_down.weight',
+    'experts.0.w2.weight', 'x.ffn.2.weight', 'x.ff.net.2.weight',
+    'x.mlp.layer2.weight', 'x.adaln_modulation_mlp.2.weight', 'x.feed_forward.w2.weight'])
+def test_q5_m_promotes_city96_roles(name):
+    from scripts.requantize_flux_q6 import flux_q6_type
+    assert flux_q6_type(name, (8, 256), gguf.GGMLQuantizationType.F32,
+                        preset='Q5_K_M') == gguf.GGMLQuantizationType.Q6_K
+
+
+@pytest.mark.parametrize('outcome', ['success', 'cancel', 'invalid'])
+def test_q5_m_mixed_writer_is_transactional(tmp_path, outcome):
+    from scripts.reference_q5_k import quantize_q5_k
+    from scripts.gguf_research_io import open_gguf
+    source, destination = tmp_path / 'source.gguf', tmp_path / 'q5.gguf'
+    extra = {'late.weight': np.full((8, 256), np.nan, dtype=np.float16)} if outcome == 'invalid' else None
+    arrays = _source(source, extra=extra)
+    destination.write_bytes(b'previous model')
+    event = threading.Event()
+    if outcome != 'success':
+        with pytest.raises(ConversionCancelled if outcome == 'cancel' else ValueError):
+            requantize(source, destination, preset='Q5_K_M', overwrite=True,
+                       cancel_event=event, on_progress=lambda *_: event.set() if outcome == 'cancel' else None)
+        assert destination.read_bytes() == b'previous model'
+    else:
+        requantize(source, destination, preset='Q5_K_M', overwrite=True)
+        with open_gguf(destination) as reader:
+            assert reader.get_field('general.file_type').contents() == int(gguf.LlamaFileType.MOSTLY_Q5_K_M)
+            tensor = reader.tensors[0]
+            assert tensor.tensor_type == gguf.GGMLQuantizationType.Q5_K
+            assert tensor.data.tobytes() == quantize_q5_k(arrays[tensor.name].astype(np.float32)).tobytes()
+    assert not list(tmp_path.glob('.q5.gguf.*'))
+
+
+def test_q5_file_parity_evidence():
+    report = json.loads((Path(__file__).parents[1] / 'data/flux-q5-path-comparison.json').read_text())
+    assert report['preset'] == 'Q5_K_M' and report['all_equal']
+    assert len(report['results']) == 8
+    assert sum(len(row['tensors']) for row in report['results']) == 196
+    assert all(t['equal'] for row in report['results'] for t in row['tensors'])
+    assert {t['type'] for row in report['results'] for t in row['tensors']} == {'Q5_K', 'Q6_K', 'F16', 'F32'}
+
+
+def test_unknown_preset_rejected_before_output(tmp_path):
+    with pytest.raises(ValueError, match='presets'):
+        requantize(tmp_path / 'missing', tmp_path / 'output', preset='Q4_K_M')
+    assert not (tmp_path / 'output').exists()

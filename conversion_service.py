@@ -82,6 +82,54 @@ def _resolve_dst_st(src: str, dst: str | None, target_key: str) -> str | None:
     return dst
 
 
+def validate_gguf_backend(src, quant_key, backend='native', *, executable='', threads=0):
+    """Reject unsupported explicit Python requests before expensive preparation.
+
+    The Python backend is opt-in and limited to header-detected FLUX safetensors
+    and Q6_K; it never silently retries native after conversion failure.
+    """
+    if backend not in {'native', 'python_flux_q6'}:
+        raise ValueError('Unknown GGUF backend')
+    if backend == 'native':
+        return
+    if quant_key != 'Q6_K' or Path(src).suffix.lower() != '.safetensors':
+        raise ValueError('Python Q6_K requires a FLUX safetensors source and Q6_K format')
+    if executable or threads:
+        raise ValueError('Executable and thread settings apply only to the native GGUF backend')
+    if detect_arch(load_state_dict(src)).arch != 'flux':
+        raise ValueError('Python Q6_K supports FLUX only')
+
+
+def _pipeline_python_flux(src, final_dst, keep_intermediate, overwrite, cancel_event, log, progress):
+    """Reuse float preparation, then the validated opt-in FLUX Q6_K writer."""
+    from scripts.requantize_flux_q6 import requantize
+
+    intermediate = Path(final_dst).parent / f'{_strip_model_suffix(src).name}-F16-tmp-{uuid.uuid4().hex}.gguf'
+    try:
+        log('INFO:  [1/2] Preparing F16 GGUF for experimental Python FLUX Q6_K')
+        _, arch = convert_file(
+            src, str(intermediate), interact=False, overwrite=False,
+            target_quant=PYTHON_PRECISIONS['F16'][0], apply_unsqueeze=False,
+            cancel_event=cancel_event, on_log=log, log_tensor_every=GUI_TENSOR_LOG_EVERY,
+            on_progress=lambda index, total, key: progress(
+                0.45 * index / total if total else 0, f'[1/2] {key}'))
+        # Prepared architecture must still agree; no sidecar/rank repairs are implemented here.
+        if arch.arch != 'flux' or getattr(arch, '_nd_tensors', None) or getattr(arch, 'keys_unsqueeze', None):
+            raise ValueError('Python Q6_K requires canonical FLUX tensors without sidecar/pad repairs')
+        log('INFO:  [2/2] Quantizing with experimental Python FLUX Q6_K; native fallback is disabled')
+        requantize(intermediate, final_dst, overwrite=overwrite, cancel_event=cancel_event,
+                   on_progress=lambda index, total, key: progress(
+                       0.45 + 0.5 * index / total if total else 0.45, f'[2/2] {key}; readback follows'))
+        return final_dst
+    finally:
+        # Keep the user's requested intermediate, otherwise clean up failures as well as success.
+        if not keep_intermediate:
+            try:
+                intermediate.unlink(missing_ok=True)
+            except OSError as exc:
+                log(f'WARNING: Could not remove intermediate {intermediate}: {exc}')
+
+
 def _pipeline(
     src: str,
     dst: str,
@@ -92,12 +140,14 @@ def _pipeline(
     overwrite: bool,
     q: queue.Queue,
     cancel_event: threading.Event | None = None,
+    gguf_backend: str = 'native',
 ) -> str:
     """Full conversion pipeline; writes progress/log events to q.
 
     Single-step (Python types): safetensors → GGUF
     Two-step (K-quants):        safetensors → F16 GGUF → quantized GGUF
     Optional third step:        auto-run fix_5d when a side-car file exists
+    gguf_backend selects native (default) or experimental python_flux_q6.
     """
     def _log(msg: str) -> None:
         q.put(("log", msg))
@@ -113,6 +163,9 @@ def _pipeline(
     # Check the final output before doing expensive work; honor the GUI checkbox.
     final_dst = _resolve_dst(src, dst_raw, quant_key) or str(_strip_model_suffix(src)) + f"-{quant_key}.gguf"
     validate_output(src, final_dst, overwrite)
+    validate_gguf_backend(src, quant_key, gguf_backend, executable=exe or '', threads=nthreads)
+    if gguf_backend == 'python_flux_q6':
+        return _pipeline_python_flux(src, final_dst, keep_intermediate, overwrite, cancel_event, _log, _frac)
     # Safetensors detection reads headers; do not load eager .ckpt sources twice.
     if Path(src).suffix == '.safetensors' and detect_arch(load_state_dict(src)).arch == 'krea2':
         from krea_backend import convert_krea

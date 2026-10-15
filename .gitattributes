@@ -13,3 +13,7 @@ scripts/compare_gguf_outputs.py text eol=lf
 scripts/gguf_research_io.py text eol=lf
 # GGUF container provenance embeds byte hashes of these evidence reports.
 data/q6-stream-*.json text eol=lf
+
+# Keep benchmark source provenance stable on Windows/Linux checkouts.
+scripts/benchmark_q6_chunks.py text eol=lf
+scripts/reference_q5_k.py text eol=lf

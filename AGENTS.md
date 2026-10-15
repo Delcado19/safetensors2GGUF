@@ -45,7 +45,8 @@ NumPy Q6_K encoder matches all three frozen native references on 166 inputs
 (498 byte comparisons), including 21 small weight slices from seven installed
 floating-point families. Bounded chunk iteration also preserves bytes in 332
 additional comparisons and supports consumer-driven early close. It is not
-connected to production dispatch. Three complete installed matrices additionally
+a default production backend; the scoped experimental integration is noted
+below. Three complete installed matrices additionally
 match in 912 native chunk comparisons, with atomic raw `.q6k` artifacts on `I:\`;
 these are not loadable GGUF models. Per-run encoding times are recorded.
 The same three payloads also pass a combined research-only GGUF container
@@ -59,11 +60,31 @@ Full-checkpoint numeric follow-up: one installed FLUX.2 klein Base 9B checkpoint
 passes all 201 tensor payload/type/shape comparisons and metadata against native
 b3962 after common float preparation. The full run exposed a Windows NumPy uint32
 alignment/large-offset overflow; shared research reader normalization and >2/4 GiB
-regressions fix it. Read `docs/flux-q6-full-model-validation.md`. Loader/render,
-isolated memory/throughput and broader architecture coverage remain open.
+regressions fix it. Read `docs/flux-q6-full-model-validation.md`. A user-generated
+PNG pair confirms inference via `UnetLoaderGGUF` with two enabled LoRAs and
+matching settings against the original; main-subject quality remains close in
+this pair. Workflows/hashes are retained in `data/flux-q6-user-render-comparison.json`.
+Offload, Linux, isolated memory/throughput and broader coverage remain open.
+An explicit experimental Workbench/API backend `python_flux_q6` now reuses F16
+preparation for FLUX safetensors/Q6_K only, with overwrite, cancellation/progress
+and intermediate cleanup. Native remains the default; no implicit error fallback
+or global Python precision entry is added. See `docs/flux-q6-research-path.md`.
 Measured peak memory/comparative throughput,
 extreme-range policy, other encoders and full-model integration remain
 open; preserve separate model/preset rules and the implementation-language choice.
+
+Chunk-size follow-up: `docs/q6-chunk-benchmark.md` records isolated Windows
+CPU slice timings/peak RSS and native-prefix parity for five sizes. Keep the
+current 256-block default; larger tested chunks were slower. Full-model memory
+and native-versus-Python throughput are still unmeasured.
+
+Shared Q5_K math follow-up: `docs/shared-q5-pilot.md` records 166 inputs and
+498 exact native byte comparisons plus 332 chunk checks. Positive-ramp saturation
+is absent; signed-zero header behavior matches native. This is a block encoder,
+now followed by explicit research FLUX Q5_K_M file export (eight schematic
+files, 196 exact native tensor comparisons). Full Q5 checkpoints, inference and
+an application route remain open. Existing Q6_K/native
+paths and the Krea allowlist remain intact.
 
 Recorded roadmap (the final consolidation strategy remains open):
 - First provide one application with a shared format registry, model checks,

@@ -2,7 +2,9 @@
 
 Defines which types can be produced natively by the Python gguf library
 (PYTHON_PRECISIONS) and which require the external llama-quantize binary
-(LLAMA_QUANT_KEYS).  The combined ALL_QUANT_CHOICES list is consumed by the
+(LLAMA_QUANT_KEYS) by default. The service can explicitly select the experimental
+FLUX Q6_K second-stage backend; that does not change direct-writer eligibility.
+The combined ALL_QUANT_CHOICES list is consumed by the
 GUI to populate the quantization dropdown.
 """
 
@@ -35,7 +37,7 @@ PYTHON_PRECISIONS: dict[str, tuple[gguf.GGMLQuantizationType, gguf.LlamaFileType
     "Q8_0": (gguf.GGMLQuantizationType.Q8_0, gguf.LlamaFileType.MOSTLY_Q8_0),
 }
 
-# Keys that require llama-quantize (verified against the binary's help output)
+# Native second-stage keys (verified against the binary's help output).
 LLAMA_QUANT_KEYS: frozenset[str] = frozenset({
     "Q6_K",
     "Q5_K_M",

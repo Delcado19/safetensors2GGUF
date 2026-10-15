@@ -1,0 +1,94 @@
+{
+  "scope": "Isolated processes; sequential repeats of one float32 slice; kernel plus payload hashing only",
+  "source": "I:\\safetensors2GGUF-flux-q6-full-2026-10-15\\prepared-F16.gguf",
+  "source_bytes": 19939776800,
+  "source_mtime_ns": 1792068913909021000,
+  "python": "3.13.14 (main, Jul 23 2026, 14:44:10) [MSC v.1944 64 bit (AMD64)]",
+  "numpy": "2.4.4",
+  "platform": "win32",
+  "all_payloads_equal": true,
+  "benchmark_source_sha256": "a4dcf99279af9aba9fa07f220ea0512589729c408538d6afa552a7fa248290cb",
+  "results": [
+    {
+      "chunk_blocks": 16,
+      "values": 1048576,
+      "tensor": "double_blocks.0.img_attn.proj.weight",
+      "input_float32_sha256": "1828b452f631cfdca996bc7b6dc41c6e8c595e4980a22ac96f669ebf12342ada",
+      "payload_sha256": "c8055821ea6f50060158033c35aa6961adcd4479f5a82c4b105bc79dc32fc8b9",
+      "seconds": [
+        0.35507720000168774,
+        0.3528606000036234,
+        0.3516442000036477
+      ],
+      "median_seconds": 0.3528606000036234,
+      "baseline_peak_rss_bytes": 45744128,
+      "process_peak_rss_bytes": 45744128
+    },
+    {
+      "chunk_blocks": 64,
+      "values": 1048576,
+      "tensor": "double_blocks.0.img_attn.proj.weight",
+      "input_float32_sha256": "1828b452f631cfdca996bc7b6dc41c6e8c595e4980a22ac96f669ebf12342ada",
+      "payload_sha256": "c8055821ea6f50060158033c35aa6961adcd4479f5a82c4b105bc79dc32fc8b9",
+      "seconds": [
+        0.15051349999703234,
+        0.15102260000276146,
+        0.15266699999483535
+      ],
+      "median_seconds": 0.15102260000276146,
+      "baseline_peak_rss_bytes": 45924352,
+      "process_peak_rss_bytes": 45924352
+    },
+    {
+      "chunk_blocks": 256,
+      "values": 1048576,
+      "tensor": "double_blocks.0.img_attn.proj.weight",
+      "input_float32_sha256": "1828b452f631cfdca996bc7b6dc41c6e8c595e4980a22ac96f669ebf12342ada",
+      "payload_sha256": "c8055821ea6f50060158033c35aa6961adcd4479f5a82c4b105bc79dc32fc8b9",
+      "seconds": [
+        0.09328419999656035,
+        0.08639140000013867,
+        0.09244690000195988
+      ],
+      "median_seconds": 0.09244690000195988,
+      "baseline_peak_rss_bytes": 45981696,
+      "process_peak_rss_bytes": 46071808
+    },
+    {
+      "chunk_blocks": 1024,
+      "values": 1048576,
+      "tensor": "double_blocks.0.img_attn.proj.weight",
+      "input_float32_sha256": "1828b452f631cfdca996bc7b6dc41c6e8c595e4980a22ac96f669ebf12342ada",
+      "payload_sha256": "c8055821ea6f50060158033c35aa6961adcd4479f5a82c4b105bc79dc32fc8b9",
+      "seconds": [
+        0.1270760999977938,
+        0.12751289999869186,
+        0.12655359999916982
+      ],
+      "median_seconds": 0.1270760999977938,
+      "baseline_peak_rss_bytes": 45789184,
+      "process_peak_rss_bytes": 50159616
+    },
+    {
+      "chunk_blocks": 4096,
+      "values": 1048576,
+      "tensor": "double_blocks.0.img_attn.proj.weight",
+      "input_float32_sha256": "1828b452f631cfdca996bc7b6dc41c6e8c595e4980a22ac96f669ebf12342ada",
+      "payload_sha256": "c8055821ea6f50060158033c35aa6961adcd4479f5a82c4b105bc79dc32fc8b9",
+      "seconds": [
+        0.1267156999965664,
+        0.12362859999848297,
+        0.12431049999577226
+      ],
+      "median_seconds": 0.12431049999577226,
+      "baseline_peak_rss_bytes": 45809664,
+      "process_peak_rss_bytes": 66322432
+    }
+  ],
+  "native_prefix": {
+    "path": "I:\\safetensors2GGUF-flux-q6-full-2026-10-15\\native-Q6_K.gguf",
+    "bytes": 860160,
+    "sha256": "c8055821ea6f50060158033c35aa6961adcd4479f5a82c4b105bc79dc32fc8b9",
+    "equal": true
+  }
+}

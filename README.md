@@ -24,7 +24,12 @@ and cancellation is included for all conversion pipelines.
 
 The planned shared conversion core is documented in the
 [unified converter source inventory](docs/converter-consolidation-inventory.md).
-It is research work; current conversion backends remain active.
+The native conversion backends remain the default. Experimental Python Q6_K
+is available explicitly for FLUX safetensors sources: select **Q6_K**, open
+**Advanced settings**, and choose **Python - FLUX only (experimental)** under
+**Q6_K converter**. It uses the existing F16 preparation stage and needs no
+external quantizer. Its current full-model evidence covers one klein Base 9B
+checkpoint; other models/presets keep their established backends.
 See the [policy comparison](docs/converter-policy-comparison.md) for measured
 tensor-selection differences and the installed-model header audit.
 The first [shared Q6_K mathematical pilot](docs/shared-q6-pilot.md) now reproduces
@@ -34,11 +39,16 @@ artifacts do not add a production model conversion path.
 The same payloads also survive a research GGUF container roundtrip; that mixed
 test container is not a loadable model.
 An explicit [FLUX Q6_K research file path](docs/flux-q6-research-path.md) also
-matches the patched native quantizer on schematic files. Production conversion
-continues to use the existing backends.
+matches the patched native quantizer on schematic files. The experimental
+Workbench/API option uses that path; default conversions keep the existing backends.
 The [full FLUX.2 klein Base 9B numeric comparison](docs/flux-q6-full-model-validation.md)
-also matches all 201 native tensor payloads/types/shapes; loader/render validation
-remains separate.
+also matches all 201 native tensor payloads/types/shapes. A user-generated PNG
+comparison confirms inference with two LoRAs for this checkpoint; the guide
+records exact settings, visual differences and remaining validation limits.
+
+The next [shared Q5_K block pilot](docs/shared-q5-pilot.md) also matches three
+native references on 166 inputs. It does not add a Python Q5_K_M application route;
+model-level mixed precision policies remain separate from block mathematics.
 
 ## Supported Architectures
 
@@ -66,7 +76,8 @@ remains separate.
 ### New React workbench (preview)
 
 On Windows, double-click **`start_gui.bat`** to launch the workbench with UV
-and open http://127.0.0.1:8765. The launcher opens an existing Workbench instance
+and open http://127.0.0.1:8765 once the server responds, avoiding a premature
+browser load. Entry HTML is not cached across frontend rebuilds. The launcher opens an existing Workbench instance
 when one is already running. If the frontend build is missing, it installs its
 locked dependencies and builds it (Node.js/npm required once).
 After frontend source updates, run `npm run build` in `frontend` to refresh it.
@@ -113,7 +124,9 @@ uv run python web_api.py
 ```
 
 Open http://127.0.0.1:8765. Node/npm is needed for the frontend build, not normal
-operation. **Extract & repair** provides SDXL VAE/CLIP export with automatic
+operation. **View technical log** automatically follows new output. Scroll up to
+read earlier lines without interruption; scroll back to the bottom to resume.
+Reopening the log shows the latest output. **Extract & repair** provides SDXL VAE/CLIP export with automatic
 normalized tensor hashing and optional reuse of identical local references,
 diffusion extraction, GGUF pad-token repair and 5D restoration. Different or
 unknown components are exported. A shipped registry recognizes the official
@@ -908,3 +921,7 @@ workflow with two LoRAs, classified as Verified within that scope. Visual
 differences remain documented. The user deferred the ZIT portrait test to avoid
 reconversion costs; portrait quality remains untested.
 See [validation and limits](docs/zit-batch-validation.md).
+
+FLUX Q5_K_M research file export also matches patched b3962 in eight schematic
+comparisons (196 tensors); see [Q5 pilot](docs/shared-q5-pilot.md). Full Q5 model/inference validation
+and application integration remain open.

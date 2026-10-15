@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import "./styles.css";
 import { ToolForm } from "./ToolForm";
+import { TechnicalLog } from "./TechnicalLog";
 import { HuggingFaceForm } from "./HuggingFaceForm";
 import { CivitaiCredentials } from "./CivitaiCredentials";
 import { CivitaiForm } from "./CivitaiForm";
@@ -142,6 +143,7 @@ function App() {
   const [threads, setThreads] = useState(0);
   const [overwrite, setOverwrite] = useState(false);
   const [keepIntermediate, setKeepIntermediate] = useState(false);
+  const [ggufBackend, setGgufBackend] = useState("native");
   const [inspection, setInspection] = useState<Inspection>();
   const [sourceFormats, setSourceFormats] = useState<{
     source: string;
@@ -151,6 +153,8 @@ function App() {
   const kreaSource =
     modelKind === "diffusion" && container === "gguf" &&
     sourceFormats?.source === source && sourceFormats.backend === "molbal";
+  const pythonFlux = modelKind === "diffusion" && container === "gguf" &&
+    format === "Q6_K" && !kreaSource && ggufBackend === "python_flux_q6";
   const [inspecting, setInspecting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [selectedJob, setJob] = useState<Job>();
@@ -240,6 +244,7 @@ function App() {
     overwrite,
     modelKind,
     baseRepo,
+    ggufBackend,
   ]);
 
   useEffect(() => {
@@ -314,9 +319,10 @@ function App() {
       destination,
       container,
       format,
-      precision_profile: modelKind === "diffusion" && !kreaSource ? profile : "auto",
-      executable: modelKind === "diffusion" && !kreaSource ? executable : "",
-      threads: modelKind === "diffusion" && !kreaSource ? threads : 0,
+      precision_profile: modelKind === "diffusion" && !kreaSource && !pythonFlux ? profile : "auto",
+      gguf_backend: pythonFlux ? "python_flux_q6" : "native",
+      executable: modelKind === "diffusion" && !kreaSource && !pythonFlux ? executable : "",
+      threads: modelKind === "diffusion" && !kreaSource && !pythonFlux ? threads : 0,
       overwrite,
       keep_intermediate: modelKind === "diffusion" && !kreaSource && keepIntermediate,
     };
@@ -866,6 +872,21 @@ function App() {
                           {container === "gguf" &&
                             modelKind === "diffusion" && !kreaSource && (
                               <>
+                                {format === "Q6_K" && (
+                                  <>
+                                    <label className="field-label" htmlFor="gguf-backend">Q6_K converter</label>
+                                    <select id="gguf-backend" value={ggufBackend}
+                                      onChange={(event) => setGgufBackend(event.target.value)}
+                                      aria-describedby="gguf-backend-hint">
+                                      <option value="native">Native (llama-quantize)</option>
+                                      <option value="python_flux_q6">Python - FLUX only (experimental)</option>
+                                    </select>
+                                    <p className="field-hint" id="gguf-backend-hint">
+                                      Python needs a FLUX safetensors source and no external quantizer.
+                                      Validated with one klein Base 9B checkpoint; other checkpoints remain untested.
+                                    </p>
+                                  </>
+                                )}
                                 <label
                                   className="field-label"
                                   htmlFor="executable"
@@ -874,6 +895,7 @@ function App() {
                                 </label>
                                 <input
                                   id="executable"
+                                  disabled={pythonFlux}
                                   value={executable}
                                   onChange={(event) =>
                                     setExecutable(event.target.value)
@@ -888,6 +910,7 @@ function App() {
                                 </label>
                                 <input
                                   id="threads"
+                                  disabled={pythonFlux}
                                   type="number"
                                   min="0"
                                   max="1024"
@@ -1162,13 +1185,7 @@ function App() {
                             : "Cancel job"}
                         </button>
                       )}
-                      <details className="job-log">
-                        <summary>View technical log</summary>
-                        <pre>
-                          {job.logs.join("\n") ||
-                            "Waiting for the first update…"}
-                        </pre>
-                      </details>
+                      <TechnicalLog key={job.id} logs={job.logs} />
                     </>
                   )}
                 </section>

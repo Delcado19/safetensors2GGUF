@@ -1,4 +1,4 @@
-"""Compare the shared NumPy Q6_K pilot against three pinned native encoders."""
+"""Compare shared NumPy Q5_K/Q6_K block pilots against three pinned native encoders."""
 import argparse
 import hashlib
 import json
@@ -7,10 +7,13 @@ from pathlib import Path
 import gguf
 import numpy as np
 
+from conversion_io import atomic_output, validate_output
+
 from scripts.compare_native_reference_vectors import ROOT, NATIVE_SOURCES, native_encode
 from scripts.converter_reference_vectors import reference_vectors
 from scripts.inventory_converter_sources import verify_references
 from scripts.reference_q6_k import quantize_q6_k
+from scripts.reference_q5_k import quantize_q5_k
 
 
 def pilot_vectors():
@@ -103,26 +106,31 @@ def verified_native_builds(reference_report):
     return builds
 
 
-def check_pilot(reference_report, vectors=None):
-    """Require exact bytes; also retain reconstruction metrics and input hashes."""
+def check_pilot(reference_report, vectors=None, *, format_key="Q6_K"):
+    """Compare Q5_K/Q6_K exact bytes and retain reconstruction/input evidence."""
+    encoders = {'Q6_K': quantize_q6_k, 'Q5_K': quantize_q5_k}
+    if format_key not in encoders:
+        raise ValueError("Pilot supports Q5_K or Q6_K only")
+    encoder = encoders[format_key]
     builds = verified_native_builds(reference_report)
-    report = {'status': 'Research Q6_K pilot; no model/preset dispatch or performance claim',
+    report = {'status': f'Research {format_key} pilot; no model/preset dispatch or performance claim',
+              'format': format_key,
               'numpy': np.__version__, 'random_seed': 20261015,
-              'pilot_source_sha256': hashlib.sha256((ROOT / 'scripts/reference_q6_k.py').read_bytes()).hexdigest(),
+              'pilot_source_sha256': hashlib.sha256((ROOT / f'scripts/reference_{format_key.lower()}.py').read_bytes()).hexdigest(),
               'references': [{'id': build['id'], 'commit': build['commit'],
                               'archive_sha256': build['archive_sha256'],
                               'executable_sha256': build['executable_sha256']} for build in builds],
               'results': []}
-    qtype = gguf.GGMLQuantizationType.Q6_K
+    qtype = gguf.GGMLQuantizationType[format_key]
     for label, data in pilot_vectors() if vectors is None else vectors:
-        actual = quantize_q6_k(data)
+        actual = encoder(data)
         decoded = gguf.dequantize(actual, qtype)
         error = decoded.astype(np.float64) - data.astype(np.float64)
         row = {'vector': label, 'shape': list(data.shape),
                'input_sha256': hashlib.sha256(data.tobytes()).hexdigest(),
                'payload_sha256': hashlib.sha256(actual.tobytes()).hexdigest(),
                'chunk_checks': [{'chunk_blocks': limit,
-                                 'equal_bytes': np.array_equal(actual, quantize_q6_k(data, chunk_blocks=limit))}
+                                 'equal_bytes': np.array_equal(actual, encoder(data, chunk_blocks=limit))}
                                 for limit in (1, 3)],
                'rmse': float(np.sqrt(np.mean(error ** 2))), 'references': []}
         for build in builds:
@@ -133,7 +141,7 @@ def check_pilot(reference_report, vectors=None):
                                       'native_decoder_max_difference': difference})
         report['results'].append(row)
     if not report['results']:
-        raise ValueError('At least one Q6_K vector is required')
+        raise ValueError(f'At least one {format_key} vector is required')
     report['all_equal'] = all(item['equal_bytes'] for row in report['results']
                               for item in row['references'] + row['chunk_checks'])
     return report
@@ -141,19 +149,23 @@ def check_pilot(reference_report, vectors=None):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--format', choices=('Q6_K', 'Q5_K'), default='Q6_K')
     parser.add_argument('--references', type=Path, default=ROOT / 'data/converter-native-comparison.json')
     parser.add_argument('--models-root', type=Path, help='Also sample audited plain floating-point models read-only')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
+    validate_output(args.references, args.output)
     vectors, sources = list(pilot_vectors()), {}
     if args.models_root:
         audit = json.loads((ROOT / 'data/installed-model-policy-headers.json').read_text(encoding='utf-8'))
         sampled, sources = installed_weight_vectors(args.models_root, audit)
         vectors.extend(sampled)
-    report = check_pilot(json.loads(args.references.read_text(encoding='utf-8')), vectors)
+    report = check_pilot(json.loads(args.references.read_text(encoding='utf-8')), vectors, format_key=args.format)
     for row in report['results']:
         if row['vector'] in sources:
             row['model_sample'] = sources[row['vector']]
-    args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + '\n', encoding='utf-8')
+    with atomic_output(args.output) as temporary:
+        Path(temporary).write_text(json.dumps(report, indent=2, allow_nan=False) + '\n',
+                                   encoding='utf-8', newline='\n')
     if not report['all_equal']:
-        raise SystemExit('Q6_K pilot differs from native reference; inspect the saved report')
+        raise SystemExit(f'{args.format} pilot differs from native reference; inspect the saved report')

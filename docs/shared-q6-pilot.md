@@ -34,7 +34,8 @@ Important details retained from native GGML:
 The functions need only NumPy, already installed by the project. They do not
 call an external executable, import Molbal, choose a model policy or write a file.
 The separate checker invokes native executables solely as validation oracles.
-Production conversion dispatch and all existing format allowlists are unchanged.
+Default/native dispatch and global format allowlists remain unchanged; the
+scoped experimental FLUX integration is described below.
 Python is a reference implementation choice; the final converter language and
 execution backends remain open.
 
@@ -96,11 +97,13 @@ silently substitutes a different binary.
 python -m scripts.check_q6_pilot --output q6-synthetic-report.json
 
 # Reproduce the complete local evidence, including the audited model slices.
-python -m scripts.check_q6_pilot --models-root "G:/ComfyUI-Easy-Install/ComfyUI/models" --output data/q6-pilot-comparison.json
+python -m scripts.check_q6_pilot --models-root "G:/ComfyUI-Easy-Install/ComfyUI/models" --output fresh-q6-pilot-comparison.json
 ```
 
 `--references PATH` can select a newly generated native build report, but all
 three pinned source revisions and executable checksums are still required.
+Reports require fresh paths and publish atomically. Q6_K remains the default;
+`--format Q5_K` runs the separate affine block pilot.
 The pilot report records the NumPy version, random seed and encoder source hash.
 The encoder source uses LF on all checkouts so its recorded hash remains stable.
 
@@ -234,7 +237,8 @@ An explicit [FLUX Q6_K research file path](flux-q6-research-path.md) now connect
 the encoder to the prepared float-GGUF boundary. Eight schematic files match
 patched b3962 on 196 tensor payload/type/shape decisions. The subsequent
 [full FLUX checkpoint comparison](flux-q6-full-model-validation.md) also passes
-all 201 tensor payloads/types/shapes; runtime gates below remain open.
+all 201 tensor payloads/types/shapes. A subsequent user-generated PNG pair
+confirms inference with two LoRAs for this checkpoint; see that guide for scope.
 
 The current explicit overflow guard rejects extreme finite inputs if native-style scale-search
 arithmetic overflows. It does not silently pick a different precision or claim
@@ -242,11 +246,21 @@ support for the entire float32 range.
 
 Model eligibility, source reconstruction, protection/fallback and ordered S/M
 policies remain separate from this encoder. The [policy probes](converter-policy-comparison.md)
-must remain compatible before enabling any production path. The prototype has
-not been wired into the Workbench or conversion services.
+must remain compatible during integration. An explicit experimental Workbench/
+API backend now reuses F16 preparation and this encoder for FLUX/Q6_K only, with
+service/API cancellation, progress, overwrite and intermediate cleanup tests.
+Native remains the default.
 
 Other K encoders, IQ, ConvRot/safetensors formats, importance-matrix variants,
-production streaming/cancellation integration, broader full-model coverage/loading/render fidelity,
+broader full-model coverage/loading/render fidelity,
 Linux native execution, comparative throughput benchmarking and measured peak
 memory remain outside this pilot's evidence.
 Do not infer those capabilities from matching Q6_K block bytes.
+
+## Chunk-size measurement follow-up
+
+A [controlled slice benchmark](q6-chunk-benchmark.md) measures five chunk sizes
+in isolated Windows processes, with native-prefix byte validation and observed
+process peak RSS. The current 256-block default wins among those candidates; no
+conversion setting changes. Full-model peak memory/native throughput and other
+hardware remain unmeasured.

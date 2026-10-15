@@ -9,8 +9,9 @@ Evidence: [`data/flux-q6-path-comparison.json`](../data/flux-q6-path-comparison.
 The first architecture-specific integration connects the shared NumPy Q6_K
 encoder to a real FLUX GGUF quantizer stage. It accepts an already prepared,
 single-file little-endian F16/F32 FLUX GGUF, preserves metadata/tensor order and
-writes a mixed-precision Q6_K GGUF atomically. Production Workbench/CLI dispatch,
-format registries and the existing native backend are unchanged.
+writes a mixed-precision Q6_K GGUF atomically. The Workbench/API now exposes it
+as an explicit experimental backend for FLUX safetensors and Q6_K only. Native
+remains the default; global format registries and text encoders are unchanged.
 
 This is not a safetensors importer or a new model adapter. Original checkpoint
 reconstruction, prefix stripping, precision protection, SD shape fixes and
@@ -38,7 +39,9 @@ the numerical encoder retains its separate GGML MIT attribution.
   is expanded to float32; protected tensors use bounded byte copies. Output
   readback checks tensor names/shapes/types/alignment/size and SHA256 per tensor.
 - Atomic output, cancellation between windows/tensors, unchanged source size/mtime
-  and existing-file/source-alias rejection protect output publication. Reader
+  and source-alias rejection protect output publication. Existing output is
+  refused by default; explicit `--overwrite` / `overwrite=True` atomically replaces
+  it only after validation. Failures/cancellation preserve the previous output. Reader
   mappings and writer handles close on success and failure, including Windows.
 
 Only canonical F16/F32 inputs are accepted. Other architectures, quantized/BF16
@@ -76,6 +79,33 @@ unchanged protected/source bytes, cancellation, existing output, invalid source,
 architecture/namespace/rank rejection and refusal to requantize a Q6_K input.
 CI replays retained results without requiring the external native executable.
 
+## Workbench/API integration
+
+Choose diffusion GGUF, Q6_K, then **Advanced settings > Q6_K converter >
+Python - FLUX only (experimental)**. The executable and thread controls are
+disabled for this backend; their values are not submitted. The existing
+**Keep intermediate F16 file** and overwrite choices still apply. Other formats,
+containers and text encoders use their normal routes.
+
+API clients explicitly send `"gguf_backend": "python_flux_q6"` in `/api/inspect`
+and `/api/jobs`. Omitting the field selects `native`. The API rejects Python
+requests for other architectures/formats/containers, non-safetensors sources,
+non-default precision profiles or native executable/thread settings before work.
+The service revalidates architecture independently of the API. No implicit
+native retry follows Python errors or cancellation.
+
+Preparation reuses `convert_file(..., target_quant=F16, apply_unsqueeze=False)`.
+Output publication uses the checked atomic Python writer; a failed/cancelled
+job preserves any previous destination. A unique intermediate lives beside the
+output and is removed on success/failure unless the user asked to retain it.
+Cleanup errors are logged rather than hiding the conversion result. No new
+full-model conversion or render was performed for the integration itself.
+
+Small end-to-end tests exercise real preparation/writing and an API job without
+native discovery/invocation, protected F32 values, cancellation, disk/write
+failure, keep-intermediate behavior, overwrite and rejection boundaries. The
+native default and existing Krea/shape-fix paths retain their own tests.
+
 ## Reproduce
 
 ```bash
@@ -96,8 +126,13 @@ Neither tool implicitly downloads or updates upstream tools/models.
 One complete installed FLUX.2 klein Base 9B checkpoint now passes
 [full-model numeric validation](flux-q6-full-model-validation.md): all 201 tensor
 payloads/types/shapes and metadata match the native reference after common float
-preparation. Loader behavior, image quality, LoRA/offload behavior and isolated
-peak memory/throughput still need separate evidence.
+preparation. A user-generated PNG pair additionally confirms generation through
+`UnetLoaderGGUF` with two enabled LoRAs and matching saved settings against the
+original checkpoint; main-subject appearance remains close, while background
+details differ. See the full-model guide for exact settings and limits. Targeted
+offload, Linux and isolated peak memory/throughput still need separate evidence.
 This change authorizes no renders. BF16 input, other architectures, shape repair,
-text-encoder metadata/policies and other quantization formats remain separate
-work. Keep the tested native production path available.
+text-encoder metadata/policies and other quantization formats require separate
+validation. The [Q5_K_M research file follow-up](shared-q5-pilot.md#flux-q5_k_m-file-policy-follow-up)
+now covers schematic exports only; it is not an application backend.
+Keep the tested native production path available.
