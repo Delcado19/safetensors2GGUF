@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Research Q6_K GGUF container roundtrip for the three verified full-tensor
+  streams. Preserve payload hashes/shapes with bounded copy buffers, explicit
+  research metadata, atomic publication and Windows-safe reader cleanup. Test
+  padding, malformed inputs, copy-time changes and cancellation; no model loader
+  or production conversion path is enabled.
+
 - Add: Research-only full-matrix Q6_K streaming validation with atomic raw-block
   output, disk readback checksums and cancellation/source-change guards. Three
   complete installed tensors match all native references in 912 comparisons;

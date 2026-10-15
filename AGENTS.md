@@ -48,6 +48,9 @@ additional comparisons and supports consumer-driven early close. It is not
 connected to production dispatch. Three complete installed matrices additionally
 match in 912 native chunk comparisons, with atomic raw `.q6k` artifacts on `I:\`;
 these are not loadable GGUF models. Per-run encoding times are recorded.
+The same three payloads also pass a combined research-only GGUF container
+roundtrip (shape/type/alignment/checksum); its mixed-source research architecture
+is not a model loader target. Read `data/q6-gguf-container.json` for evidence.
 Measured peak memory/comparative throughput,
 extreme-range policy, other encoders and full-model integration remain
 open; preserve separate model/preset rules and the implementation-language choice.

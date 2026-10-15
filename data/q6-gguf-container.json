@@ -1,0 +1,49 @@
+{
+  "status": "GGUF container roundtrip only; no model conversion or loader compatibility claim",
+  "output": "I:\\safetensors2GGUF-q6-stream-2026-10-15\\q6-research-tensors.gguf",
+  "file_sha256": "d394b660befe5e77c9909ffa7bb39e75adc0fa4e2413fc0a08c577306333d465",
+  "architecture": "s2gguf_q6_research",
+  "tensor_count": 3,
+  "tensors": [
+    {
+      "name": "double_blocks.0.img_attn.proj.weight",
+      "shape": [
+        4096,
+        4096
+      ],
+      "type": "Q6_K",
+      "bytes": 13762560,
+      "data_offset": 800,
+      "payload_sha256": "652e6f4c01d70a18dc530b0c9b73d4cb131a2edea92cd4ed0293ba883f25d518"
+    },
+    {
+      "name": "model.layers.0.self_attn.k_proj.weight",
+      "shape": [
+        1024,
+        2560
+      ],
+      "type": "Q6_K",
+      "bytes": 2150400,
+      "data_offset": 13763360,
+      "payload_sha256": "81303b2d177b997bfc0de20b1b53ad5ff57aef3258da8ac6d0a538dfb9e15fe8"
+    },
+    {
+      "name": "model.diffusion_model.input_blocks.1.0.emb_layers.1.weight",
+      "shape": [
+        320,
+        1280
+      ],
+      "type": "Q6_K",
+      "bytes": 336000,
+      "data_offset": 15913760,
+      "payload_sha256": "9bb49d5eb80a86a642b69ec290458d6f69ac3ab6bc9a94257d1383fc30f2c73e"
+    }
+  ],
+  "source_report_sha256": [
+    "2f5f20ae4fdb43e74331353c1f13249ef6ea139de46e10b20372904bab2a11cd",
+    "9b5fcf7f41ff2e2b0e2da0fb5da36f8f1a407f6cb849e596efe8c4e12527f685",
+    "88113c2b26859fa4d22f53c1c5aa2d004d7a27808245ed52053a368eb5ace361"
+  ],
+  "all_equal": true,
+  "checker_source_sha256": "9c0cd7f93d1c334b5ad9f3424aa143105fd5ebbb8559d19ecaa04a3161edf47c"
+}

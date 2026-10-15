@@ -184,6 +184,46 @@ can leave a successfully verified raw output. Regression tests use tiny local
 fixtures and stub native execution; the committed reports record the actual
 installed-model/native-program runs.
 
+## GGUF container roundtrip
+
+`scripts/check_q6_gguf_container.py` packages the three previously verified raw
+streams into one research GGUF using the installed GGUF writer's tensor-info,
+metadata and padding API. Payloads are copied through fixed 1 MiB buffers,
+without constructing full tensor arrays. No numerical re-encoding occurs.
+
+The three-source local run passed on 2026-10-15. Readback with `GGUFReader`
+confirmed all tensor names, logical shapes, Q6_K types, byte counts, 32-byte
+alignment and payload SHA256 values. The combined payload contains 16,248,960
+bytes; the GGUF adds 800 bytes of header/metadata. Evidence is retained in
+[`q6-gguf-container.json`](../data/q6-gguf-container.json), and the actual file is
+`I:\safetensors2GGUF-q6-stream-2026-10-15\q6-research-tensors.gguf`.
+
+**This is a container-layout test, not a complete model.** It deliberately mixes
+three source models and uses `general.architecture = s2gguf_q6_research` plus an
+explicit research-only flag. It must not be offered to a model loader. The raw
+stream reports provide trusted source semantics; container readback establishes
+layout/payload preservation, not independent revalidation of their native runs.
+The GGUF embeds SHA256 values of the exact input reports. Report LF endings are
+pinned so these hashes remain stable across Windows/Linux checkouts.
+
+The tool rejects failing reports, incompatible shapes, duplicate names,
+truncated/extended/corrupt raw files and existing output files. Copy-time byte
+counts/checksums detect source changes after preflight. Publication is atomic,
+after readback and cancellation checks; errors close writer handles and reader
+mappings before temporary-file cleanup, including a malformed GGUF header on
+Windows. Tests also exercise odd block counts requiring inter-tensor padding,
+dequantization after parsing, cancellation and unchanged input files.
+
+```bash
+python -m scripts.check_q6_gguf_container --inputs data/q6-stream-flux.json data/q6-stream-qwen.json data/q6-stream-sdxl.json --output "I:/q6-research-tensors.gguf" --report container-report.json
+```
+
+The output/report directories must exist; choose new filenames for reproduction.
+Raw paths in input reports must exist locally (relative paths resolve against
+their report directory). JSON report publication is separate from successful
+GGUF publication. The reader maps the container; fixed copy buffers do not
+establish a peak-RSS guarantee or eliminate OS page-cache residency.
+
 ## Remaining integration gates
 
 The current explicit overflow guard rejects extreme finite inputs if native-style scale-search

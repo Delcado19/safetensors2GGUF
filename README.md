@@ -31,6 +31,8 @@ The first [shared Q6_K mathematical pilot](docs/shared-q6-pilot.md) now reproduc
 the native reference bytes on synthetic vectors, small installed-weight slices
 and three complete streamed matrices. These remain research checks; raw tensor
 artifacts do not add a production model conversion path.
+The same payloads also survive a research GGUF container roundtrip; that mixed
+test container is not a loadable model.
 
 ## Supported Architectures
 
