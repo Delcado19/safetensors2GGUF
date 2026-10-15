@@ -18,9 +18,11 @@ b3962 Q4_K/Q5_K/Q6_K kernels directly from Python. All 498 golden inputs match;
 bounded-call slice timings are within about 2% of the same directly called C
 kernel. The [full-model writer follow-up](flux-compiled-kernel-full-model-validation.md)
 also matches all 201 FLUX.2 klein Base 9B Q4_K_M native tensor payloads and the
-previous Python file hash, taking 461.685 s including readback/checksum. Packaging,
-other full-model formats and non-Windows execution remain open; this does not
-replace production backends or settle the final language.
+previous Python file hash, taking 461.685 s including readback/checksum. Full
+Q5_K_M and Q6_K follow-ups also match 201 native payloads each and earlier Python
+whole-file hashes, taking 410.520 s and 315.509 s. Packaging, other architectures,
+full Q4_K_S and non-Windows execution remain open; this does not replace
+production backends or settle the final language.
 
 ## Objective and boundaries
 

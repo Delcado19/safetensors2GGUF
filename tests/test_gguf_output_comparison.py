@@ -167,6 +167,32 @@ def test_compiled_full_flux_report_retains_native_bytes_and_live_failure_checks(
     assert all(value > 0 for value in report['seconds'].values())
 
 
+@pytest.mark.parametrize('key,preset,types,output_bytes', [
+    ('q5', 'Q5_K_M', {'Q5_K': 99, 'Q6_K': 16, 'F32': 86}, 6688921920),
+    ('q6', 'Q6_K', {'Q6_K': 115, 'F32': 86}, 7774067008),
+])
+def test_compiled_q5_q6_full_models_match_original_python_and_native(key, preset, types, output_bytes):
+    """Retain complete mixed-preset and Q6 payload evidence for the shared C ABI."""
+    root = Path(__file__).parents[1]
+    report = json.loads((root / f'data/flux-compiled-{key}-full-model-comparison.json').read_text())
+    previous = json.loads((root / f'data/flux-{key}-full-model-comparison.json').read_text())
+    q4 = json.loads((root / 'data/flux-compiled-q4m-full-model-comparison.json').read_text())
+    assert report['preset'] == preset
+    assert report['all_equal'] and report['metadata_equal'] and report['alignment_equal']
+    assert report['tensor_counts_equal'] and len(report['tensors']) == 201
+    assert Counter(row['type'] for row in report['tensors']) == types
+    assert all(row['equal'] and row['left_sha256'] == row['right_sha256'] for row in report['tensors'])
+    assert report['left_sha256'] == previous['left_sha256']
+    assert report['right_sha256'] == report['reference_sha256_before'] == previous['right_sha256']
+    assert report['output_bytes'] == output_bytes
+    assert report['source_sha256'] == q4['source_sha256'] and report['source_stat_stable']
+    assert report['source_bytes'] == q4['source_bytes']
+    assert report['library_sha256'] == q4['library_sha256'] == report['kernel_build']['library_sha256']
+    assert report['native_provenance'] == q4['native_provenance']
+    assert report['source_code_sha256'] == q4['source_code_sha256']
+    assert all(value > 0 for value in report['seconds'].values())
+
+
 
 def test_recorded_q4m_full_model_comparison_retains_complete_numeric_evidence():
     """Retain complete Q4 mixed-policy proof without shipping model weights."""

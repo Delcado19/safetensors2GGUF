@@ -101,8 +101,10 @@ The explicit trusted-kernel writer adapter below preserves the existing bounded
 workflow. The [full Q4_K_M follow-up](flux-compiled-kernel-full-model-validation.md)
 now records 201 native-equal tensor payloads, a 461.685 s write/readback/hash run,
 32 actual DLL fixture comparisons and handled-error/atomic-output checks.
-Other full-model formats and reproducible platform packaging remain gates before
-Workbench exposure.
+Its Q5_K_M/Q6_K follow-up also matches all 201 native payloads per format and
+earlier Python whole-file hashes, with 410.520 s and 315.509 s write/readback/hash
+runs. Other architectures, full Q4_K_S and reproducible platform packaging remain
+gates before Workbench exposure.
 Parallel CPU execution and GPU/Tensor Core acceleration remain separate work.
 
 ## Explicit research writer integration

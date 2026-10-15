@@ -59,8 +59,11 @@ parity, cancellation, packaging and memory measurements before adoption.
 
 The next isolated [compiled-kernel pilot](compiled-kernel-pilot.md) reuses pinned
 b3962 CPU kernels directly from Python. It records native-byte parity and slice
-throughput close to the same directly called kernel; full-model writer integration
-and platform distribution remain pending.
+throughput close to the same directly called kernel. The
+[full-model writer follow-up](flux-compiled-kernel-full-model-validation.md)
+now matches all 201 native payloads per format for Q4_K_M/Q5_K_M/Q6_K and
+their earlier Python file checksums. Platform distribution and Workbench
+integration remain pending.
 
 `iter_q4_k` accepts explicit nonempty float32 rows divisible by 256, preserves
 strided logical C order and only copies bounded windows. Each yielded chunk owns

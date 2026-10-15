@@ -96,6 +96,49 @@ Never overwrite the source or a previous test artifact for this experiment.
 
 No additional image generation was performed. Existing Q4_K_M visual findings
 remain applicable to these identical weights; this does not improve the
-previously observed original-versus-Q4 image drift. Full-model compiled Q5/Q6,
+previously observed original-versus-Q4 image drift. Full-model Q4_K_S,
 other architectures, Linux/macOS, packaged binaries and Workbench integration
 remain unvalidated. There is no implicit build, search or encoder fallback.
+
+## Q5_K_M and Q6_K full-model follow-up
+
+Both additional full-model runs completed on 2026-10-16 using the same compiled
+library, writer and prepared FLUX input. They ran sequentially in a fresh folder:
+`I:\safetensors2GGUF-flux-compiled-q5-q6-full-2026-10-16`.
+Free space was 183,996,428,288 bytes before starting. The complete source SHA256
+was verified again before these runs; each native reference's complete checksum
+was verified immediately before its conversion. Source size/mtime remained stable
+through both conversions and comparisons. No earlier artifacts were replaced.
+
+| Format | Output bytes | Tensor types | Write/readback/checksum |
+|---|---:|---|---:|
+| Q5_K_M | 6,688,921,920 | 99 Q5_K + 16 Q6_K + 86 F32 | 410.520 s (6 min 51 s) |
+| Q6_K | 7,774,067,008 | 115 Q6_K + 86 F32 | 315.509 s (5 min 16 s) |
+
+For **each format**, all 201 tensor names/types/shapes/payloads, typed metadata and
+effective alignment match the independent native reference. Both outputs also
+match the complete file checksums of the earlier Python exports:
+
+- `compiled-Q5_K_M.gguf`:
+  `0ea183f94b052c4e7e00b40fd0bf69f68cfeb75115a3fd3772c99a3b4d96d14b`.
+- `compiled-Q6_K.gguf`:
+  `9ed4dd03c54e036885f499c8f1b740a2d344115845595f306cfe8c46ce6b1629`.
+
+The new reports `data/flux-compiled-q5-full-model-comparison.json` and
+`data/flux-compiled-q6-full-model-comparison.json` retain every tensor checksum,
+full-file hashes, output size, native/library/build/source provenance and separate
+writer/comparison timings. The corresponding native file checksums equal the
+earlier Q5/Q6 reports; the historical 32-byte header difference remains.
+
+As above, timings exclude preflight input/reference hashing and the independent
+comparison. Historical NumPy runs took 1,475.984 s for Q5 and 1,136.084 s for Q6,
+including readback/hash. Historical native observations were 381.491 s and
+441.711 s respectively. These are different runs with uncontrolled cache/load;
+the earlier Q6 native run specifically had shared-load conditions. They do not
+establish that this library outperforms the native executable. The slice test
+is the controlled evidence that Python's bounded-call overhead is small.
+
+Across Q4_K_M, Q5_K_M and Q6_K, **603 full-model tensor comparisons pass** using
+one shared C ABI and the unchanged Python model/file policy. No new renders or
+application default changes were made. Packaging, other platforms/architectures,
+full Q4_K_S and Workbench integration remain open.

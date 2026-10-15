@@ -11,8 +11,11 @@ comparisons and cancellation/atomic-output checks. Full FLUX.2 klein Base 9B
 Q4_K_M matches all 201 native payloads and the earlier Python whole-file hash;
 write/readback/hash took 461.685 s versus the historical NumPy run's 1539.879 s.
 Read `docs/flux-compiled-kernel-full-model-validation.md` for timing boundaries.
-Full-model Q5/Q6, binary packaging, Linux/macOS and Workbench integration remain
-pending. Native-speed conversion remains a measured target, not a default switch.
+Full-model Q5_K_M and Q6_K now also match all 201 native payloads each and their
+earlier Python whole-file hashes; write/readback/hash took 410.520 s and 315.509 s.
+The same validation guide records all 603 tensor comparisons and timing scopes.
+Binary packaging, Linux/macOS, other architectures, full Q4_K_S and Workbench
+integration remain pending. These results do not change application defaults.
 
 **Open: Build one unified model converter.** Preserve the tested diffusion and
 text-encoder GGUF paths while integrating the additional model/format capabilities

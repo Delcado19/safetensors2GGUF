@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Full compiled FLUX.2 klein Base 9B Q5_K_M and Q6_K validation. All 201
+  tensor payloads/types/shapes and metadata match native per format; both files
+  also equal the earlier Python file checksums. Write/readback/hash took
+  410.520 s and 315.509 s in separate sequential runs, not a controlled native
+  speed benchmark. Retain complete numeric/build evidence; app defaults,
+  packaging, non-Windows and other-architecture support remain unchanged.
+
 - Add: Explicit compiled-kernel selection in the research FLUX writer, retaining
   bounded chunks, cancellation, readback and atomic publication. All 32 actual
   DLL fixture outputs match NumPy, and full FLUX.2 klein Base 9B Q4_K_M matches

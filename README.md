@@ -943,3 +943,5 @@ The [compiled CPU writer follow-up](docs/flux-compiled-kernel-full-model-validat
 retains all 201 native-equal Q4_K_M payloads and the previous Python file hash,
 with a 461.685 s write/readback/checksum run. Explicit library/hash selection is
 research-only; the Workbench, packaged tools and platform support are unchanged.
+Full Q5_K_M and Q6_K follow-ups also retain all 201 native-equal payloads per
+format and the earlier Python file hashes, with 410.520 s and 315.509 s runs.
