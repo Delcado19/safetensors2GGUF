@@ -3,9 +3,9 @@
   "format": "Q5_K",
   "numpy": "2.4.4",
   "random_seed": 20261015,
-  "pilot_source_sha256": "9694be974969f89c937b7aaeaec6551d13147a2b74a7c5015e700b5a879fb7f7",
+  "pilot_source_sha256": "6086dcc86cf3673c076aa5ba3d4302d9afb26f284f9a940b7545b2c8c8359390",
   "implementation_source_sha256": {
-    "scripts/reference_q5_k.py": "9694be974969f89c937b7aaeaec6551d13147a2b74a7c5015e700b5a879fb7f7"
+    "scripts/reference_q5_k.py": "6086dcc86cf3673c076aa5ba3d4302d9afb26f284f9a940b7545b2c8c8359390"
   },
   "references": [
     {

@@ -21,6 +21,8 @@ def _error(x, weights, codes, scale, minimum):
 
 
 def _fit(x, *, bits=5):
+    # Fit columns contiguously while preserving native sequential F32 accumulation.
+    x = np.asfortranarray(x)
     # Frozen Q4 and Q5 use distinct affine search grids; accumulation/packing are shared.
     levels, first, steps = (31, -0.5, 16) if bits == 5 else (15, -1.0, 21)
     squares = np.zeros(len(x), dtype=np.float32)

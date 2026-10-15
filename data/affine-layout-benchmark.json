@@ -1,0 +1,66 @@
+{
+  "scope": "One 1048576-value prepared FLUX slice; alternating seven repeats, 256 blocks/chunk; encoder plus hashing, excludes load/readback/file I/O; not full-model performance",
+  "source": "I:\\safetensors2GGUF-flux-q6-full-2026-10-15\\prepared-F16.gguf",
+  "tensor": "double_blocks.0.img_attn.proj.weight",
+  "input_sha256": "1828b452f631cfdca996bc7b6dc41c6e8c595e4980a22ac96f669ebf12342ada",
+  "baseline_commit": "110d06d36bf3c526329a7a24e92bf17b0ffe2666",
+  "optimized_source_sha256": "6086dcc86cf3673c076aa5ba3d4302d9afb26f284f9a940b7545b2c8c8359390",
+  "results": [
+    {
+      "format": "Q4_K",
+      "seconds": {
+        "baseline": [
+          0.17221569998946507,
+          0.17178819999389816,
+          0.17265720000432339,
+          0.17458400000759866,
+          0.18019350001122802,
+          0.18002910001087002,
+          0.18453660000523087
+        ],
+        "column_contiguous": [
+          0.13498110001091845,
+          0.13672980001138058,
+          0.13515000000188593,
+          0.13607219999539666,
+          0.13765910000074655,
+          0.13855750000220723,
+          0.13874680000299122
+        ]
+      },
+      "median_seconds": {
+        "baseline": 0.17458400000759866,
+        "column_contiguous": 0.13672980001138058
+      },
+      "payload_sha256": "9c8d2bd215583eec372705c6df74c8f822262dda6fb8af8c9f6eb78950288aa8"
+    },
+    {
+      "format": "Q5_K",
+      "seconds": {
+        "baseline": [
+          0.13709979999111965,
+          0.1363539000012679,
+          0.13572779999230988,
+          0.13774289999855682,
+          0.1367508999974234,
+          0.13611029999447055,
+          0.1357713000033982
+        ],
+        "column_contiguous": [
+          0.11058159999083728,
+          0.1112449999927776,
+          0.11066759999084752,
+          0.11070530000142753,
+          0.1101487999985693,
+          0.1103609999991022,
+          0.10990039999887813
+        ]
+      },
+      "median_seconds": {
+        "baseline": 0.1363539000012679,
+        "column_contiguous": 0.11058159999083728
+      },
+      "payload_sha256": "3f72bc73333bbdfeaf33bff1afed76bae53966c1afa6503aa1268648a7323f36"
+    }
+  ]
+}

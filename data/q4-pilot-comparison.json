@@ -6,7 +6,7 @@
   "pilot_source_sha256": "f63aa898721a1a6f9e2cd7a4e4f672df69176e61120bebb59fe0381b2f315e56",
   "implementation_source_sha256": {
     "scripts/reference_q4_k.py": "f63aa898721a1a6f9e2cd7a4e4f672df69176e61120bebb59fe0381b2f315e56",
-    "scripts/reference_q5_k.py": "9694be974969f89c937b7aaeaec6551d13147a2b74a7c5015e700b5a879fb7f7"
+    "scripts/reference_q5_k.py": "6086dcc86cf3673c076aa5ba3d4302d9afb26f284f9a940b7545b2c8c8359390"
   },
   "references": [
     {

@@ -56,11 +56,13 @@ python -m scripts.check_flux_q6_path --preset Q4_K_M --artifacts /fresh/q4m-dire
 
 ## Limits and next gate
 
-These are tiny policy/math fixtures, not inference-capable models. No full Q4
-checkpoint, loading/image quality, LoRA, offload, Linux native execution or
-performance/peak-memory claim is established. Q4 is still a research file path;
-the experimental Workbench/API backend remains limited to Q6_K/Q5_K_M, native
-Q4 defaults and the Krea allowlist are unchanged. Next compare a complete prepared
-FLUX checkpoint against native before considering Q4 app exposure. The original
-Q4_K block pilot and shared-code regression evidence remain documented in
-[the Q4 pilot](shared-q4-pilot.md).
+These are tiny policy/math fixtures, not inference-capable models. A subsequent
+[complete FLUX.2 klein Base 9B Q4_K_M comparison](flux-q4m-full-model-validation.md)
+also passes all 201 tensor payload/type/shape checks and metadata. Q4_K_S has not
+been compared at full-checkpoint scale. Supplied Q4_K_M Python/native PNGs are
+pixel-identical with two enabled LoRAs; a same-seed original shows Visible drift
+in pose/composition. Broader quality, offload, Linux native execution and
+controlled performance/peak-memory remain untested.
+Q4 is still a research file path; the experimental Workbench/API backend remains
+limited to Q6_K/Q5_K_M, native Q4 defaults and the Krea allowlist are unchanged.
+The [Q4 pilot](shared-q4-pilot.md) documents the underlying shared math checks.

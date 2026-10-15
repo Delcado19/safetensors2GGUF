@@ -97,8 +97,14 @@ Shared Q4_K math follow-up: `docs/shared-q4-pilot.md` records 166 inputs,
 packing and bounded streaming with distinct native search grids. Q5 was rerun
 and remains exact. FLUX Q4_K_S/Q4_K_M research file policies now match patched b3962 on 16
 schematic files (400 tensors), including ordered V promotion and row-fallback
-counter behavior. Read `docs/flux-q4-research-path.md`. Full Q4 models,
-application integration and runtime validation remain open.
+counter behavior. Read `docs/flux-q4-research-path.md`. Complete FLUX.2 klein
+Base 9B Q4_K_M also matches all 201 native tensor payloads/types/shapes and
+metadata; read `docs/flux-q4m-full-model-validation.md`. Supplied Q4_K_M
+Python/native PNGs are pixel-identical with two LoRAs; the matching-seed original
+shows Visible drift in pose/composition. A second no-LoRA triplet is also
+Python/native pixel-identical; original-versus-Q4 differences persist without
+active LoRAs. Full Q4_K_S, broader Q4 quality and
+application integration remain open.
 
 Recorded roadmap (the final consolidation strategy remains open):
 - First provide one application with a shared format registry, model checks,

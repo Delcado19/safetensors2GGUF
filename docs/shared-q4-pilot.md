@@ -35,6 +35,28 @@ earlier full-model reports retain hashes of the exact code used for those runs.
 
 ## Contracts and limits
 
+### CPU performance follow-up (2026-10-16)
+
+The shared affine fitter now copies each bounded input window to column-contiguous
+storage. Its repeated column accesses become contiguous without changing native
+sequential float32 accumulation or candidate ordering. Both complete 166-input
+Q4/Q5 pilots were rerun against all three pinned native references after this
+change; their current reports retain the updated implementation hashes.
+
+`data/affine-layout-benchmark.json` records seven alternating baseline/optimized
+runs on the same 1,048,576-value prepared FLUX slice, 256 blocks per chunk.
+Median Q4 time decreased from 0.17458 s to 0.13673 s (about 22%); Q5 decreased
+from 0.13635 s to 0.11058 s (about 19%). Both output hashes remain identical.
+These measurements include encoding and hashing, exclude loading/file I/O/readback,
+and do not establish full-model speed or native-speed parity. The earlier full-model
+reports describe the older encoder and retain their historical source hashes.
+
+Profiling this Q4 slice placed about 94% of encoder time in affine fitting.
+Larger chunk sizes offered little improvement, and an experimental cumulative-sum
+rewrite was slower, so neither was adopted. Native-speed conversion remains an
+open target; fused compiled fitting and bounded parallel execution need separate
+parity, cancellation, packaging and memory measurements before adoption.
+
 `iter_q4_k` accepts explicit nonempty float32 rows divisible by 256, preserves
 strided logical C order and only copies bounded windows. Each yielded chunk owns
 its data. Consumers must use atomic publication and close/stop between chunks
@@ -51,7 +73,9 @@ Q4_K_S/Q4_K_M are model-level mixed policies, not block encodings. A subsequent
 [FLUX research file path](flux-q4-research-path.md) now implements both and matches
 native in 16 schematic conversions (400 tensors), including order-sensitive
 first-four-V promotion and incompatible V fallback consuming a slot. No Q4
-application dispatch, full checkpoint conversion or ComfyUI render was added.
+application dispatch or ComfyUI render was added in this block/preset phase.
+A subsequent [complete FLUX Q4_K_M comparison](flux-q4m-full-model-validation.md)
+also matches all 201 tensors and metadata; Q4_K_S remains schematic-only.
 Native Q4 presets and the Krea allowlist remain unchanged. Linux native execution,
 importance matrices and controlled performance/peak-memory measurements are open.
 

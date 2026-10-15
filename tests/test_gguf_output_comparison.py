@@ -140,3 +140,64 @@ def test_q5_same_seed_original_changes_only_loader_and_model_connection():
     assert {k for k in a.keys() | b.keys() if a.get(k) != b.get(k)} == {'108', '113', '115'}
     assert {k: v for k, v in a['113']['inputs'].items() if k != 'model'} == {
         k: v for k, v in b['113']['inputs'].items() if k != 'model'}
+
+
+
+def test_recorded_q4m_full_model_comparison_retains_complete_numeric_evidence():
+    """Retain complete Q4 mixed-policy proof without shipping model weights."""
+    root = Path(__file__).parents[1]
+    r = json.loads((root / 'data/flux-q4m-full-model-comparison.json').read_text())
+    q5 = json.loads((root / 'data/flux-q5-full-model-comparison.json').read_text())
+    assert r['all_equal'] and r['metadata_equal'] and r['alignment_equal']
+    assert r['tensor_counts_equal'] and len(r['tensors']) == 201
+    assert r['preset'] == 'Q4_K_M'
+    assert Counter(row['type'] for row in r['tensors']) == {'Q4_K': 99, 'Q5_K': 16, 'F32': 86}
+    assert all(row['equal'] and row['left_sha256'] == row['right_sha256'] for row in r['tensors'])
+    assert r['source_sha256'] == q5['source_sha256'] and r['source_bytes'] == q5['source_bytes']
+    assert r['native'] == q5['native'] and r['native_exit_code'] == 0
+    assert r['source_stat_stable']
+    assert r['native_seconds'] > 0 and r['python_seconds'] > 0
+    assert set(r['source_code_sha256']) == {
+        'scripts/reference_q4_k.py', 'scripts/reference_q5_k.py',
+        'scripts/reference_q6_k.py', 'scripts/requantize_flux_q6.py'}
+
+
+
+def test_q4m_user_renders_have_equal_pixels_and_matching_original_settings():
+    """Retain scoped rendering/LoRA parity without equating original image fidelity."""
+    r = json.loads((Path(__file__).parents[1] / 'data/flux-q4m-user-render-comparison.json').read_text())
+    original, python, native = r['images']
+    assert r['python_native_identical_filtered_scanlines']
+    assert python['ihdr_hex'] == native['ihdr_hex'] == original['ihdr_hex']
+    assert python['filtered_scanlines_sha256'] == native['filtered_scanlines_sha256']
+    assert all(image['all_png_chunk_crcs_valid'] for image in r['images'])
+    a, b, c = [image['metadata']['prompt'] for image in r['images']]
+    assert a['96'] == b['96'] == c['96']
+    assert a['96']['inputs']['noise_seed'] == r['seed'] == 572241167616859
+    assert {k for k in b.keys() | c.keys() if b.get(k) != c.get(k)} == {'116'}
+    assert {k for k in a.keys() | b.keys() if a.get(k) != b.get(k)} == {'108', '113', '116'}
+    assert {k: v for k, v in a['113']['inputs'].items() if k != 'model'} == {
+        k: v for k, v in b['113']['inputs'].items() if k != 'model'}
+
+
+
+def test_q4m_no_lora_triplet_preserves_generation_settings_and_native_pixels():
+    """Disabled entries and a downstream save-mode difference must stay explicit."""
+    r = json.loads((Path(__file__).parents[1] / 'data/flux-q4m-user-render-no-lora.json').read_text())
+    original, python, native = r['images']
+    a, b, c = [image['metadata']['prompt'] for image in r['images']]
+    assert r['python_native_identical_filtered_scanlines']
+    assert original['ihdr_hex'] == python['ihdr_hex'] == native['ihdr_hex']
+    assert python['filtered_scanlines_sha256'] == native['filtered_scanlines_sha256']
+    assert all(image['all_png_chunk_crcs_valid'] for image in r['images'])
+    assert a['96'] == b['96'] == c['96']
+    assert a['96']['inputs']['noise_seed'] == r['seed']
+    for prompt in (a, b, c):
+        assert not prompt['113']['inputs']['lora_1']['on']
+        assert not prompt['113']['inputs']['lora_2']['on']
+    assert {k for k in b.keys() | c.keys() if b.get(k) != c.get(k)} == {'116'}
+    assert {k for k in a.keys() | b.keys() if a.get(k) != b.get(k)} == {'108', '112', '113', '116'}
+    assert {k: v for k, v in a['112']['inputs'].items() if k != 'save_mode'} == {
+        k: v for k, v in b['112']['inputs'].items() if k != 'save_mode'}
+    assert {k: v for k, v in a['113']['inputs'].items() if k != 'model'} == {
+        k: v for k, v in b['113']['inputs'].items() if k != 'model'}

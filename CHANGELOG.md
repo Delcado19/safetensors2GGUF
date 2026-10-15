@@ -6,12 +6,27 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Change: Use column-contiguous working input in shared Q4_K/Q5_K affine fitting,
+  preserving sequential float32 arithmetic and all native golden bytes. Seven
+  alternating slice measurements show approximately 22%/19% lower encoder time;
+  this is not a full-model speed claim or native-speed parity.
+
+- Add: Complete FLUX.2 klein Base 9B Q4_K_M Python/native numeric comparison:
+  all 201 tensor payloads, types, shapes and metadata match pinned patched b3962.
+  Retain input/tool/codec provenance, checksums and timings. Supplied Python/native
+  Q4_K_M PNGs are pixel-identical with two LoRAs; same-seed original comparison
+  shows Visible drift in pose/composition. A no-LoRA follow-up also has identical
+  Python/native pixels with visible original-versus-Q4 differences. Full Q4_K_S,
+  broader quality and Q4
+  application integration remain open.
+
 - Add: Research NumPy Q4_K block encoding with shared Q5 affine fitting/packing
   and bounded streaming. All 166 inputs match three frozen native references
   (498 byte comparisons, 332 chunk checks); rerun Q5 also remains exact.
   FLUX Q4_K_S/Q4_K_M research file policies also match native on 16 schematic
   files (400 tensors), preserving ordered V promotion and fallback counters.
-  Full Q4 checkpoints and application routes remain separate future work.
+  Q4_K_M full-model evidence is recorded above; full Q4_K_S, broader quality and
+  application routes remain separate future work.
 
 - Add: Explicit experimental FLUX Q5_K_M Workbench/API conversion alongside Q6_K
   using `python_flux`; preserve the older Q6-only identifier for existing clients.

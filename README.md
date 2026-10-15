@@ -935,4 +935,7 @@ clients send `"gguf_backend": "python_flux"`. Native remains the default.
 The [Q4_K block pilot](docs/shared-q4-pilot.md) also passes 166 inputs against three native
 references, sharing affine mathematics with Q5. FLUX Q4_K_S/Q4_K_M file policies
 also match native on 16 schematic files (400 tensors); see [Q4 file validation](docs/flux-q4-research-path.md).
-Full Q4 checkpoint and app integration remain open; native Q4 defaults are unchanged.
+The [complete FLUX Q4_K_M comparison](docs/flux-q4m-full-model-validation.md) now also matches all 201 native
+tensor payloads/types/shapes and metadata. Supplied Python/native Q4_K_M renders
+are pixel-identical with two LoRAs; the same-seed original shows Visible drift in
+pose/composition. Full Q4_K_S, broader quality and app integration remain open; native Q4 defaults are unchanged.
