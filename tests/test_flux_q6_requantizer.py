@@ -264,3 +264,61 @@ def test_q4_writer_preserves_old_output_on_failure(tmp_path, preset, outcome):
         assert destination.read_bytes() == b'previous model'
     assert source.read_bytes() == original
     assert not list(tmp_path.glob('.q4.gguf.*'))
+
+
+@pytest.mark.parametrize('preset', ['Q6_K', 'Q5_K_M', 'Q4_K_M', 'Q4_K_S'])
+@pytest.mark.parametrize('outcome', ['success', 'cancel', 'failure', 'bad_bytes'])
+def test_explicit_compiled_callback_keeps_writer_guards(tmp_path, preset, outcome):
+    """Block-math injection preserves file bytes, bounds and atomic failure handling."""
+    from scripts.check_compiled_kernel import ITERATORS
+    source, destination = tmp_path / 'source.gguf', tmp_path / 'output.gguf'
+    _source(source, extra={'large.weight': np.ones((300, 256), dtype=np.float16),
+                          'block.attn.qkv.weight': np.ones((8, 256), dtype=np.float16),
+                          'block.to_v.weight': np.ones((8, 256), dtype=np.float16)})
+    baseline = tmp_path / 'numpy.gguf'
+    requantize(source, baseline, preset=preset)
+    destination.write_bytes(b'old model')
+    before = source.read_bytes()
+    event = threading.Event()
+    calls = []
+
+    def kernel(data, bits):
+        assert data.dtype == np.float32 and data.ndim == 2
+        assert data.size <= 65536 and data.flags.c_contiguous
+        calls.append(bits)
+        if outcome == 'failure':
+            raise RuntimeError('Kernel failed')
+        if outcome == 'bad_bytes':
+            return np.zeros(1, dtype=np.float32)
+        if outcome == 'cancel':
+            event.set()
+        return np.concatenate(list(ITERATORS[bits](data)))
+
+    if outcome == 'success':
+        requantize(source, destination, preset=preset, overwrite=True, compiled_kernel=kernel)
+        assert destination.read_bytes() == baseline.read_bytes()
+        assert len(calls) >= 4
+    else:
+        expected = {'cancel': ConversionCancelled, 'failure': RuntimeError, 'bad_bytes': ValueError}[outcome]
+        with pytest.raises(expected):
+            requantize(source, destination, preset=preset, overwrite=True,
+                       cancel_event=event, compiled_kernel=kernel)
+        assert destination.read_bytes() == b'old model'
+        assert calls
+    assert source.read_bytes() == before
+    assert not list(tmp_path.glob('.output.gguf.*'))
+
+
+@pytest.mark.parametrize('arguments', [
+    ['--kernel-library', 'untrusted.dll'], ['--kernel-sha256', '0' * 64],
+])
+def test_compiled_cli_requires_explicit_library_and_hash_together(tmp_path, monkeypatch, arguments):
+    """Incomplete native-code selection must fail before creating an output."""
+    from scripts.requantize_flux_q6 import main
+    destination = tmp_path / 'output.gguf'
+    monkeypatch.setattr('sys.argv', ['requantize', '--source', str(tmp_path / 'missing.gguf'),
+                                   '--output', str(destination), *arguments])
+    with pytest.raises(SystemExit) as error:
+        main()
+    assert error.value.code == 2
+    assert not destination.exists()

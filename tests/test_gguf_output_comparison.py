@@ -142,6 +142,31 @@ def test_q5_same_seed_original_changes_only_loader_and_model_connection():
         k: v for k, v in b['113']['inputs'].items() if k != 'model'}
 
 
+def test_compiled_full_flux_report_retains_native_bytes_and_live_failure_checks():
+    """Keep complete file-level evidence separate from the earlier kernel timings."""
+    root = Path(__file__).parents[1]
+    report = json.loads((root / 'data/flux-compiled-q4m-full-model-comparison.json').read_text())
+    previous = json.loads((root / 'data/flux-q4m-full-model-comparison.json').read_text())
+    pilot = json.loads((root / 'data/compiled-kernel-pilot.json').read_text())
+    assert report['all_equal'] and report['metadata_equal'] and report['alignment_equal']
+    assert report['tensor_counts_equal'] and len(report['tensors']) == 201
+    assert Counter(row['type'] for row in report['tensors']) == {'Q4_K': 99, 'Q5_K': 16, 'F32': 86}
+    assert all(row['equal'] and row['left_sha256'] == row['right_sha256'] for row in report['tensors'])
+    assert report['left_sha256'] == previous['left_sha256']
+    assert report['right_sha256'] == report['reference_sha256_before'] == previous['right_sha256']
+    assert report['source_sha256'] == previous['source_sha256'] and report['source_stat_stable']
+    assert report['library_sha256'] == pilot['library_sha256'] == report['kernel_build']['library_sha256']
+    assert report['native_provenance']['executable_sha256'] == previous['native']['executable_sha256']
+    assert report['output_bytes'] == 5560654144
+    assert report['cli_check']['equal']
+    assert report['cli_check']['library_sha256'] == report['library_sha256']
+    assert len(report['live_fixtures']) == 32 and all(row['equal'] for row in report['live_fixtures'])
+    assert {row['scenario'] for row in report['live_failure_checks']} == {'cancel', 'late_nan', 'failure'}
+    assert all(row['old_output_preserved'] and row['source_preserved'] and row['temporary_cleaned']
+               and row['native_calls'] > 0 for row in report['live_failure_checks'])
+    assert all(value > 0 for value in report['seconds'].values())
+
+
 
 def test_recorded_q4m_full_model_comparison_retains_complete_numeric_evidence():
     """Retain complete Q4 mixed-policy proof without shipping model weights."""

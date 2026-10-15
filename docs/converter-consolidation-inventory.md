@@ -16,8 +16,11 @@ the native references and publish raw research artifacts atomically.
 An isolated [compiled CPU kernel pilot](compiled-kernel-pilot.md) now calls pinned
 b3962 Q4_K/Q5_K/Q6_K kernels directly from Python. All 498 golden inputs match;
 bounded-call slice timings are within about 2% of the same directly called C
-kernel. Full-model writer integration, packaging and non-Windows execution remain
-open; this does not replace the production backends or settle the final language.
+kernel. The [full-model writer follow-up](flux-compiled-kernel-full-model-validation.md)
+also matches all 201 FLUX.2 klein Base 9B Q4_K_M native tensor payloads and the
+previous Python file hash, taking 461.685 s including readback/checksum. Packaging,
+other full-model formats and non-Windows execution remain open; this does not
+replace production backends or settle the final language.
 
 ## Objective and boundaries
 

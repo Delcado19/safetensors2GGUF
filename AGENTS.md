@@ -6,9 +6,13 @@ CPU performance follow-up (2026-10-16): read `docs/compiled-kernel-pilot.md`.
 Direct Python calls to the archived b3962 Q4_K/Q5_K/Q6_K C kernels pass 498
 golden comparisons and run within about 2% of the same directly called kernel on
 one prepared FLUX slice. This is an isolated research DLL, not an application
-backend. Full-model bounded-writer integration, cancellation/atomic-output checks,
-binary packaging and Linux/macOS validation remain pending. Keep native-speed
-conversion as a measured target; slice timings do not prove full-model wall time.
+backend. Explicit research-writer integration now passes 32 actual DLL fixture
+comparisons and cancellation/atomic-output checks. Full FLUX.2 klein Base 9B
+Q4_K_M matches all 201 native payloads and the earlier Python whole-file hash;
+write/readback/hash took 461.685 s versus the historical NumPy run's 1539.879 s.
+Read `docs/flux-compiled-kernel-full-model-validation.md` for timing boundaries.
+Full-model Q5/Q6, binary packaging, Linux/macOS and Workbench integration remain
+pending. Native-speed conversion remains a measured target, not a default switch.
 
 **Open: Build one unified model converter.** Preserve the tested diffusion and
 text-encoder GGUF paths while integrating the additional model/format capabilities

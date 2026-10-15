@@ -9,6 +9,7 @@ The Python policy port and bounded writer are modifications, not upstream code.
 import argparse
 import hashlib
 import json
+from functools import partial
 from pathlib import Path
 
 import gguf
@@ -74,7 +75,8 @@ def flux_q6_type(name, shape, source_type, *, preset="Q6_K", attention_v_index=0
     return qtype.F16 if shape[-1] % 256 else target
 
 
-def requantize(source, destination, *, cancel_event=None, on_progress=None, overwrite=False, preset="Q6_K"):
+def requantize(source, destination, *, cancel_event=None, on_progress=None, overwrite=False,
+               preset="Q6_K", compiled_kernel=None):
     """Atomically requantize a little-endian, single-file FLUX F16/F32 GGUF.
 
     Preserve metadata and tensor order; only file type/quantization version are
@@ -84,6 +86,9 @@ def requantize(source, destination, *, cancel_event=None, on_progress=None, over
     shape repair, tokenizer conversion or runtime compatibility is inferred.
     Existing output requires overwrite=True and is replaced only after readback;
     failure or cancellation preserves it. Source aliases are always rejected.
+    An explicit compiled_kernel(data, bits) callback may replace block math only;
+    it receives at most 65,536 F32 values and must return contiguous uint8 bytes.
+    Its exceptions abort atomically; there is no fallback to another encoder.
     """
     if preset not in FLUX_PRESETS:
         raise ValueError('Unsupported FLUX research presets')
@@ -151,7 +156,16 @@ def requantize(source, destination, *, cancel_event=None, on_progress=None, over
                         chunk = values[start:start + 65536]
                         if not np.isfinite(chunk).all():
                             raise ValueError('Source contains nonfinite values')
-                        if row['type'] == 'Q6_K':
+                        if compiled_kernel is not None and row['type'] in ('Q4_K', 'Q5_K', 'Q6_K'):
+                            packed = compiled_kernel(chunk.astype(np.float32).reshape(-1, 256),
+                                                     int(row['type'][1]))
+                            expected = chunk.size // 256 * gguf.GGML_QUANT_SIZES[
+                                gguf.GGMLQuantizationType[row['type']]][1]
+                            if (not isinstance(packed, np.ndarray) or packed.dtype != np.uint8
+                                    or not packed.flags.c_contiguous or packed.nbytes != expected):
+                                raise ValueError('Compiled kernel returned invalid packed bytes')
+                            payloads = [packed]
+                        elif row['type'] == 'Q6_K':
                             payloads = iter_q6_k(chunk.astype(np.float32))
                         elif row['type'] == 'Q5_K':
                             payloads = iter_q5_k(chunk.astype(np.float32))
@@ -207,9 +221,24 @@ def main():
     parser.add_argument('--source', required=True)
     parser.add_argument('--output', required=True)
     parser.add_argument('--preset', choices=FLUX_PRESETS, default='Q6_K')
+    parser.add_argument('--kernel-library', help='Explicit trusted research DLL/shared library; no automatic search')
+    parser.add_argument('--kernel-sha256', help='Required SHA256 of the explicitly trusted library')
     parser.add_argument('--overwrite', action='store_true', help='Atomically replace output after successful validation')
     args = parser.parse_args()
-    print(json.dumps(requantize(args.source, args.output, overwrite=args.overwrite, preset=args.preset), indent=2))
+    if bool(args.kernel_library) != bool(args.kernel_sha256):
+        parser.error('--kernel-library and --kernel-sha256 must be provided together')
+    kernel = None
+    if args.kernel_library:
+        from scripts.check_compiled_kernel import _load, _encode
+        validate_output(args.kernel_library, args.output, args.overwrite)
+        _library, encode = _load(args.kernel_library, args.kernel_sha256)
+        kernel = partial(_encode, encode)
+    result = requantize(args.source, args.output, overwrite=args.overwrite, preset=args.preset,
+                        compiled_kernel=kernel)
+    if kernel is not None:
+        result['compiled_kernel'] = {'path': str(Path(args.kernel_library).resolve()),
+                                     'sha256': args.kernel_sha256}
+    print(json.dumps(result, indent=2))
 
 
 if __name__ == '__main__':

@@ -6,6 +6,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Explicit compiled-kernel selection in the research FLUX writer, retaining
+  bounded chunks, cancellation, readback and atomic publication. All 32 actual
+  DLL fixture outputs match NumPy, and full FLUX.2 klein Base 9B Q4_K_M matches
+  all 201 native tensor payloads and the previous Python file checksum. The
+  write/readback/hash run took 461.685 s; historical NumPy took 1539.879 s.
+  These are separate runs, not a controlled speed ratio. Workbench defaults,
+  binary packaging and non-Windows validation remain unchanged/open.
+
 - Add: Isolated direct compiled Q4_K/Q5_K/Q6_K CPU kernel pilot using preserved
   b3962 math through a bounded C ABI. All 498 golden comparisons pass; a FLUX
   slice runs about 3.0-3.2 times faster than current NumPy and within about 2%

@@ -939,3 +939,7 @@ The [complete FLUX Q4_K_M comparison](docs/flux-q4m-full-model-validation.md) no
 tensor payloads/types/shapes and metadata. Supplied Python/native Q4_K_M renders
 are pixel-identical with two LoRAs; the same-seed original shows Visible drift in
 pose/composition. Full Q4_K_S, broader quality and app integration remain open; native Q4 defaults are unchanged.
+The [compiled CPU writer follow-up](docs/flux-compiled-kernel-full-model-validation.md)
+retains all 201 native-equal Q4_K_M payloads and the previous Python file hash,
+with a 461.685 s write/readback/checksum run. Explicit library/hash selection is
+research-only; the Workbench, packaged tools and platform support are unchanged.

@@ -97,7 +97,31 @@ fallback, new application setting or binary distribution. No model dispatch or
 loader behavior has changed. This reuses archived b3962 kernels rather than
 merging the three converters or choosing a final implementation language.
 
-Next: attach an explicit trusted-kernel adapter to the existing bounded writer,
-verify full-model payloads and wall time, then check cancellation/atomic output
-and reproducible platform packaging before exposing it in the Workbench.
+The explicit trusted-kernel writer adapter below preserves the existing bounded
+workflow. The [full Q4_K_M follow-up](flux-compiled-kernel-full-model-validation.md)
+now records 201 native-equal tensor payloads, a 461.685 s write/readback/hash run,
+32 actual DLL fixture comparisons and handled-error/atomic-output checks.
+Other full-model formats and reproducible platform packaging remain gates before
+Workbench exposure.
 Parallel CPU execution and GPU/Tensor Core acceleration remain separate work.
+
+## Explicit research writer integration
+
+The research FLUX writer can now use the library through an explicit selection:
+
+```text
+python -m scripts.requantize_flux_q6 --source PREPARED_FLOAT_GGUF --output NEW_GGUF --preset Q4_K_M --kernel-library LIBRARY --kernel-sha256 SHA256
+```
+
+Both library arguments are mandatory together. The checksum is verified before
+loading; the output cannot alias the library. Without these arguments the writer
+keeps its NumPy behavior. The Workbench/API still uses its existing backends.
+There is no automatic build, library discovery or fallback on a native error.
+
+The existing writer owns metadata, mixed-preset rules, protected float tensors,
+source-change detection, per-tensor readback hashes and atomic publication. Only
+the block encoding is replaced. A call receives at most 65,536 F32 values; the
+writer checks cancellation before and after it, and validates returned packed
+dtype, contiguity and length before writing. Kernel errors abort rather than
+publishing a partial model. Full-model evidence is recorded separately in the
+follow-up above; the slice measurements remain distinct from end-to-end timing.
