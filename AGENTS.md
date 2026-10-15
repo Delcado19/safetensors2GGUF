@@ -16,6 +16,11 @@ earlier Python whole-file hashes; write/readback/hash took 410.520 s and 315.509
 The same validation guide records all 603 tensor comparisons and timing scopes.
 Binary packaging, Linux/macOS, other architectures, full Q4_K_S and Workbench
 integration remain pending. These results do not change application defaults.
+An explicit offline package builder/loader is now available; read
+`docs/compiled-kernel-package.md`. A fresh Windows package passes platform/source/
+file verification, 435 goldens and ten C guards; all four actual package CLI
+presets match NumPy. No binaries are distributed or automatically discovered.
+Non-Windows, clean-machine runtime qualification and Workbench integration remain open.
 
 **Open: Build one unified model converter.** Preserve the tested diffusion and
 text-encoder GGUF paths while integrating the additional model/format capabilities

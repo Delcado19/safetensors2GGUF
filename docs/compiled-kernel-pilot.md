@@ -35,6 +35,11 @@ conversion, file preparation, disk I/O, readback or peak-RAM benchmark.
 
 ## Reproduce the build and checks
 
+The later [offline package builder](compiled-kernel-package.md) automates source
+verification, compilation, manifest creation and native golden self-tests. It
+also provides explicit package selection in the research writer. The manual
+build recipe below remains the original pilot reproducer.
+
 Use the existing pinned archive, CMake and a C/C++ compiler. No network fetch is
 required. From the repository root, run this Python snippet with the project
 environment; choose a fresh build directory if the example already exists:

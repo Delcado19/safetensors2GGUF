@@ -945,3 +945,8 @@ with a 461.685 s write/readback/checksum run. Explicit library/hash selection is
 research-only; the Workbench, packaged tools and platform support are unchanged.
 Full Q5_K_M and Q6_K follow-ups also retain all 201 native-equal payloads per
 format and the earlier Python file hashes, with 410.520 s and 315.509 s runs.
+An [offline kernel package builder](docs/compiled-kernel-package.md) now records
+host/source/checksum/license information and 435 native self-tests. The research
+CLI can select --kernel-package instead of a manual DLL/hash pair; actual Windows
+package builds and all four schematic preset exports pass. Release packaging,
+other platforms and Workbench integration remain open.

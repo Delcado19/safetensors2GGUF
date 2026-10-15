@@ -23,6 +23,11 @@ Q5_K_M and Q6_K follow-ups also match 201 native payloads each and earlier Pytho
 whole-file hashes, taking 410.520 s and 315.509 s. Packaging, other architectures,
 full Q4_K_S and non-Windows execution remain open; this does not replace
 production backends or settle the final language.
+An [offline package builder](compiled-kernel-package.md) now verifies archived
+sources and publishes an explicit host/source/checksum/license manifest after
+435 native golden self-tests. Fresh Windows package builds and four schematic
+package CLI exports pass. Platform binary distribution, non-Windows execution
+and Workbench integration remain open.
 
 ## Objective and boundaries
 

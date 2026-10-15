@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Explicit offline research CPU kernel package builder and verifier with
+  platform/source/file checks, MIT license and 435 native golden self-tests.
+  The research writer accepts --kernel-package while retaining the raw-library
+  route and rejecting conflicting selections/package-file output aliases.
+  Fresh Windows build and all four actual preset CLI outputs pass; Workbench,
+  non-Windows, clean-machine runtime and release-binary distribution remain open.
+
 - Add: Full compiled FLUX.2 klein Base 9B Q5_K_M and Q6_K validation. All 201
   tensor payloads/types/shapes and metadata match native per format; both files
   also equal the earlier Python file checksums. Write/readback/hash took

@@ -221,23 +221,34 @@ def main():
     parser.add_argument('--source', required=True)
     parser.add_argument('--output', required=True)
     parser.add_argument('--preset', choices=FLUX_PRESETS, default='Q6_K')
-    parser.add_argument('--kernel-library', help='Explicit trusted research DLL/shared library; no automatic search')
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument('--kernel-library', help='Explicit trusted research DLL/shared library; no automatic search')
+    selection.add_argument('--kernel-package', help='Explicit trusted package directory; verifies host, files and goldens')
     parser.add_argument('--kernel-sha256', help='Required SHA256 of the explicitly trusted library')
     parser.add_argument('--overwrite', action='store_true', help='Atomically replace output after successful validation')
     args = parser.parse_args()
     if bool(args.kernel_library) != bool(args.kernel_sha256):
         parser.error('--kernel-library and --kernel-sha256 must be provided together')
     kernel = None
-    if args.kernel_library:
+    provenance = None
+    if args.kernel_package:
+        from scripts.compiled_kernel_package import verify_package, load_package
+        manifest = verify_package(args.kernel_package)
+        for name in ('kernel.json', *manifest['files']):
+            validate_output(Path(args.kernel_package) / name, args.output, args.overwrite)
+        kernel, manifest = load_package(args.kernel_package)
+        provenance = {'package': str(Path(args.kernel_package).resolve()),
+                      'sha256': manifest['files'][manifest['library']]}
+    elif args.kernel_library:
         from scripts.check_compiled_kernel import _load, _encode
         validate_output(args.kernel_library, args.output, args.overwrite)
         _library, encode = _load(args.kernel_library, args.kernel_sha256)
         kernel = partial(_encode, encode)
+        provenance = {'path': str(Path(args.kernel_library).resolve()), 'sha256': args.kernel_sha256}
     result = requantize(args.source, args.output, overwrite=args.overwrite, preset=args.preset,
                         compiled_kernel=kernel)
-    if kernel is not None:
-        result['compiled_kernel'] = {'path': str(Path(args.kernel_library).resolve()),
-                                     'sha256': args.kernel_sha256}
+    if provenance is not None:
+        result['compiled_kernel'] = provenance
     print(json.dumps(result, indent=2))
 
 

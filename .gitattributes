@@ -19,4 +19,5 @@ scripts/benchmark_q6_chunks.py text eol=lf
 scripts/reference_q5_k.py text eol=lf
 scripts/reference_q4_k.py text eol=lf
 scripts/check_compiled_kernel.py text eol=lf
+scripts/compiled_kernel_package.py text eol=lf
 tools/converter-kernel/* text eol=lf
