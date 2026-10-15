@@ -14,7 +14,7 @@ from playwright.sync_api import expect, sync_playwright
 
 
 def main():
-    """Verify first load and log following/reading/rollover in the built application."""
+    """Verify backend selection, first load and log following/reading/rollover in the built application."""
     root = Path(__file__).resolve().parents[1]
     with socket.socket() as address:
         address.bind(('127.0.0.1', 0))
@@ -52,6 +52,23 @@ def main():
                 page.goto(url)
                 expect(page.get_by_text('Local engine connected', exact=True)).to_be_visible()
                 assert not errors, errors
+                page.locator('#format').select_option('Q5_K_M')
+                page.get_by_text('Advanced settings', exact=True).click()
+                backend = page.get_by_label('GGUF converter', exact=True)
+                expect(backend).to_have_value('native')
+                backend.select_option('python_flux')
+                expect(page.locator('#executable')).to_be_disabled()
+                expect(page.locator('#threads')).to_be_disabled()
+                expect(page.locator('#gguf-backend-hint')).to_contain_text('visible pose/composition drift')
+                page.locator('#format').select_option('Q6_K')
+                expect(backend).to_have_value('python_flux')
+                expect(page.locator('#executable')).to_be_disabled()
+                page.locator('#format').select_option('Q4_K_M')
+                expect(backend).to_have_count(0)
+                expect(page.locator('#executable')).to_be_enabled()
+                page.locator('#format').select_option('Q5_K_M')
+                backend.select_option('native')
+                expect(page.locator('#executable')).to_be_enabled()
                 job = {'id': 'log-test', 'source': 'simulated.safetensors', 'format': 'Q6_K',
                        'status': 'running', 'progress': .5, 'phase': 'Simulated log', 'output': '',
                        'error': '', 'logs': [f'line {i}' for i in range(400)], 'started': time.time(),
@@ -86,7 +103,7 @@ def main():
     finally:
         server.terminate()
         server.wait(timeout=10)
-    print('PASS: first load without reload; log follows at 400-line cap, pauses while reading, resumes and reopens at latest output')
+    print('PASS: Q5/Q6 backend controls and native fallback selection; first load without reload; log follows at 400-line cap, pauses while reading, resumes and reopens at latest output')
 
 
 if __name__ == '__main__':

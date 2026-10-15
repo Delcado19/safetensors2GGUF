@@ -67,16 +67,16 @@ Omit `--models-root` for synthetic probes only. Existing pinned native binaries
 must be available from the prior offline reference build. The output report must
 be new and publishes atomically; no downloads or inference are started.
 
-Full-matrix/model comparisons, application Q5_K_M integration, loader/image
+Broader model comparisons, loader/image
 quality, importance matrices, Linux and performance measurements remain open.
-Do not expose this block encoder as an application conversion route yet.
+Application integration stays restricted to the separately validated FLUX preset.
 
 
 ## FLUX Q5_K_M file-policy follow-up
 
 The explicit research writer now accepts `--preset Q5_K_M`; its default remains
-Q6_K, and the Workbench/API still exposes only the existing experimental Q6_K
-backend. This adds no production Q5 route or Krea K-quant support.
+Q6_K. The Workbench/API now offers both through the explicit experimental
+`python_flux` backend; native remains the default. This adds no Krea K-quant support.
 
 Frozen City96 promotes attention V, fused QKV and selected feedforward names to
 Q6_K; other eligible matrices use Q5_K. Architecture/general exclusions preserve
@@ -90,8 +90,11 @@ metadata and alignment match. Both encoder hashes and the writer hash are kept.
 Artifacts are under `I:/safetensors2GGUF-flux-q5-fixtures-final-2026-10-15`.
 Original models are untouched. Tests cover promotion aliases, mixed output,
 unknown-preset rejection and preservation of existing output on cancellation or
-late invalid data. Full Q5 checkpoint conversion, inference and Linux execution
-remain untested; schematic parity is not a quality claim.
+late invalid data. The subsequent [complete FLUX.2 klein Base 9B comparison](flux-q5-full-model-validation.md)
+also passes all 201 tensors and metadata. Supplied Python/native Q5 renders are
+pixel-identical with two LoRAs. A follow-up original with matching seed/settings
+shows Visible drift in pose/composition, while remaining coherent in this scene.
+Broader quality and Linux execution remain untested.
 
 ```bash
 python -m scripts.requantize_flux_q6 --source prepared-F16.gguf --output model-Q5_K_M.gguf --preset Q5_K_M
@@ -99,3 +102,8 @@ python -m scripts.check_flux_q6_path --preset Q5_K_M --artifacts /fresh/artifact
 ```
 
 The historical script name is retained to preserve existing Q6 callers.
+
+The [Q4 pilot](shared-q4-pilot.md) now shares this affine fitter/packer and
+stream validator with its own native search grid and payload layout. Q5 was
+rerun against all three references after sharing; its report records the new
+source hash while earlier model reports retain their historical run hashes.

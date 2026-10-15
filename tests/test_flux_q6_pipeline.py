@@ -1,4 +1,4 @@
-"""Exercise opt-in Python FLUX Q6_K through real preparation and API jobs."""
+"""Exercise opt-in Python FLUX Q6_K/Q5_K_M through real preparation and API jobs."""
 import queue
 import threading
 
@@ -14,6 +14,7 @@ import web_api
 from convert import ConversionCancelled
 from scripts.gguf_research_io import open_gguf
 from scripts.reference_q6_k import quantize_q6_k
+from scripts.reference_q5_k import quantize_q5_k
 from tests.test_web_api import _wait
 
 
@@ -29,21 +30,23 @@ def _no_native(*args, **kwargs):
     pytest.fail('Explicit Python conversion must not invoke or locate a native quantizer')
 
 
+@pytest.mark.parametrize('preset,backend', [('Q6_K', 'python_flux_q6'), ('Q6_K', 'python_flux'), ('Q5_K_M', 'python_flux')])
 @pytest.mark.parametrize('keep', [False, True])
-def test_real_pipeline_reuses_float_preparation_without_native(tmp_path, monkeypatch, keep):
+def test_real_pipeline_reuses_float_preparation_without_native(tmp_path, monkeypatch, keep, preset, backend):
     source, values = _source(tmp_path)
     destination = tmp_path / 'out.gguf'
     events = queue.Queue()
     monkeypatch.setattr(conversion_service, 'run_quantize', _no_native)
-    result = conversion_service._pipeline(str(source), str(destination), 'Q6_K', '', 0,
-                                          keep, False, events, gguf_backend='python_flux_q6')
+    result = conversion_service._pipeline(str(source), str(destination), preset, '', 0,
+                                          keep, False, events, gguf_backend=backend)
     assert result == str(destination)
     with open_gguf(destination) as reader:
         assert reader.get_field('general.architecture').contents() == 'flux'
         tensors = {t.name: t for t in reader.tensors}
         tensor = tensors['double_blocks.0.img_attn.proj.weight']
-        assert tensor.tensor_type == gguf.GGMLQuantizationType.Q6_K
-        expected = quantize_q6_k(values.numpy().astype(np.float16).astype(np.float32))
+        assert tensor.tensor_type == gguf.GGMLQuantizationType[preset.replace("_M", "")]
+        expected = (quantize_q6_k if preset == "Q6_K" else quantize_q5_k)(
+            values.numpy().astype(np.float16).astype(np.float32))
         assert tensor.data.tobytes() == expected.tobytes()
         assert tensors['img_in.weight'].tensor_type == gguf.GGMLQuantizationType.F32
     intermediates = list(tmp_path.glob('*-F16-tmp-*.gguf'))
@@ -52,9 +55,10 @@ def test_real_pipeline_reuses_float_preparation_without_native(tmp_path, monkeyp
     assert progress and progress == sorted(progress) and max(progress) <= 1
 
 
+@pytest.mark.parametrize('preset', ['Q6_K', 'Q5_K_M'])
 @pytest.mark.parametrize('failure', ['cancel', 'write'])
 @pytest.mark.parametrize('keep', [False, True])
-def test_failure_preserves_previous_output_and_respects_intermediate_choice(tmp_path, monkeypatch, failure, keep):
+def test_failure_preserves_previous_output_and_respects_intermediate_choice(tmp_path, monkeypatch, failure, keep, preset):
     source, _ = _source(tmp_path)
     destination = tmp_path / 'out.gguf'
     destination.write_bytes(b'previous model')
@@ -69,11 +73,12 @@ def test_failure_preserves_previous_output_and_respects_intermediate_choice(tmp_
     if failure == 'write':
         def fail(*args, **kwargs):
             raise OSError('disk full')
-        monkeypatch.setattr('scripts.requantize_flux_q6.iter_q6_k', fail)
+        monkeypatch.setattr('scripts.requantize_flux_q6.iter_q6_k' if preset == 'Q6_K'
+                            else 'scripts.requantize_flux_q6.iter_q5_k', fail)
     monkeypatch.setattr(conversion_service, 'run_quantize', _no_native)
     with pytest.raises(ConversionCancelled if failure == 'cancel' else OSError):
-        conversion_service._pipeline(str(source), str(destination), 'Q6_K', '', 0,
-                                     keep, True, Events(), event, gguf_backend='python_flux_q6')
+        conversion_service._pipeline(str(source), str(destination), preset, '', 0,
+                                     keep, True, Events(), event, gguf_backend='python_flux')
     assert destination.read_bytes() == b'previous model'
     assert len(list(tmp_path.glob('*-F16-tmp-*.gguf'))) == int(keep)
     assert not list(tmp_path.glob('.out.gguf.*'))
@@ -98,32 +103,34 @@ def _client():
     return client
 
 
-def test_python_api_inspection_and_real_job_skip_native_discovery(tmp_path, monkeypatch):
+@pytest.mark.parametrize('preset,backend', [('Q6_K', 'python_flux_q6'), ('Q6_K', 'python_flux'), ('Q5_K_M', 'python_flux')])
+def test_python_api_inspection_and_real_job_skip_native_discovery(tmp_path, monkeypatch, preset, backend):
     source, _ = _source(tmp_path)
     client = _client()
     monkeypatch.setattr(web_api, 'find_exe', _no_native)
     monkeypatch.setattr(conversion_service, 'run_quantize', _no_native)
     params = {'source': str(source), 'destination': str(tmp_path / 'out.gguf'),
-              'format': 'Q6_K', 'gguf_backend': 'python_flux_q6'}
+              'format': preset, 'gguf_backend': backend}
     assert client.post('/api/inspect', json=params).status_code == 200
     response = client.post('/api/jobs', json=params)
     assert response.status_code == 202, response.text
     result = _wait(client, response.json()['id'])
     assert result['status'] == 'succeeded', result
-    assert any('experimental Python FLUX Q6_K' in line for line in result['logs'])
+    assert any(f'experimental Python FLUX {preset}' in line for line in result['logs'])
     assert not list(tmp_path.glob('*-F16-tmp-*.gguf'))
 
 
+@pytest.mark.parametrize('backend', ['python_flux_q6', 'python_flux'])
 @pytest.mark.parametrize('override', [
     {'format': 'Q4_K_M'}, {'format': 'F16'}, {'container': 'safetensors'},
     {'model_kind': 'text_encoder'}, {'executable': 'quantizer.exe'}, {'threads': 2},
     {'precision_profile': 'conservative'},
 ])
-def test_invalid_python_api_choices_are_rejected_before_work(tmp_path, monkeypatch, override):
+def test_invalid_python_api_choices_are_rejected_before_work(tmp_path, monkeypatch, override, backend):
     source, _ = _source(tmp_path)
     client = _client()
     monkeypatch.setattr(conversion_service, 'convert_file', _no_native)
-    params = {'source': str(source), 'format': 'Q6_K', 'gguf_backend': 'python_flux_q6', **override}
+    params = {'source': str(source), 'format': 'Q6_K', 'gguf_backend': backend, **override}
     for endpoint in ('inspect', 'jobs'):
         response = client.post('/api/' + endpoint, json=params)
         assert response.status_code == 400, response.text
@@ -143,3 +150,14 @@ def test_wrong_architecture_and_unknown_backend_rejected(tmp_path, monkeypatch):
     with pytest.raises(ValueError, match='FLUX only'):
         conversion_service._pipeline(str(source), str(tmp_path / 'out.gguf'), 'Q6_K', '', 0,
                                      False, False, queue.Queue(), gguf_backend='python_flux_q6')
+
+
+
+def test_legacy_q6_identifier_does_not_silently_expand_to_q5(tmp_path):
+    """Old clients retain their Q6-only contract; new clients use python_flux."""
+    source, _ = _source(tmp_path)
+    client = _client()
+    for endpoint in ('inspect', 'jobs'):
+        response = client.post('/api/' + endpoint, json={
+            'source': str(source), 'format': 'Q5_K_M', 'gguf_backend': 'python_flux_q6'})
+        assert response.status_code == 400

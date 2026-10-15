@@ -145,6 +145,16 @@ and no inference or native build was started. Optional SDK/download dependencies
 offline installation, native binaries, full-source algorithm parity and the
 implementation-language choice remain open.
 
-FLUX Q5_K_M research file export also matches patched b3962 in eight schematic
-comparisons (196 tensors); see [Q5 pilot](shared-q5-pilot.md). Full Q5 model/inference validation
-and application integration remain open.
+FLUX Q5_K_M research file export matches patched b3962 in eight schematic
+comparisons (196 tensors) and the complete FLUX.2 klein Base 9B checkpoint
+(all 201 tensor payloads/types/shapes and metadata). See [full Q5 validation](flux-q5-full-model-validation.md).
+User-supplied Python/native Q5 renders are pixel-identical with two enabled LoRAs.
+A subsequent original render with matching seed/settings shows Visible drift in
+pose/composition, with coherent output in this scene. Broader quality remains open. Choose Q5_K_M and **Advanced settings > GGUF
+converter > Python - FLUX only (experimental)** to use the opt-in backend; API
+clients send `"gguf_backend": "python_flux"`. Native remains the default.
+
+The [Q4_K block pilot](shared-q4-pilot.md) also passes 166 inputs against three native
+references, sharing affine mathematics with Q5. FLUX Q4_K_S/Q4_K_M file policies
+also match native on 16 schematic files (400 tensors); see [Q4 file validation](flux-q4-research-path.md).
+Full Q4 checkpoint and app integration remain open; native Q4 defaults are unchanged.

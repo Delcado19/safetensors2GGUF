@@ -1,0 +1,7137 @@
+{
+  "status": "Research Q4_K pilot; no model/preset dispatch or performance claim",
+  "format": "Q4_K",
+  "numpy": "2.4.4",
+  "random_seed": 20261015,
+  "pilot_source_sha256": "f63aa898721a1a6f9e2cd7a4e4f672df69176e61120bebb59fe0381b2f315e56",
+  "implementation_source_sha256": {
+    "scripts/reference_q4_k.py": "f63aa898721a1a6f9e2cd7a4e4f672df69176e61120bebb59fe0381b2f315e56",
+    "scripts/reference_q5_k.py": "9694be974969f89c937b7aaeaec6551d13147a2b74a7c5015e700b5a879fb7f7"
+  },
+  "references": [
+    {
+      "id": "llama-b3962",
+      "commit": "c8c07d658a6cefc5a50cfdf6be7d726503612303",
+      "archive_sha256": "13c8e23aedcc9a519cb3eafe95381e20dd9c4819ffee823b77c1b85a8d5cb6c4",
+      "executable_sha256": "04c285dc6757b6420a1b33481ec61dc87b765f9c1ae1bbdcb0f6c346842af119"
+    },
+    {
+      "id": "llama-text-installed",
+      "commit": "687e7789271ec1276e3470f158428e11a4f80b6f",
+      "archive_sha256": "0f2b731c16b0ab56f042779722f183bab401f3efb7af747219898c36a5171083",
+      "executable_sha256": "bc5469f22b88ddde3e1633d776f0b9691aac5da68f039649d5e383fe3d0186c4"
+    },
+    {
+      "id": "llama-current",
+      "commit": "8bb3cf0d216a5ae48360179f2931daf284be4d01",
+      "archive_sha256": "1b1a5bd079840425683ff6caebf3543e08d2dbcab7563782fabdf145030521a2",
+      "executable_sha256": "0c645698f19ecd969e8a0fa9f221f0a2ec71d4b27e257a938f9902fb8135b086"
+    }
+  ],
+  "results": [
+    {
+      "vector": "zero",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "e5a00aa9991ac8a5ee3109844d84a55583bd20572ad3ffcd42792f3c36b183ad",
+      "payload_sha256": "2d5565fb483d8ea4525a7a9229677d1038ad34b6e22c8d5152e1d7f7b9817597",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "constant_positive",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "a89e0a67ce8466e2f70e3d022978d0e520804d7d30ffcefcd93f4825af344740",
+      "payload_sha256": "8b44aa7e39019419792c4a1acb844f282e2b175c6f4b463de23deb0c694e4d8f",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.00018310546875,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "constant_negative",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "cb3d70534bdcf2d55a8784c63a2a30cc2a3a379a6a5fa1f361e24ad922992e66",
+      "payload_sha256": "7304cdf08d724ac624f49420e6aeb2fa99c1a13a837a1294a1a0b4391575d9fa",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.00018310546875,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f6822562b76d317415204551de2fa6f3c1601c1407d12017945b3fa7548d2f99",
+      "payload_sha256": "c015cb001e1280bac00e1339b63a6f12d0f9dd2eaad5ce7af07f61217a9e30f3",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.01678390716249817,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "outliers",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "5172a74f436920ac0c6f0a42916c66d50b37e07285e23d86f7fe423bdbe525d6",
+      "payload_sha256": "5dc3c5549cdee772b049017478c52bdc037d67e470808938de1e5636600fc7ea",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.009543149703594255,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "positive_ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "0f277d72b645c8740c6ed3de0c33d37152f73daa370ac8266ff5c20bea8ecac3",
+      "payload_sha256": "f77f59c071746d695af9ea6679c11bd385515989c42f364c03c47f3f9f4c70a9",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.02298762848626135,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "negative_ramp",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f8fbcb0e3521ae62c9c8a02fc07501efea14ffd5796b52a542379256223903e1",
+      "payload_sha256": "78354dc73d5c0b61ca2297117c0a31b211a8b143b2b535b577829a6ccb340c87",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0019147822155446154,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "rounding_probe",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f4a3dc310d01d87f7c19fa3aa93588956f14ee27dafa432c6b35f9f60f9f26a8",
+      "payload_sha256": "56440ede6a0681368463b1ce07db7ba0cfa4c9be5611b5890d8c11a10601decd",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0002729575167846423,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "one_block",
+      "shape": [
+        1,
+        256
+      ],
+      "input_sha256": "21729b1385e353dcc33ba5764ca37433dea819933d7a4094aadce58c3e300c53",
+      "payload_sha256": "1a646db0acd6b57166eb5a0b6e7fec3bf0aff6dad04345b4c36a60e3dee899a0",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.00514656397799544,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "fp16_scale_underflow",
+      "shape": [
+        1,
+        256
+      ],
+      "input_sha256": "d65d816a807c6db84565352690873be9e372369ddce1a1f4c89a00bbc2c628df",
+      "payload_sha256": "e1b37141f60a26df94845f6e76dd967606a88ecb0ce71e4abe2169a7f35652bc",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 9.999999974752427e-07,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "below_group_epsilon",
+      "shape": [
+        1,
+        256
+      ],
+      "input_sha256": "e20a4daf2e7bee7b0a1e04ce9ad1df722594fed083581c0b0c8904bf80b054ee",
+      "payload_sha256": "e1b37141f60a26df94845f6e76dd967606a88ecb0ce71e4abe2169a7f35652bc",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 1.0000000168623835e-16,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "epsilon_boundary",
+      "shape": [
+        1,
+        256
+      ],
+      "input_sha256": "f32da64de7e0e79c8b13fecaf928925a93c120fa32d11caeca29855a8fb83f8d",
+      "payload_sha256": "e1b37141f60a26df94845f6e76dd967606a88ecb0ce71e4abe2169a7f35652bc",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 1.0000000036274937e-15,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "absolute_max_tie_1",
+      "shape": [
+        1,
+        256
+      ],
+      "input_sha256": "5b77168e27b5f5612545b0f14adc6abcedce04c1e7d006996b5e79d314cc2ffe",
+      "payload_sha256": "6b784fac92ac66265e1ce33e772274966dfaa7831d6f8f4604999ab2397a0995",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.028785665124318308,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "absolute_max_tie_-1",
+      "shape": [
+        1,
+        256
+      ],
+      "input_sha256": "5b4c0969f26c8ce4d3078faff96f2d8030d4a8458019a733c03baf5ac1b47c82",
+      "payload_sha256": "eaaefa307c19ded748907a1d5aa9865dfac2953a0733c88366de84065960a3ba",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.028785665124318308,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "zero_blocks_and_groups",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "50989cc276e170fbe7fac9c6b7534a99da6942a03fcd0b6112abc8542fd5257a",
+      "payload_sha256": "f08808bb6327205c677170008e85d19a050eef3115400c504014845b9d79f067",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.030649337782401906,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "noncontiguous",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "53338d57e2fe48168528a5f6f3a3901f91ae3514c66d6a5b01070047b5162460",
+      "payload_sha256": "84b400010abc6b222cf04b243dc1c46657bd379dbbdb0177209418b2be8965de",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.06813226504731015,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "three_dimensions",
+      "shape": [
+        2,
+        2,
+        256
+      ],
+      "input_sha256": "784c5501c96ae024877383814f771587e6f03389b55e665f32b6ac34adc0f648",
+      "payload_sha256": "0af89c6aedda36cc234f6d40a8379c207e87578ccd2dc4048f1b24b82290d2c9",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0712596166205749,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_000",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "696cfb53a279c76191bc3d7d26464aacedfe2f0207c2376cd909fc7fcf657eec",
+      "payload_sha256": "eb10b337860c3d7b685b70f878a923acf36103894bc9e98dcc76f74c5ac82f60",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.38783088494573836,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_001",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "9cc3e094bb457f27ea444b8c2e9035aa49fe17996c9452744c1ba84147a05ff8",
+      "payload_sha256": "0d1913a3996bfae33aa229717558d83a5f9a1b11985ca0e5605f6c7a5e2a097b",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 98.7589795498508,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_002",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "33958183c366f4cad57edd956e70eeaab379263a7ddfd4fed62dfa973e7f48c0",
+      "payload_sha256": "0d02ca866f5305187f426b232411475012224c467133e9a1e2a5de668c720f45",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.005204126199697102,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_003",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "47e52bc4ca7fa802bcd873d739bde1303af65c549717fe02d5cb62c1ae41a649",
+      "payload_sha256": "2541f797f6e7d9d9c9b4930b2dfc277db397ccb8f577743b3581c6d98e617a16",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.004784274045971731,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_004",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "9d184d64d457a1000ff814e502bcc292406575a8300b5ee068775c991a8471b1",
+      "payload_sha256": "66c62429922521a5f77212ffda5e8b5e986c6b945002eb6bf2dc38ca99760bec",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 6.297211093198633e-06,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_005",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "60b84684704b1ac9c98b69feb1c1171ace60b0b0346724707057abe28b68a1bd",
+      "payload_sha256": "96ff393409fde9b2751c93454bd96ade2ca6c78f06685771e43f774f54f8a0fc",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0008591918459466919,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_006",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "41e1b143df5b7040f3ada0ba47bb275a1d4f8ee689b6ad998fa389447b0b234a",
+      "payload_sha256": "eddca66cae4d4268fe9da55f809b33b8f032e87af15c834ab697554a1d4d4971",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 2.2044438415297827e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_007",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "10fd2f93cce54beaad582dcd30bc0d4ad71fe893b6889cef642fe0fe6d781d60",
+      "payload_sha256": "82dd8fa40bf57c7b5fc2b073a4f23730b7f7f4809465b5c621abedd87859e461",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.01766354334409438,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_008",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "68c2d74bff09810651929235dd3be3aed19a97ac9ff7c8dc32f4c09b184095c0",
+      "payload_sha256": "885b6aa51c6b27cdb59c784b3bf5248a8d54afbf4827fd30b66645b202ca520c",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 4.006221975105169e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_009",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "6bee12612dd7006de34014dbee4edf11522bed664e1cd3bcf56fd9f9a5573e34",
+      "payload_sha256": "939019669026adab19602035ec63091e5b448f5613b9de9a0339d07ed129aa79",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 4.036013252744671,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_010",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "484beb76b0a5f8f6cdcb677c0bdae28dcc70781a81fdd9078da1ebd2c7e74c43",
+      "payload_sha256": "ce17925cb3713f6a9c5997edaceedef45dabdb4fd9dd2f663017d82884c521fd",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 9.490842001433142,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_011",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "03cb46b3c1156dcd86870be5451a0800076d6615d737e287ed75788ee54ca17c",
+      "payload_sha256": "42bcfaa930bfae1d890646c5dabb8adccecb06d3e6b8c578239a77d13e86ae60",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 9.348185213931513,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_012",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "5caaef650306e7277960576402a4cbeb968e509b18e63a25c315bf6cfe65e920",
+      "payload_sha256": "3f5b1154e3aa34c19ff544e35d9fc4774f7cdbdbda9ebdcd1e975530b7581c8a",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 2.4131865504452545e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_013",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "668751157205fbeae82e5ff2b58ef49734921f070e977508c978305fcd77e752",
+      "payload_sha256": "66ff8082bbc5c8715b2ac697e2d2cde58a9d5b61c4fac46e0900d2ae36ca8064",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0016565427869607331,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_014",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "be31f28227a22038863b596bad93c2204542f6b53885f85b7226bfb6359f70e5",
+      "payload_sha256": "79466cdedc8df1c37e5a780d81dcd1c876c173bf93484a68dd6ba405a325eb90",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.005403821276656405,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_015",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "30c86b8b12906db231bbc00531ba5514485631e529f6a0b4a6a81546cabad0a3",
+      "payload_sha256": "4db348bf08f7d330f57b6bde3b8d251ec47d0284da9778147d899b17e5da11ab",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 24.444610172335924,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_016",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "03e75cb6ba39be7417c9b86f2d2060b95ced20478ab46f64b7ac4be5948865f8",
+      "payload_sha256": "812ce06818f11e34cbb62a65756207ad848ab7fb63f7f32a636a76365e0a665c",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 51.88964175088088,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_017",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "a96ba81727ee2371b1366fc3a19b586986d4b09d834a43c6e2f7343f516f52d1",
+      "payload_sha256": "ddf4573522f513838423563536de75527fdef19d428670fba477566b0a762247",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.006743667261302365,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_018",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "1b0a8f516fef582669002a9bd05df273a6a572b177736c88dea3b14ecaaa83bf",
+      "payload_sha256": "98ecfa66133d41a6b2b416a35837a71b3b3c355c2c7ad2e96ce83a4d6c2768ed",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 128.9424972739113,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_019",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "d1d4b757a9c950a85027f661fd25830276817c2a9c98d4a08adf284b5cf283d9",
+      "payload_sha256": "1dcace3d8c3799da80e12d3f16a5f847e18d868ed056cbaf788842ee3db6efb1",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0033061741802798586,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_020",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "cfedde7510151b0ac028f1d057510cc4be85b51d3209456f1ac4b53d662b8d83",
+      "payload_sha256": "c6ef116dd1a905cac4fdbd937184245dcbb2e2e2c592366f540bcc817e615256",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.03454354359273843,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_021",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "b03836343a9d55146bb711c7ae48cb0797d986f98371e9b2e56bb0c39fe7c6ef",
+      "payload_sha256": "7b494f434a7cd75f152e35c1fc15ce10e56eb6429a9b2e05446e42068db988be",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 1.4227591537548746e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_022",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "c8ef8325a68a7f05b3dd468018e31be3f5fad7f8d69ebe5b1fd1f09103def0ec",
+      "payload_sha256": "7b2992894ff02b87274d683ba4c17178b28f257df8105a68ef1a1024b234f3da",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.001087119292300492,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_023",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "a854c007b34a99406feeaa7ee7e52ed7dde14c6b3d8976ffe3d8f9b10dd7f915",
+      "payload_sha256": "73855691c545df7efcf87b30c9a0443ac323ed04dffb5afc8cfdda418093c3d5",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.008811821747641805,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_024",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "8b1a5ff40c15e45dd0b85c609612b3534b6255db2a75bf33a555906db2fd801b",
+      "payload_sha256": "2165e3c654aac30d378e8e1f039b267b4b1e370b4e7bc3052f6253269cb5f6f0",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.10430259897809525,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_025",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "8c2d019a4577103a903b5acd3ad3fc59fab6381cadf0a62d4fd6e7bd3fec60fe",
+      "payload_sha256": "a3d2bb34834396bc3bccaffbc876b65cc0ac066b9de79a6246755f8bc3b91a0b",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.1302545920733984,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_026",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "62135a8453d23e9c9e1ff94522e4aae81c88310de6323f26eff4810a8ad9a212",
+      "payload_sha256": "ddfb74ba2a483b188187956fc4bd01b0b76cf9c475393ec075c17e04827a4d95",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 4.068181100354089,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_027",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "72d83d1867120f610376a47c78db94c44745e83f5d123e7bc85a4913ffc98f4a",
+      "payload_sha256": "cd57b02cae30bdccee031e66c92450415b5c2ebee3183433b4aa99aa75465c35",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 23.210753583699695,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_028",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "9e7d8bb2d01cfa183bf35cca0aa115af4eec7643b6f21223eb2254d42c8385be",
+      "payload_sha256": "d905f4b17926963d5c78441033daafb1a285aaf31e6e9964a28a314f879f7f51",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.00013981822645580357,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_029",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "58cc8c1ef72519e5764e1721a253c4e04ebe1610fe7b3dcaa89ddc54984a6c8b",
+      "payload_sha256": "889967e9f81d44be282290188b50316db6ab5918192c94fd9817827af445a82e",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 2.594598383089307e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_030",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "497537a35f9f19648dd633ec801e8c939d79fe4c45f204bec7b1ee7166d16bfc",
+      "payload_sha256": "13c01db5782059b173518170763102cc77a9c5ba743bf7f9124059510b5d704e",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.26055386931275853,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_031",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "62e31598ddab49f7659a41de763f0fd9c6634f37e6eda0fd08d48a38cf4cf2f5",
+      "payload_sha256": "d3c92277d45e06a62fe85a3f5cf2f9c307a6dcf1ec551814c71f8cb6604d46df",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.06842871730890682,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_032",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "6e47a3c9a796524999a26ce42e6898e6aa71211bd77e72e3329c576abd29fd5c",
+      "payload_sha256": "6bee6ee66adc97e30d6436bd738f1bc0f110576f75d2ad23c44d2c21ff048386",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.16051008599497954,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_033",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f0b0a361cdf956b6b23268eec3d6ce90506e4e8c87d4f118cd7e79854272d957",
+      "payload_sha256": "42e0d3379676214019c5ad2788c060854aa13074801cfa62742be059f2fc4a00",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.03498421513590886,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_034",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "dfb2c01daab80846f6f41a521050b1b0804056927f9fb0014e6e558acb1ab6fd",
+      "payload_sha256": "21f64674e2cc5375fb351609fce4f1c2ddc89c1f33dcd3d5c08b863d0b503acf",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.000119623853858038,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_035",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "af9ef77c060d302de30c01dc8348052ed5da7caad92b82509bf8785ba9050d1d",
+      "payload_sha256": "e1cfee88077205513cc64b661da33fec3203b47836e5aaa8f7158e6612b072d9",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.00019456376954612206,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_036",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "3d1f7ee5fe5d80fe5b8398a4d0f96e0cbd83aee4ef2aa09023225506ba9cf443",
+      "payload_sha256": "77c3898cf1156f46f4a908b184f2eeb31f8899e859518ba7fbc22069a20f28ac",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 6.370444892608703e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_037",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "1eb877a66c532cd65a7b033588b463a998d7fb0d34fef5ab1769e288a58f8a72",
+      "payload_sha256": "2439032035739cb5ed8452d41ec03f9e882c0ac257446de175d46dba874c7881",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 374.12503040142946,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_038",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "4f477a52866c3db0de157db3f4568baa00c2c72257f9228ee4a410bfa25296c9",
+      "payload_sha256": "cbbe99fb383c36ec27b05f23b4c5761742778a650194db9e8bfaa72897626131",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 2.8865823840327296e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_039",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "bbaa55c80f80976693e10cb553e5584ba465e6512e9b4193eae34e72d94dae61",
+      "payload_sha256": "62355fd1a3f02e91ac9b3307e15bb4a1385aac144dead722d8522cad8a2c0537",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.6917778389916907,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_040",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "e3a092717564286d23804f68fec99dc30c0c81c555fffde1146c53cdfab47ac3",
+      "payload_sha256": "b37cefe768ca035f9211ffc917be3307db9b5a8e838155284f7a2e7d96a684d0",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.018763146124985117,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_041",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "91425d7ed3f2c86537a81db6b1efb63c440b6ae3720cf677366443687f1ad958",
+      "payload_sha256": "528bc1d92355445c92cdf08f70097942e4a657c9a742ba0ad1b6f6fa9faf5795",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.00019337947765204688,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_042",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "ee167aee12232cac69080cd261d0ae4e1db823cd37e55fca7d18ae990e37c560",
+      "payload_sha256": "056b9d273c28a98813ceeb32b6046df33da055091db0934612e81463b3c1c45d",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 4.618384314927534e-06,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_043",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "582889506919e65aba59bf19701e34e75ee9c44c672458a952b2f31ec4446aba",
+      "payload_sha256": "e3fdd9d5413c0478db7ecf08da9b913c9ec0cb40934ccb6d2cebf2ab00fe68b1",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 5.796142010852299,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_044",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "4e049f67b28b442d087c9bb60ef2b8653435e1eb71232a9dd30d037c5bd914e6",
+      "payload_sha256": "a6b8a12b346a2895a46b01a35c70502c0340eb1938403485c590a587709399b7",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.13713912241722354,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_045",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "df718df66655be20cfd866dec1849a93080a0a81535b7558161828b170f65da2",
+      "payload_sha256": "74c485caffa0b6f99ee0b6f8adc767a32fa2eecb1705a556423155a8348537b4",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 3.608417926175945e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_046",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "062f2c3991112f42a22c225ae8876ce13448bf83c173b0b42ac7d6f054b19076",
+      "payload_sha256": "210a96d5a267903ebbb5d8f151e2eb13a43ed9877740dc88a9024a9804595f07",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0007329021601631702,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_047",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "a7b16a2d81d3d58b43241a1e7dda02eccac1caea0cf1f16091f7ec071b283856",
+      "payload_sha256": "7a485b47f8f5c09a85fa17482c128994304a1ffd2b0d9004f8b3744f18b5887a",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.00014034435283927658,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_048",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "b26aaab8b1d04d771b4a40cef6678548e121874c49c1d058c6170a56c5fc1fc6",
+      "payload_sha256": "76b23fe8b9dcb443d542600e56128eb2b99bd0cac264b1d47ae3deac8b201edd",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0018458890882472137,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_049",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "37a5fd48e6534300ca27a6d262014e9b919e85efad24126499cf2978ba2a0a17",
+      "payload_sha256": "3834540f3adcc02ddc251f9a52279a9533c7c624355b3a41d9d4bfb1a467060f",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0002405568183260356,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_050",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "d7a928ef45cc9d3aff494d47264f7b49560aae22692c8efaea99171f1b165dbe",
+      "payload_sha256": "1eb31f86df8ee3eadc89ac0aa7b1475fc01246602c73548e60d8979d185d22ab",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.06674068444668946,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_051",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "e8bc82ce22950c88fd6bba61b7491f0cd1e8409c28dbe9e46c5fbc3d149bd6cd",
+      "payload_sha256": "875e7cd3d70e992387f5b32802a22e71cee0cd865d45106bba23a2f7a9f3d009",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.025187555901880408,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_052",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "c192174dcd86dd9edc3faa5f00b7bff23935e8f049184dd28f9659acd8caf77c",
+      "payload_sha256": "ded70838c0f4ec358e8ef53a5b024e147343775c2eff3f1d1ab9bc4f5b393863",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.01631927974301874,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_053",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "4e4569be86f5bae0f8dd955add5dfe3cc97f1331e83ade1dc31a7278d5e50b99",
+      "payload_sha256": "24993661ead1edfeb228c9a2b7e2b414212a89bbd7972cb1738c78b1c171accf",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 5.659879503595553e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_054",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "77e460ffd2a541d99389b125be46975101c2a0871530c60ca0357cdaead4f4f3",
+      "payload_sha256": "c78894c4017fa18984a17aea8fb9081fba7c2275fda40d1994f7247ae7050732",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.043715226674332315,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_055",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "fedaefb94e45ef941c59a3caf344d9bd58d8c9413cab5a6e0190ac8f6094d476",
+      "payload_sha256": "6627d7006aa57b3bcb0193ba256239a433aaab895303f6504404ec614fbfce35",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 46.43231229125876,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_056",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "a795a3b1909b45c3a8d2ef39a9e5a5cf067503ecee479aa33fbebf1a9ed802c8",
+      "payload_sha256": "9080fbe83e8917b1c7aa118db6f95f933fe5cc62a1bbcf42035970b902db2757",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 12.067278859105334,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_057",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "91ebfbfd2b0d7b501425c8db6c0ca07d13ae6ce96b81df6177f574427d6a3623",
+      "payload_sha256": "cc9ff6783deaa54d1974d6236db31fc0a38a0cfc8c3ec4d458cbff7ec1e3d317",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0002535678697753254,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_058",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "3ec1cfcabac6d8a9574ebf7b559a39c979e11797996024e61d466683798d045c",
+      "payload_sha256": "7d7ec4949b99f13179adaddedf7bc793ba129eb56e0d568d0e224a6ef88b7a5b",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 66.35777882965253,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_059",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "5bae61523b9f2469228b1211a0beaf7c7920909b0ffdaffc4155e80e31fb750c",
+      "payload_sha256": "76a8d91d3b4c0ffb2606fcd82f2fd0e8a3639b866fee85fb67e290d383fd011a",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.6893304763580362,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_060",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "a4140cf79ab356c9752736e424493b4e70e2116a4c6013ea5a486f14809fb2f5",
+      "payload_sha256": "d6a138d9423781198c6335c08e06c02c7817ee51fd04a912e6b3fcbf3fa85a16",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.09067576017242449,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_061",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "7fd98b6b8db7121e838ef3c0c9904db70669dc27c1701d86820fdf79d5338ccc",
+      "payload_sha256": "f7ed38d42751df04e33299c7f3f3e77f021f8fd206c622cfd8e8ca10a6ca4a5a",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.005122776827932415,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_062",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "b2d8a7dd7c8e07474577e7cc5a43cf02675d4c1f7f2dc86a5663f43e19d117d1",
+      "payload_sha256": "b2bf6dc9deaad3e79591ac200407ec5d419cfb2598ad0a121a7da349a1230967",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0016610338538952721,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_063",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "6dd654685b4a09b585a847a5cd749c74d76eced46ab46a7ed5744c8484219d5f",
+      "payload_sha256": "b4ea503392285d9ac82f5a1209d5211aebcbd762d0cfc70cab33c5b1320f68df",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 3.226392472478804e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_064",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "b5702789cc2c17727246f84c99614aebfd98f3400f770d280faaa8f6852c5029",
+      "payload_sha256": "f5a67429e33a7310f40480719f187887b83363c05c2e1086039d0e2edb568fa5",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 29.722766060491683,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_065",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "6313ba750302fe0719cef02a9c97b91193bd38331f7fcf73fbdcbe5f096cd758",
+      "payload_sha256": "e4330670f89ee8030ec120b1f3cc16df8c547aabeeb6335966d143215024859a",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0015662615931910536,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_066",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "d11b82ef2d944a333c88d43ba9a3af8f39b4a1966f79ad26516167c108bf7e23",
+      "payload_sha256": "7664ab8ed8bc16a744170e6ca03a1d143e6c0cf718370d210e3df0397f3d9fad",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.1540480523878871,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_067",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "480cc41c692ce5c1a3993cc35e13c2ad79dc76c1da55beb6e809ef5d8421960c",
+      "payload_sha256": "be2c0ff2ec79bea9855ef6b9b25f2c8ced368fbbd5251001ff31d6b45a49092c",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.09361778280265157,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_068",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "a69754d8d94588a3117fa76d87610a2bd968a83a28f085805e086b7dcd08b5ba",
+      "payload_sha256": "7cf5369bffd65e3b338c0b4b40741958da85f5e9f0301373463783dd6e7ecbe3",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.028691812321750748,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_069",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "fc4df483101f6a79d2988362718ebcab3d0d86d1751775110a206315d01177eb",
+      "payload_sha256": "96ed5822d0a1a26c4a88f55dd2f2296861c1959e94f9b0183c3e3949608b8ad2",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.05014462683451435,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_070",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "a156de2755ab738dfb9c36693a4187313d823bb004885f48f7cfa05a153a0a8e",
+      "payload_sha256": "bb809d1186173326f3c72652b43ff7ff3968ea232c2c8f7507730ece36143403",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 70.88816626173997,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_071",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "0e67d99b319c6b2241a353513d303e4d654e83021830703dad264add635cc5f5",
+      "payload_sha256": "e5a8c9f0717d0cf987b4dcda9450a9d8a5df256c1191489d2dcf38fc172aa530",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.08081990532372048,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_072",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "dfabc19d5731b4247836e10862e903284c0d7953962229afff5727eaf2eb1eba",
+      "payload_sha256": "32aefb9ceb478b4a5b90d4eb7511ee0fcd79ac29230725c783f2997e1991b00b",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 2.1035585390616028e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_073",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "0344eab55ed7a74e1168834951f7ae8bb85640166febd43c9d6fd6a1a2a26fde",
+      "payload_sha256": "20cbde34e0ae7d336b1e1c67096726a187f75d38d118c152098a2fdc3b8eb94a",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0001205269674805234,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_074",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "a8f0261147eb825519c247c6f98bf90fb2268374508b3cc5f92ae4306d8327dd",
+      "payload_sha256": "6deacc9307f1f8c8fba95503554299bfa6178f92ba228a78ce95003d92046556",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 9.949107368830278e-06,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_075",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "fe173895d792e79d4a56b43b0996913cd580790eab22f1f099a505de83c9d58e",
+      "payload_sha256": "45c9185f94eaac8916a7a11df11db88a22c07d24cf1f5f8cd7a98fb6cc85d3eb",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.18365298759971604,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_076",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "636586bd340a3f351a3ed0b6d5d5a4060fd958624c9ff63d7588aaa282279e52",
+      "payload_sha256": "9455b35370d47af49a3b5e03ddb4f8b535b30166832c7869766efa92abd92978",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.009979535319960974,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_077",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "79d3d262f292f785fd1f296458fb8f1119c4da372219560fa0bf3872ba89519b",
+      "payload_sha256": "150e7e91156a49797a4eed24b61bf7f6a45b43fcac32bb157288fcc27e318956",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 7.949408212098538,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_078",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "a706c75b72ec6170395ef4ca25bbcdb4f9b8f948e1828a95a25db908652d6a1a",
+      "payload_sha256": "10f3696825a7ee21dee99d1265be3fa6f96dc0082118a9eb0c43a87a591356c1",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 41.852671039876725,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_079",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "c7259c65b7728674f99ea3b73b174bd3ec9e11c76487e76388c549860a3ec7dd",
+      "payload_sha256": "77ce4262d1ecd83e179fb851ce7a6b470cc00086bf7c818a57dab4dd33aa0180",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.24088008148528417,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_080",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "0888e08c2655678aa32965d82a54a2f025b0379f2cff3be9d754197b3d9ed4da",
+      "payload_sha256": "5ba573b99baab4d7083683c2e3fbcd910a06d7ff10ea88b84e39dff44dc4a611",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 15.93994892524983,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_081",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "9a3ecbdf52b28a224bd1ae2a5e7a4db0fb1052032d6eec822f040b68aae06300",
+      "payload_sha256": "ea15ce1c9a73a6d0e07f1442780981509d06d093ff96a877a3087b8256169168",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 1.3220034308812714e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_082",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "106272d7025988e1f5d3321dea739afbc9f45e7206907f778e9c1ca9c9051325",
+      "payload_sha256": "60c89381c92d1c2d04de068626e50b513e473c66d383812f63b87293ae29b4a8",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.011918820585689268,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_083",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "0202fb366ebf914d549550cf33eb45e986472b4f4262062b4312155e624edfc2",
+      "payload_sha256": "1344da10a530dfec72f83f26902f30bfbf0ac652639db71d8ab39f3cbd92f4c5",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 4.3026047948861425e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_084",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "da54180739cfbafb5d3a2cf4d6ff271dccae02fcd877a9a24153078981126ad6",
+      "payload_sha256": "7a2c43dfb2f889bdc415f6c5b2330e3661ac41477d407c9924542d92fa002214",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 4.6671951134703095e-06,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_085",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "5937b88e83840726e4c4a3d9edcf1fe517b6ef205363d3615cc7bec83049ac58",
+      "payload_sha256": "3cc0efa6b5772058e42124e58979508d90503e3f0205420b146c639ad2b01cfd",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.5743041258381189,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_086",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "44cf0f1d8616ef635a5b3a8b1021212c515edf50423ff33f8b6cbcaa7813818d",
+      "payload_sha256": "a1f7e3db1727297fed72d6dc9b6e94c2a2022e5925691553ca1564f02f1c2317",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 78.64700670074043,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_087",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "b0e11b01bee5da407f86ec1205b4733269ced9095be17cb7f318fa6aa404b509",
+      "payload_sha256": "32c82bd8a0bc2110d1386399e692b59974048dca2c2c5e3cc8f9694efcdb0833",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 5.732884294883394e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_088",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "824e4e1f19f3e17af4966a6318f3182aa347d9a4e9faa9268ca7bfdb262a65fa",
+      "payload_sha256": "af6b7784d815e0b6866d29a1ddfb9a11ad0104a72a34683bcdb7ca6e83a63cd9",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 1.8058437268326032e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_089",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "5d163160c12c3a1cc8d145ad159b724836760123c33bb19fa1534bcec308bd84",
+      "payload_sha256": "42f7c201ecf31fbcb2ec4126646cd85d156d56fad71fba869a13536864330ed7",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 7.883217058641262e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_090",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "e5900ac49b505724521a7cbe7416a7e8fd38629a8e36801f2c0378966e75a04c",
+      "payload_sha256": "b3a8231fa5022a474adc7fd1d5414f019833ff93a15e6b68bacf223085c614fc",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 121.86878765012075,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_091",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "c567a3deb982db81e48754cf1db870773295ededb77f899a5cba900943e714bf",
+      "payload_sha256": "96ad8fbfaadb7eb75d337a938736f3a6649dac6cb5c4378a7735112ba1c8b84a",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.07158749610007382,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_092",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "b26212875038de8e47e9d3454f24fca96e53394d25dfb43d57cb50c75c2cae1b",
+      "payload_sha256": "afee8f641595f0926d1111da6d82eaf8a81287752f6dfc98e3fc82fe65cd5ee6",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 6.928914701841023e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_093",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "205103197514bcf8ba5bdf6aab8f850ee6a588993f9a7d94f42b189fc642811c",
+      "payload_sha256": "934bbba580128c08c6aa8f8c4b6d8ed576b06252d6725b8f415dd0664201f449",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.8238227932041119,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_094",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "8f7388f8e6bdb6224ac60be6cbd140f069bd04679cdddc879f9d31196031dfee",
+      "payload_sha256": "c0fba7bba103f878a9eeca8b2ef0ebfdd9c7d50a8a90504cc62dcf60572b9394",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.6359590926562004,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_095",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "16292951d61bfa9ba1b28e2a4555236206f77ccc42f247b250ad8f05b9045316",
+      "payload_sha256": "da21b87537aed718c157b4e73383b22e5cecd829dfef9eb8ddfca81dfd3594d4",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.04964872089483767,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_096",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "9c7019542b2f860d766354c0f0a2988d87489134d349e3a87c6d8270ca47eb63",
+      "payload_sha256": "f10efa6acdfd709bea2f3f72bb884f4529a5a11bb289968c5cdcbd1db6e653a3",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 1.790402596417418e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_097",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "7a936caf1643f51c03241984b3a7935e51db1f459a058190a8063388c0ea3a58",
+      "payload_sha256": "5cf2b4a5482e5ec9f583545a84e15f9c486d7c200baaeeaae3bf821c1d479860",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 54.638597581417635,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_098",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "3c8b3a0940bf63f913a4f129e7c55d70cd3a3b962215daf71ea928057af699bf",
+      "payload_sha256": "c548577d541ea70cf79add364895d03f83f077bdfdf17ed990bae6c3c622253e",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.007068179992384629,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_099",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "4f267de10ae39f2b574a96f2de55c21aa9e039c84ff22db7675a167b563ae388",
+      "payload_sha256": "1c14f61a302f088f4b8274ad499c43ec959b3abd88fcf7b1eb1858c02b8a3618",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.4254510137155627,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_100",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "d5d506f54d40ded54e37446c265f400984d9e11c581cdcac4a5a0791a0289b2e",
+      "payload_sha256": "99dfe620894be368cbfec2edd29a2a743d969b16c72f26df3c54b1e865d45b36",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 33.95005538424069,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_101",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "e6e9f97e21e8f6e72c1000ae0b4f2a00e2ff473233170402ee933e0264a2bd96",
+      "payload_sha256": "36de8be2ec46bc290f2d4c65139ecdb28c370856fd411276dc3fe21ac0c2530c",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 2.604409343658482,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_102",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "5f73a00deab6c1bb76cb92ead38388ff6ed76099ce79b742ad2ec847ea709028",
+      "payload_sha256": "92c400d9ff548ad4ae53e762be2af8ad6b418936b75bc649fd7ba07e5b0cda47",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 21.476157318631454,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_103",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "1cb78700ee2419e4fa683ddd204977daee1266934b4169df1237460c68ca9eca",
+      "payload_sha256": "0bcd150e1abdc9fb19710b223d5452d2a9207851b37b32da07c96d73085bfc09",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0046694346681590785,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_104",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "2972597e41bd3e20f61fabe58fa350a4c123469230dd2ee3acaf2a454b4c6dc4",
+      "payload_sha256": "45e1cf39108c009e9bb3dd1960271b3867c1bd4c364eea24e0dcf326d57e6ab1",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.8318192097293576,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_105",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "7f97383f73e95185347766ec3c41dc1dea0a6b54c0a234baabcea0f68f0cfc2e",
+      "payload_sha256": "22b1c9e228cda4e91e9d50d0cdc0e6d015968a7f72b44ceda9aef830bb19b76d",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.3727038133840058,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_106",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "a7647bc006d5060c003148793d82cef044a0c4885d66dc47d9aba8a73571a07e",
+      "payload_sha256": "5a249ca0b7b308dfd7f5422fc0f5dc5a1105f4b421096673d76cf455dd1ac84c",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.00039691504719337683,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_107",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "74454e0a484e7196834e97fda5d11a2b4f5885bc20612847b1f0a70ae52826e9",
+      "payload_sha256": "50df9d9d32acb1e76763a99227c3b67124c2534192005f22a4efa114f6fd6713",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0035274895451005185,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_108",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "8f1d2abdebe6db2246f182bde4a043ee958fccae137db4b252b00e49354620b4",
+      "payload_sha256": "866039b907fe4dc98ab18f76a34d4c0985323ebff05b718af5e0556223cf3db3",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 5.646586563482174,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_109",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "5ab97ebeb2ee82eb68247e614aca485754ba7cc2448ad700db8548c002f32c53",
+      "payload_sha256": "96d2a872296b57fb001c56819e875babfd25f8c779355e74f4d26011e29b7a85",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0002008949873402723,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_110",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "3ab53f0f9df2aec4159502b5f58309647c177f41c190ad3b21815cf9568d05a0",
+      "payload_sha256": "97dd677aeffd99d5445d96cca0a32cb6a58c4b6c05de9e4d8635e7368ff91689",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.019770194885515166,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_111",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "f82e584ea8fcc47dc0a92575675a486adfd72cde4069bda6e0d2a96b4e5b63cf",
+      "payload_sha256": "5411a1433c3aedc6aa0db874139e4cb800a0ce00933fece670914066f4e7cf44",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 1.128581989808828,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_112",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "2d3a0ab24e68e7f4193bf5917f7f48ba15090826f69b5b0f93eb7174e5cf4d55",
+      "payload_sha256": "b2541118fd8e2d118d87885e24db44222fdbd602590e973a7b8fc6b384df8bc4",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.06453223711351558,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_113",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "4acf7f1f7ef93ab80bee7d6b367c371a0c25461f39367a2ad4f13b5155d72274",
+      "payload_sha256": "0e53cd234e0036aa0d5eb2e90b601275779517616bbe9f31a4fb5346fd8caed9",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 1.1803146784760594e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_114",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "1c4655a718637b4638002ee9c0eafbb57e069b31f91f1f3f4a6218bf0f61b85e",
+      "payload_sha256": "1850570f09c091bcbe56e95968f5b9a4b9aaa86365d888eee85b0cb36533b64a",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0007632152367295387,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_115",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "867fd1649502c94d2d23aee6dea0d5df038e3c50d244db9a76d3caa3191a7885",
+      "payload_sha256": "0378316e331e2e0f35ab3d1ee78b3504cf8a558da023174d1278ca464e7cb9f4",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 37.120285512094405,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_116",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "357583cce8885a425013c41076921ceb06f3b54e3db3aa121c956f000d261c99",
+      "payload_sha256": "f02d3758f2d9de50679b209f940135d2c1e5eb3b5a626d93c709e6ba3f4c59f9",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 298.6531166471645,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_117",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "60c60e303a8be56cba565df8f2ccb62b7189ce38c3872eac9aab62f709ae6232",
+      "payload_sha256": "eb689ce2ba7285a2deeb12af3df8b0ec9473a843f705ff42195a8653725c172d",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.01317536111264342,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_118",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "50ef9fb7fe7682bb552684b8be6cb2e988a07eef4725a5bc3b7abf8b23d3f4af",
+      "payload_sha256": "051d59b7472a71e2d5381584c231fa5f6dc56833efad7ac41d15088478939845",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 2.9160153600183484e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_119",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "3a075c5b49e4bb0c328b8c5f4d9a59a28610c0afe45adf210b65f5f06c9cbd2b",
+      "payload_sha256": "8b4427c32817f4e601d1095fe986d68e67582097e32604e78928b76ad6631f24",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0027462621820504973,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_120",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "8ddeb9dfda597a42f14e9611f5fe136924c261057eabe916496d694506f017c6",
+      "payload_sha256": "780c936111c1c48da48a77f7de3d29e39dfbebc47d7c8129c54d1455577f208e",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 56.9458675079477,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_121",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "066c576c7a8f5fde09280ee23b5658367c557461e329d3c12f84e49f316a7c0c",
+      "payload_sha256": "3cb7909d7cb839cb29858b905b5150306fbadf89a5f3177779bdfa81c24aaf21",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 7.990012894066082,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_122",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "2cb4e0b2de93c746a37d823bf447be2eb150119720673bcfb3412bbf2247eb07",
+      "payload_sha256": "c478e893a3f9352737fe5e530270a1a052a416074a1f6bb0c70ade1af3d4ab63",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.00012056604481395224,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_123",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "b464a5206ae984587c335c27fcf2d0e46ab1191fa0fdd594779cef083f0c3161",
+      "payload_sha256": "462a78bb2d6c3f0dc68e0f03a0ca5a08d06fc1304d6330f1496c149e6ae37d8d",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 47.37971594622347,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_124",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "319bc499bdcbd445fcebcdce7d0474398d3f72cfc8dda1bfde9d0ab733fd1849",
+      "payload_sha256": "6f3c34bcfd8f0d00aacf6ab270745e215c96d688db8a81caa8ada93a064edb2f",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 1.2104345693841433e-05,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_125",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "4cc211ae8f700f742ac4f524b7b331734c6f95b8831efd662353a8f2130e7eca",
+      "payload_sha256": "03a6924b470197ee96f126381b594c73bb15d40006b22242ae55f246f0fbf360",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.01958138208539077,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_126",
+      "shape": [
+        2,
+        512
+      ],
+      "input_sha256": "fbb8d6cd2fb48c0f2b564e2bda3e009f2b06112459cf0ecaa82b809c89d381d7",
+      "payload_sha256": "8d4deec7582cd3bce6e501d00cb3347e131ab1683b07acbcf7c7be9e675d82bc",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 175.24416592715232,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "random_127",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "6382781f23ea08148233f7d277854f6671e5cd8d7513cae73a0a29e6a10101f7",
+      "payload_sha256": "6386a6a1cc623b26fdffc08b159d18f8626bb7f41ae48681ff67abec4ae1b567",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 1.4647424885065745,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ]
+    },
+    {
+      "vector": "installed:diffusion_models/Flux.2 klein/9B - Base/flux-2-klein-base-9b.safetensors:double_blocks.0.img_attn.proj.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "501ae2f0a098f23e78d90ca681bc9fcdc1a71c69983cd6b22d5cb61a2a6f24a0",
+      "payload_sha256": "2b5562a840bc6b1d3cf328b93651a3f5616c7d89e880895484f72b9c121e50a3",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0018455915193223925,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "diffusion_models/Flux.2 klein/9B - Base/flux-2-klein-base-9b.safetensors",
+        "family": "flux",
+        "tensor": "double_blocks.0.img_attn.proj.weight",
+        "stored_shape": [
+          4096,
+          4096
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "BF16",
+        "source_bytes": 18157185168,
+        "canonical_header_sha256": "c7ea40445243000f64929f810a6d589fa432fb92536460b4f66ba530129366f3"
+      }
+    },
+    {
+      "vector": "installed:diffusion_models/Flux.2 klein/9B - Base/flux-2-klein-base-9b.safetensors:double_blocks.0.img_attn.qkv.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "417ec36a2f14925194ba5a213d8d26c1d16a992aa3de70fd901b5af30ec3e385",
+      "payload_sha256": "8960c88b8335b896a7c3199e11d36f849cefb60fb4a87685f3b05f1613f76627",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.001545741510081915,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "diffusion_models/Flux.2 klein/9B - Base/flux-2-klein-base-9b.safetensors",
+        "family": "flux",
+        "tensor": "double_blocks.0.img_attn.qkv.weight",
+        "stored_shape": [
+          12288,
+          4096
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "BF16",
+        "source_bytes": 18157185168,
+        "canonical_header_sha256": "c7ea40445243000f64929f810a6d589fa432fb92536460b4f66ba530129366f3"
+      }
+    },
+    {
+      "vector": "installed:diffusion_models/Flux.2 klein/9B - Base/flux-2-klein-base-9b.safetensors:double_blocks.0.img_mlp.0.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "7baaae71aef5ab0da06766ae537f6caea72829ba7aca265480936a52471eb22f",
+      "payload_sha256": "064e5adbd410dc9743d4a31e1d1214ea0faeb5498c8301ddfa3c44d6fa27fbed",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0013716407327639744,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "diffusion_models/Flux.2 klein/9B - Base/flux-2-klein-base-9b.safetensors",
+        "family": "flux",
+        "tensor": "double_blocks.0.img_mlp.0.weight",
+        "stored_shape": [
+          24576,
+          4096
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "BF16",
+        "source_bytes": 18157185168,
+        "canonical_header_sha256": "c7ea40445243000f64929f810a6d589fa432fb92536460b4f66ba530129366f3"
+      }
+    },
+    {
+      "vector": "installed:diffusion_models/Z-Image Base/juggernautZ_v10ByRundiffusion.safetensors:cap_embedder.1.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "95d775264237934e1d7a4d1e48cafb706ca8ff3d27e97b8b02fe7541f6e5f368",
+      "payload_sha256": "1a5a740aad5eb7cb1557a9b69c777a2c9eb8b00c78b47f6303678f68671dc5ee",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.013389946506823297,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "diffusion_models/Z-Image Base/juggernautZ_v10ByRundiffusion.safetensors",
+        "family": "lumina2",
+        "tensor": "cap_embedder.1.weight",
+        "stored_shape": [
+          3840,
+          2560
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "BF16",
+        "source_bytes": 12309866400,
+        "canonical_header_sha256": "8f06af53b997cf5ea3babe210989f7b1a5593c94ee6cee214098615a5859a02c"
+      }
+    },
+    {
+      "vector": "installed:diffusion_models/Z-Image Base/juggernautZ_v10ByRundiffusion.safetensors:context_refiner.0.attention.out.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "a01e5122f9d5319610878f9435169205e322360fc66fa5ce2f92b5b1c0080bdc",
+      "payload_sha256": "503abb3b202c373ad61272b902bc5b0d32fda6734803e812b41730fb2239e6ac",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.015112164788611344,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "diffusion_models/Z-Image Base/juggernautZ_v10ByRundiffusion.safetensors",
+        "family": "lumina2",
+        "tensor": "context_refiner.0.attention.out.weight",
+        "stored_shape": [
+          3840,
+          3840
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "BF16",
+        "source_bytes": 12309866400,
+        "canonical_header_sha256": "8f06af53b997cf5ea3babe210989f7b1a5593c94ee6cee214098615a5859a02c"
+      }
+    },
+    {
+      "vector": "installed:diffusion_models/Z-Image Base/juggernautZ_v10ByRundiffusion.safetensors:context_refiner.0.attention.qkv.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "cfe8859d05c25fbc9c687048f12efa3e9a2da08022163a684f99eeaa0798b415",
+      "payload_sha256": "28f8356de0f3f154bc47b3f60fff64c189174b7c59829ca57090acd748d23868",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.012820676650246972,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "diffusion_models/Z-Image Base/juggernautZ_v10ByRundiffusion.safetensors",
+        "family": "lumina2",
+        "tensor": "context_refiner.0.attention.qkv.weight",
+        "stored_shape": [
+          11520,
+          3840
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "BF16",
+        "source_bytes": 12309866400,
+        "canonical_header_sha256": "8f06af53b997cf5ea3babe210989f7b1a5593c94ee6cee214098615a5859a02c"
+      }
+    },
+    {
+      "vector": "installed:text_encoders/Flux.2 klein 9b/Qwen3-8b-vanilla.safetensors:lm_head.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "edb154ff8e82c811b36c8836c1e6a9ecfff9fe89ba626fa173856235504c2784",
+      "payload_sha256": "0ab70e73745a5e1c1a67ed0e6399e055b4238295d70ef9feb351a69f17831b01",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.001888199942710015,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "text_encoders/Flux.2 klein 9b/Qwen3-8b-vanilla.safetensors",
+        "family": "qwen3-8b",
+        "tensor": "lm_head.weight",
+        "stored_shape": [
+          151936,
+          4096
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "BF16",
+        "source_bytes": 16381517176,
+        "canonical_header_sha256": "7d500c699455d241c83d5e83f1476eb0c311eaed15c6c25bcdaee90b98dba185"
+      }
+    },
+    {
+      "vector": "installed:text_encoders/Flux.2 klein 9b/Qwen3-8b-vanilla.safetensors:model.embed_tokens.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "3a57c63a86351fda6bed3e951c3496e2f6ae178c9f3d3f3dbe1ff243f17badb1",
+      "payload_sha256": "11a97282ee104f43fc3b3c4593b306ff09e8782441d709d940fa3ab88b316f95",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0026543955888545506,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "text_encoders/Flux.2 klein 9b/Qwen3-8b-vanilla.safetensors",
+        "family": "qwen3-8b",
+        "tensor": "model.embed_tokens.weight",
+        "stored_shape": [
+          151936,
+          4096
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "BF16",
+        "source_bytes": 16381517176,
+        "canonical_header_sha256": "7d500c699455d241c83d5e83f1476eb0c311eaed15c6c25bcdaee90b98dba185"
+      }
+    },
+    {
+      "vector": "installed:text_encoders/Flux.2 klein 9b/Qwen3-8b-vanilla.safetensors:model.layers.0.mlp.down_proj.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "321b1448d72169d69a0db07a5b8ce018c24dfa618d768772d5c8cb16d7748921",
+      "payload_sha256": "6ea3d1c985963cb08a53405073e92c5389e28a0f6dce2b0ead7b5282a006daa3",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0017038854948825879,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "text_encoders/Flux.2 klein 9b/Qwen3-8b-vanilla.safetensors",
+        "family": "qwen3-8b",
+        "tensor": "model.layers.0.mlp.down_proj.weight",
+        "stored_shape": [
+          4096,
+          12288
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "BF16",
+        "source_bytes": 16381517176,
+        "canonical_header_sha256": "7d500c699455d241c83d5e83f1476eb0c311eaed15c6c25bcdaee90b98dba185"
+      }
+    },
+    {
+      "vector": "installed:text_encoders/HiDream/clip_g_hidream.safetensors:text_model.embeddings.position_embedding.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "60785f9937043426884d164bc64494892daa9dd1e8137b3d59a9c42c9283770f",
+      "payload_sha256": "e3a3f951f3900934e77cf27c2cc0f50da6588968fcddab276bd94911275a6360",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0010382308961386887,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "text_encoders/HiDream/clip_g_hidream.safetensors",
+        "family": "clip-bigg",
+        "tensor": "text_model.embeddings.position_embedding.weight",
+        "stored_shape": [
+          218,
+          1280
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "F16",
+        "source_bytes": 1389743104,
+        "canonical_header_sha256": "9e1d8258be78c82255e3d37b982808b0411ce4b56d27f9f0e63f688c3ea4b896"
+      }
+    },
+    {
+      "vector": "installed:text_encoders/HiDream/clip_g_hidream.safetensors:text_model.embeddings.token_embedding.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "34e5eb685be2627479c17011c1c47909cb7f2e93b2540af103a92510ced31932",
+      "payload_sha256": "6cde40df9f75d700e8985b2e4f31b55668c463dbf8f07de3011af45d52253528",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0011292915135713243,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "text_encoders/HiDream/clip_g_hidream.safetensors",
+        "family": "clip-bigg",
+        "tensor": "text_model.embeddings.token_embedding.weight",
+        "stored_shape": [
+          49408,
+          1280
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "F16",
+        "source_bytes": 1389743104,
+        "canonical_header_sha256": "9e1d8258be78c82255e3d37b982808b0411ce4b56d27f9f0e63f688c3ea4b896"
+      }
+    },
+    {
+      "vector": "installed:text_encoders/HiDream/clip_g_hidream.safetensors:text_model.encoder.layers.0.mlp.fc1.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "fcf0377cc1edd825cf4051b7b27c0adaae585661fbe0479b0215981770086b22",
+      "payload_sha256": "5fb6e325391e3d0789ffbf27521d9fdde46f3b2635a0ebf2d88af8fbd1fde62c",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0010952445425524491,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "text_encoders/HiDream/clip_g_hidream.safetensors",
+        "family": "clip-bigg",
+        "tensor": "text_model.encoder.layers.0.mlp.fc1.weight",
+        "stored_shape": [
+          5120,
+          1280
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "F16",
+        "source_bytes": 1389743104,
+        "canonical_header_sha256": "9e1d8258be78c82255e3d37b982808b0411ce4b56d27f9f0e63f688c3ea4b896"
+      }
+    },
+    {
+      "vector": "installed:text_encoders/HiDream/clip_l_hidream.safetensors:text_model.embeddings.position_embedding.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "0a89c03e27b636932df900dbdb7a3a6a5684bbe001c4ba1e37033a6a832b46b4",
+      "payload_sha256": "cb830317dc5fd3a07dc7090bc1c4c5b8057218645068b23ed8588100dd28c9aa",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.00047083234748662104,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "text_encoders/HiDream/clip_l_hidream.safetensors",
+        "family": "clip-l",
+        "tensor": "text_model.embeddings.position_embedding.weight",
+        "stored_shape": [
+          248,
+          768
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "F16",
+        "source_bytes": 247586528,
+        "canonical_header_sha256": "0fcc2ae8f2ec519acd0b1d404b763094763e229fbc58f623977256fc292a65b4"
+      }
+    },
+    {
+      "vector": "installed:text_encoders/HiDream/clip_l_hidream.safetensors:text_model.embeddings.token_embedding.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "49b40aa4e7d61d55d71e666012bfd76ed75911570d043a3cbc7d3cd784d76054",
+      "payload_sha256": "08105bdafd35b9b763e9a406301f6112775c0aa437a673adade2069447191173",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0010542871468899957,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "text_encoders/HiDream/clip_l_hidream.safetensors",
+        "family": "clip-l",
+        "tensor": "text_model.embeddings.token_embedding.weight",
+        "stored_shape": [
+          49408,
+          768
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "F16",
+        "source_bytes": 247586528,
+        "canonical_header_sha256": "0fcc2ae8f2ec519acd0b1d404b763094763e229fbc58f623977256fc292a65b4"
+      }
+    },
+    {
+      "vector": "installed:text_encoders/HiDream/clip_l_hidream.safetensors:text_model.encoder.layers.0.mlp.fc1.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "545cb2784a5b1ba9c53d6fab0a7b9fa9af5f5bf9389a71262ed23d063e054f31",
+      "payload_sha256": "ec39b0596be8f70fbca9a5649a3c8d1f4f4987e40312a9e748c02a39162584d3",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0012455006019559205,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "text_encoders/HiDream/clip_l_hidream.safetensors",
+        "family": "clip-l",
+        "tensor": "text_model.encoder.layers.0.mlp.fc1.weight",
+        "stored_shape": [
+          3072,
+          768
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "F16",
+        "source_bytes": 247586528,
+        "canonical_header_sha256": "0fcc2ae8f2ec519acd0b1d404b763094763e229fbc58f623977256fc292a65b4"
+      }
+    },
+    {
+      "vector": "installed:text_encoders/Z-Image/BennyDaBall-Qwen3-4b-Engineer-V6.safetensors:model.embed_tokens.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "470def873ead6925163c504e3318715f3203fcbf8c9f603353cd19dc0ee54992",
+      "payload_sha256": "79f6a7c9ff1ab594824cf0af43e6077c30e8af97db9e4c55c9fa41db98ca60ef",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.002160652375476752,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "text_encoders/Z-Image/BennyDaBall-Qwen3-4b-Engineer-V6.safetensors",
+        "family": "qwen3-4b",
+        "tensor": "model.embed_tokens.weight",
+        "stored_shape": [
+          151936,
+          2560
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "F16",
+        "source_bytes": 8044981648,
+        "canonical_header_sha256": "a789f0aa079d44a87d6d30d76ff6ead4003c830bf127e0eb1c78213ce32dbc5e"
+      }
+    },
+    {
+      "vector": "installed:text_encoders/Z-Image/BennyDaBall-Qwen3-4b-Engineer-V6.safetensors:model.layers.0.mlp.down_proj.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "4de5d37723a4a6194bf32ab0e0230144014eacff690f91e32f65c6a19ffd0909",
+      "payload_sha256": "9da3c2c3533f161d5974c3c96ad461696f963ba01dbf24e45fccc6d1153c9b70",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.006253007523040014,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "text_encoders/Z-Image/BennyDaBall-Qwen3-4b-Engineer-V6.safetensors",
+        "family": "qwen3-4b",
+        "tensor": "model.layers.0.mlp.down_proj.weight",
+        "stored_shape": [
+          2560,
+          9728
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "F16",
+        "source_bytes": 8044981648,
+        "canonical_header_sha256": "a789f0aa079d44a87d6d30d76ff6ead4003c830bf127e0eb1c78213ce32dbc5e"
+      }
+    },
+    {
+      "vector": "installed:text_encoders/Z-Image/BennyDaBall-Qwen3-4b-Engineer-V6.safetensors:model.layers.0.mlp.gate_proj.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "5e0bdfa4d79e94b8953595aecff75124b3ad3df8c959f3a1ec5ef3189eba28a8",
+      "payload_sha256": "d516d9524f6846aa60d248baa2b74495510f428e076fca01ac37b6817d124b2e",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0018547216336764992,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "text_encoders/Z-Image/BennyDaBall-Qwen3-4b-Engineer-V6.safetensors",
+        "family": "qwen3-4b",
+        "tensor": "model.layers.0.mlp.gate_proj.weight",
+        "stored_shape": [
+          9728,
+          2560
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "F16",
+        "source_bytes": 8044981648,
+        "canonical_header_sha256": "a789f0aa079d44a87d6d30d76ff6ead4003c830bf127e0eb1c78213ce32dbc5e"
+      }
+    },
+    {
+      "vector": "installed:checkpoints/SDXL 1.0/artaix_v30.safetensors:model.diffusion_model.input_blocks.1.0.emb_layers.1.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "92e24e57fc0a2c18e4e10bf8037a5645eb6cabd2ca520b166dcfc36165b7b5dc",
+      "payload_sha256": "275fc417b7955d2299259356c979c2717ac714ede9369bcd866e344a740a5eef",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0013625468877567352,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "checkpoints/SDXL 1.0/artaix_v30.safetensors",
+        "family": "sdxl",
+        "tensor": "model.diffusion_model.input_blocks.1.0.emb_layers.1.weight",
+        "stored_shape": [
+          320,
+          1280
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "F16",
+        "source_bytes": 6938040706,
+        "canonical_header_sha256": "f07e16fd4797b50a8fd235d7362fca0afa0b9be3bdf7d8389d4e2344b747950a"
+      }
+    },
+    {
+      "vector": "installed:checkpoints/SDXL 1.0/artaix_v30.safetensors:model.diffusion_model.input_blocks.2.0.emb_layers.1.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "efcb0a428c1352e77319e76d7e39ac198621837dbf6e69e9f1d8a3092dc29e46",
+      "payload_sha256": "e9564516e3cb19a533f21f227fbaf213adbff639944246c13886734b05111d15",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0009776442157712493,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "checkpoints/SDXL 1.0/artaix_v30.safetensors",
+        "family": "sdxl",
+        "tensor": "model.diffusion_model.input_blocks.2.0.emb_layers.1.weight",
+        "stored_shape": [
+          320,
+          1280
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "F16",
+        "source_bytes": 6938040706,
+        "canonical_header_sha256": "f07e16fd4797b50a8fd235d7362fca0afa0b9be3bdf7d8389d4e2344b747950a"
+      }
+    },
+    {
+      "vector": "installed:checkpoints/SDXL 1.0/artaix_v30.safetensors:model.diffusion_model.input_blocks.4.0.emb_layers.1.weight",
+      "shape": [
+        2,
+        256
+      ],
+      "input_sha256": "7a18ac05b05c857118b8a88211acd9001193521bf0b07104aa18c49e5bed972f",
+      "payload_sha256": "9b8a3cd9bfc26ec7a93fd776fa96a2864c7bde96cbe1d9456a26891eb7e59a51",
+      "chunk_checks": [
+        {
+          "chunk_blocks": 1,
+          "equal_bytes": true
+        },
+        {
+          "chunk_blocks": 3,
+          "equal_bytes": true
+        }
+      ],
+      "rmse": 0.0018693614079675768,
+      "references": [
+        {
+          "id": "llama-b3962",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-text-installed",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        },
+        {
+          "id": "llama-current",
+          "equal_bytes": true,
+          "different_bytes": 0,
+          "native_decoder_max_difference": 0.0
+        }
+      ],
+      "model_sample": {
+        "model": "checkpoints/SDXL 1.0/artaix_v30.safetensors",
+        "family": "sdxl",
+        "tensor": "model.diffusion_model.input_blocks.4.0.emb_layers.1.weight",
+        "stored_shape": [
+          640,
+          1280
+        ],
+        "slice": [
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            256
+          ]
+        ],
+        "source_dtype": "F16",
+        "source_bytes": 6938040706,
+        "canonical_header_sha256": "f07e16fd4797b50a8fd235d7362fca0afa0b9be3bdf7d8389d4e2344b747950a"
+      }
+    }
+  ],
+  "all_equal": true
+}

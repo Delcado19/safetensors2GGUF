@@ -247,7 +247,8 @@ support for the entire float32 range.
 Model eligibility, source reconstruction, protection/fallback and ordered S/M
 policies remain separate from this encoder. The [policy probes](converter-policy-comparison.md)
 must remain compatible during integration. An explicit experimental Workbench/
-API backend now reuses F16 preparation and this encoder for FLUX/Q6_K only, with
+API backend now reuses F16 preparation for FLUX/Q6_K and the separately validated
+Q5_K_M mixed preset, with
 service/API cancellation, progress, overwrite and intermediate cleanup tests.
 Native remains the default.
 

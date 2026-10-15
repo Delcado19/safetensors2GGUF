@@ -10,7 +10,7 @@ The first architecture-specific integration connects the shared NumPy Q6_K
 encoder to a real FLUX GGUF quantizer stage. It accepts an already prepared,
 single-file little-endian F16/F32 FLUX GGUF, preserves metadata/tensor order and
 writes a mixed-precision Q6_K GGUF atomically. The Workbench/API now exposes it
-as an explicit experimental backend for FLUX safetensors and Q6_K only. Native
+as an explicit experimental backend for FLUX safetensors and Q6_K/Q5_K_M. Native
 remains the default; global format registries and text encoders are unchanged.
 
 This is not a safetensors importer or a new model adapter. Original checkpoint
@@ -81,13 +81,13 @@ CI replays retained results without requiring the external native executable.
 
 ## Workbench/API integration
 
-Choose diffusion GGUF, Q6_K, then **Advanced settings > Q6_K converter >
+Choose diffusion GGUF, Q6_K or Q5_K_M, then **Advanced settings > GGUF converter >
 Python - FLUX only (experimental)**. The executable and thread controls are
 disabled for this backend; their values are not submitted. The existing
 **Keep intermediate F16 file** and overwrite choices still apply. Other formats,
 containers and text encoders use their normal routes.
 
-API clients explicitly send `"gguf_backend": "python_flux_q6"` in `/api/inspect`
+API clients explicitly send `"gguf_backend": "python_flux"` in `/api/inspect`
 and `/api/jobs`. Omitting the field selects `native`. The API rejects Python
 requests for other architectures/formats/containers, non-safetensors sources,
 non-default precision profiles or native executable/thread settings before work.
@@ -134,5 +134,13 @@ offload, Linux and isolated peak memory/throughput still need separate evidence.
 This change authorizes no renders. BF16 input, other architectures, shape repair,
 text-encoder metadata/policies and other quantization formats require separate
 validation. The [Q5_K_M research file follow-up](shared-q5-pilot.md#flux-q5_k_m-file-policy-follow-up)
-now covers schematic exports only; it is not an application backend.
+now includes full-checkpoint numeric and user-supplied inference evidence and
+is available through the experimental backend. The [Q4 file presets](flux-q4-research-path.md)
+remain schematic research exports without application dispatch.
 Keep the tested native production path available.
+
+The legacy API identifier `python_flux_q6` retains Q6_K-only behavior. The shared
+`python_flux` identifier supports both Q6_K and Q5_K_M. Q5 uses the validated
+mixed writer and shows an inline warning about observed pose/composition drift
+versus the original with two LoRAs. Native remains the default; other presets,
+architectures and custom precision profiles are rejected before preparation.

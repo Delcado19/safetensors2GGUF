@@ -6,12 +6,33 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Research NumPy Q4_K block encoding with shared Q5 affine fitting/packing
+  and bounded streaming. All 166 inputs match three frozen native references
+  (498 byte comparisons, 332 chunk checks); rerun Q5 also remains exact.
+  FLUX Q4_K_S/Q4_K_M research file policies also match native on 16 schematic
+  files (400 tensors), preserving ordered V promotion and fallback counters.
+  Full Q4 checkpoints and application routes remain separate future work.
+
+- Add: Explicit experimental FLUX Q5_K_M Workbench/API conversion alongside Q6_K
+  using `python_flux`; preserve the older Q6-only identifier for existing clients.
+  Reuse bounded preparation/writing, cancellation and safe overwrite behavior;
+  show the observed Q5 pose/composition drift by the converter choice. Native
+  remains the default and no new Krea formats are enabled.
+
+- Add: Complete FLUX.2 klein Base 9B Q5_K_M Python/native numeric comparison:
+  all 201 tensor payloads, types, shapes and metadata match patched b3962.
+  Retain input/tool/source hashes, output checksums and timings. Supplied
+  Python/native Q5 renders are pixel-identical with two enabled LoRAs. A subsequent
+  same-seed original shows Visible drift in pose/composition. Broader quality and
+  original fidelity remains checkpoint/workflow-specific.
+
 - Add: Research NumPy Q5_K affine block encoder with bounded streaming, exact
   native rounding/packing and signed-zero compatibility. All 166 inputs match
   three frozen native references (498 byte checks, 332 chunk checks). Reuse the
   Q6 pilot checker with explicit format selection and atomic fresh report output;
   FLUX Q5_K_M research file policies also match patched b3962 in eight schematic
-  exports (196 tensors). Full Q5 checkpoint/inference and app integration remain open.
+  exports (196 tensors), followed by the full-checkpoint validation above.
+  Broader Q5 quality remains open.
 
 - Add: Isolated Q6_K chunk-size CPU timing/peak-RSS measurements on a real FLUX
   weight slice, with native-prefix byte validation. The existing 256-block default

@@ -24,10 +24,10 @@ and cancellation is included for all conversion pipelines.
 
 The planned shared conversion core is documented in the
 [unified converter source inventory](docs/converter-consolidation-inventory.md).
-The native conversion backends remain the default. Experimental Python Q6_K
-is available explicitly for FLUX safetensors sources: select **Q6_K**, open
+The native conversion backends remain the default. Experimental Python Q6_K/Q5_K_M
+is available explicitly for FLUX safetensors sources: select **Q6_K** or **Q5_K_M**, open
 **Advanced settings**, and choose **Python - FLUX only (experimental)** under
-**Q6_K converter**. It uses the existing F16 preparation stage and needs no
+**GGUF converter**. It uses the existing F16 preparation stage and needs no
 external quantizer. Its current full-model evidence covers one klein Base 9B
 checkpoint; other models/presets keep their established backends.
 See the [policy comparison](docs/converter-policy-comparison.md) for measured
@@ -47,8 +47,9 @@ comparison confirms inference with two LoRAs for this checkpoint; the guide
 records exact settings, visual differences and remaining validation limits.
 
 The next [shared Q5_K block pilot](docs/shared-q5-pilot.md) also matches three
-native references on 166 inputs. It does not add a Python Q5_K_M application route;
-model-level mixed precision policies remain separate from block mathematics.
+native references on 166 inputs. Its separately validated FLUX Q5_K_M mixed
+preset is now available through the experimental Python option; model-level
+policies remain separate from block mathematics.
 
 ## Supported Architectures
 
@@ -922,6 +923,16 @@ differences remain documented. The user deferred the ZIT portrait test to avoid
 reconversion costs; portrait quality remains untested.
 See [validation and limits](docs/zit-batch-validation.md).
 
-FLUX Q5_K_M research file export also matches patched b3962 in eight schematic
-comparisons (196 tensors); see [Q5 pilot](docs/shared-q5-pilot.md). Full Q5 model/inference validation
-and application integration remain open.
+FLUX Q5_K_M research file export matches patched b3962 in eight schematic
+comparisons (196 tensors) and the complete FLUX.2 klein Base 9B checkpoint
+(all 201 tensor payloads/types/shapes and metadata). See [full Q5 validation](docs/flux-q5-full-model-validation.md).
+User-supplied Python/native Q5 renders are pixel-identical with two enabled LoRAs.
+A subsequent original render with matching seed/settings shows Visible drift in
+pose/composition, with coherent output in this scene. Broader quality remains open. Choose Q5_K_M and **Advanced settings > GGUF
+converter > Python - FLUX only (experimental)** to use the opt-in backend; API
+clients send `"gguf_backend": "python_flux"`. Native remains the default.
+
+The [Q4_K block pilot](docs/shared-q4-pilot.md) also passes 166 inputs against three native
+references, sharing affine mathematics with Q5. FLUX Q4_K_S/Q4_K_M file policies
+also match native on 16 schematic files (400 tensors); see [Q4 file validation](docs/flux-q4-research-path.md).
+Full Q4 checkpoint and app integration remain open; native Q4 defaults are unchanged.

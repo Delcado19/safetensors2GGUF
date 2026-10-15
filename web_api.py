@@ -97,7 +97,7 @@ class ConversionRequest(BaseModel):
     precision_profile: Literal['auto', 'conservative', 'qwen_edit_2511', 'z_image_turbo'] = 'auto'
     overwrite: bool = False
     keep_intermediate: bool = False
-    gguf_backend: Literal['native', 'python_flux_q6'] = 'native'
+    gguf_backend: Literal['native', 'python_flux', 'python_flux_q6'] = 'native'
     threads: int = Field(default=0, ge=0, le=1024)
     executable: str = Field(default='', max_length=4096)
 
@@ -426,7 +426,7 @@ def create_app() -> FastAPI:
         params.source = str(source.resolve())
         if params.gguf_backend != 'native':
             if params.model_kind != 'diffusion' or params.container != 'gguf' or params.precision_profile != 'auto':
-                raise HTTPException(400, 'Python Q6_K applies only to diffusion GGUF with the default precision profile')
+                raise HTTPException(400, 'Python FLUX applies only to diffusion GGUF with the default precision profile')
             try:
                 validate_gguf_backend(params.source, params.format, params.gguf_backend,
                                       executable=params.executable, threads=params.threads)

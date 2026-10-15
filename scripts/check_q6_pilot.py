@@ -1,4 +1,4 @@
-"""Compare shared NumPy Q5_K/Q6_K block pilots against three pinned native encoders."""
+"""Compare shared NumPy Q4_K/Q5_K/Q6_K block pilots against three pinned native encoders."""
 import argparse
 import hashlib
 import json
@@ -14,6 +14,7 @@ from scripts.converter_reference_vectors import reference_vectors
 from scripts.inventory_converter_sources import verify_references
 from scripts.reference_q6_k import quantize_q6_k
 from scripts.reference_q5_k import quantize_q5_k
+from scripts.reference_q4_k import quantize_q4_k
 
 
 def pilot_vectors():
@@ -108,15 +109,18 @@ def verified_native_builds(reference_report):
 
 def check_pilot(reference_report, vectors=None, *, format_key="Q6_K"):
     """Compare Q5_K/Q6_K exact bytes and retain reconstruction/input evidence."""
-    encoders = {'Q6_K': quantize_q6_k, 'Q5_K': quantize_q5_k}
+    encoders = {'Q6_K': quantize_q6_k, 'Q5_K': quantize_q5_k, 'Q4_K': quantize_q4_k}
     if format_key not in encoders:
-        raise ValueError("Pilot supports Q5_K or Q6_K only")
+        raise ValueError("Pilot supports Q4_K, Q5_K or Q6_K only")
     encoder = encoders[format_key]
     builds = verified_native_builds(reference_report)
     report = {'status': f'Research {format_key} pilot; no model/preset dispatch or performance claim',
               'format': format_key,
               'numpy': np.__version__, 'random_seed': 20261015,
               'pilot_source_sha256': hashlib.sha256((ROOT / f'scripts/reference_{format_key.lower()}.py').read_bytes()).hexdigest(),
+              'implementation_source_sha256': {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
+                  for name in ([f'scripts/reference_{format_key.lower()}.py'] +
+                               (['scripts/reference_q5_k.py'] if format_key == 'Q4_K' else []))},
               'references': [{'id': build['id'], 'commit': build['commit'],
                               'archive_sha256': build['archive_sha256'],
                               'executable_sha256': build['executable_sha256']} for build in builds],
@@ -149,7 +153,7 @@ def check_pilot(reference_report, vectors=None, *, format_key="Q6_K"):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--format', choices=('Q6_K', 'Q5_K'), default='Q6_K')
+    parser.add_argument('--format', choices=('Q6_K', 'Q5_K', 'Q4_K'), default='Q6_K')
     parser.add_argument('--references', type=Path, default=ROOT / 'data/converter-native-comparison.json')
     parser.add_argument('--models-root', type=Path, help='Also sample audited plain floating-point models read-only')
     parser.add_argument('--output', type=Path, required=True)

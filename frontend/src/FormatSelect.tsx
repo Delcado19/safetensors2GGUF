@@ -36,7 +36,7 @@ export function FormatSelect({
         ? `Floating-point GGUF. ${formatName(value)} uses the internal GGUF type ${value}.`
         : /^Q[45]_[01]$/.test(value)
           ? `GGUF ${value}. Krea uses the pinned streaming converter and requires a matching molbal loader. Q4_0 has a scoped render test with visible drift; this does not validate every model or precision.`
-          : `GGUF ${value}. Q8_0 is written directly; K-quants require llama-quantize. Bit width alone does not predict visual fidelity.`
+          : `GGUF ${value}. Q8_0 is written directly; K-quants use llama-quantize by default; FLUX Q6_K/Q5_K_M also offer an experimental Python backend. Bit width alone does not predict visual fidelity.`
       : (
           {
             F16: "Half-precision float; a precision cast rather than low-bit quantization.",

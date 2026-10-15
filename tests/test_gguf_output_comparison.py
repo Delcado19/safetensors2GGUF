@@ -93,3 +93,50 @@ def test_recorded_full_model_comparison_retains_complete_numeric_evidence():
     assert report['input_provenance']['source_header']['dtype_tensor_counts'] == {'BF16': 201}
     assert report['runs']['native']['exit_code'] == 0
     assert report['runs']['python']['seconds'] > 0
+
+
+
+def test_recorded_q5_full_model_comparison_retains_complete_numeric_evidence():
+    """Retain full Q5 mixed-policy parity without distributing checkpoint weights."""
+    report = json.loads((Path(__file__).parents[1] / 'data/flux-q5-full-model-comparison.json').read_text())
+    q6 = json.loads((Path(__file__).parents[1] / 'data/flux-q6-full-model-comparison.json').read_text())
+    assert report['all_equal'] and report['metadata_equal'] and report['alignment_equal']
+    assert report['tensor_counts_equal'] and len(report['tensors']) == 201
+    assert report['preset'] == 'Q5_K_M'
+    assert Counter(row['type'] for row in report['tensors']) == {'Q5_K': 99, 'Q6_K': 16, 'F32': 86}
+    assert all(row['equal'] and row['left_sha256'] == row['right_sha256'] for row in report['tensors'])
+    assert report['source_sha256'] == q6['input_provenance']['prepared_sha256']
+    assert report['source_bytes'] == q6['input_provenance']['prepared_bytes']
+    assert report['native'] == q6['runs']['native']['native']
+    assert report['native_seconds'] > 0 and report['python_seconds'] > 0
+
+
+
+def test_q5_user_render_evidence_has_identical_pixels_and_seed_caveat():
+    """Distinguish Python/native runtime parity from a different-seed original."""
+    r = json.loads((Path(__file__).parents[1] / 'data/flux-q5-user-render-comparison.json').read_text())
+    original, python, native = r['images']
+    assert r['python_native_identical_filtered_scanlines']
+    assert python['ihdr_hex'] == native['ihdr_hex']
+    assert python['filtered_scanlines_sha256'] == native['filtered_scanlines_sha256']
+    assert all(image['all_png_chunk_crcs_valid'] for image in r['images'])
+    a, b = python['metadata']['prompt'], native['metadata']['prompt']
+    assert {k for k in a.keys() | b.keys() if a.get(k) != b.get(k)} == {'115'}
+    assert a['115']['class_type'] == b['115']['class_type'] == 'UnetLoaderGGUF'
+    assert a['96']['inputs']['noise_seed'] == b['96']['inputs']['noise_seed'] == r['q5_seed']
+    assert original['metadata']['prompt']['96']['inputs']['noise_seed'] == r['original_seed']
+    assert r['original_seed'] != r['q5_seed']
+
+
+
+def test_q5_same_seed_original_changes_only_loader_and_model_connection():
+    """Keep the corrected same-seed comparison separate from the first original."""
+    r = json.loads((Path(__file__).parents[1] / 'data/flux-q5-user-render-comparison.json').read_text())
+    original, python = r['same_seed_original'], r['images'][1]
+    a, b = original['metadata']['prompt'], python['metadata']['prompt']
+    assert original['all_png_chunk_crcs_valid']
+    assert original['ihdr_hex'] == python['ihdr_hex']
+    assert a['96']['inputs']['noise_seed'] == b['96']['inputs']['noise_seed'] == r['q5_seed']
+    assert {k for k in a.keys() | b.keys() if a.get(k) != b.get(k)} == {'108', '113', '115'}
+    assert {k: v for k, v in a['113']['inputs'].items() if k != 'model'} == {
+        k: v for k, v in b['113']['inputs'].items() if k != 'model'}

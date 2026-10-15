@@ -3,7 +3,10 @@
   "format": "Q5_K",
   "numpy": "2.4.4",
   "random_seed": 20261015,
-  "pilot_source_sha256": "6b96f507bded12c621ec6d114cd39c7c3f429389899c857c231435e6c1863b6f",
+  "pilot_source_sha256": "9694be974969f89c937b7aaeaec6551d13147a2b74a7c5015e700b5a879fb7f7",
+  "implementation_source_sha256": {
+    "scripts/reference_q5_k.py": "9694be974969f89c937b7aaeaec6551d13147a2b74a7c5015e700b5a879fb7f7"
+  },
   "references": [
     {
       "id": "llama-b3962",

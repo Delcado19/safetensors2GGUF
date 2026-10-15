@@ -82,9 +82,23 @@ Shared Q5_K math follow-up: `docs/shared-q5-pilot.md` records 166 inputs and
 498 exact native byte comparisons plus 332 chunk checks. Positive-ramp saturation
 is absent; signed-zero header behavior matches native. This is a block encoder,
 now followed by explicit research FLUX Q5_K_M file export (eight schematic
-files, 196 exact native tensor comparisons). Full Q5 checkpoints, inference and
-an application route remain open. Existing Q6_K/native
+files, 196 exact native tensor comparisons), plus complete FLUX.2 klein Base 9B
+parity: all 201 tensor payloads/types/shapes and metadata match. Read
+`docs/flux-q5-full-model-validation.md`. Supplied Python/native Q5 PNGs are
+pixel-identical with two enabled LoRAs. A follow-up original with matching seed
+and settings shows Visible drift in pose/composition, without obvious corruption.
+Broader quality remains open. The experimental `python_flux` Workbench/API
+backend now accepts Q6_K/Q5_K_M; `python_flux_q6` stays a Q6-only compatibility
+alias. Native defaults, source validation, cleanup and atomic output are retained. Existing Q6_K/native
 paths and the Krea allowlist remain intact.
+
+Shared Q4_K math follow-up: `docs/shared-q4-pilot.md` records 166 inputs,
+498 exact native comparisons and 332 chunk checks. Q4/Q5 share affine fitting,
+packing and bounded streaming with distinct native search grids. Q5 was rerun
+and remains exact. FLUX Q4_K_S/Q4_K_M research file policies now match patched b3962 on 16
+schematic files (400 tensors), including ordered V promotion and row-fallback
+counter behavior. Read `docs/flux-q4-research-path.md`. Full Q4 models,
+application integration and runtime validation remain open.
 
 Recorded roadmap (the final consolidation strategy remains open):
 - First provide one application with a shared format registry, model checks,

@@ -1,0 +1,5811 @@
+{
+  "status": "User-supplied FLUX.2 klein Base 9B original/Python Q5_K_M/native Q5_K_M render comparison",
+  "images": [
+    {
+      "path": "E:\\AI_Art\\flux 2 klein base 9b\\qwen3 8b [Her][FP8-E4M3FN]\\2026-10-15_21-23-15.png",
+      "file_sha256": "e6dcd8dfbb8cd086e0fd6f538820f94adf4cf1f0a63802cc8d9676c5b369d975",
+      "ihdr_hex": "00000300000004000802000000",
+      "filtered_scanlines_sha256": "14a743aef713e1c7b95a17312cdbb87a96cade28382d82c4f58799c53de54f21",
+      "metadata": {
+        "prompt": {
+          "85": {
+            "inputs": {
+              "cfg": 4.0,
+              "model": [
+                "113",
+                0
+              ],
+              "positive": [
+                "94",
+                0
+              ],
+              "negative": [
+                "89",
+                0
+              ]
+            },
+            "class_type": "CFGGuider",
+            "_meta": {
+              "title": "CFG Guider"
+            }
+          },
+          "86": {
+            "inputs": {
+              "noise": [
+                "96",
+                0
+              ],
+              "guider": [
+                "85",
+                0
+              ],
+              "sampler": [
+                "98",
+                0
+              ],
+              "sigmas": [
+                "97",
+                0
+              ],
+              "latent_image": [
+                "111",
+                2
+              ]
+            },
+            "class_type": "SamplerCustomAdvanced",
+            "_meta": {
+              "title": "SamplerCustomAdvanced"
+            }
+          },
+          "87": {
+            "inputs": {
+              "samples": [
+                "86",
+                0
+              ],
+              "vae": [
+                "93",
+                0
+              ]
+            },
+            "class_type": "VAEDecode",
+            "_meta": {
+              "title": "VAE Decode"
+            }
+          },
+          "89": {
+            "inputs": {
+              "text": "lowres, worst quality, low quality, bad anatomy, bad hands, jpeg, artifacts, signature, watermark, text, logo, artist name, patreon_username, web_address, username, extra digits, censored, patreon username, loli, chibi, sweat, particles, parted lips",
+              "clip": [
+                "113",
+                1
+              ]
+            },
+            "class_type": "CLIPTextEncode",
+            "_meta": {
+              "title": "CLIP Text Encode (Negative Prompt)"
+            }
+          },
+          "93": {
+            "inputs": {
+              "vae_name": "Flux.2\\flux2-vae.safetensors"
+            },
+            "class_type": "VAELoader",
+            "_meta": {
+              "title": "Load VAE"
+            }
+          },
+          "94": {
+            "inputs": {
+              "text": "A low-angle cinematic medium-full shot of a confident adult slender European woman, approx age 28, with glowing fair skin and long flowing auburn hair. She is wearing leather micro skirt, platform stiletto high heels, and a stylish skintight black leather longsleeve shirt. She stands powerfully beside a weathered, rusted 1970s Dodge Charger R/T with faded paint and a license plate reading \"BADGIRL\". She holds a black Glock pistol pointing to the camera with her outstretched arm, gazing intensely at the viewer. The setting is a gritty, atmospheric old gas station at night. The lighting is high-contrast and stylized, dominated by harsh fluorescent green overhead lights illuminating the dust motes and heavy shadows, with a distinct orange light leak streak cutting across the frame. Robert Rodriguez neo-noir grindhouse style, shot on Nikon F2 50mm, visible film grain, photorealistic texture, sharp focus. No nudity, no blurry details, no watermarks, no logos other than license plate, correct anatomy, realistic proportions....",
+              "clip": [
+                "113",
+                1
+              ]
+            },
+            "class_type": "CLIPTextEncode",
+            "_meta": {
+              "title": "CLIP Text Encode (Positive Prompt)"
+            }
+          },
+          "96": {
+            "inputs": {
+              "noise_seed": 993648672917054
+            },
+            "class_type": "RandomNoise",
+            "_meta": {
+              "title": "RandomNoise"
+            }
+          },
+          "97": {
+            "inputs": {
+              "steps": 34,
+              "width": [
+                "111",
+                0
+              ],
+              "height": [
+                "111",
+                1
+              ]
+            },
+            "class_type": "Flux2Scheduler",
+            "_meta": {
+              "title": "Flux2Scheduler"
+            }
+          },
+          "98": {
+            "inputs": {
+              "sampler_name": "er_sde"
+            },
+            "class_type": "KSamplerSelect",
+            "_meta": {
+              "title": "KSamplerSelect"
+            }
+          },
+          "108": {
+            "inputs": {
+              "unet_name": "Flux.2 klein\\9B - Base\\flux-2-klein-base-9b.safetensors",
+              "weight_dtype": "default"
+            },
+            "class_type": "UNETLoader",
+            "_meta": {
+              "title": "Load Diffusion Model"
+            }
+          },
+          "109": {
+            "inputs": {
+              "clip_name": "Flux.2 klein 9b\\qwen3-8b-heretic_fp8_e4m3fn.safetensors",
+              "type": "flux2",
+              "device": "default"
+            },
+            "class_type": "CLIPLoader",
+            "_meta": {
+              "title": "Load CLIP"
+            }
+          },
+          "111": {
+            "inputs": {
+              "ResolutionState": "{\"mode\":\"preset\",\"ratio\":\"3:4\",\"w\":768,\"h\":1024,\"custom_w\":1024,\"custom_h\":1024,\"custom_ratio_w\":4,\"custom_ratio_h\":3,\"snap\":16}"
+            },
+            "class_type": "PixaromaResolution",
+            "_meta": {
+              "title": "Resolution Pixaroma"
+            }
+          },
+          "112": {
+            "inputs": {
+              "path_template": "%TOP_FOLDER%/%MODEL_NAME%/%TEXT_ENCODER_NAME%/%FILENAME%%BATCH%",
+              "model_source": "Friendly",
+              "clip_source": "Friendly",
+              "filename_datetime": "%date:yyyy-MM-dd_hh-mm-ss%",
+              "collision_mode": "increment",
+              "detection_info": "Off",
+              "export_workflow_metadata": true,
+              "subfolder": "",
+              "model_folder": "",
+              "clip_folder": "",
+              "image_format": "PNG",
+              "image_quality": 95,
+              "loader_priority": "Nearest",
+              "save_mode": "Preview",
+              "images": [
+                "87",
+                0
+              ]
+            },
+            "class_type": "SaveImageClean",
+            "_meta": {
+              "title": "Save Image Organized"
+            }
+          },
+          "113": {
+            "inputs": {
+              "PowerLoraLoaderHeaderWidget": {
+                "type": "PowerLoraLoaderHeaderWidget"
+              },
+              "lora_1": {
+                "on": true,
+                "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - Lenovo UltraReal.safetensors",
+                "strength": 0.7
+              },
+              "lora_2": {
+                "on": true,
+                "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - NiceGirls UltraReal.safetensors",
+                "strength": 0.7
+              },
+              "\u2795 Add Lora": "",
+              "model": [
+                "108",
+                0
+              ],
+              "clip": [
+                "109",
+                0
+              ]
+            },
+            "class_type": "Power Lora Loader (rgthree)",
+            "_meta": {
+              "title": "Power Lora Loader (rgthree)"
+            }
+          }
+        },
+        "workflow": {
+          "id": "92112d97-bb64-4b44-86f2-ea5691ef8f6e",
+          "revision": 0,
+          "last_node_id": 114,
+          "last_link_id": 308,
+          "nodes": [
+            {
+              "id": 86,
+              "type": "SamplerCustomAdvanced",
+              "pos": [
+                1492,
+                240
+              ],
+              "size": [
+                233.20000000000005,
+                111
+              ],
+              "flags": {},
+              "order": 11,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "noise",
+                  "type": "NOISE",
+                  "link": 165
+                },
+                {
+                  "name": "guider",
+                  "type": "GUIDER",
+                  "link": 166
+                },
+                {
+                  "name": "sampler",
+                  "type": "SAMPLER",
+                  "link": 167
+                },
+                {
+                  "name": "sigmas",
+                  "type": "SIGMAS",
+                  "link": 168
+                },
+                {
+                  "name": "latent_image",
+                  "type": "LATENT",
+                  "link": 305
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "output",
+                  "type": "LATENT",
+                  "links": [
+                    170
+                  ]
+                },
+                {
+                  "name": "denoised_output",
+                  "type": "LATENT",
+                  "links": []
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "SamplerCustomAdvanced",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              }
+            },
+            {
+              "id": 89,
+              "type": "CLIPTextEncode",
+              "pos": [
+                580,
+                580
+              ],
+              "size": [
+                440,
+                124.49035125732416
+              ],
+              "flags": {},
+              "order": 8,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "clip",
+                  "type": "CLIP",
+                  "link": 307
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "CONDITIONING",
+                  "type": "CONDITIONING",
+                  "slot_index": 0,
+                  "links": [
+                    164
+                  ]
+                }
+              ],
+              "title": "CLIP Text Encode (Negative Prompt)",
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "CLIPTextEncode",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "text": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "widgets_values": [
+                "lowres, worst quality, low quality, bad anatomy, bad hands, jpeg, artifacts, signature, watermark, text, logo, artist name, patreon_username, web_address, username, extra digits, censored, patreon username, loli, chibi, sweat, particles, parted lips"
+              ],
+              "widgets_values_named": {
+                "text": "lowres, worst quality, low quality, bad anatomy, bad hands, jpeg, artifacts, signature, watermark, text, logo, artist name, patreon_username, web_address, username, extra digits, censored, patreon username, loli, chibi, sweat, particles, parted lips"
+              },
+              "color": "#322",
+              "bgcolor": "#533"
+            },
+            {
+              "id": 96,
+              "type": "RandomNoise",
+              "pos": [
+                1096,
+                240
+              ],
+              "size": [
+                280,
+                100
+              ],
+              "flags": {},
+              "order": 0,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "NOISE",
+                  "type": "NOISE",
+                  "links": [
+                    165
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "RandomNoise",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "noise_seed": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "widgets_values": [
+                993648672917054,
+                "randomize"
+              ],
+              "widgets_values_named": {
+                "noise_seed": 993648672917054,
+                "control_after_generate": "randomize"
+              }
+            },
+            {
+              "id": 98,
+              "type": "KSamplerSelect",
+              "pos": [
+                1096,
+                528
+              ],
+              "size": [
+                280,
+                60
+              ],
+              "flags": {},
+              "order": 1,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "SAMPLER",
+                  "type": "SAMPLER",
+                  "links": [
+                    167
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "KSamplerSelect",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "sampler_name": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "widgets_values": [
+                "er_sde"
+              ],
+              "widgets_values_named": {
+                "sampler_name": "er_sde"
+              }
+            },
+            {
+              "id": 85,
+              "type": "CFGGuider",
+              "pos": [
+                1096,
+                388
+              ],
+              "size": [
+                280,
+                100
+              ],
+              "flags": {},
+              "order": 10,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "model",
+                  "type": "MODEL",
+                  "link": 306
+                },
+                {
+                  "name": "positive",
+                  "type": "CONDITIONING",
+                  "link": 163
+                },
+                {
+                  "name": "negative",
+                  "type": "CONDITIONING",
+                  "link": 164
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "GUIDER",
+                  "type": "GUIDER",
+                  "links": [
+                    166
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "CFGGuider",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "cfg": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "widgets_values": [
+                4
+              ],
+              "widgets_values_named": {
+                "cfg": 4
+              }
+            },
+            {
+              "id": 97,
+              "type": "Flux2Scheduler",
+              "pos": [
+                1096,
+                640
+              ],
+              "size": [
+                280,
+                106
+              ],
+              "flags": {},
+              "order": 7,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "width",
+                  "type": "INT",
+                  "widget": {
+                    "name": "width"
+                  },
+                  "link": 303
+                },
+                {
+                  "name": "height",
+                  "type": "INT",
+                  "widget": {
+                    "name": "height"
+                  },
+                  "link": 304
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "SIGMAS",
+                  "type": "SIGMAS",
+                  "links": [
+                    168
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "Flux2Scheduler",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "steps": true,
+                    "width": true,
+                    "height": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "widgets_values": [
+                34,
+                1024,
+                1024
+              ],
+              "widgets_values_named": {
+                "steps": 34,
+                "width": 1024,
+                "height": 1024
+              }
+            },
+            {
+              "id": 108,
+              "type": "UNETLoader",
+              "pos": [
+                -96,
+                244
+              ],
+              "size": [
+                344,
+                84
+              ],
+              "flags": {},
+              "order": 2,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "MODEL",
+                  "type": "MODEL",
+                  "links": [
+                    201
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.33.1",
+                "Node name for S&R": "UNETLoader",
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "input_ue_unconnectable": {},
+                  "version": "7.8"
+                }
+              },
+              "widgets_values": [
+                "Flux.2 klein\\9B - Base\\flux-2-klein-base-9b.safetensors",
+                "default"
+              ],
+              "widgets_values_named": {
+                "unet_name": "Flux.2 klein\\9B - Base\\flux-2-klein-base-9b.safetensors",
+                "weight_dtype": "default"
+              },
+              "color": "#223",
+              "bgcolor": "#335"
+            },
+            {
+              "id": 109,
+              "type": "CLIPLoader",
+              "pos": [
+                -96,
+                372
+              ],
+              "size": [
+                344,
+                108
+              ],
+              "flags": {},
+              "order": 3,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "CLIP",
+                  "type": "CLIP",
+                  "links": [
+                    200
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.33.1",
+                "Node name for S&R": "CLIPLoader",
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "input_ue_unconnectable": {},
+                  "version": "7.8"
+                }
+              },
+              "widgets_values": [
+                "Flux.2 klein 9b\\qwen3-8b-heretic_fp8_e4m3fn.safetensors",
+                "flux2",
+                "default"
+              ],
+              "widgets_values_named": {
+                "clip_name": "Flux.2 klein 9b\\qwen3-8b-heretic_fp8_e4m3fn.safetensors",
+                "type": "flux2",
+                "device": "default"
+              },
+              "color": "#432",
+              "bgcolor": "#653"
+            },
+            {
+              "id": 93,
+              "type": "VAELoader",
+              "pos": [
+                -96,
+                524
+              ],
+              "size": [
+                344,
+                58
+              ],
+              "flags": {},
+              "order": 4,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "VAE",
+                  "type": "VAE",
+                  "links": [
+                    302
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "VAELoader",
+                "models": [
+                  {
+                    "name": "Flux.2 klein\\flux2-vae.safetensors",
+                    "url": "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/vae/flux2-vae.safetensors",
+                    "directory": "vae"
+                  }
+                ],
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "vae_name": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {},
+                  "output_not_broadcasting": {}
+                },
+                "ue_convert": true,
+                "rejects_ue_links": true
+              },
+              "widgets_values": [
+                "Flux.2\\flux2-vae.safetensors"
+              ],
+              "widgets_values_named": {
+                "vae_name": "Flux.2\\flux2-vae.safetensors"
+              },
+              "color": "#322",
+              "bgcolor": "#533"
+            },
+            {
+              "id": 94,
+              "type": "CLIPTextEncode",
+              "pos": [
+                580,
+                244
+              ],
+              "size": [
+                440,
+                288
+              ],
+              "flags": {},
+              "order": 9,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "clip",
+                  "type": "CLIP",
+                  "link": 308
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "CONDITIONING",
+                  "type": "CONDITIONING",
+                  "slot_index": 0,
+                  "links": [
+                    163
+                  ]
+                }
+              ],
+              "title": "CLIP Text Encode (Positive Prompt)",
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "CLIPTextEncode",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "text": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "widgets_values": [
+                "A low-angle cinematic medium-full shot of a confident adult slender European woman, approx age 28, with glowing fair skin and long flowing auburn hair. She is wearing leather micro skirt, platform stiletto high heels, and a stylish skintight black leather longsleeve shirt. She stands powerfully beside a weathered, rusted 1970s Dodge Charger R/T with faded paint and a license plate reading \"BADGIRL\". She holds a black Glock pistol pointing to the camera with her outstretched arm, gazing intensely at the viewer. The setting is a gritty, atmospheric old gas station at night. The lighting is high-contrast and stylized, dominated by harsh fluorescent green overhead lights illuminating the dust motes and heavy shadows, with a distinct orange light leak streak cutting across the frame. Robert Rodriguez neo-noir grindhouse style, shot on Nikon F2 50mm, visible film grain, photorealistic texture, sharp focus. No nudity, no blurry details, no watermarks, no logos other than license plate, correct anatomy, realistic proportions...."
+              ],
+              "widgets_values_named": {
+                "text": "A low-angle cinematic medium-full shot of a confident adult slender European woman, approx age 28, with glowing fair skin and long flowing auburn hair. She is wearing leather micro skirt, platform stiletto high heels, and a stylish skintight black leather longsleeve shirt. She stands powerfully beside a weathered, rusted 1970s Dodge Charger R/T with faded paint and a license plate reading \"BADGIRL\". She holds a black Glock pistol pointing to the camera with her outstretched arm, gazing intensely at the viewer. The setting is a gritty, atmospheric old gas station at night. The lighting is high-contrast and stylized, dominated by harsh fluorescent green overhead lights illuminating the dust motes and heavy shadows, with a distinct orange light leak streak cutting across the frame. Robert Rodriguez neo-noir grindhouse style, shot on Nikon F2 50mm, visible film grain, photorealistic texture, sharp focus. No nudity, no blurry details, no watermarks, no logos other than license plate, correct anatomy, realistic proportions...."
+              },
+              "color": "#232",
+              "bgcolor": "#353"
+            },
+            {
+              "id": 87,
+              "type": "VAEDecode",
+              "pos": [
+                1868,
+                236
+              ],
+              "size": [
+                220,
+                60
+              ],
+              "flags": {
+                "collapsed": true
+              },
+              "order": 12,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "samples",
+                  "type": "LATENT",
+                  "link": 170
+                },
+                {
+                  "name": "vae",
+                  "type": "VAE",
+                  "link": 302
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "IMAGE",
+                  "type": "IMAGE",
+                  "slot_index": 0,
+                  "links": [
+                    199
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "VAEDecode",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "color": "#322",
+              "bgcolor": "#533"
+            },
+            {
+              "id": 111,
+              "type": "PixaromaResolution",
+              "pos": [
+                288,
+                244
+              ],
+              "size": [
+                240,
+                435
+              ],
+              "flags": {},
+              "order": 5,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "width",
+                  "type": "INT",
+                  "links": [
+                    303
+                  ]
+                },
+                {
+                  "name": "height",
+                  "type": "INT",
+                  "links": [
+                    304
+                  ]
+                },
+                {
+                  "name": "latent",
+                  "type": "LATENT",
+                  "links": [
+                    305
+                  ]
+                }
+              ],
+              "properties": {
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "input_ue_unconnectable": {},
+                  "output_not_broadcasting": {}
+                },
+                "cnr_id": "ComfyUI-Pixaroma",
+                "ver": "765412e95110f8f547bfb8e709bc099a438f12a5",
+                "Node name for S&R": "PixaromaResolution",
+                "resolutionState": "{\"mode\":\"preset\",\"ratio\":\"3:4\",\"w\":768,\"h\":1024,\"custom_w\":1024,\"custom_h\":1024,\"custom_ratio_w\":4,\"custom_ratio_h\":3,\"snap\":16}",
+                "ue_convert": true
+              },
+              "widgets_values": [
+                {
+                  "mode": "preset",
+                  "ratio": "3:4",
+                  "w": 768,
+                  "h": 1024,
+                  "custom_w": 1024,
+                  "custom_h": 1024,
+                  "custom_ratio_w": 4,
+                  "custom_ratio_h": 3,
+                  "snap": 16
+                }
+              ],
+              "widgets_values_named": {
+                "resolution_ui": {
+                  "mode": "preset",
+                  "ratio": "3:4",
+                  "w": 768,
+                  "h": 1024,
+                  "custom_w": 1024,
+                  "custom_h": 1024,
+                  "custom_ratio_w": 4,
+                  "custom_ratio_h": 3,
+                  "snap": 16
+                }
+              },
+              "color": "#1d1d1d",
+              "bgcolor": "#2a2a2a"
+            },
+            {
+              "id": 112,
+              "type": "SaveImageClean",
+              "pos": [
+                1868,
+                280
+              ],
+              "size": [
+                669.8398925781248,
+                897.5999999999999
+              ],
+              "flags": {},
+              "order": 13,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "images",
+                  "type": "IMAGE",
+                  "link": 199
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "FILENAME",
+                  "type": "STRING",
+                  "links": null
+                },
+                {
+                  "name": "FILE_PATH",
+                  "type": "STRING",
+                  "links": null
+                },
+                {
+                  "name": "IMAGES",
+                  "type": "IMAGE",
+                  "links": null
+                }
+              ],
+              "properties": {
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "input_ue_unconnectable": {}
+                },
+                "cnr_id": "save-image-organized",
+                "ver": "7b38b8ff1ddf7d6c324f1b910efa4eaa00815bd9",
+                "Node name for S&R": "SaveImageClean"
+              },
+              "widgets_values": [
+                "%TOP_FOLDER%/%MODEL_NAME%/%TEXT_ENCODER_NAME%/%FILENAME%%BATCH%",
+                "Friendly",
+                "Friendly",
+                "%date:yyyy-MM-dd_hh-mm-ss%",
+                "increment",
+                "Off",
+                true,
+                "",
+                "",
+                "",
+                "PNG",
+                95,
+                "Nearest",
+                "Preview"
+              ],
+              "widgets_values_named": {
+                "path_template": "%TOP_FOLDER%/%MODEL_NAME%/%TEXT_ENCODER_NAME%/%FILENAME%%BATCH%",
+                "model_source": "Friendly",
+                "clip_source": "Friendly",
+                "filename_datetime": "%date:yyyy-MM-dd_hh-mm-ss%",
+                "collision_mode": "increment",
+                "detection_info": "Off",
+                "export_workflow_metadata": true,
+                "subfolder": "",
+                "model_folder": "",
+                "clip_folder": "",
+                "image_format": "PNG",
+                "image_quality": 95,
+                "loader_priority": "Nearest",
+                "save_mode": "Preview"
+              },
+              "color": "#4a3fcf",
+              "bgcolor": "#2a283e"
+            },
+            {
+              "id": 113,
+              "type": "Power Lora Loader (rgthree)",
+              "pos": [
+                -96,
+                624
+              ],
+              "size": [
+                344,
+                166
+              ],
+              "flags": {},
+              "order": 6,
+              "mode": 0,
+              "inputs": [
+                {
+                  "dir": 3,
+                  "name": "model",
+                  "type": "MODEL",
+                  "link": 201
+                },
+                {
+                  "dir": 3,
+                  "name": "clip",
+                  "type": "CLIP",
+                  "link": 200
+                }
+              ],
+              "outputs": [
+                {
+                  "dir": 4,
+                  "name": "MODEL",
+                  "shape": 3,
+                  "type": "MODEL",
+                  "links": [
+                    306
+                  ]
+                },
+                {
+                  "dir": 4,
+                  "name": "CLIP",
+                  "shape": 3,
+                  "type": "CLIP",
+                  "links": [
+                    307,
+                    308
+                  ]
+                }
+              ],
+              "properties": {
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "input_ue_unconnectable": {},
+                  "output_not_broadcasting": {}
+                },
+                "cnr_id": "rgthree-comfy",
+                "ver": "27b4f4cdcf3b127c29d5d8135ac1536ecbd4c383",
+                "Show Strengths": "Single Strength",
+                "Match": "",
+                "ue_convert": true
+              },
+              "widgets_values": [
+                {},
+                {
+                  "type": "PowerLoraLoaderHeaderWidget"
+                },
+                {
+                  "on": true,
+                  "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - Lenovo UltraReal.safetensors",
+                  "strength": 0.7,
+                  "strengthTwo": null
+                },
+                {
+                  "on": true,
+                  "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - NiceGirls UltraReal.safetensors",
+                  "strength": 0.7,
+                  "strengthTwo": null
+                },
+                {},
+                ""
+              ],
+              "widgets_values_named": {
+                "divider": {},
+                "PowerLoraLoaderHeaderWidget": {
+                  "type": "PowerLoraLoaderHeaderWidget"
+                },
+                "lora_1": {
+                  "on": true,
+                  "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - Lenovo UltraReal.safetensors",
+                  "strength": 0.7,
+                  "strengthTwo": null
+                },
+                "lora_2": {
+                  "on": true,
+                  "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - NiceGirls UltraReal.safetensors",
+                  "strength": 0.7,
+                  "strengthTwo": null
+                },
+                "divider#1": {},
+                "\u2795 Add Lora": ""
+              },
+              "color": "#233",
+              "bgcolor": "#355"
+            }
+          ],
+          "links": [
+            [
+              163,
+              94,
+              0,
+              85,
+              1,
+              "CONDITIONING"
+            ],
+            [
+              164,
+              89,
+              0,
+              85,
+              2,
+              "CONDITIONING"
+            ],
+            [
+              165,
+              96,
+              0,
+              86,
+              0,
+              "NOISE"
+            ],
+            [
+              166,
+              85,
+              0,
+              86,
+              1,
+              "GUIDER"
+            ],
+            [
+              167,
+              98,
+              0,
+              86,
+              2,
+              "SAMPLER"
+            ],
+            [
+              168,
+              97,
+              0,
+              86,
+              3,
+              "SIGMAS"
+            ],
+            [
+              170,
+              86,
+              0,
+              87,
+              0,
+              "LATENT"
+            ],
+            [
+              199,
+              87,
+              0,
+              112,
+              0,
+              "IMAGE"
+            ],
+            [
+              200,
+              109,
+              0,
+              113,
+              1,
+              "CLIP"
+            ],
+            [
+              201,
+              108,
+              0,
+              113,
+              0,
+              "MODEL"
+            ],
+            [
+              302,
+              93,
+              0,
+              87,
+              1,
+              "VAE"
+            ],
+            [
+              303,
+              111,
+              0,
+              97,
+              0,
+              "INT"
+            ],
+            [
+              304,
+              111,
+              1,
+              97,
+              1,
+              "INT"
+            ],
+            [
+              305,
+              111,
+              2,
+              86,
+              4,
+              "LATENT"
+            ],
+            [
+              306,
+              113,
+              0,
+              85,
+              0,
+              "MODEL"
+            ],
+            [
+              307,
+              113,
+              1,
+              89,
+              0,
+              "CLIP"
+            ],
+            [
+              308,
+              113,
+              1,
+              94,
+              0,
+              "CLIP"
+            ]
+          ],
+          "groups": [
+            {
+              "id": 1,
+              "title": "Models",
+              "bounding": [
+                -116,
+                168,
+                383.5199462890625,
+                776.4
+              ],
+              "color": "#3f789e",
+              "flags": {}
+            },
+            {
+              "id": 2,
+              "title": "Prompt",
+              "bounding": [
+                560,
+                168,
+                470,
+                550
+              ],
+              "color": "#3f789e",
+              "flags": {}
+            },
+            {
+              "id": 3,
+              "title": "Sampler",
+              "bounding": [
+                1084,
+                168,
+                706.1295675048827,
+                600.028
+              ],
+              "color": "#3f789e",
+              "flags": {}
+            },
+            {
+              "id": 5,
+              "title": "Output",
+              "bounding": [
+                1856,
+                168,
+                694.1599999999999,
+                1023.797622225009
+              ],
+              "color": "#3f789e",
+              "flags": {}
+            }
+          ],
+          "config": {},
+          "extra": {
+            "frontendVersion": "1.55.17",
+            "workflowRendererVersion": "LG",
+            "VHS_latentpreview": false,
+            "VHS_latentpreviewrate": 0,
+            "VHS_MetadataImage": true,
+            "VHS_KeepIntermediate": true,
+            "ds": {
+              "scale": 1.9487171000000014,
+              "offset": [
+                -1469.567045235938,
+                -510.2479018261185
+              ]
+            },
+            "ue_links": [
+              {
+                "downstream": "86",
+                "downstream_slot": 4,
+                "upstream": "111",
+                "upstream_slot": 2,
+                "controller": "111",
+                "type": "LATENT"
+              },
+              {
+                "downstream": "89",
+                "downstream_slot": 0,
+                "upstream": "113",
+                "upstream_slot": 1,
+                "controller": "113",
+                "type": "CLIP"
+              },
+              {
+                "downstream": "85",
+                "downstream_slot": 0,
+                "upstream": "113",
+                "upstream_slot": 0,
+                "controller": "113",
+                "type": "MODEL"
+              },
+              {
+                "downstream": "97",
+                "downstream_slot": 1,
+                "upstream": "111",
+                "upstream_slot": 0,
+                "controller": "111",
+                "type": "INT"
+              },
+              {
+                "downstream": "97",
+                "downstream_slot": 2,
+                "upstream": "111",
+                "upstream_slot": 1,
+                "controller": "111",
+                "type": "INT"
+              },
+              {
+                "downstream": "94",
+                "downstream_slot": 0,
+                "upstream": "113",
+                "upstream_slot": 1,
+                "controller": "113",
+                "type": "CLIP"
+              },
+              {
+                "downstream": "87",
+                "downstream_slot": 1,
+                "upstream": "93",
+                "upstream_slot": 0,
+                "controller": "93",
+                "type": "VAE"
+              }
+            ],
+            "links_added_by_ue": [
+              302,
+              303,
+              304,
+              305,
+              306,
+              307,
+              308
+            ]
+          },
+          "version": 0.4,
+          "seed_widgets": {
+            "96": 0
+          }
+        }
+      },
+      "all_png_chunk_crcs_valid": true
+    },
+    {
+      "path": "E:\\AI_Art\\python [5K-M]\\qwen3 8b [Her][FP8-E4M3FN]\\2026-10-15_21-25-38.png",
+      "file_sha256": "349aab92252478635102b9367b5c1e9ecf5087862c7345593ba1c6ed3a5631eb",
+      "ihdr_hex": "00000300000004000802000000",
+      "filtered_scanlines_sha256": "5b61cc41afc533afbfa4fddcec84ab402de593025a050bc65a654dfdc85b9d11",
+      "metadata": {
+        "prompt": {
+          "85": {
+            "inputs": {
+              "cfg": 4.0,
+              "model": [
+                "113",
+                0
+              ],
+              "positive": [
+                "94",
+                0
+              ],
+              "negative": [
+                "89",
+                0
+              ]
+            },
+            "class_type": "CFGGuider",
+            "_meta": {
+              "title": "CFG Guider"
+            }
+          },
+          "86": {
+            "inputs": {
+              "noise": [
+                "96",
+                0
+              ],
+              "guider": [
+                "85",
+                0
+              ],
+              "sampler": [
+                "98",
+                0
+              ],
+              "sigmas": [
+                "97",
+                0
+              ],
+              "latent_image": [
+                "111",
+                2
+              ]
+            },
+            "class_type": "SamplerCustomAdvanced",
+            "_meta": {
+              "title": "SamplerCustomAdvanced"
+            }
+          },
+          "87": {
+            "inputs": {
+              "samples": [
+                "86",
+                0
+              ],
+              "vae": [
+                "93",
+                0
+              ]
+            },
+            "class_type": "VAEDecode",
+            "_meta": {
+              "title": "VAE Decode"
+            }
+          },
+          "89": {
+            "inputs": {
+              "text": "lowres, worst quality, low quality, bad anatomy, bad hands, jpeg, artifacts, signature, watermark, text, logo, artist name, patreon_username, web_address, username, extra digits, censored, patreon username, loli, chibi, sweat, particles, parted lips",
+              "clip": [
+                "113",
+                1
+              ]
+            },
+            "class_type": "CLIPTextEncode",
+            "_meta": {
+              "title": "CLIP Text Encode (Negative Prompt)"
+            }
+          },
+          "93": {
+            "inputs": {
+              "vae_name": "Flux.2\\flux2-vae.safetensors"
+            },
+            "class_type": "VAELoader",
+            "_meta": {
+              "title": "Load VAE"
+            }
+          },
+          "94": {
+            "inputs": {
+              "text": "A low-angle cinematic medium-full shot of a confident adult slender European woman, approx age 28, with glowing fair skin and long flowing auburn hair. She is wearing leather micro skirt, platform stiletto high heels, and a stylish skintight black leather longsleeve shirt. She stands powerfully beside a weathered, rusted 1970s Dodge Charger R/T with faded paint and a license plate reading \"BADGIRL\". She holds a black Glock pistol pointing to the camera with her outstretched arm, gazing intensely at the viewer. The setting is a gritty, atmospheric old gas station at night. The lighting is high-contrast and stylized, dominated by harsh fluorescent green overhead lights illuminating the dust motes and heavy shadows, with a distinct orange light leak streak cutting across the frame. Robert Rodriguez neo-noir grindhouse style, shot on Nikon F2 50mm, visible film grain, photorealistic texture, sharp focus. No nudity, no blurry details, no watermarks, no logos other than license plate, correct anatomy, realistic proportions....",
+              "clip": [
+                "113",
+                1
+              ]
+            },
+            "class_type": "CLIPTextEncode",
+            "_meta": {
+              "title": "CLIP Text Encode (Positive Prompt)"
+            }
+          },
+          "96": {
+            "inputs": {
+              "noise_seed": 572241167616859
+            },
+            "class_type": "RandomNoise",
+            "_meta": {
+              "title": "RandomNoise"
+            }
+          },
+          "97": {
+            "inputs": {
+              "steps": 34,
+              "width": [
+                "111",
+                0
+              ],
+              "height": [
+                "111",
+                1
+              ]
+            },
+            "class_type": "Flux2Scheduler",
+            "_meta": {
+              "title": "Flux2Scheduler"
+            }
+          },
+          "98": {
+            "inputs": {
+              "sampler_name": "er_sde"
+            },
+            "class_type": "KSamplerSelect",
+            "_meta": {
+              "title": "KSamplerSelect"
+            }
+          },
+          "109": {
+            "inputs": {
+              "clip_name": "Flux.2 klein 9b\\qwen3-8b-heretic_fp8_e4m3fn.safetensors",
+              "type": "flux2",
+              "device": "default"
+            },
+            "class_type": "CLIPLoader",
+            "_meta": {
+              "title": "Load CLIP"
+            }
+          },
+          "111": {
+            "inputs": {
+              "ResolutionState": "{\"mode\":\"preset\",\"ratio\":\"3:4\",\"w\":768,\"h\":1024,\"custom_w\":1024,\"custom_h\":1024,\"custom_ratio_w\":4,\"custom_ratio_h\":3,\"snap\":16}"
+            },
+            "class_type": "PixaromaResolution",
+            "_meta": {
+              "title": "Resolution Pixaroma"
+            }
+          },
+          "112": {
+            "inputs": {
+              "path_template": "%TOP_FOLDER%/%MODEL_NAME%/%TEXT_ENCODER_NAME%/%FILENAME%%BATCH%",
+              "model_source": "Friendly",
+              "clip_source": "Friendly",
+              "filename_datetime": "%date:yyyy-MM-dd_hh-mm-ss%",
+              "collision_mode": "increment",
+              "detection_info": "Off",
+              "export_workflow_metadata": true,
+              "subfolder": "",
+              "model_folder": "",
+              "clip_folder": "",
+              "image_format": "PNG",
+              "image_quality": 95,
+              "loader_priority": "Nearest",
+              "save_mode": "Preview",
+              "images": [
+                "87",
+                0
+              ]
+            },
+            "class_type": "SaveImageClean",
+            "_meta": {
+              "title": "Save Image Organized"
+            }
+          },
+          "113": {
+            "inputs": {
+              "PowerLoraLoaderHeaderWidget": {
+                "type": "PowerLoraLoaderHeaderWidget"
+              },
+              "lora_1": {
+                "on": true,
+                "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - Lenovo UltraReal.safetensors",
+                "strength": 0.7
+              },
+              "lora_2": {
+                "on": true,
+                "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - NiceGirls UltraReal.safetensors",
+                "strength": 0.7
+              },
+              "\u2795 Add Lora": "",
+              "model": [
+                "115",
+                0
+              ],
+              "clip": [
+                "109",
+                0
+              ]
+            },
+            "class_type": "Power Lora Loader (rgthree)",
+            "_meta": {
+              "title": "Power Lora Loader (rgthree)"
+            }
+          },
+          "115": {
+            "inputs": {
+              "unet_name": "python-Q5_K_M.gguf"
+            },
+            "class_type": "UnetLoaderGGUF",
+            "_meta": {
+              "title": "Unet Loader (GGUF)"
+            }
+          }
+        },
+        "workflow": {
+          "id": "92112d97-bb64-4b44-86f2-ea5691ef8f6e",
+          "revision": 0,
+          "last_node_id": 115,
+          "last_link_id": 316,
+          "nodes": [
+            {
+              "id": 86,
+              "type": "SamplerCustomAdvanced",
+              "pos": [
+                1492,
+                240
+              ],
+              "size": [
+                233.20000000000005,
+                111
+              ],
+              "flags": {},
+              "order": 12,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "noise",
+                  "type": "NOISE",
+                  "link": 165
+                },
+                {
+                  "name": "guider",
+                  "type": "GUIDER",
+                  "link": 166
+                },
+                {
+                  "name": "sampler",
+                  "type": "SAMPLER",
+                  "link": 167
+                },
+                {
+                  "name": "sigmas",
+                  "type": "SIGMAS",
+                  "link": 168
+                },
+                {
+                  "name": "latent_image",
+                  "type": "LATENT",
+                  "link": 313
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "output",
+                  "type": "LATENT",
+                  "links": [
+                    170
+                  ]
+                },
+                {
+                  "name": "denoised_output",
+                  "type": "LATENT",
+                  "links": []
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "SamplerCustomAdvanced",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              }
+            },
+            {
+              "id": 89,
+              "type": "CLIPTextEncode",
+              "pos": [
+                580,
+                580
+              ],
+              "size": [
+                440,
+                124.49035125732416
+              ],
+              "flags": {},
+              "order": 9,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "clip",
+                  "type": "CLIP",
+                  "link": 315
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "CONDITIONING",
+                  "type": "CONDITIONING",
+                  "slot_index": 0,
+                  "links": [
+                    164
+                  ]
+                }
+              ],
+              "title": "CLIP Text Encode (Negative Prompt)",
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "CLIPTextEncode",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "text": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "widgets_values": [
+                "lowres, worst quality, low quality, bad anatomy, bad hands, jpeg, artifacts, signature, watermark, text, logo, artist name, patreon_username, web_address, username, extra digits, censored, patreon username, loli, chibi, sweat, particles, parted lips"
+              ],
+              "widgets_values_named": {
+                "text": "lowres, worst quality, low quality, bad anatomy, bad hands, jpeg, artifacts, signature, watermark, text, logo, artist name, patreon_username, web_address, username, extra digits, censored, patreon username, loli, chibi, sweat, particles, parted lips"
+              },
+              "color": "#322",
+              "bgcolor": "#533"
+            },
+            {
+              "id": 96,
+              "type": "RandomNoise",
+              "pos": [
+                1096,
+                240
+              ],
+              "size": [
+                280,
+                100
+              ],
+              "flags": {},
+              "order": 0,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "NOISE",
+                  "type": "NOISE",
+                  "links": [
+                    165
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "RandomNoise",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "noise_seed": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "widgets_values": [
+                572241167616859,
+                "fixed"
+              ],
+              "widgets_values_named": {
+                "noise_seed": 572241167616859,
+                "control_after_generate": "fixed"
+              }
+            },
+            {
+              "id": 98,
+              "type": "KSamplerSelect",
+              "pos": [
+                1096,
+                528
+              ],
+              "size": [
+                280,
+                60
+              ],
+              "flags": {},
+              "order": 1,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "SAMPLER",
+                  "type": "SAMPLER",
+                  "links": [
+                    167
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "KSamplerSelect",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "sampler_name": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "widgets_values": [
+                "er_sde"
+              ],
+              "widgets_values_named": {
+                "sampler_name": "er_sde"
+              }
+            },
+            {
+              "id": 85,
+              "type": "CFGGuider",
+              "pos": [
+                1096,
+                388
+              ],
+              "size": [
+                280,
+                100
+              ],
+              "flags": {},
+              "order": 11,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "model",
+                  "type": "MODEL",
+                  "link": 314
+                },
+                {
+                  "name": "positive",
+                  "type": "CONDITIONING",
+                  "link": 163
+                },
+                {
+                  "name": "negative",
+                  "type": "CONDITIONING",
+                  "link": 164
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "GUIDER",
+                  "type": "GUIDER",
+                  "links": [
+                    166
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "CFGGuider",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "cfg": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "widgets_values": [
+                4
+              ],
+              "widgets_values_named": {
+                "cfg": 4
+              }
+            },
+            {
+              "id": 97,
+              "type": "Flux2Scheduler",
+              "pos": [
+                1096,
+                640
+              ],
+              "size": [
+                280,
+                106
+              ],
+              "flags": {},
+              "order": 7,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "width",
+                  "type": "INT",
+                  "widget": {
+                    "name": "width"
+                  },
+                  "link": 311
+                },
+                {
+                  "name": "height",
+                  "type": "INT",
+                  "widget": {
+                    "name": "height"
+                  },
+                  "link": 312
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "SIGMAS",
+                  "type": "SIGMAS",
+                  "links": [
+                    168
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "Flux2Scheduler",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "steps": true,
+                    "width": true,
+                    "height": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "widgets_values": [
+                34,
+                1024,
+                1024
+              ],
+              "widgets_values_named": {
+                "steps": 34,
+                "width": 1024,
+                "height": 1024
+              }
+            },
+            {
+              "id": 108,
+              "type": "UNETLoader",
+              "pos": [
+                -96,
+                244
+              ],
+              "size": [
+                344,
+                84
+              ],
+              "flags": {},
+              "order": 2,
+              "mode": 2,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "MODEL",
+                  "type": "MODEL",
+                  "links": []
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.33.1",
+                "Node name for S&R": "UNETLoader",
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "input_ue_unconnectable": {},
+                  "version": "7.8"
+                }
+              },
+              "widgets_values": [
+                "Flux.2 klein\\9B - Base\\flux-2-klein-base-9b.safetensors",
+                "default"
+              ],
+              "widgets_values_named": {
+                "unet_name": "Flux.2 klein\\9B - Base\\flux-2-klein-base-9b.safetensors",
+                "weight_dtype": "default"
+              },
+              "color": "#223",
+              "bgcolor": "#335"
+            },
+            {
+              "id": 109,
+              "type": "CLIPLoader",
+              "pos": [
+                -96,
+                372
+              ],
+              "size": [
+                344,
+                108
+              ],
+              "flags": {},
+              "order": 3,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "CLIP",
+                  "type": "CLIP",
+                  "links": [
+                    200
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.33.1",
+                "Node name for S&R": "CLIPLoader",
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "input_ue_unconnectable": {},
+                  "version": "7.8"
+                }
+              },
+              "widgets_values": [
+                "Flux.2 klein 9b\\qwen3-8b-heretic_fp8_e4m3fn.safetensors",
+                "flux2",
+                "default"
+              ],
+              "widgets_values_named": {
+                "clip_name": "Flux.2 klein 9b\\qwen3-8b-heretic_fp8_e4m3fn.safetensors",
+                "type": "flux2",
+                "device": "default"
+              },
+              "color": "#432",
+              "bgcolor": "#653"
+            },
+            {
+              "id": 93,
+              "type": "VAELoader",
+              "pos": [
+                -96,
+                524
+              ],
+              "size": [
+                344,
+                58
+              ],
+              "flags": {},
+              "order": 4,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "VAE",
+                  "type": "VAE",
+                  "links": [
+                    310
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "VAELoader",
+                "models": [
+                  {
+                    "name": "Flux.2 klein\\flux2-vae.safetensors",
+                    "url": "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/vae/flux2-vae.safetensors",
+                    "directory": "vae"
+                  }
+                ],
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "vae_name": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {},
+                  "output_not_broadcasting": {}
+                },
+                "ue_convert": true,
+                "rejects_ue_links": true
+              },
+              "widgets_values": [
+                "Flux.2\\flux2-vae.safetensors"
+              ],
+              "widgets_values_named": {
+                "vae_name": "Flux.2\\flux2-vae.safetensors"
+              },
+              "color": "#322",
+              "bgcolor": "#533"
+            },
+            {
+              "id": 94,
+              "type": "CLIPTextEncode",
+              "pos": [
+                580,
+                244
+              ],
+              "size": [
+                440,
+                288
+              ],
+              "flags": {},
+              "order": 10,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "clip",
+                  "type": "CLIP",
+                  "link": 316
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "CONDITIONING",
+                  "type": "CONDITIONING",
+                  "slot_index": 0,
+                  "links": [
+                    163
+                  ]
+                }
+              ],
+              "title": "CLIP Text Encode (Positive Prompt)",
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "CLIPTextEncode",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "text": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "widgets_values": [
+                "A low-angle cinematic medium-full shot of a confident adult slender European woman, approx age 28, with glowing fair skin and long flowing auburn hair. She is wearing leather micro skirt, platform stiletto high heels, and a stylish skintight black leather longsleeve shirt. She stands powerfully beside a weathered, rusted 1970s Dodge Charger R/T with faded paint and a license plate reading \"BADGIRL\". She holds a black Glock pistol pointing to the camera with her outstretched arm, gazing intensely at the viewer. The setting is a gritty, atmospheric old gas station at night. The lighting is high-contrast and stylized, dominated by harsh fluorescent green overhead lights illuminating the dust motes and heavy shadows, with a distinct orange light leak streak cutting across the frame. Robert Rodriguez neo-noir grindhouse style, shot on Nikon F2 50mm, visible film grain, photorealistic texture, sharp focus. No nudity, no blurry details, no watermarks, no logos other than license plate, correct anatomy, realistic proportions...."
+              ],
+              "widgets_values_named": {
+                "text": "A low-angle cinematic medium-full shot of a confident adult slender European woman, approx age 28, with glowing fair skin and long flowing auburn hair. She is wearing leather micro skirt, platform stiletto high heels, and a stylish skintight black leather longsleeve shirt. She stands powerfully beside a weathered, rusted 1970s Dodge Charger R/T with faded paint and a license plate reading \"BADGIRL\". She holds a black Glock pistol pointing to the camera with her outstretched arm, gazing intensely at the viewer. The setting is a gritty, atmospheric old gas station at night. The lighting is high-contrast and stylized, dominated by harsh fluorescent green overhead lights illuminating the dust motes and heavy shadows, with a distinct orange light leak streak cutting across the frame. Robert Rodriguez neo-noir grindhouse style, shot on Nikon F2 50mm, visible film grain, photorealistic texture, sharp focus. No nudity, no blurry details, no watermarks, no logos other than license plate, correct anatomy, realistic proportions...."
+              },
+              "color": "#232",
+              "bgcolor": "#353"
+            },
+            {
+              "id": 87,
+              "type": "VAEDecode",
+              "pos": [
+                1868,
+                236
+              ],
+              "size": [
+                220,
+                60
+              ],
+              "flags": {
+                "collapsed": true
+              },
+              "order": 13,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "samples",
+                  "type": "LATENT",
+                  "link": 170
+                },
+                {
+                  "name": "vae",
+                  "type": "VAE",
+                  "link": 310
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "IMAGE",
+                  "type": "IMAGE",
+                  "slot_index": 0,
+                  "links": [
+                    199
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "VAEDecode",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "color": "#322",
+              "bgcolor": "#533"
+            },
+            {
+              "id": 111,
+              "type": "PixaromaResolution",
+              "pos": [
+                288,
+                244
+              ],
+              "size": [
+                240,
+                435
+              ],
+              "flags": {},
+              "order": 5,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "width",
+                  "type": "INT",
+                  "links": [
+                    311
+                  ]
+                },
+                {
+                  "name": "height",
+                  "type": "INT",
+                  "links": [
+                    312
+                  ]
+                },
+                {
+                  "name": "latent",
+                  "type": "LATENT",
+                  "links": [
+                    313
+                  ]
+                }
+              ],
+              "properties": {
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "input_ue_unconnectable": {},
+                  "output_not_broadcasting": {}
+                },
+                "cnr_id": "ComfyUI-Pixaroma",
+                "ver": "765412e95110f8f547bfb8e709bc099a438f12a5",
+                "Node name for S&R": "PixaromaResolution",
+                "resolutionState": "{\"mode\":\"preset\",\"ratio\":\"3:4\",\"w\":768,\"h\":1024,\"custom_w\":1024,\"custom_h\":1024,\"custom_ratio_w\":4,\"custom_ratio_h\":3,\"snap\":16}",
+                "ue_convert": true
+              },
+              "widgets_values": [
+                {
+                  "mode": "preset",
+                  "ratio": "3:4",
+                  "w": 768,
+                  "h": 1024,
+                  "custom_w": 1024,
+                  "custom_h": 1024,
+                  "custom_ratio_w": 4,
+                  "custom_ratio_h": 3,
+                  "snap": 16
+                }
+              ],
+              "widgets_values_named": {
+                "resolution_ui": {
+                  "mode": "preset",
+                  "ratio": "3:4",
+                  "w": 768,
+                  "h": 1024,
+                  "custom_w": 1024,
+                  "custom_h": 1024,
+                  "custom_ratio_w": 4,
+                  "custom_ratio_h": 3,
+                  "snap": 16
+                }
+              },
+              "color": "#1d1d1d",
+              "bgcolor": "#2a2a2a"
+            },
+            {
+              "id": 112,
+              "type": "SaveImageClean",
+              "pos": [
+                1868,
+                280
+              ],
+              "size": [
+                669.8398925781248,
+                897.5999999999999
+              ],
+              "flags": {},
+              "order": 14,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "images",
+                  "type": "IMAGE",
+                  "link": 199
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "FILENAME",
+                  "type": "STRING",
+                  "links": null
+                },
+                {
+                  "name": "FILE_PATH",
+                  "type": "STRING",
+                  "links": null
+                },
+                {
+                  "name": "IMAGES",
+                  "type": "IMAGE",
+                  "links": null
+                }
+              ],
+              "properties": {
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "input_ue_unconnectable": {}
+                },
+                "cnr_id": "save-image-organized",
+                "ver": "7b38b8ff1ddf7d6c324f1b910efa4eaa00815bd9",
+                "Node name for S&R": "SaveImageClean"
+              },
+              "widgets_values": [
+                "%TOP_FOLDER%/%MODEL_NAME%/%TEXT_ENCODER_NAME%/%FILENAME%%BATCH%",
+                "Friendly",
+                "Friendly",
+                "%date:yyyy-MM-dd_hh-mm-ss%",
+                "increment",
+                "Off",
+                true,
+                "",
+                "",
+                "",
+                "PNG",
+                95,
+                "Nearest",
+                "Preview"
+              ],
+              "widgets_values_named": {
+                "path_template": "%TOP_FOLDER%/%MODEL_NAME%/%TEXT_ENCODER_NAME%/%FILENAME%%BATCH%",
+                "model_source": "Friendly",
+                "clip_source": "Friendly",
+                "filename_datetime": "%date:yyyy-MM-dd_hh-mm-ss%",
+                "collision_mode": "increment",
+                "detection_info": "Off",
+                "export_workflow_metadata": true,
+                "subfolder": "",
+                "model_folder": "",
+                "clip_folder": "",
+                "image_format": "PNG",
+                "image_quality": 95,
+                "loader_priority": "Nearest",
+                "save_mode": "Preview"
+              },
+              "color": "#4a3fcf",
+              "bgcolor": "#2a283e"
+            },
+            {
+              "id": 113,
+              "type": "Power Lora Loader (rgthree)",
+              "pos": [
+                -96,
+                624
+              ],
+              "size": [
+                344,
+                166
+              ],
+              "flags": {},
+              "order": 8,
+              "mode": 0,
+              "inputs": [
+                {
+                  "dir": 3,
+                  "name": "model",
+                  "type": "MODEL",
+                  "link": 309
+                },
+                {
+                  "dir": 3,
+                  "name": "clip",
+                  "type": "CLIP",
+                  "link": 200
+                }
+              ],
+              "outputs": [
+                {
+                  "dir": 4,
+                  "name": "MODEL",
+                  "shape": 3,
+                  "type": "MODEL",
+                  "links": [
+                    314
+                  ]
+                },
+                {
+                  "dir": 4,
+                  "name": "CLIP",
+                  "shape": 3,
+                  "type": "CLIP",
+                  "links": [
+                    315,
+                    316
+                  ]
+                }
+              ],
+              "properties": {
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "input_ue_unconnectable": {},
+                  "output_not_broadcasting": {}
+                },
+                "cnr_id": "rgthree-comfy",
+                "ver": "27b4f4cdcf3b127c29d5d8135ac1536ecbd4c383",
+                "Show Strengths": "Single Strength",
+                "Match": "",
+                "ue_convert": true
+              },
+              "widgets_values": [
+                {},
+                {
+                  "type": "PowerLoraLoaderHeaderWidget"
+                },
+                {
+                  "on": true,
+                  "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - Lenovo UltraReal.safetensors",
+                  "strength": 0.7,
+                  "strengthTwo": null
+                },
+                {
+                  "on": true,
+                  "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - NiceGirls UltraReal.safetensors",
+                  "strength": 0.7,
+                  "strengthTwo": null
+                },
+                {},
+                ""
+              ],
+              "widgets_values_named": {
+                "divider": {},
+                "PowerLoraLoaderHeaderWidget": {
+                  "type": "PowerLoraLoaderHeaderWidget"
+                },
+                "lora_1": {
+                  "on": true,
+                  "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - Lenovo UltraReal.safetensors",
+                  "strength": 0.7,
+                  "strengthTwo": null
+                },
+                "lora_2": {
+                  "on": true,
+                  "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - NiceGirls UltraReal.safetensors",
+                  "strength": 0.7,
+                  "strengthTwo": null
+                },
+                "divider#1": {},
+                "\u2795 Add Lora": ""
+              },
+              "color": "#233",
+              "bgcolor": "#355"
+            },
+            {
+              "id": 115,
+              "type": "UnetLoaderGGUF",
+              "pos": [
+                369.4726226582188,
+                828.1271384224256
+              ],
+              "size": [
+                270,
+                58
+              ],
+              "flags": {},
+              "order": 6,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "MODEL",
+                  "type": "MODEL",
+                  "links": [
+                    309
+                  ]
+                }
+              ],
+              "properties": {
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "input_ue_unconnectable": {}
+                },
+                "cnr_id": "ComfyUI-GGUF",
+                "ver": "4dfc025e4be06ba9c210bd1189546f7af67f445d",
+                "Node name for S&R": "UnetLoaderGGUF"
+              },
+              "widgets_values": [
+                "python-Q5_K_M.gguf"
+              ],
+              "widgets_values_named": {
+                "unet_name": "python-Q5_K_M.gguf"
+              }
+            }
+          ],
+          "links": [
+            [
+              163,
+              94,
+              0,
+              85,
+              1,
+              "CONDITIONING"
+            ],
+            [
+              164,
+              89,
+              0,
+              85,
+              2,
+              "CONDITIONING"
+            ],
+            [
+              165,
+              96,
+              0,
+              86,
+              0,
+              "NOISE"
+            ],
+            [
+              166,
+              85,
+              0,
+              86,
+              1,
+              "GUIDER"
+            ],
+            [
+              167,
+              98,
+              0,
+              86,
+              2,
+              "SAMPLER"
+            ],
+            [
+              168,
+              97,
+              0,
+              86,
+              3,
+              "SIGMAS"
+            ],
+            [
+              170,
+              86,
+              0,
+              87,
+              0,
+              "LATENT"
+            ],
+            [
+              199,
+              87,
+              0,
+              112,
+              0,
+              "IMAGE"
+            ],
+            [
+              200,
+              109,
+              0,
+              113,
+              1,
+              "CLIP"
+            ],
+            [
+              309,
+              115,
+              0,
+              113,
+              0,
+              "MODEL"
+            ],
+            [
+              310,
+              93,
+              0,
+              87,
+              1,
+              "VAE"
+            ],
+            [
+              311,
+              111,
+              0,
+              97,
+              0,
+              "INT"
+            ],
+            [
+              312,
+              111,
+              1,
+              97,
+              1,
+              "INT"
+            ],
+            [
+              313,
+              111,
+              2,
+              86,
+              4,
+              "LATENT"
+            ],
+            [
+              314,
+              113,
+              0,
+              85,
+              0,
+              "MODEL"
+            ],
+            [
+              315,
+              113,
+              1,
+              89,
+              0,
+              "CLIP"
+            ],
+            [
+              316,
+              113,
+              1,
+              94,
+              0,
+              "CLIP"
+            ]
+          ],
+          "groups": [
+            {
+              "id": 1,
+              "title": "Models",
+              "bounding": [
+                -116,
+                168,
+                383.5199462890625,
+                776.4
+              ],
+              "color": "#3f789e",
+              "flags": {}
+            },
+            {
+              "id": 2,
+              "title": "Prompt",
+              "bounding": [
+                560,
+                168,
+                470,
+                550
+              ],
+              "color": "#3f789e",
+              "flags": {}
+            },
+            {
+              "id": 3,
+              "title": "Sampler",
+              "bounding": [
+                1084,
+                168,
+                706.1295675048827,
+                600.028
+              ],
+              "color": "#3f789e",
+              "flags": {}
+            },
+            {
+              "id": 5,
+              "title": "Output",
+              "bounding": [
+                1856,
+                168,
+                694.1599999999999,
+                1023.797622225009
+              ],
+              "color": "#3f789e",
+              "flags": {}
+            }
+          ],
+          "config": {},
+          "extra": {
+            "frontendVersion": "1.55.17",
+            "workflowRendererVersion": "LG",
+            "VHS_latentpreview": false,
+            "VHS_latentpreviewrate": 0,
+            "VHS_MetadataImage": true,
+            "VHS_KeepIntermediate": true,
+            "ds": {
+              "scale": 1,
+              "offset": [
+                -601.2726104511876,
+                -125.32715062945681
+              ]
+            },
+            "ue_links": [
+              {
+                "downstream": "86",
+                "downstream_slot": 4,
+                "upstream": "111",
+                "upstream_slot": 2,
+                "controller": "111",
+                "type": "LATENT"
+              },
+              {
+                "downstream": "89",
+                "downstream_slot": 0,
+                "upstream": "113",
+                "upstream_slot": 1,
+                "controller": "113",
+                "type": "CLIP"
+              },
+              {
+                "downstream": "85",
+                "downstream_slot": 0,
+                "upstream": "113",
+                "upstream_slot": 0,
+                "controller": "113",
+                "type": "MODEL"
+              },
+              {
+                "downstream": "97",
+                "downstream_slot": 1,
+                "upstream": "111",
+                "upstream_slot": 0,
+                "controller": "111",
+                "type": "INT"
+              },
+              {
+                "downstream": "97",
+                "downstream_slot": 2,
+                "upstream": "111",
+                "upstream_slot": 1,
+                "controller": "111",
+                "type": "INT"
+              },
+              {
+                "downstream": "94",
+                "downstream_slot": 0,
+                "upstream": "113",
+                "upstream_slot": 1,
+                "controller": "113",
+                "type": "CLIP"
+              },
+              {
+                "downstream": "87",
+                "downstream_slot": 1,
+                "upstream": "93",
+                "upstream_slot": 0,
+                "controller": "93",
+                "type": "VAE"
+              }
+            ],
+            "links_added_by_ue": [
+              310,
+              311,
+              312,
+              313,
+              314,
+              315,
+              316
+            ]
+          },
+          "version": 0.4,
+          "seed_widgets": {
+            "96": 0
+          }
+        }
+      },
+      "all_png_chunk_crcs_valid": true
+    },
+    {
+      "path": "E:\\AI_Art\\native [5K-M]\\qwen3 8b [Her][FP8-E4M3FN]\\2026-10-15_21-28-21.png",
+      "file_sha256": "e57ff5ef8eda13f4795729f8be1cd2b5667ca086a46d0764dab157238984a12b",
+      "ihdr_hex": "00000300000004000802000000",
+      "filtered_scanlines_sha256": "5b61cc41afc533afbfa4fddcec84ab402de593025a050bc65a654dfdc85b9d11",
+      "metadata": {
+        "prompt": {
+          "85": {
+            "inputs": {
+              "cfg": 4.0,
+              "model": [
+                "113",
+                0
+              ],
+              "positive": [
+                "94",
+                0
+              ],
+              "negative": [
+                "89",
+                0
+              ]
+            },
+            "class_type": "CFGGuider",
+            "_meta": {
+              "title": "CFG Guider"
+            }
+          },
+          "86": {
+            "inputs": {
+              "noise": [
+                "96",
+                0
+              ],
+              "guider": [
+                "85",
+                0
+              ],
+              "sampler": [
+                "98",
+                0
+              ],
+              "sigmas": [
+                "97",
+                0
+              ],
+              "latent_image": [
+                "111",
+                2
+              ]
+            },
+            "class_type": "SamplerCustomAdvanced",
+            "_meta": {
+              "title": "SamplerCustomAdvanced"
+            }
+          },
+          "87": {
+            "inputs": {
+              "samples": [
+                "86",
+                0
+              ],
+              "vae": [
+                "93",
+                0
+              ]
+            },
+            "class_type": "VAEDecode",
+            "_meta": {
+              "title": "VAE Decode"
+            }
+          },
+          "89": {
+            "inputs": {
+              "text": "lowres, worst quality, low quality, bad anatomy, bad hands, jpeg, artifacts, signature, watermark, text, logo, artist name, patreon_username, web_address, username, extra digits, censored, patreon username, loli, chibi, sweat, particles, parted lips",
+              "clip": [
+                "113",
+                1
+              ]
+            },
+            "class_type": "CLIPTextEncode",
+            "_meta": {
+              "title": "CLIP Text Encode (Negative Prompt)"
+            }
+          },
+          "93": {
+            "inputs": {
+              "vae_name": "Flux.2\\flux2-vae.safetensors"
+            },
+            "class_type": "VAELoader",
+            "_meta": {
+              "title": "Load VAE"
+            }
+          },
+          "94": {
+            "inputs": {
+              "text": "A low-angle cinematic medium-full shot of a confident adult slender European woman, approx age 28, with glowing fair skin and long flowing auburn hair. She is wearing leather micro skirt, platform stiletto high heels, and a stylish skintight black leather longsleeve shirt. She stands powerfully beside a weathered, rusted 1970s Dodge Charger R/T with faded paint and a license plate reading \"BADGIRL\". She holds a black Glock pistol pointing to the camera with her outstretched arm, gazing intensely at the viewer. The setting is a gritty, atmospheric old gas station at night. The lighting is high-contrast and stylized, dominated by harsh fluorescent green overhead lights illuminating the dust motes and heavy shadows, with a distinct orange light leak streak cutting across the frame. Robert Rodriguez neo-noir grindhouse style, shot on Nikon F2 50mm, visible film grain, photorealistic texture, sharp focus. No nudity, no blurry details, no watermarks, no logos other than license plate, correct anatomy, realistic proportions....",
+              "clip": [
+                "113",
+                1
+              ]
+            },
+            "class_type": "CLIPTextEncode",
+            "_meta": {
+              "title": "CLIP Text Encode (Positive Prompt)"
+            }
+          },
+          "96": {
+            "inputs": {
+              "noise_seed": 572241167616859
+            },
+            "class_type": "RandomNoise",
+            "_meta": {
+              "title": "RandomNoise"
+            }
+          },
+          "97": {
+            "inputs": {
+              "steps": 34,
+              "width": [
+                "111",
+                0
+              ],
+              "height": [
+                "111",
+                1
+              ]
+            },
+            "class_type": "Flux2Scheduler",
+            "_meta": {
+              "title": "Flux2Scheduler"
+            }
+          },
+          "98": {
+            "inputs": {
+              "sampler_name": "er_sde"
+            },
+            "class_type": "KSamplerSelect",
+            "_meta": {
+              "title": "KSamplerSelect"
+            }
+          },
+          "109": {
+            "inputs": {
+              "clip_name": "Flux.2 klein 9b\\qwen3-8b-heretic_fp8_e4m3fn.safetensors",
+              "type": "flux2",
+              "device": "default"
+            },
+            "class_type": "CLIPLoader",
+            "_meta": {
+              "title": "Load CLIP"
+            }
+          },
+          "111": {
+            "inputs": {
+              "ResolutionState": "{\"mode\":\"preset\",\"ratio\":\"3:4\",\"w\":768,\"h\":1024,\"custom_w\":1024,\"custom_h\":1024,\"custom_ratio_w\":4,\"custom_ratio_h\":3,\"snap\":16}"
+            },
+            "class_type": "PixaromaResolution",
+            "_meta": {
+              "title": "Resolution Pixaroma"
+            }
+          },
+          "112": {
+            "inputs": {
+              "path_template": "%TOP_FOLDER%/%MODEL_NAME%/%TEXT_ENCODER_NAME%/%FILENAME%%BATCH%",
+              "model_source": "Friendly",
+              "clip_source": "Friendly",
+              "filename_datetime": "%date:yyyy-MM-dd_hh-mm-ss%",
+              "collision_mode": "increment",
+              "detection_info": "Off",
+              "export_workflow_metadata": true,
+              "subfolder": "",
+              "model_folder": "",
+              "clip_folder": "",
+              "image_format": "PNG",
+              "image_quality": 95,
+              "loader_priority": "Nearest",
+              "save_mode": "Preview",
+              "images": [
+                "87",
+                0
+              ]
+            },
+            "class_type": "SaveImageClean",
+            "_meta": {
+              "title": "Save Image Organized"
+            }
+          },
+          "113": {
+            "inputs": {
+              "PowerLoraLoaderHeaderWidget": {
+                "type": "PowerLoraLoaderHeaderWidget"
+              },
+              "lora_1": {
+                "on": true,
+                "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - Lenovo UltraReal.safetensors",
+                "strength": 0.7
+              },
+              "lora_2": {
+                "on": true,
+                "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - NiceGirls UltraReal.safetensors",
+                "strength": 0.7
+              },
+              "\u2795 Add Lora": "",
+              "model": [
+                "115",
+                0
+              ],
+              "clip": [
+                "109",
+                0
+              ]
+            },
+            "class_type": "Power Lora Loader (rgthree)",
+            "_meta": {
+              "title": "Power Lora Loader (rgthree)"
+            }
+          },
+          "115": {
+            "inputs": {
+              "unet_name": "native-Q5_K_M.gguf"
+            },
+            "class_type": "UnetLoaderGGUF",
+            "_meta": {
+              "title": "Unet Loader (GGUF)"
+            }
+          }
+        },
+        "workflow": {
+          "id": "92112d97-bb64-4b44-86f2-ea5691ef8f6e",
+          "revision": 0,
+          "last_node_id": 115,
+          "last_link_id": 323,
+          "nodes": [
+            {
+              "id": 86,
+              "type": "SamplerCustomAdvanced",
+              "pos": [
+                1492,
+                240
+              ],
+              "size": [
+                233.20000000000005,
+                111
+              ],
+              "flags": {},
+              "order": 12,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "noise",
+                  "type": "NOISE",
+                  "link": 165
+                },
+                {
+                  "name": "guider",
+                  "type": "GUIDER",
+                  "link": 166
+                },
+                {
+                  "name": "sampler",
+                  "type": "SAMPLER",
+                  "link": 167
+                },
+                {
+                  "name": "sigmas",
+                  "type": "SIGMAS",
+                  "link": 168
+                },
+                {
+                  "name": "latent_image",
+                  "type": "LATENT",
+                  "link": 320
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "output",
+                  "type": "LATENT",
+                  "links": [
+                    170
+                  ]
+                },
+                {
+                  "name": "denoised_output",
+                  "type": "LATENT",
+                  "links": []
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "SamplerCustomAdvanced",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              }
+            },
+            {
+              "id": 89,
+              "type": "CLIPTextEncode",
+              "pos": [
+                580,
+                580
+              ],
+              "size": [
+                440,
+                124.49035125732416
+              ],
+              "flags": {},
+              "order": 9,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "clip",
+                  "type": "CLIP",
+                  "link": 322
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "CONDITIONING",
+                  "type": "CONDITIONING",
+                  "slot_index": 0,
+                  "links": [
+                    164
+                  ]
+                }
+              ],
+              "title": "CLIP Text Encode (Negative Prompt)",
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "CLIPTextEncode",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "text": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "widgets_values": [
+                "lowres, worst quality, low quality, bad anatomy, bad hands, jpeg, artifacts, signature, watermark, text, logo, artist name, patreon_username, web_address, username, extra digits, censored, patreon username, loli, chibi, sweat, particles, parted lips"
+              ],
+              "widgets_values_named": {
+                "text": "lowres, worst quality, low quality, bad anatomy, bad hands, jpeg, artifacts, signature, watermark, text, logo, artist name, patreon_username, web_address, username, extra digits, censored, patreon username, loli, chibi, sweat, particles, parted lips"
+              },
+              "color": "#322",
+              "bgcolor": "#533"
+            },
+            {
+              "id": 96,
+              "type": "RandomNoise",
+              "pos": [
+                1096,
+                240
+              ],
+              "size": [
+                280,
+                100
+              ],
+              "flags": {},
+              "order": 0,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "NOISE",
+                  "type": "NOISE",
+                  "links": [
+                    165
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "RandomNoise",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "noise_seed": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "widgets_values": [
+                572241167616859,
+                "fixed"
+              ],
+              "widgets_values_named": {
+                "noise_seed": 572241167616859,
+                "control_after_generate": "fixed"
+              }
+            },
+            {
+              "id": 98,
+              "type": "KSamplerSelect",
+              "pos": [
+                1096,
+                528
+              ],
+              "size": [
+                280,
+                60
+              ],
+              "flags": {},
+              "order": 1,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "SAMPLER",
+                  "type": "SAMPLER",
+                  "links": [
+                    167
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "KSamplerSelect",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "sampler_name": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "widgets_values": [
+                "er_sde"
+              ],
+              "widgets_values_named": {
+                "sampler_name": "er_sde"
+              }
+            },
+            {
+              "id": 85,
+              "type": "CFGGuider",
+              "pos": [
+                1096,
+                388
+              ],
+              "size": [
+                280,
+                100
+              ],
+              "flags": {},
+              "order": 11,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "model",
+                  "type": "MODEL",
+                  "link": 321
+                },
+                {
+                  "name": "positive",
+                  "type": "CONDITIONING",
+                  "link": 163
+                },
+                {
+                  "name": "negative",
+                  "type": "CONDITIONING",
+                  "link": 164
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "GUIDER",
+                  "type": "GUIDER",
+                  "links": [
+                    166
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "CFGGuider",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "cfg": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "widgets_values": [
+                4
+              ],
+              "widgets_values_named": {
+                "cfg": 4
+              }
+            },
+            {
+              "id": 97,
+              "type": "Flux2Scheduler",
+              "pos": [
+                1096,
+                640
+              ],
+              "size": [
+                280,
+                106
+              ],
+              "flags": {},
+              "order": 7,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "width",
+                  "type": "INT",
+                  "widget": {
+                    "name": "width"
+                  },
+                  "link": 318
+                },
+                {
+                  "name": "height",
+                  "type": "INT",
+                  "widget": {
+                    "name": "height"
+                  },
+                  "link": 319
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "SIGMAS",
+                  "type": "SIGMAS",
+                  "links": [
+                    168
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "Flux2Scheduler",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "steps": true,
+                    "width": true,
+                    "height": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "widgets_values": [
+                34,
+                1024,
+                1024
+              ],
+              "widgets_values_named": {
+                "steps": 34,
+                "width": 1024,
+                "height": 1024
+              }
+            },
+            {
+              "id": 108,
+              "type": "UNETLoader",
+              "pos": [
+                -96,
+                244
+              ],
+              "size": [
+                344,
+                84
+              ],
+              "flags": {},
+              "order": 2,
+              "mode": 2,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "MODEL",
+                  "type": "MODEL",
+                  "links": []
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.33.1",
+                "Node name for S&R": "UNETLoader",
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "input_ue_unconnectable": {},
+                  "version": "7.8"
+                }
+              },
+              "widgets_values": [
+                "Flux.2 klein\\9B - Base\\flux-2-klein-base-9b.safetensors",
+                "default"
+              ],
+              "widgets_values_named": {
+                "unet_name": "Flux.2 klein\\9B - Base\\flux-2-klein-base-9b.safetensors",
+                "weight_dtype": "default"
+              },
+              "color": "#223",
+              "bgcolor": "#335"
+            },
+            {
+              "id": 109,
+              "type": "CLIPLoader",
+              "pos": [
+                -96,
+                372
+              ],
+              "size": [
+                344,
+                108
+              ],
+              "flags": {},
+              "order": 3,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "CLIP",
+                  "type": "CLIP",
+                  "links": [
+                    200
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.33.1",
+                "Node name for S&R": "CLIPLoader",
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "input_ue_unconnectable": {},
+                  "version": "7.8"
+                }
+              },
+              "widgets_values": [
+                "Flux.2 klein 9b\\qwen3-8b-heretic_fp8_e4m3fn.safetensors",
+                "flux2",
+                "default"
+              ],
+              "widgets_values_named": {
+                "clip_name": "Flux.2 klein 9b\\qwen3-8b-heretic_fp8_e4m3fn.safetensors",
+                "type": "flux2",
+                "device": "default"
+              },
+              "color": "#432",
+              "bgcolor": "#653"
+            },
+            {
+              "id": 93,
+              "type": "VAELoader",
+              "pos": [
+                -96,
+                524
+              ],
+              "size": [
+                344,
+                58
+              ],
+              "flags": {},
+              "order": 4,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "VAE",
+                  "type": "VAE",
+                  "links": [
+                    317
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "VAELoader",
+                "models": [
+                  {
+                    "name": "Flux.2 klein\\flux2-vae.safetensors",
+                    "url": "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/vae/flux2-vae.safetensors",
+                    "directory": "vae"
+                  }
+                ],
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "vae_name": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {},
+                  "output_not_broadcasting": {}
+                },
+                "ue_convert": true,
+                "rejects_ue_links": true
+              },
+              "widgets_values": [
+                "Flux.2\\flux2-vae.safetensors"
+              ],
+              "widgets_values_named": {
+                "vae_name": "Flux.2\\flux2-vae.safetensors"
+              },
+              "color": "#322",
+              "bgcolor": "#533"
+            },
+            {
+              "id": 94,
+              "type": "CLIPTextEncode",
+              "pos": [
+                580,
+                244
+              ],
+              "size": [
+                440,
+                288
+              ],
+              "flags": {},
+              "order": 10,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "clip",
+                  "type": "CLIP",
+                  "link": 323
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "CONDITIONING",
+                  "type": "CONDITIONING",
+                  "slot_index": 0,
+                  "links": [
+                    163
+                  ]
+                }
+              ],
+              "title": "CLIP Text Encode (Positive Prompt)",
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "CLIPTextEncode",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {
+                    "text": true
+                  },
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "widgets_values": [
+                "A low-angle cinematic medium-full shot of a confident adult slender European woman, approx age 28, with glowing fair skin and long flowing auburn hair. She is wearing leather micro skirt, platform stiletto high heels, and a stylish skintight black leather longsleeve shirt. She stands powerfully beside a weathered, rusted 1970s Dodge Charger R/T with faded paint and a license plate reading \"BADGIRL\". She holds a black Glock pistol pointing to the camera with her outstretched arm, gazing intensely at the viewer. The setting is a gritty, atmospheric old gas station at night. The lighting is high-contrast and stylized, dominated by harsh fluorescent green overhead lights illuminating the dust motes and heavy shadows, with a distinct orange light leak streak cutting across the frame. Robert Rodriguez neo-noir grindhouse style, shot on Nikon F2 50mm, visible film grain, photorealistic texture, sharp focus. No nudity, no blurry details, no watermarks, no logos other than license plate, correct anatomy, realistic proportions...."
+              ],
+              "widgets_values_named": {
+                "text": "A low-angle cinematic medium-full shot of a confident adult slender European woman, approx age 28, with glowing fair skin and long flowing auburn hair. She is wearing leather micro skirt, platform stiletto high heels, and a stylish skintight black leather longsleeve shirt. She stands powerfully beside a weathered, rusted 1970s Dodge Charger R/T with faded paint and a license plate reading \"BADGIRL\". She holds a black Glock pistol pointing to the camera with her outstretched arm, gazing intensely at the viewer. The setting is a gritty, atmospheric old gas station at night. The lighting is high-contrast and stylized, dominated by harsh fluorescent green overhead lights illuminating the dust motes and heavy shadows, with a distinct orange light leak streak cutting across the frame. Robert Rodriguez neo-noir grindhouse style, shot on Nikon F2 50mm, visible film grain, photorealistic texture, sharp focus. No nudity, no blurry details, no watermarks, no logos other than license plate, correct anatomy, realistic proportions...."
+              },
+              "color": "#232",
+              "bgcolor": "#353"
+            },
+            {
+              "id": 87,
+              "type": "VAEDecode",
+              "pos": [
+                1868,
+                236
+              ],
+              "size": [
+                220,
+                60
+              ],
+              "flags": {
+                "collapsed": true
+              },
+              "order": 13,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "samples",
+                  "type": "LATENT",
+                  "link": 170
+                },
+                {
+                  "name": "vae",
+                  "type": "VAE",
+                  "link": 317
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "IMAGE",
+                  "type": "IMAGE",
+                  "slot_index": 0,
+                  "links": [
+                    199
+                  ]
+                }
+              ],
+              "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.8.2",
+                "Node name for S&R": "VAEDecode",
+                "enableTabs": false,
+                "tabWidth": 65,
+                "tabXOffset": 10,
+                "hasSecondTab": false,
+                "secondTabText": "Send Back",
+                "secondTabOffset": 80,
+                "secondTabWidth": 65,
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "version": "7.8",
+                  "input_ue_unconnectable": {}
+                }
+              },
+              "color": "#322",
+              "bgcolor": "#533"
+            },
+            {
+              "id": 111,
+              "type": "PixaromaResolution",
+              "pos": [
+                288,
+                244
+              ],
+              "size": [
+                240,
+                435
+              ],
+              "flags": {},
+              "order": 5,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "width",
+                  "type": "INT",
+                  "links": [
+                    318
+                  ]
+                },
+                {
+                  "name": "height",
+                  "type": "INT",
+                  "links": [
+                    319
+                  ]
+                },
+                {
+                  "name": "latent",
+                  "type": "LATENT",
+                  "links": [
+                    320
+                  ]
+                }
+              ],
+              "properties": {
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "input_ue_unconnectable": {},
+                  "output_not_broadcasting": {}
+                },
+                "cnr_id": "ComfyUI-Pixaroma",
+                "ver": "765412e95110f8f547bfb8e709bc099a438f12a5",
+                "Node name for S&R": "PixaromaResolution",
+                "resolutionState": "{\"mode\":\"preset\",\"ratio\":\"3:4\",\"w\":768,\"h\":1024,\"custom_w\":1024,\"custom_h\":1024,\"custom_ratio_w\":4,\"custom_ratio_h\":3,\"snap\":16}",
+                "ue_convert": true
+              },
+              "widgets_values": [
+                {
+                  "mode": "preset",
+                  "ratio": "3:4",
+                  "w": 768,
+                  "h": 1024,
+                  "custom_w": 1024,
+                  "custom_h": 1024,
+                  "custom_ratio_w": 4,
+                  "custom_ratio_h": 3,
+                  "snap": 16
+                }
+              ],
+              "widgets_values_named": {
+                "resolution_ui": {
+                  "mode": "preset",
+                  "ratio": "3:4",
+                  "w": 768,
+                  "h": 1024,
+                  "custom_w": 1024,
+                  "custom_h": 1024,
+                  "custom_ratio_w": 4,
+                  "custom_ratio_h": 3,
+                  "snap": 16
+                }
+              },
+              "color": "#1d1d1d",
+              "bgcolor": "#2a2a2a"
+            },
+            {
+              "id": 112,
+              "type": "SaveImageClean",
+              "pos": [
+                1868,
+                280
+              ],
+              "size": [
+                669.8398925781248,
+                897.5999999999999
+              ],
+              "flags": {},
+              "order": 14,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "images",
+                  "type": "IMAGE",
+                  "link": 199
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "FILENAME",
+                  "type": "STRING",
+                  "links": null
+                },
+                {
+                  "name": "FILE_PATH",
+                  "type": "STRING",
+                  "links": null
+                },
+                {
+                  "name": "IMAGES",
+                  "type": "IMAGE",
+                  "links": null
+                }
+              ],
+              "properties": {
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "input_ue_unconnectable": {}
+                },
+                "cnr_id": "save-image-organized",
+                "ver": "7b38b8ff1ddf7d6c324f1b910efa4eaa00815bd9",
+                "Node name for S&R": "SaveImageClean"
+              },
+              "widgets_values": [
+                "%TOP_FOLDER%/%MODEL_NAME%/%TEXT_ENCODER_NAME%/%FILENAME%%BATCH%",
+                "Friendly",
+                "Friendly",
+                "%date:yyyy-MM-dd_hh-mm-ss%",
+                "increment",
+                "Off",
+                true,
+                "",
+                "",
+                "",
+                "PNG",
+                95,
+                "Nearest",
+                "Preview"
+              ],
+              "widgets_values_named": {
+                "path_template": "%TOP_FOLDER%/%MODEL_NAME%/%TEXT_ENCODER_NAME%/%FILENAME%%BATCH%",
+                "model_source": "Friendly",
+                "clip_source": "Friendly",
+                "filename_datetime": "%date:yyyy-MM-dd_hh-mm-ss%",
+                "collision_mode": "increment",
+                "detection_info": "Off",
+                "export_workflow_metadata": true,
+                "subfolder": "",
+                "model_folder": "",
+                "clip_folder": "",
+                "image_format": "PNG",
+                "image_quality": 95,
+                "loader_priority": "Nearest",
+                "save_mode": "Preview"
+              },
+              "color": "#4a3fcf",
+              "bgcolor": "#2a283e"
+            },
+            {
+              "id": 113,
+              "type": "Power Lora Loader (rgthree)",
+              "pos": [
+                -96,
+                624
+              ],
+              "size": [
+                344,
+                166
+              ],
+              "flags": {},
+              "order": 8,
+              "mode": 0,
+              "inputs": [
+                {
+                  "dir": 3,
+                  "name": "model",
+                  "type": "MODEL",
+                  "link": 309
+                },
+                {
+                  "dir": 3,
+                  "name": "clip",
+                  "type": "CLIP",
+                  "link": 200
+                }
+              ],
+              "outputs": [
+                {
+                  "dir": 4,
+                  "name": "MODEL",
+                  "shape": 3,
+                  "type": "MODEL",
+                  "links": [
+                    321
+                  ]
+                },
+                {
+                  "dir": 4,
+                  "name": "CLIP",
+                  "shape": 3,
+                  "type": "CLIP",
+                  "links": [
+                    322,
+                    323
+                  ]
+                }
+              ],
+              "properties": {
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "input_ue_unconnectable": {},
+                  "output_not_broadcasting": {}
+                },
+                "cnr_id": "rgthree-comfy",
+                "ver": "27b4f4cdcf3b127c29d5d8135ac1536ecbd4c383",
+                "Show Strengths": "Single Strength",
+                "Match": "",
+                "ue_convert": true
+              },
+              "widgets_values": [
+                {},
+                {
+                  "type": "PowerLoraLoaderHeaderWidget"
+                },
+                {
+                  "on": true,
+                  "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - Lenovo UltraReal.safetensors",
+                  "strength": 0.7,
+                  "strengthTwo": null
+                },
+                {
+                  "on": true,
+                  "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - NiceGirls UltraReal.safetensors",
+                  "strength": 0.7,
+                  "strengthTwo": null
+                },
+                {},
+                ""
+              ],
+              "widgets_values_named": {
+                "divider": {},
+                "PowerLoraLoaderHeaderWidget": {
+                  "type": "PowerLoraLoaderHeaderWidget"
+                },
+                "lora_1": {
+                  "on": true,
+                  "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - Lenovo UltraReal.safetensors",
+                  "strength": 0.7,
+                  "strengthTwo": null
+                },
+                "lora_2": {
+                  "on": true,
+                  "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - NiceGirls UltraReal.safetensors",
+                  "strength": 0.7,
+                  "strengthTwo": null
+                },
+                "divider#1": {},
+                "\u2795 Add Lora": ""
+              },
+              "color": "#233",
+              "bgcolor": "#355"
+            },
+            {
+              "id": 115,
+              "type": "UnetLoaderGGUF",
+              "pos": [
+                369.4726226582188,
+                828.1271384224256
+              ],
+              "size": [
+                270,
+                58
+              ],
+              "flags": {},
+              "order": 6,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "MODEL",
+                  "type": "MODEL",
+                  "links": [
+                    309
+                  ]
+                }
+              ],
+              "properties": {
+                "ue_properties": {
+                  "widget_ue_connectable": {},
+                  "input_ue_unconnectable": {}
+                },
+                "cnr_id": "ComfyUI-GGUF",
+                "ver": "4dfc025e4be06ba9c210bd1189546f7af67f445d",
+                "Node name for S&R": "UnetLoaderGGUF"
+              },
+              "widgets_values": [
+                "native-Q5_K_M.gguf"
+              ],
+              "widgets_values_named": {
+                "unet_name": "native-Q5_K_M.gguf"
+              }
+            }
+          ],
+          "links": [
+            [
+              163,
+              94,
+              0,
+              85,
+              1,
+              "CONDITIONING"
+            ],
+            [
+              164,
+              89,
+              0,
+              85,
+              2,
+              "CONDITIONING"
+            ],
+            [
+              165,
+              96,
+              0,
+              86,
+              0,
+              "NOISE"
+            ],
+            [
+              166,
+              85,
+              0,
+              86,
+              1,
+              "GUIDER"
+            ],
+            [
+              167,
+              98,
+              0,
+              86,
+              2,
+              "SAMPLER"
+            ],
+            [
+              168,
+              97,
+              0,
+              86,
+              3,
+              "SIGMAS"
+            ],
+            [
+              170,
+              86,
+              0,
+              87,
+              0,
+              "LATENT"
+            ],
+            [
+              199,
+              87,
+              0,
+              112,
+              0,
+              "IMAGE"
+            ],
+            [
+              200,
+              109,
+              0,
+              113,
+              1,
+              "CLIP"
+            ],
+            [
+              309,
+              115,
+              0,
+              113,
+              0,
+              "MODEL"
+            ],
+            [
+              317,
+              93,
+              0,
+              87,
+              1,
+              "VAE"
+            ],
+            [
+              318,
+              111,
+              0,
+              97,
+              0,
+              "INT"
+            ],
+            [
+              319,
+              111,
+              1,
+              97,
+              1,
+              "INT"
+            ],
+            [
+              320,
+              111,
+              2,
+              86,
+              4,
+              "LATENT"
+            ],
+            [
+              321,
+              113,
+              0,
+              85,
+              0,
+              "MODEL"
+            ],
+            [
+              322,
+              113,
+              1,
+              89,
+              0,
+              "CLIP"
+            ],
+            [
+              323,
+              113,
+              1,
+              94,
+              0,
+              "CLIP"
+            ]
+          ],
+          "groups": [
+            {
+              "id": 1,
+              "title": "Models",
+              "bounding": [
+                -116,
+                168,
+                383.5199462890625,
+                776.4
+              ],
+              "color": "#3f789e",
+              "flags": {}
+            },
+            {
+              "id": 2,
+              "title": "Prompt",
+              "bounding": [
+                560,
+                168,
+                470,
+                550
+              ],
+              "color": "#3f789e",
+              "flags": {}
+            },
+            {
+              "id": 3,
+              "title": "Sampler",
+              "bounding": [
+                1084,
+                168,
+                706.1295675048827,
+                600.028
+              ],
+              "color": "#3f789e",
+              "flags": {}
+            },
+            {
+              "id": 5,
+              "title": "Output",
+              "bounding": [
+                1856,
+                168,
+                694.1599999999999,
+                1023.797622225009
+              ],
+              "color": "#3f789e",
+              "flags": {}
+            }
+          ],
+          "config": {},
+          "extra": {
+            "frontendVersion": "1.55.17",
+            "workflowRendererVersion": "LG",
+            "VHS_latentpreview": false,
+            "VHS_latentpreviewrate": 0,
+            "VHS_MetadataImage": true,
+            "VHS_KeepIntermediate": true,
+            "ds": {
+              "scale": 0.9090909090909092,
+              "offset": [
+                -1263.284374594556,
+                -49.51037831532841
+              ]
+            },
+            "ue_links": [
+              {
+                "downstream": "86",
+                "downstream_slot": 4,
+                "upstream": "111",
+                "upstream_slot": 2,
+                "controller": "111",
+                "type": "LATENT"
+              },
+              {
+                "downstream": "89",
+                "downstream_slot": 0,
+                "upstream": "113",
+                "upstream_slot": 1,
+                "controller": "113",
+                "type": "CLIP"
+              },
+              {
+                "downstream": "85",
+                "downstream_slot": 0,
+                "upstream": "113",
+                "upstream_slot": 0,
+                "controller": "113",
+                "type": "MODEL"
+              },
+              {
+                "downstream": "97",
+                "downstream_slot": 1,
+                "upstream": "111",
+                "upstream_slot": 0,
+                "controller": "111",
+                "type": "INT"
+              },
+              {
+                "downstream": "97",
+                "downstream_slot": 2,
+                "upstream": "111",
+                "upstream_slot": 1,
+                "controller": "111",
+                "type": "INT"
+              },
+              {
+                "downstream": "94",
+                "downstream_slot": 0,
+                "upstream": "113",
+                "upstream_slot": 1,
+                "controller": "113",
+                "type": "CLIP"
+              },
+              {
+                "downstream": "87",
+                "downstream_slot": 1,
+                "upstream": "93",
+                "upstream_slot": 0,
+                "controller": "93",
+                "type": "VAE"
+              }
+            ],
+            "links_added_by_ue": [
+              317,
+              318,
+              319,
+              320,
+              321,
+              322,
+              323
+            ]
+          },
+          "version": 0.4,
+          "seed_widgets": {
+            "96": 0
+          }
+        }
+      },
+      "all_png_chunk_crcs_valid": true
+    }
+  ],
+  "python_native_identical_filtered_scanlines": true,
+  "method": "Validate all PNG chunk CRCs; equal IHDR and identical decompressed filtered scanline bytes establish identical RGB pixels for these 8-bit noninterlaced RGB PNGs.",
+  "executed_prompt_differences": {
+    "python_native": [
+      "115: UnetLoaderGGUF unet_name only"
+    ],
+    "original_python": [
+      "108: original UNETLoader removed",
+      "115: UnetLoaderGGUF added",
+      "113: model input rewired to GGUF loader",
+      "96: RandomNoise seed differs"
+    ]
+  },
+  "original_seed": 993648672917054,
+  "q5_seed": 572241167616859,
+  "quality_comparison_limit": "The initial original had a different seed and is retained as history. The subsequent same_seed_original matches all executed settings except model/loader and connection; conclusions are limited to this workflow, seed and loader paths.",
+  "runtime_scope": "User-supplied PNGs reference UnetLoaderGGUF, two enabled LoRAs at 0.7 each, er_sde, 34 steps, CFG 4, 768x1024; Python/native share executed settings except model filename.",
+  "same_seed_original": {
+    "path": "E:\\AI_Art\\flux 2 klein base 9b\\qwen3 8b [Her][FP8-E4M3FN]\\2026-10-15_21-33-33.png",
+    "file_sha256": "de6021b5a6047f64835f8901f9c441778bce3d331bacd98b16f8cb9db88fd138",
+    "ihdr_hex": "00000300000004000802000000",
+    "filtered_scanlines_sha256": "cbce90ccba7731bc8bd7ffff86b0cbd81e70ae6c7bbba284fc79907cff64b36e",
+    "metadata": {
+      "prompt": {
+        "85": {
+          "inputs": {
+            "cfg": 4.0,
+            "model": [
+              "113",
+              0
+            ],
+            "positive": [
+              "94",
+              0
+            ],
+            "negative": [
+              "89",
+              0
+            ]
+          },
+          "class_type": "CFGGuider",
+          "_meta": {
+            "title": "CFG Guider"
+          }
+        },
+        "86": {
+          "inputs": {
+            "noise": [
+              "96",
+              0
+            ],
+            "guider": [
+              "85",
+              0
+            ],
+            "sampler": [
+              "98",
+              0
+            ],
+            "sigmas": [
+              "97",
+              0
+            ],
+            "latent_image": [
+              "111",
+              2
+            ]
+          },
+          "class_type": "SamplerCustomAdvanced",
+          "_meta": {
+            "title": "SamplerCustomAdvanced"
+          }
+        },
+        "87": {
+          "inputs": {
+            "samples": [
+              "86",
+              0
+            ],
+            "vae": [
+              "93",
+              0
+            ]
+          },
+          "class_type": "VAEDecode",
+          "_meta": {
+            "title": "VAE Decode"
+          }
+        },
+        "89": {
+          "inputs": {
+            "text": "lowres, worst quality, low quality, bad anatomy, bad hands, jpeg, artifacts, signature, watermark, text, logo, artist name, patreon_username, web_address, username, extra digits, censored, patreon username, loli, chibi, sweat, particles, parted lips",
+            "clip": [
+              "113",
+              1
+            ]
+          },
+          "class_type": "CLIPTextEncode",
+          "_meta": {
+            "title": "CLIP Text Encode (Negative Prompt)"
+          }
+        },
+        "93": {
+          "inputs": {
+            "vae_name": "Flux.2\\flux2-vae.safetensors"
+          },
+          "class_type": "VAELoader",
+          "_meta": {
+            "title": "Load VAE"
+          }
+        },
+        "94": {
+          "inputs": {
+            "text": "A low-angle cinematic medium-full shot of a confident adult slender European woman, approx age 28, with glowing fair skin and long flowing auburn hair. She is wearing leather micro skirt, platform stiletto high heels, and a stylish skintight black leather longsleeve shirt. She stands powerfully beside a weathered, rusted 1970s Dodge Charger R/T with faded paint and a license plate reading \"BADGIRL\". She holds a black Glock pistol pointing to the camera with her outstretched arm, gazing intensely at the viewer. The setting is a gritty, atmospheric old gas station at night. The lighting is high-contrast and stylized, dominated by harsh fluorescent green overhead lights illuminating the dust motes and heavy shadows, with a distinct orange light leak streak cutting across the frame. Robert Rodriguez neo-noir grindhouse style, shot on Nikon F2 50mm, visible film grain, photorealistic texture, sharp focus. No nudity, no blurry details, no watermarks, no logos other than license plate, correct anatomy, realistic proportions....",
+            "clip": [
+              "113",
+              1
+            ]
+          },
+          "class_type": "CLIPTextEncode",
+          "_meta": {
+            "title": "CLIP Text Encode (Positive Prompt)"
+          }
+        },
+        "96": {
+          "inputs": {
+            "noise_seed": 572241167616859
+          },
+          "class_type": "RandomNoise",
+          "_meta": {
+            "title": "RandomNoise"
+          }
+        },
+        "97": {
+          "inputs": {
+            "steps": 34,
+            "width": [
+              "111",
+              0
+            ],
+            "height": [
+              "111",
+              1
+            ]
+          },
+          "class_type": "Flux2Scheduler",
+          "_meta": {
+            "title": "Flux2Scheduler"
+          }
+        },
+        "98": {
+          "inputs": {
+            "sampler_name": "er_sde"
+          },
+          "class_type": "KSamplerSelect",
+          "_meta": {
+            "title": "KSamplerSelect"
+          }
+        },
+        "108": {
+          "inputs": {
+            "unet_name": "Flux.2 klein\\9B - Base\\flux-2-klein-base-9b.safetensors",
+            "weight_dtype": "default"
+          },
+          "class_type": "UNETLoader",
+          "_meta": {
+            "title": "Load Diffusion Model"
+          }
+        },
+        "109": {
+          "inputs": {
+            "clip_name": "Flux.2 klein 9b\\qwen3-8b-heretic_fp8_e4m3fn.safetensors",
+            "type": "flux2",
+            "device": "default"
+          },
+          "class_type": "CLIPLoader",
+          "_meta": {
+            "title": "Load CLIP"
+          }
+        },
+        "111": {
+          "inputs": {
+            "ResolutionState": "{\"mode\":\"preset\",\"ratio\":\"3:4\",\"w\":768,\"h\":1024,\"custom_w\":1024,\"custom_h\":1024,\"custom_ratio_w\":4,\"custom_ratio_h\":3,\"snap\":16}"
+          },
+          "class_type": "PixaromaResolution",
+          "_meta": {
+            "title": "Resolution Pixaroma"
+          }
+        },
+        "112": {
+          "inputs": {
+            "path_template": "%TOP_FOLDER%/%MODEL_NAME%/%TEXT_ENCODER_NAME%/%FILENAME%%BATCH%",
+            "model_source": "Friendly",
+            "clip_source": "Friendly",
+            "filename_datetime": "%date:yyyy-MM-dd_hh-mm-ss%",
+            "collision_mode": "increment",
+            "detection_info": "Off",
+            "export_workflow_metadata": true,
+            "subfolder": "",
+            "model_folder": "",
+            "clip_folder": "",
+            "image_format": "PNG",
+            "image_quality": 95,
+            "loader_priority": "Nearest",
+            "save_mode": "Preview",
+            "images": [
+              "87",
+              0
+            ]
+          },
+          "class_type": "SaveImageClean",
+          "_meta": {
+            "title": "Save Image Organized"
+          }
+        },
+        "113": {
+          "inputs": {
+            "PowerLoraLoaderHeaderWidget": {
+              "type": "PowerLoraLoaderHeaderWidget"
+            },
+            "lora_1": {
+              "on": true,
+              "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - Lenovo UltraReal.safetensors",
+              "strength": 0.7
+            },
+            "lora_2": {
+              "on": true,
+              "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - NiceGirls UltraReal.safetensors",
+              "strength": 0.7
+            },
+            "\u2795 Add Lora": "",
+            "model": [
+              "108",
+              0
+            ],
+            "clip": [
+              "109",
+              0
+            ]
+          },
+          "class_type": "Power Lora Loader (rgthree)",
+          "_meta": {
+            "title": "Power Lora Loader (rgthree)"
+          }
+        }
+      },
+      "workflow": {
+        "id": "92112d97-bb64-4b44-86f2-ea5691ef8f6e",
+        "revision": 0,
+        "last_node_id": 115,
+        "last_link_id": 338,
+        "nodes": [
+          {
+            "id": 86,
+            "type": "SamplerCustomAdvanced",
+            "pos": [
+              1492,
+              240
+            ],
+            "size": [
+              233.20000000000005,
+              111
+            ],
+            "flags": {},
+            "order": 11,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "noise",
+                "type": "NOISE",
+                "link": 165
+              },
+              {
+                "name": "guider",
+                "type": "GUIDER",
+                "link": 166
+              },
+              {
+                "name": "sampler",
+                "type": "SAMPLER",
+                "link": 167
+              },
+              {
+                "name": "sigmas",
+                "type": "SIGMAS",
+                "link": 168
+              },
+              {
+                "name": "latent_image",
+                "type": "LATENT",
+                "link": 335
+              }
+            ],
+            "outputs": [
+              {
+                "name": "output",
+                "type": "LATENT",
+                "links": [
+                  170
+                ]
+              },
+              {
+                "name": "denoised_output",
+                "type": "LATENT",
+                "links": []
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.8.2",
+              "Node name for S&R": "SamplerCustomAdvanced",
+              "enableTabs": false,
+              "tabWidth": 65,
+              "tabXOffset": 10,
+              "hasSecondTab": false,
+              "secondTabText": "Send Back",
+              "secondTabOffset": 80,
+              "secondTabWidth": 65,
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "version": "7.8",
+                "input_ue_unconnectable": {}
+              }
+            }
+          },
+          {
+            "id": 89,
+            "type": "CLIPTextEncode",
+            "pos": [
+              580,
+              580
+            ],
+            "size": [
+              440,
+              124.49035125732416
+            ],
+            "flags": {},
+            "order": 8,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "clip",
+                "type": "CLIP",
+                "link": 337
+              }
+            ],
+            "outputs": [
+              {
+                "name": "CONDITIONING",
+                "type": "CONDITIONING",
+                "slot_index": 0,
+                "links": [
+                  164
+                ]
+              }
+            ],
+            "title": "CLIP Text Encode (Negative Prompt)",
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.8.2",
+              "Node name for S&R": "CLIPTextEncode",
+              "enableTabs": false,
+              "tabWidth": 65,
+              "tabXOffset": 10,
+              "hasSecondTab": false,
+              "secondTabText": "Send Back",
+              "secondTabOffset": 80,
+              "secondTabWidth": 65,
+              "ue_properties": {
+                "widget_ue_connectable": {
+                  "text": true
+                },
+                "version": "7.8",
+                "input_ue_unconnectable": {}
+              }
+            },
+            "widgets_values": [
+              "lowres, worst quality, low quality, bad anatomy, bad hands, jpeg, artifacts, signature, watermark, text, logo, artist name, patreon_username, web_address, username, extra digits, censored, patreon username, loli, chibi, sweat, particles, parted lips"
+            ],
+            "widgets_values_named": {
+              "text": "lowres, worst quality, low quality, bad anatomy, bad hands, jpeg, artifacts, signature, watermark, text, logo, artist name, patreon_username, web_address, username, extra digits, censored, patreon username, loli, chibi, sweat, particles, parted lips"
+            },
+            "color": "#322",
+            "bgcolor": "#533"
+          },
+          {
+            "id": 96,
+            "type": "RandomNoise",
+            "pos": [
+              1096,
+              240
+            ],
+            "size": [
+              280,
+              100
+            ],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "NOISE",
+                "type": "NOISE",
+                "links": [
+                  165
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.8.2",
+              "Node name for S&R": "RandomNoise",
+              "enableTabs": false,
+              "tabWidth": 65,
+              "tabXOffset": 10,
+              "hasSecondTab": false,
+              "secondTabText": "Send Back",
+              "secondTabOffset": 80,
+              "secondTabWidth": 65,
+              "ue_properties": {
+                "widget_ue_connectable": {
+                  "noise_seed": true
+                },
+                "version": "7.8",
+                "input_ue_unconnectable": {}
+              }
+            },
+            "widgets_values": [
+              572241167616859,
+              "fixed"
+            ],
+            "widgets_values_named": {
+              "noise_seed": 572241167616859,
+              "control_after_generate": "fixed"
+            }
+          },
+          {
+            "id": 98,
+            "type": "KSamplerSelect",
+            "pos": [
+              1096,
+              528
+            ],
+            "size": [
+              280,
+              60
+            ],
+            "flags": {},
+            "order": 1,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "SAMPLER",
+                "type": "SAMPLER",
+                "links": [
+                  167
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.8.2",
+              "Node name for S&R": "KSamplerSelect",
+              "enableTabs": false,
+              "tabWidth": 65,
+              "tabXOffset": 10,
+              "hasSecondTab": false,
+              "secondTabText": "Send Back",
+              "secondTabOffset": 80,
+              "secondTabWidth": 65,
+              "ue_properties": {
+                "widget_ue_connectable": {
+                  "sampler_name": true
+                },
+                "version": "7.8",
+                "input_ue_unconnectable": {}
+              }
+            },
+            "widgets_values": [
+              "er_sde"
+            ],
+            "widgets_values_named": {
+              "sampler_name": "er_sde"
+            }
+          },
+          {
+            "id": 85,
+            "type": "CFGGuider",
+            "pos": [
+              1096,
+              388
+            ],
+            "size": [
+              280,
+              100
+            ],
+            "flags": {},
+            "order": 10,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "model",
+                "type": "MODEL",
+                "link": 336
+              },
+              {
+                "name": "positive",
+                "type": "CONDITIONING",
+                "link": 163
+              },
+              {
+                "name": "negative",
+                "type": "CONDITIONING",
+                "link": 164
+              }
+            ],
+            "outputs": [
+              {
+                "name": "GUIDER",
+                "type": "GUIDER",
+                "links": [
+                  166
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.8.2",
+              "Node name for S&R": "CFGGuider",
+              "enableTabs": false,
+              "tabWidth": 65,
+              "tabXOffset": 10,
+              "hasSecondTab": false,
+              "secondTabText": "Send Back",
+              "secondTabOffset": 80,
+              "secondTabWidth": 65,
+              "ue_properties": {
+                "widget_ue_connectable": {
+                  "cfg": true
+                },
+                "version": "7.8",
+                "input_ue_unconnectable": {}
+              }
+            },
+            "widgets_values": [
+              4
+            ],
+            "widgets_values_named": {
+              "cfg": 4
+            }
+          },
+          {
+            "id": 97,
+            "type": "Flux2Scheduler",
+            "pos": [
+              1096,
+              640
+            ],
+            "size": [
+              280,
+              106
+            ],
+            "flags": {},
+            "order": 7,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "width",
+                "type": "INT",
+                "widget": {
+                  "name": "width"
+                },
+                "link": 333
+              },
+              {
+                "name": "height",
+                "type": "INT",
+                "widget": {
+                  "name": "height"
+                },
+                "link": 334
+              }
+            ],
+            "outputs": [
+              {
+                "name": "SIGMAS",
+                "type": "SIGMAS",
+                "links": [
+                  168
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.8.2",
+              "Node name for S&R": "Flux2Scheduler",
+              "enableTabs": false,
+              "tabWidth": 65,
+              "tabXOffset": 10,
+              "hasSecondTab": false,
+              "secondTabText": "Send Back",
+              "secondTabOffset": 80,
+              "secondTabWidth": 65,
+              "ue_properties": {
+                "widget_ue_connectable": {
+                  "steps": true,
+                  "width": true,
+                  "height": true
+                },
+                "version": "7.8",
+                "input_ue_unconnectable": {}
+              }
+            },
+            "widgets_values": [
+              34,
+              1024,
+              1024
+            ],
+            "widgets_values_named": {
+              "steps": 34,
+              "width": 1024,
+              "height": 1024
+            }
+          },
+          {
+            "id": 108,
+            "type": "UNETLoader",
+            "pos": [
+              -96,
+              244
+            ],
+            "size": [
+              344,
+              84
+            ],
+            "flags": {},
+            "order": 2,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "MODEL",
+                "type": "MODEL",
+                "links": [
+                  324
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.33.1",
+              "Node name for S&R": "UNETLoader",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            },
+            "widgets_values": [
+              "Flux.2 klein\\9B - Base\\flux-2-klein-base-9b.safetensors",
+              "default"
+            ],
+            "widgets_values_named": {
+              "unet_name": "Flux.2 klein\\9B - Base\\flux-2-klein-base-9b.safetensors",
+              "weight_dtype": "default"
+            },
+            "color": "#223",
+            "bgcolor": "#335"
+          },
+          {
+            "id": 109,
+            "type": "CLIPLoader",
+            "pos": [
+              -96,
+              372
+            ],
+            "size": [
+              344,
+              108
+            ],
+            "flags": {},
+            "order": 3,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "CLIP",
+                "type": "CLIP",
+                "links": [
+                  200
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.33.1",
+              "Node name for S&R": "CLIPLoader",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            },
+            "widgets_values": [
+              "Flux.2 klein 9b\\qwen3-8b-heretic_fp8_e4m3fn.safetensors",
+              "flux2",
+              "default"
+            ],
+            "widgets_values_named": {
+              "clip_name": "Flux.2 klein 9b\\qwen3-8b-heretic_fp8_e4m3fn.safetensors",
+              "type": "flux2",
+              "device": "default"
+            },
+            "color": "#432",
+            "bgcolor": "#653"
+          },
+          {
+            "id": 93,
+            "type": "VAELoader",
+            "pos": [
+              -96,
+              524
+            ],
+            "size": [
+              344,
+              58
+            ],
+            "flags": {},
+            "order": 4,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "VAE",
+                "type": "VAE",
+                "links": [
+                  332
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.8.2",
+              "Node name for S&R": "VAELoader",
+              "models": [
+                {
+                  "name": "Flux.2 klein\\flux2-vae.safetensors",
+                  "url": "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/vae/flux2-vae.safetensors",
+                  "directory": "vae"
+                }
+              ],
+              "enableTabs": false,
+              "tabWidth": 65,
+              "tabXOffset": 10,
+              "hasSecondTab": false,
+              "secondTabText": "Send Back",
+              "secondTabOffset": 80,
+              "secondTabWidth": 65,
+              "ue_properties": {
+                "widget_ue_connectable": {
+                  "vae_name": true
+                },
+                "version": "7.8",
+                "input_ue_unconnectable": {},
+                "output_not_broadcasting": {}
+              },
+              "ue_convert": true,
+              "rejects_ue_links": true
+            },
+            "widgets_values": [
+              "Flux.2\\flux2-vae.safetensors"
+            ],
+            "widgets_values_named": {
+              "vae_name": "Flux.2\\flux2-vae.safetensors"
+            },
+            "color": "#322",
+            "bgcolor": "#533"
+          },
+          {
+            "id": 94,
+            "type": "CLIPTextEncode",
+            "pos": [
+              580,
+              244
+            ],
+            "size": [
+              440,
+              288
+            ],
+            "flags": {},
+            "order": 9,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "clip",
+                "type": "CLIP",
+                "link": 338
+              }
+            ],
+            "outputs": [
+              {
+                "name": "CONDITIONING",
+                "type": "CONDITIONING",
+                "slot_index": 0,
+                "links": [
+                  163
+                ]
+              }
+            ],
+            "title": "CLIP Text Encode (Positive Prompt)",
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.8.2",
+              "Node name for S&R": "CLIPTextEncode",
+              "enableTabs": false,
+              "tabWidth": 65,
+              "tabXOffset": 10,
+              "hasSecondTab": false,
+              "secondTabText": "Send Back",
+              "secondTabOffset": 80,
+              "secondTabWidth": 65,
+              "ue_properties": {
+                "widget_ue_connectable": {
+                  "text": true
+                },
+                "version": "7.8",
+                "input_ue_unconnectable": {}
+              }
+            },
+            "widgets_values": [
+              "A low-angle cinematic medium-full shot of a confident adult slender European woman, approx age 28, with glowing fair skin and long flowing auburn hair. She is wearing leather micro skirt, platform stiletto high heels, and a stylish skintight black leather longsleeve shirt. She stands powerfully beside a weathered, rusted 1970s Dodge Charger R/T with faded paint and a license plate reading \"BADGIRL\". She holds a black Glock pistol pointing to the camera with her outstretched arm, gazing intensely at the viewer. The setting is a gritty, atmospheric old gas station at night. The lighting is high-contrast and stylized, dominated by harsh fluorescent green overhead lights illuminating the dust motes and heavy shadows, with a distinct orange light leak streak cutting across the frame. Robert Rodriguez neo-noir grindhouse style, shot on Nikon F2 50mm, visible film grain, photorealistic texture, sharp focus. No nudity, no blurry details, no watermarks, no logos other than license plate, correct anatomy, realistic proportions...."
+            ],
+            "widgets_values_named": {
+              "text": "A low-angle cinematic medium-full shot of a confident adult slender European woman, approx age 28, with glowing fair skin and long flowing auburn hair. She is wearing leather micro skirt, platform stiletto high heels, and a stylish skintight black leather longsleeve shirt. She stands powerfully beside a weathered, rusted 1970s Dodge Charger R/T with faded paint and a license plate reading \"BADGIRL\". She holds a black Glock pistol pointing to the camera with her outstretched arm, gazing intensely at the viewer. The setting is a gritty, atmospheric old gas station at night. The lighting is high-contrast and stylized, dominated by harsh fluorescent green overhead lights illuminating the dust motes and heavy shadows, with a distinct orange light leak streak cutting across the frame. Robert Rodriguez neo-noir grindhouse style, shot on Nikon F2 50mm, visible film grain, photorealistic texture, sharp focus. No nudity, no blurry details, no watermarks, no logos other than license plate, correct anatomy, realistic proportions...."
+            },
+            "color": "#232",
+            "bgcolor": "#353"
+          },
+          {
+            "id": 87,
+            "type": "VAEDecode",
+            "pos": [
+              1868,
+              236
+            ],
+            "size": [
+              220,
+              60
+            ],
+            "flags": {
+              "collapsed": true
+            },
+            "order": 12,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "samples",
+                "type": "LATENT",
+                "link": 170
+              },
+              {
+                "name": "vae",
+                "type": "VAE",
+                "link": 332
+              }
+            ],
+            "outputs": [
+              {
+                "name": "IMAGE",
+                "type": "IMAGE",
+                "slot_index": 0,
+                "links": [
+                  199
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.8.2",
+              "Node name for S&R": "VAEDecode",
+              "enableTabs": false,
+              "tabWidth": 65,
+              "tabXOffset": 10,
+              "hasSecondTab": false,
+              "secondTabText": "Send Back",
+              "secondTabOffset": 80,
+              "secondTabWidth": 65,
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "version": "7.8",
+                "input_ue_unconnectable": {}
+              }
+            },
+            "color": "#322",
+            "bgcolor": "#533"
+          },
+          {
+            "id": 111,
+            "type": "PixaromaResolution",
+            "pos": [
+              288,
+              244
+            ],
+            "size": [
+              240,
+              435
+            ],
+            "flags": {},
+            "order": 5,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "width",
+                "type": "INT",
+                "links": [
+                  333
+                ]
+              },
+              {
+                "name": "height",
+                "type": "INT",
+                "links": [
+                  334
+                ]
+              },
+              {
+                "name": "latent",
+                "type": "LATENT",
+                "links": [
+                  335
+                ]
+              }
+            ],
+            "properties": {
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "output_not_broadcasting": {}
+              },
+              "cnr_id": "ComfyUI-Pixaroma",
+              "ver": "765412e95110f8f547bfb8e709bc099a438f12a5",
+              "Node name for S&R": "PixaromaResolution",
+              "resolutionState": "{\"mode\":\"preset\",\"ratio\":\"3:4\",\"w\":768,\"h\":1024,\"custom_w\":1024,\"custom_h\":1024,\"custom_ratio_w\":4,\"custom_ratio_h\":3,\"snap\":16}",
+              "ue_convert": true
+            },
+            "widgets_values": [
+              {
+                "mode": "preset",
+                "ratio": "3:4",
+                "w": 768,
+                "h": 1024,
+                "custom_w": 1024,
+                "custom_h": 1024,
+                "custom_ratio_w": 4,
+                "custom_ratio_h": 3,
+                "snap": 16
+              }
+            ],
+            "widgets_values_named": {
+              "resolution_ui": {
+                "mode": "preset",
+                "ratio": "3:4",
+                "w": 768,
+                "h": 1024,
+                "custom_w": 1024,
+                "custom_h": 1024,
+                "custom_ratio_w": 4,
+                "custom_ratio_h": 3,
+                "snap": 16
+              }
+            },
+            "color": "#1d1d1d",
+            "bgcolor": "#2a2a2a"
+          },
+          {
+            "id": 112,
+            "type": "SaveImageClean",
+            "pos": [
+              1868,
+              280
+            ],
+            "size": [
+              669.8398925781248,
+              897.5999999999999
+            ],
+            "flags": {},
+            "order": 13,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "images",
+                "type": "IMAGE",
+                "link": 199
+              }
+            ],
+            "outputs": [
+              {
+                "name": "FILENAME",
+                "type": "STRING",
+                "links": null
+              },
+              {
+                "name": "FILE_PATH",
+                "type": "STRING",
+                "links": null
+              },
+              {
+                "name": "IMAGES",
+                "type": "IMAGE",
+                "links": null
+              }
+            ],
+            "properties": {
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {}
+              },
+              "cnr_id": "save-image-organized",
+              "ver": "7b38b8ff1ddf7d6c324f1b910efa4eaa00815bd9",
+              "Node name for S&R": "SaveImageClean"
+            },
+            "widgets_values": [
+              "%TOP_FOLDER%/%MODEL_NAME%/%TEXT_ENCODER_NAME%/%FILENAME%%BATCH%",
+              "Friendly",
+              "Friendly",
+              "%date:yyyy-MM-dd_hh-mm-ss%",
+              "increment",
+              "Off",
+              true,
+              "",
+              "",
+              "",
+              "PNG",
+              95,
+              "Nearest",
+              "Preview"
+            ],
+            "widgets_values_named": {
+              "path_template": "%TOP_FOLDER%/%MODEL_NAME%/%TEXT_ENCODER_NAME%/%FILENAME%%BATCH%",
+              "model_source": "Friendly",
+              "clip_source": "Friendly",
+              "filename_datetime": "%date:yyyy-MM-dd_hh-mm-ss%",
+              "collision_mode": "increment",
+              "detection_info": "Off",
+              "export_workflow_metadata": true,
+              "subfolder": "",
+              "model_folder": "",
+              "clip_folder": "",
+              "image_format": "PNG",
+              "image_quality": 95,
+              "loader_priority": "Nearest",
+              "save_mode": "Preview"
+            },
+            "color": "#4a3fcf",
+            "bgcolor": "#2a283e"
+          },
+          {
+            "id": 113,
+            "type": "Power Lora Loader (rgthree)",
+            "pos": [
+              -96,
+              624
+            ],
+            "size": [
+              344,
+              166
+            ],
+            "flags": {},
+            "order": 6,
+            "mode": 0,
+            "inputs": [
+              {
+                "dir": 3,
+                "name": "model",
+                "type": "MODEL",
+                "link": 324
+              },
+              {
+                "dir": 3,
+                "name": "clip",
+                "type": "CLIP",
+                "link": 200
+              }
+            ],
+            "outputs": [
+              {
+                "dir": 4,
+                "name": "MODEL",
+                "shape": 3,
+                "type": "MODEL",
+                "links": [
+                  336
+                ]
+              },
+              {
+                "dir": 4,
+                "name": "CLIP",
+                "shape": 3,
+                "type": "CLIP",
+                "links": [
+                  337,
+                  338
+                ]
+              }
+            ],
+            "properties": {
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "output_not_broadcasting": {}
+              },
+              "cnr_id": "rgthree-comfy",
+              "ver": "27b4f4cdcf3b127c29d5d8135ac1536ecbd4c383",
+              "Show Strengths": "Single Strength",
+              "Match": "",
+              "ue_convert": true
+            },
+            "widgets_values": [
+              {},
+              {
+                "type": "PowerLoraLoaderHeaderWidget"
+              },
+              {
+                "on": true,
+                "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - Lenovo UltraReal.safetensors",
+                "strength": 0.7,
+                "strengthTwo": null
+              },
+              {
+                "on": true,
+                "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - NiceGirls UltraReal.safetensors",
+                "strength": 0.7,
+                "strengthTwo": null
+              },
+              {},
+              ""
+            ],
+            "widgets_values_named": {
+              "divider": {},
+              "PowerLoraLoaderHeaderWidget": {
+                "type": "PowerLoraLoaderHeaderWidget"
+              },
+              "lora_1": {
+                "on": true,
+                "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - Lenovo UltraReal.safetensors",
+                "strength": 0.7,
+                "strengthTwo": null
+              },
+              "lora_2": {
+                "on": true,
+                "lora": "Flux.2 Klein 9B-base\\F2k-9b_Base - NiceGirls UltraReal.safetensors",
+                "strength": 0.7,
+                "strengthTwo": null
+              },
+              "divider#1": {},
+              "\u2795 Add Lora": ""
+            },
+            "color": "#233",
+            "bgcolor": "#355"
+          }
+        ],
+        "links": [
+          [
+            163,
+            94,
+            0,
+            85,
+            1,
+            "CONDITIONING"
+          ],
+          [
+            164,
+            89,
+            0,
+            85,
+            2,
+            "CONDITIONING"
+          ],
+          [
+            165,
+            96,
+            0,
+            86,
+            0,
+            "NOISE"
+          ],
+          [
+            166,
+            85,
+            0,
+            86,
+            1,
+            "GUIDER"
+          ],
+          [
+            167,
+            98,
+            0,
+            86,
+            2,
+            "SAMPLER"
+          ],
+          [
+            168,
+            97,
+            0,
+            86,
+            3,
+            "SIGMAS"
+          ],
+          [
+            170,
+            86,
+            0,
+            87,
+            0,
+            "LATENT"
+          ],
+          [
+            199,
+            87,
+            0,
+            112,
+            0,
+            "IMAGE"
+          ],
+          [
+            200,
+            109,
+            0,
+            113,
+            1,
+            "CLIP"
+          ],
+          [
+            324,
+            108,
+            0,
+            113,
+            0,
+            "MODEL"
+          ],
+          [
+            332,
+            93,
+            0,
+            87,
+            1,
+            "VAE"
+          ],
+          [
+            333,
+            111,
+            0,
+            97,
+            0,
+            "INT"
+          ],
+          [
+            334,
+            111,
+            1,
+            97,
+            1,
+            "INT"
+          ],
+          [
+            335,
+            111,
+            2,
+            86,
+            4,
+            "LATENT"
+          ],
+          [
+            336,
+            113,
+            0,
+            85,
+            0,
+            "MODEL"
+          ],
+          [
+            337,
+            113,
+            1,
+            89,
+            0,
+            "CLIP"
+          ],
+          [
+            338,
+            113,
+            1,
+            94,
+            0,
+            "CLIP"
+          ]
+        ],
+        "groups": [
+          {
+            "id": 1,
+            "title": "Models",
+            "bounding": [
+              -116,
+              168,
+              383.5199462890625,
+              776.4
+            ],
+            "color": "#3f789e",
+            "flags": {}
+          },
+          {
+            "id": 2,
+            "title": "Prompt",
+            "bounding": [
+              560,
+              168,
+              470,
+              550
+            ],
+            "color": "#3f789e",
+            "flags": {}
+          },
+          {
+            "id": 3,
+            "title": "Sampler",
+            "bounding": [
+              1084,
+              168,
+              706.1295675048827,
+              600.028
+            ],
+            "color": "#3f789e",
+            "flags": {}
+          },
+          {
+            "id": 5,
+            "title": "Output",
+            "bounding": [
+              1856,
+              168,
+              694.1599999999999,
+              1023.797622225009
+            ],
+            "color": "#3f789e",
+            "flags": {}
+          }
+        ],
+        "config": {},
+        "extra": {
+          "frontendVersion": "1.55.17",
+          "workflowRendererVersion": "LG",
+          "VHS_latentpreview": false,
+          "VHS_latentpreviewrate": 0,
+          "VHS_MetadataImage": true,
+          "VHS_KeepIntermediate": true,
+          "ds": {
+            "scale": 0.7513148009015777,
+            "offset": [
+              135.16628102891065,
+              380.6244620290335
+            ]
+          },
+          "ue_links": [
+            {
+              "downstream": "86",
+              "downstream_slot": 4,
+              "upstream": "111",
+              "upstream_slot": 2,
+              "controller": "111",
+              "type": "LATENT"
+            },
+            {
+              "downstream": "89",
+              "downstream_slot": 0,
+              "upstream": "113",
+              "upstream_slot": 1,
+              "controller": "113",
+              "type": "CLIP"
+            },
+            {
+              "downstream": "85",
+              "downstream_slot": 0,
+              "upstream": "113",
+              "upstream_slot": 0,
+              "controller": "113",
+              "type": "MODEL"
+            },
+            {
+              "downstream": "97",
+              "downstream_slot": 1,
+              "upstream": "111",
+              "upstream_slot": 0,
+              "controller": "111",
+              "type": "INT"
+            },
+            {
+              "downstream": "97",
+              "downstream_slot": 2,
+              "upstream": "111",
+              "upstream_slot": 1,
+              "controller": "111",
+              "type": "INT"
+            },
+            {
+              "downstream": "94",
+              "downstream_slot": 0,
+              "upstream": "113",
+              "upstream_slot": 1,
+              "controller": "113",
+              "type": "CLIP"
+            },
+            {
+              "downstream": "87",
+              "downstream_slot": 1,
+              "upstream": "93",
+              "upstream_slot": 0,
+              "controller": "93",
+              "type": "VAE"
+            }
+          ],
+          "links_added_by_ue": [
+            332,
+            333,
+            334,
+            335,
+            336,
+            337,
+            338
+          ]
+        },
+        "version": 0.4,
+        "seed_widgets": {
+          "96": 0
+        }
+      }
+    },
+    "all_png_chunk_crcs_valid": true
+  },
+  "same_seed_original_prompt_difference_nodes": [
+    "108",
+    "113",
+    "115"
+  ],
+  "same_seed_visual_assessment": {
+    "classification": "Visible drift in pose/composition; coherent output without obvious corruption",
+    "preserved": "Similar subject appearance, black leather clothing, green/orange lighting and gas-station/car scene",
+    "changed": "Raised gun/arm direction, crossed versus wider leg stance, car framing/details and ceiling-light positions",
+    "attribution_limit": "End-to-end original loader versus quantized GGUF loader comparison with two LoRAs; cannot isolate quantization math from loader/LoRA execution differences."
+  }
+}

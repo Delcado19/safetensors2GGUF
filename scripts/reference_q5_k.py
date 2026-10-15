@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2023-2024 The ggml authors
-"""Research NumPy port of unweighted GGML Q5_K reference blocks.
+"""Research NumPy port of unweighted GGML Q5_K and shared affine Q4_K math.
 
 Based on llama.cpp c8c07d658a6cefc5a50cfdf6be7d726503612303,
 ggml/src/ggml-quants.c: make_qkx2_quants and quantize_row_q5_K_ref.
@@ -20,7 +20,9 @@ def _error(x, weights, codes, scale, minimum):
     return error
 
 
-def _fit(x):
+def _fit(x, *, bits=5):
+    # Frozen Q4 and Q5 use distinct affine search grids; accumulation/packing are shared.
+    levels, first, steps = (31, -0.5, 16) if bits == 5 else (15, -1.0, 21)
     squares = np.zeros(len(x), dtype=np.float32)
     for i in range(32):
         squares += x[:, i] * x[:, i]
@@ -32,15 +34,15 @@ def _fit(x):
     for i in range(1, 32):
         sum_w += weights[:, i]
         sum_x += weights[:, i] * x[:, i]
-    inverse = np.float32(31) / np.where(active, maximum - minimum, np.float32(1))
+    inverse = np.float32(levels) / np.where(active, maximum - minimum, np.float32(1))
     scale = np.float32(1) / inverse
-    codes = np.clip(np.rint(inverse[:, None] * (x - minimum[:, None])), 0, 31).astype(np.uint8)
+    codes = np.clip(np.rint(inverse[:, None] * (x - minimum[:, None])), 0, levels).astype(np.uint8)
     best = _error(x, weights, codes, scale, minimum)
-    for step in range(16):
+    for step in range(steps):
         # Native fitting updates minimum after each winning candidate, affecting later steps.
-        inverse = (np.float32(-0.5) + np.float32(0.1) * np.float32(step) + np.float32(31)) / np.where(
+        inverse = (np.float32(first) + np.float32(0.1) * np.float32(step) + np.float32(levels)) / np.where(
             active, maximum - minimum, np.float32(1))
-        candidate = np.clip(np.rint(inverse[:, None] * (x - minimum[:, None])), 0, 31).astype(np.uint8)
+        candidate = np.clip(np.rint(inverse[:, None] * (x - minimum[:, None])), 0, levels).astype(np.uint8)
         sum_l, sum_l2, sum_xl = (np.zeros(len(x), dtype=np.float32) for _ in range(3))
         for i in range(32):
             weighted = weights[:, i] * candidate[:, i]
@@ -65,9 +67,10 @@ def _fit(x):
     return scale, -minimum, codes
 
 
-def _encode(data):
+def _encode(data, *, bits=5):
+    levels = (1 << bits) - 1
     blocks = data.reshape(-1, 256)
-    scales, minima, codes = _fit(blocks.reshape(-1, 32))
+    scales, minima, codes = _fit(blocks.reshape(-1, 32), bits=bits)
     scales, minima = scales.reshape(-1, 8), minima.reshape(-1, 8)
     maximum = np.max(scales, axis=1)
     # Native max_min starts at positive zero and only accepts strictly greater minima.
@@ -82,32 +85,26 @@ def _encode(data):
     dm = stored_min.astype(np.float32)[:, None] * mn
     recoded = np.divide(blocks.reshape(-1, 8, 32) + dm[:, :, None], d[:, :, None],
                         out=np.zeros_like(codes.reshape(-1, 8, 32), dtype=np.float32), where=d[:, :, None] != 0)
-    recoded = np.clip(np.rint(recoded), 0, 31).astype(np.uint8)
+    recoded = np.clip(np.rint(recoded), 0, levels).astype(np.uint8)
     # FP16 scale underflow keeps the initial fitted codes, as in native Q5_K.
     codes = np.where(d[:, :, None] != 0, recoded, codes.reshape(-1, 8, 32))
-    result = np.zeros((len(blocks), 176), dtype=np.uint8)
+    result = np.zeros((len(blocks), 176 if bits == 5 else 144), dtype=np.uint8)
     result[:, :2] = stored[:, None].view(np.uint8)
     result[:, 2:4] = stored_min[:, None].view(np.uint8)
     result[:, 4:8] = sc[:, :4] | ((sc[:, 4:] >> 4) << 6)
     result[:, 8:12] = mn[:, :4] | ((mn[:, 4:] >> 4) << 6)
     result[:, 12:16] = (sc[:, 4:] & 15) | ((mn[:, 4:] & 15) << 4)
-    for group in range(8):
-        result[:, 16:48] |= (codes[:, group] >> 4) << group
-    result[:, 48:] = ((codes[:, ::2] & 15) | ((codes[:, 1::2] & 15) << 4)).reshape(-1, 128)
+    if bits == 5:
+        for group in range(8):
+            result[:, 16:48] |= (codes[:, group] >> 4) << group
+    result[:, 48 if bits == 5 else 16:] = ((codes[:, ::2] & 15) | ((codes[:, 1::2] & 15) << 4)).reshape(-1, 128)
     return result
 
 
-def iter_q5_k(data, *, chunk_blocks=256):
-    """Yield independent Q5_K chunks (256 finite F32 values / 176 bytes per block).
-
-    Preserve logical C order for strided input; only each chunk is copied.
-    Validation is incremental, so consumers must publish atomically and close or
-    stop the iterator between chunks to cancel. Input must remain unchanged.
-    Overflow is rejected; the complete finite float32 range is not guaranteed.
-    """
+def _iter_affine(data, chunk_blocks, encode, label):
     data = np.asarray(data)
     if data.dtype != np.float32 or data.ndim == 0 or not data.size or data.shape[-1] % 256:
-        raise ValueError('Q5_K requires nonempty float32 rows divisible by 256')
+        raise ValueError(f'{label} requires nonempty float32 rows divisible by 256')
     if isinstance(chunk_blocks, (bool, np.bool_)):
         raise ValueError('chunk_blocks must be a positive integer')
     try:
@@ -119,13 +116,24 @@ def iter_q5_k(data, *, chunk_blocks=256):
     for start in range(0, data.size, chunk_blocks * 256):
         chunk = data.flat[start:start + chunk_blocks * 256].reshape(-1, 256)
         if not np.isfinite(chunk).all():
-            raise ValueError('Q5_K requires finite input')
+            raise ValueError(f'{label} requires finite input')
         try:
             with np.errstate(over='raise', invalid='raise', divide='raise'):
-                encoded = _encode(chunk)
+                encoded = encode(chunk)
         except FloatingPointError as error:
-            raise ValueError('Q5_K input exceeds the reference prototype numerical range') from error
+            raise ValueError(f'{label} input exceeds the reference prototype numerical range') from error
         yield encoded
+
+
+def iter_q5_k(data, *, chunk_blocks=256):
+    """Yield independent Q5_K chunks (256 finite F32 values / 176 bytes per block).
+
+    Preserve logical C order for strided input; only each chunk is copied.
+    Validation is incremental, so consumers must publish atomically and close or
+    stop the iterator between chunks to cancel. Input must remain unchanged.
+    Overflow is rejected; the complete finite float32 range is not guaranteed.
+    """
+    yield from _iter_affine(data, chunk_blocks, _encode, 'Q5_K')
 
 
 def quantize_q5_k(data, *, chunk_blocks=256):

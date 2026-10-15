@@ -101,7 +101,7 @@ def test_early_close_and_late_failure_restore_numpy_state():
 
 
 def test_unsupported_pilot_format_is_explicitly_rejected():
-    with pytest.raises(ValueError, match='Q5_K or Q6_K'):
+    with pytest.raises(ValueError, match='Q4_K, Q5_K or Q6_K'):
         check_pilot({}, format_key='IQ2_XXS')
 
 

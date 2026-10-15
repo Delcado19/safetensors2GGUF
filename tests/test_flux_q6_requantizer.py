@@ -210,5 +210,57 @@ def test_q5_file_parity_evidence():
 
 def test_unknown_preset_rejected_before_output(tmp_path):
     with pytest.raises(ValueError, match='presets'):
-        requantize(tmp_path / 'missing', tmp_path / 'output', preset='Q4_K_M')
+        requantize(tmp_path / 'missing', tmp_path / 'output', preset='Q3_K_M')
     assert not (tmp_path / 'output').exists()
+
+
+
+@pytest.mark.parametrize('preset,filename', [('Q4_K_S', 'q4s'), ('Q4_K_M', 'q4m')])
+def test_q4_file_parity_and_ordered_fallback_evidence(preset, filename):
+    """Retain native byte parity and ensure fallback consumes a Q4_S V slot."""
+    report = json.loads((Path(__file__).parents[1] / f'data/flux-{filename}-path-comparison.json').read_text())
+    assert report['preset'] == preset and report['all_equal']
+    assert len(report['results']) == 8
+    assert sum(len(row['tensors']) for row in report['results']) == 200
+    for row in report['results']:
+        assert row['metadata_equal'] and row['alignment_equal'] and row['tensor_counts_equal']
+        assert all(t['equal'] for t in row['tensors'])
+        attention = [t for t in row['tensors'] if t['name'].startswith('blocks.') and '.to_v.weight' in t['name']]
+        assert len(attention) == 8
+        odd = 'unaligned-True' in row['scenario']
+        if odd:
+            assert row['tensors'][0]['name'] == 'prefix.to_v.weight'
+            assert row['tensors'][0]['type'] == 'F16'
+        if preset == 'Q4_K_S':
+            count = 3 if odd else 4
+            assert [t['type'] for t in attention] == ['Q5_K'] * count + ['Q4_K'] * (8 - count)
+            assert attention[0]['name'] == ('blocks.7.attn.to_v.weight' if 'reverse-True' in row['scenario']
+                                           else 'blocks.0.attn.to_v.weight')
+        else:
+            assert all(t['type'] == 'Q6_K' for t in attention)
+
+
+@pytest.mark.parametrize('preset', ['Q4_K_S', 'Q4_K_M'])
+@pytest.mark.parametrize('outcome', ['success', 'cancel', 'invalid'])
+def test_q4_writer_preserves_old_output_on_failure(tmp_path, preset, outcome):
+    from scripts.gguf_research_io import open_gguf
+    from scripts.reference_q4_k import quantize_q4_k
+    source, destination = tmp_path / 'source.gguf', tmp_path / 'q4.gguf'
+    extra = {'late.weight': np.full((8, 256), np.nan, dtype=np.float16)} if outcome == 'invalid' else None
+    arrays = _source(source, extra=extra)
+    original = source.read_bytes()
+    destination.write_bytes(b'previous model')
+    event = threading.Event()
+    if outcome == 'success':
+        requantize(source, destination, preset=preset, overwrite=True)
+        with open_gguf(destination) as r:
+            assert r.get_field('general.file_type').contents() == int(getattr(gguf.LlamaFileType, 'MOSTLY_' + preset))
+            assert r.tensors[0].tensor_type == gguf.GGMLQuantizationType.Q4_K
+            assert r.tensors[0].data.tobytes() == quantize_q4_k(arrays[r.tensors[0].name].astype(np.float32)).tobytes()
+    else:
+        with pytest.raises(ConversionCancelled if outcome == 'cancel' else ValueError):
+            requantize(source, destination, preset=preset, overwrite=True, cancel_event=event,
+                       on_progress=lambda *_: event.set() if outcome == 'cancel' else None)
+        assert destination.read_bytes() == b'previous model'
+    assert source.read_bytes() == original
+    assert not list(tmp_path.glob('.q4.gguf.*'))

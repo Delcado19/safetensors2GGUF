@@ -1,4 +1,4 @@
-"""Compare the research FLUX Q6_K/Q5_K_M file path with pinned patched b3962."""
+"""Compare research FLUX Q4/Q5/Q6 K-preset file paths with pinned patched b3962."""
 import argparse
 import hashlib
 import json
@@ -10,7 +10,7 @@ import numpy as np
 from scripts.compare_converter_policies import fixture_tensors, write_fixture
 from scripts.compare_native_reference_vectors import ROOT, run_command
 from scripts.inventory_converter_sources import verify_references, REFERENCES
-from scripts.requantize_flux_q6 import requantize
+from scripts.requantize_flux_q6 import requantize, FLUX_PRESETS
 from scripts.compare_gguf_outputs import compare_files
 
 
@@ -33,7 +33,7 @@ def verified_flux_reference(references):
 
 def compare_path(artifacts, references, *, preset="Q6_K"):
     """Require pinned provenance, then compare types/shapes/bytes and all metadata."""
-    if preset not in ("Q6_K", "Q5_K_M"):
+    if preset not in FLUX_PRESETS:
         raise ValueError("Unsupported FLUX research preset")
     build = verified_flux_reference(references)
     executable = Path(build['executable'])
@@ -42,7 +42,10 @@ def compare_path(artifacts, references, *, preset="Q6_K"):
               'preset': preset,
               'native': {key: build[key] for key in ('commit', 'archive_sha256', 'city96_patch_sha256',
                                                     'executable_sha256')},
-              'encoder_sha256': hashlib.sha256((ROOT / ('scripts/reference_q6_k.py' if preset == 'Q6_K' else 'scripts/reference_q5_k.py')).read_bytes()).hexdigest(),
+              'encoder_source_sha256': {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
+                  for name in ('scripts/reference_q4_k.py', 'scripts/reference_q5_k.py', 'scripts/reference_q6_k.py')},
+              'encoder_sha256': hashlib.sha256((ROOT / ('scripts/reference_q4_k.py' if preset.startswith('Q4_') else
+                                                       'scripts/reference_q6_k.py' if preset == 'Q6_K' else 'scripts/reference_q5_k.py')).read_bytes()).hexdigest(),
               'q6_encoder_sha256': hashlib.sha256((ROOT / 'scripts/reference_q6_k.py').read_bytes()).hexdigest(),
               'requantizer_sha256': hashlib.sha256((ROOT / 'scripts/requantize_flux_q6.py').read_bytes()).hexdigest(),
               'results': []}
@@ -52,6 +55,9 @@ def compare_path(artifacts, references, *, preset="Q6_K"):
                 label = f'{np.dtype(dtype).name}-reverse-{reverse}-unaligned-{odd}'
                 src, ours, native = [artifacts / f'{label}-{name}.gguf' for name in ('input', 'python', 'native')]
                 tensors = fixture_tensors('flux', reverse, odd)
+                if preset.startswith('Q4_') and odd:
+                    # Fallback V consumes the native counter before the following eight aligned V tensors.
+                    tensors = {'prefix.to_v.weight': (8, 160), **tensors}
                 # Cover every architecture protection and general exclusion used here.
                 tensors.update({f'{name}.weight': (8, 256) for name in
                                 ('txt_in', 'time_in', 'vector_in', 'guidance_in', 'final_layer',
@@ -78,7 +84,7 @@ def compare_path(artifacts, references, *, preset="Q6_K"):
 def main():
     """Write native/Python fixture artifacts into a fresh explicit directory."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--preset', choices=('Q6_K', 'Q5_K_M'), default='Q6_K')
+    parser.add_argument('--preset', choices=FLUX_PRESETS, default='Q6_K')
     parser.add_argument('--artifacts', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--references', type=Path, default=ROOT / 'data/converter-policy-comparison.json')
