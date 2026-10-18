@@ -39,3 +39,10 @@ scripts/benchmark_compiled_writer.py text eol=lf
 convert.py text eol=lf
 compiled_flux_writer.py text eol=lf
 scripts/benchmark_compiled_preparation.py text eol=lf
+
+# Multi-model qualification records exact adapter bytes.
+compiled_diffusion.py text eol=lf
+bundled_tools.py text eol=lf
+text_encoder_convert.py text eol=lf
+scripts/check_compiled_diffusion.py text eol=lf
+third_party/text-tools/** -text whitespace=cr-at-eol,-blank-at-eof

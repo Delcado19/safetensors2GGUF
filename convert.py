@@ -26,6 +26,7 @@ from safetensors.torch import save_file
 
 from models.architectures import (
     detect_arch,
+    protected_key,
     MAX_TENSOR_NAME_LENGTH,
     MAX_TENSOR_DIMS,
     QUANTIZATION_THRESHOLD,
@@ -261,7 +262,7 @@ def _quant_type_for(data, key, model_arch, old_dtype, target_quant=None):
             return gguf.GGMLQuantizationType.F32
         if n_params <= QUANTIZATION_THRESHOLD:
             return gguf.GGMLQuantizationType.F32
-        if any(x in key for x in model_arch.keys_hiprec):
+        if protected_key(model_arch, key):
             return gguf.GGMLQuantizationType.F32
 
     if target_quant is not None:
@@ -392,13 +393,17 @@ def handle_tensors(
         data = torch.nan_to_num(data, nan=0.0, posinf=65504.0, neginf=-65504.0)
         data = data.numpy()
 
-        if len(data.shape) > MAX_TENSOR_DIMS:
+        # The bundled writer can preserve high-rank floats directly; native CLIs need sidecars.
+        if len(data.shape) > MAX_TENSOR_DIMS and not getattr(writer, 'accepts_nd_tensors', False):
             model_arch.handle_nd_tensor(key, data)
             continue
 
         data_qtype = _quant_type_for(
             torch.as_tensor(data), key, model_arch, old_dtype, target_quant
         )
+        if len(data.shape) > MAX_TENSOR_DIMS:
+            # Match native sidecar reinsertion precision without writing a companion file.
+            data_qtype = gguf.GGMLQuantizationType.F32
 
         # Reshape for SD1/SDXL: flatten non-256-aligned dims to (n//256, 256)
         if (

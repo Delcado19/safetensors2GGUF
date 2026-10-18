@@ -13,7 +13,7 @@ def _qualified_source_hashes(root):
     # Keep historical measurements immutable; each follow-up qualifies changed sources.
     hashes = {}
     for name in ('compiled-kernel-levels-validation', 'compiled-kernel-performance-validation',
-                 'compiled-kernel-direct-preparation'):
+                 'compiled-kernel-direct-preparation', 'compiled-diffusion-validation'):
         hashes.update(json.loads((root / f'data/{name}.json').read_text())['source_code_sha256'])
     return hashes
 
@@ -206,5 +206,6 @@ def test_direct_spool_evidence_preserves_bytes_and_reduces_logical_writes():
         assert row['logical_payload_writes']['direct'] < row['logical_payload_writes']['retained_float']
         assert len(row['trials_seconds']['direct']) == len(row['trials_seconds']['retained_float']) == 3
         assert any('no float GGUF intermediate' in line for line in row['phase_logs']['direct'])
+    current = _qualified_source_hashes(root)
     for name, digest in report['source_code_sha256'].items():
-        assert hashlib.sha256((root / name).read_bytes()).hexdigest() == digest
+        assert hashlib.sha256((root / name).read_bytes()).hexdigest() == current.get(name, digest)

@@ -20,35 +20,17 @@ bypasses so `llama-quantize` doesn't reject a GGUF for missing LLM-only fields
 quantize LLM/text-encoder GGUFs — use a plain upstream `llama-quantize`
 release for those.
 
-## Text-encoder K-quants build automatically — you don't need this guide for them
+## Text-encoder K-quants use shipped tools
 
-If you only want K-quants (`Q6_K`…`Q2_K`) for **text-encoder** conversion (the
-Workbench's **Model type → Text encoder** selection), you don't need to follow this guide at
-all: `text_encoder_convert.ensure_plain_llama_quantize()` builds a **plain,
-unpatched** `llama-quantize` automatically the first time it's needed —
-from the same `llama.cpp` checkout already auto-cloned for
-`convert_hf_to_gguf.py` (see
-[Text-Encoder Conversion](../README.md#text-encoder-conversion)), cached
-under `.llama.cpp/build-quantize/` afterward. No manual clone, no patch, no
-`cmake` commands to type — the tool runs them for you via `cmake -B` /
-`cmake --build`.
+Windows x86_64 text-encoder K-quants use the verified, pinned, unpatched CPU
+binary in `third_party/text-tools/win32-x86_64`. No compiler, CMake, Git clone or
+VC runtime redistributable is required. The separate converter script and its
+sibling Python modules come from the complete pinned text source archive.
+See [the package guide](compiled-kernel-package.md#pinned-text-tools).
 
-Provide Git for the converter checkout, plus `cmake` and a C++
-compiler — the same toolchain as the "Prerequisites" and per-OS
-install commands below (Linux `apt install build-essential cmake`, macOS
-`xcode-select --install` + `brew install cmake`, Windows MSYS2
-`pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake`, or a Visual Studio
-"Desktop development with C++" install). If neither is on `PATH`, the tool
-raises a clear error naming what's missing — except on **Windows with Visual
-Studio installed**: VS bundles its own `cmake` and MSVC compiler but doesn't
-add them to `PATH` by default (they're normally only available in a
-"Developer Command Prompt"), so the tool locates an installed VS via
-`vswhere` and uses its toolchain automatically — no manual "Developer Command
-Prompt" step needed. If you don't have VS and cmake/a compiler are genuinely
-missing, install them and retry; no manual build step is otherwise required.
-Skip the "Clone llama.cpp"/"Get and apply lcpp.patch"/"Build llama-quantize"
-steps below entirely — those only apply to the diffusion-model patched
-binary.
+The remaining build instructions are maintenance instructions for the native
+image toolchain, not first-run requirements for the bundled backends. Other
+platform binary packages remain open and fail explicitly rather than building.
 
 ## Prerequisites (all platforms)
 

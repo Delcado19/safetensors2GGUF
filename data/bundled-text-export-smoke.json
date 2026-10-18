@@ -1,0 +1,20 @@
+{
+  "scope": "Synthetic one-layer Qwen3 source through real pinned HF export and bundled text Q4_K_M quantizer; local fixture config/tokenizer injection, no inference.",
+  "architecture": "qwen3",
+  "tensor_count": 14,
+  "tensor_types": {
+    "Q6_K": 3,
+    "F32": 5,
+    "Q4_K": 6
+  },
+  "source_bytes": 156896728,
+  "output_bytes": 60142432,
+  "source_sha256": "5767edda1edf4ca69eb9d52a1a2ae1730ab452d5822c00be4367c508da0b3d48",
+  "output_sha256": "d0e39b9ad5ee5624ffb51d991af77f5297075246b271747306d3090df0ace3ed",
+  "source_unchanged": true,
+  "binary_sha256": "e04ecb671e47828027e7592fc9088c537d56629527ab9270d69be1996553d35e",
+  "source_code_sha256": {
+    "text_encoder_convert.py": "01a1f51edce303b6c53b880eabc8ce6303db65730fe1b23b7e2c88c67a982cd0",
+    "bundled_tools.py": "a96acfc6adf3ce8ec7df093bb61bc05eb879c92fbe0ccd4777bb5cddd1c542e9"
+  }
+}

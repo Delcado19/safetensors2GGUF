@@ -1,0 +1,39 @@
+﻿{
+    "commit":  "8640e2f1dfafa95a3c56fdc4367392182433c876",
+    "scope":  "Fresh git archive; existing host Python dependencies; no clean-machine claim.",
+    "build_tools_on_path":  {
+                                "git":  null,
+                                "cmake":  null,
+                                "cl":  null,
+                                "gcc":  null,
+                                "ninja":  null
+                            },
+    "forbidden_events":  [
+
+                         ],
+    "kernel_self_test":  {
+                             "golden_comparisons":  725,
+                             "guard_checks":  10,
+                             "formats":  [
+                                             "Q2_K",
+                                             "Q3_K",
+                                             "Q4_K",
+                                             "Q5_K",
+                                             "Q6_K"
+                                         ]
+                         },
+    "pytest_exit_code":  0,
+    "tests_passed":  55,
+    "test_selection":  [
+                           "tests/test_compiled_flux_writer.py",
+                           "tests/test_compiled_kernel_package.py"
+                       ],
+    "audit_rejects":  [
+                          "subprocess.Popen",
+                          "os.system",
+                          "os.spawn",
+                          "socket.connect",
+                          "socket.getaddrinfo"
+                      ],
+    "limitation":  "Windows OS detection and application imports completed before installing the audit hook; existing host Python environment reused. No isolated OS or installer qualification."
+}

@@ -12,9 +12,15 @@ from text_encoder_convert import (
     TEXT_ENCODER_FORMAT_CHOICES,
     TEXT_ENCODER_OUTTYPES,
     TEXT_ENCODER_SAFETENSORS_FORMATS,
-    ensure_llama_cpp,
+    clone_llama_cpp_for_maintenance,
     find_convert_script,
 )
+
+
+def _minimal_weights(path):
+    from safetensors.torch import save_file
+    import torch
+    save_file({'layer.weight': torch.ones(4, 4)}, str(path))
 
 
 class _FakeTensor:
@@ -46,7 +52,7 @@ class TestFormatChoices:
         assert TEXT_ENCODER_SAFETENSORS_FORMATS <= keys
 
     def test_labels_use_case_to_distinguish_gguf_and_safetensors(self):
-        gguf_keys = {"F32", "F16", "BF16", "Q8_0", "Q6_K", "Q5_K_M", "Q4_K_M", "Q4_K_S", "Q3_K_M", "Q2_K"}
+        gguf_keys = {"Q8_CR_TEXT_ONLY", "F32", "F16", "BF16", "Q8_0", "Q6_K", "Q5_K_M", "Q4_K_M", "Q4_K_S", "Q3_K_M", "Q2_K"}
         for label, key in TEXT_ENCODER_FORMAT_CHOICES:
             token = label.split(" · ", 1)[0]
             assert "(GGUF)" not in label
@@ -60,12 +66,12 @@ class TestFormatChoices:
                 assert "mixed" not in token
 
 
-class TestEnsureLlamaCpp:
+class TestExplicitMaintenanceClone:
     def test_returns_existing_dir_without_cloning(self, tmp_path):
         (tmp_path / "convert_hf_to_gguf.py").write_text("# stub")
         with patch("text_encoder_convert._llama_cpp_dir", return_value=tmp_path), \
              patch("text_encoder_convert.subprocess.run") as mock_run:
-            found = ensure_llama_cpp()
+            found = clone_llama_cpp_for_maintenance()
             assert found == tmp_path
             mock_run.assert_not_called()
 
@@ -79,7 +85,7 @@ class TestEnsureLlamaCpp:
 
         with patch("text_encoder_convert._llama_cpp_dir", return_value=clone_dir), \
              patch("text_encoder_convert.subprocess.run", side_effect=_fake_clone) as mock_run:
-            found = ensure_llama_cpp()
+            found = clone_llama_cpp_for_maintenance()
             assert found == clone_dir
             assert (clone_dir / "convert_hf_to_gguf.py").is_file()
             cmd = mock_run.call_args[0][0]
@@ -92,7 +98,7 @@ class TestEnsureLlamaCpp:
         with patch("text_encoder_convert._llama_cpp_dir", return_value=tmp_path / "llama.cpp"), \
              patch("text_encoder_convert.subprocess.run", side_effect=FileNotFoundError()):
             try:
-                ensure_llama_cpp()
+                clone_llama_cpp_for_maintenance()
                 assert False, "expected RuntimeError"
             except RuntimeError as exc:
                 assert "git" in str(exc).lower()
@@ -102,7 +108,7 @@ class TestEnsureLlamaCpp:
         with patch("text_encoder_convert._llama_cpp_dir", return_value=tmp_path / "llama.cpp"), \
              patch("text_encoder_convert.subprocess.run", side_effect=err):
             try:
-                ensure_llama_cpp()
+                clone_llama_cpp_for_maintenance()
                 assert False, "expected RuntimeError"
             except RuntimeError as exc:
                 assert "network error" in str(exc)
@@ -216,7 +222,7 @@ class TestGgufUnsupportedFamilies:
         from text_encoder_convert import convert_text_encoder
 
         weights = tmp_path / "model.safetensors"
-        weights.write_bytes(b"stub")
+        _minimal_weights(weights)
         with patch("text_encoder_convert.fetch_base_config_files") as mock_fetch, \
              patch("text_encoder_convert.subprocess.Popen") as mock_popen:
             try:
@@ -228,20 +234,16 @@ class TestGgufUnsupportedFamilies:
         mock_fetch.assert_not_called()
         mock_popen.assert_not_called()
 
-    def test_rejects_auto_detected_clip_family(self, tmp_path):
+    def test_auto_detected_clip_uses_original_layout_without_subprocess(self, tmp_path):
         from text_encoder_convert import convert_text_encoder
-
-        weights = tmp_path / "model.safetensors"
-        weights.write_bytes(b"stub")
-        with patch("text_encoder_convert.load_state_dict", return_value={}), \
-             patch("text_encoder_convert.detect_text_encoder_family", return_value="clip-bigg") as _, \
-             patch("text_encoder_convert.subprocess.Popen") as mock_popen:
-            try:
-                convert_text_encoder(str(weights))
-                assert False, "expected RuntimeError"
-            except RuntimeError as exc:
-                assert "clip-bigg" in str(exc)
-        mock_popen.assert_not_called()
+        weights = tmp_path / 'model.safetensors'
+        _minimal_weights(weights)
+        with patch('text_encoder_convert.detect_text_encoder_family', return_value='clip-bigg'), \
+             patch('original_text_gguf.export_original_text', return_value='original.gguf') as export, \
+             patch('text_encoder_convert.subprocess.Popen') as popen:
+            assert convert_text_encoder(str(weights)) == 'original.gguf'
+        assert export.call_args.args[2] == 'clip-bigg'
+        popen.assert_not_called()
 
 
 class TestCopyWeightsForGguf:
@@ -308,7 +310,7 @@ class TestConvertTextEncoder:
         from text_encoder_convert import convert_text_encoder
 
         weights = tmp_path / "model.safetensors"
-        weights.write_bytes(b"stub")
+        _minimal_weights(weights)
         with patch("text_encoder_convert.find_convert_script", side_effect=RuntimeError("git not found")):
             try:
                 convert_text_encoder(str(weights), "Qwen/Qwen3-8B")
@@ -369,7 +371,7 @@ class TestConvertTextEncoder:
         from text_encoder_convert import convert_text_encoder
 
         weights = tmp_path / "model.safetensors"
-        weights.write_bytes(b"stub")
+        _minimal_weights(weights)
         script = tmp_path / "convert_hf_to_gguf.py"
         script.write_text("# stub")
 
@@ -404,7 +406,7 @@ class TestConvertTextEncoder:
         from text_encoder_convert import convert_text_encoder
 
         weights = tmp_path / "model.safetensors"
-        weights.write_bytes(b"stub")
+        _minimal_weights(weights)
         script = tmp_path / "convert_hf_to_gguf.py"
         script.write_text("# stub")
 
@@ -552,9 +554,9 @@ class TestLocateMsvcBuildEnv:
         assert env["INCLUDE"] == "C:\\VS\\include"
 
 
-class TestEnsurePlainLlamaQuantize:
+class TestExplicitMaintenanceBuild:
     def test_returns_existing_built_binary_without_building(self, tmp_path):
-        from text_encoder_convert import ensure_plain_llama_quantize
+        from text_encoder_convert import build_plain_llama_quantize_for_maintenance
 
         build_dir = tmp_path / "build-quantize"
         (build_dir / "bin").mkdir(parents=True)
@@ -564,13 +566,13 @@ class TestEnsurePlainLlamaQuantize:
         with patch("text_encoder_convert._quantize_build_dir", return_value=build_dir), \
              patch("text_encoder_convert.subprocess.run") as mock_run, \
              patch("text_encoder_convert.subprocess.Popen") as mock_popen:
-            found = ensure_plain_llama_quantize()
+            found = build_plain_llama_quantize_for_maintenance()
             assert found == binary
             mock_run.assert_not_called()
             mock_popen.assert_not_called()
 
     def test_builds_when_missing(self, tmp_path):
-        from text_encoder_convert import ensure_plain_llama_quantize
+        from text_encoder_convert import build_plain_llama_quantize_for_maintenance
 
         build_dir = tmp_path / "build-quantize"
         llama_cpp_dir = tmp_path / "llama.cpp"
@@ -590,7 +592,7 @@ class TestEnsurePlainLlamaQuantize:
              patch("text_encoder_convert.subprocess.run") as mock_run, \
              patch("text_encoder_convert.subprocess.Popen", side_effect=_fake_build):
             mock_run.return_value = subprocess.CompletedProcess([], 0)
-            found = ensure_plain_llama_quantize()
+            found = build_plain_llama_quantize_for_maintenance()
 
         assert found == build_dir / "bin" / "llama-quantize"
         configure_cmd = mock_run.call_args[0][0]
@@ -603,8 +605,8 @@ class TestEnsurePlainLlamaQuantize:
         # "cmake" against the CALLING process's own PATH, not env's, so a
         # cmake found only via _locate_msvc_build_env's PATH would otherwise
         # raise FileNotFoundError despite being right there in that PATH.
-        # ensure_plain_llama_quantize must resolve the absolute path itself.
-        from text_encoder_convert import ensure_plain_llama_quantize
+        # build_plain_llama_quantize_for_maintenance must resolve the absolute path itself.
+        from text_encoder_convert import build_plain_llama_quantize_for_maintenance
 
         build_dir = tmp_path / "build-quantize"
         llama_cpp_dir = tmp_path / "llama.cpp"
@@ -629,14 +631,14 @@ class TestEnsurePlainLlamaQuantize:
              patch("text_encoder_convert.subprocess.run") as mock_run, \
              patch("text_encoder_convert.subprocess.Popen", side_effect=_fake_build) as mock_popen:
             mock_run.return_value = subprocess.CompletedProcess([], 0)
-            ensure_plain_llama_quantize()
+            build_plain_llama_quantize_for_maintenance()
 
         mock_which.assert_called_once_with("cmake", path=str(vs_cmake_dir))
         assert mock_run.call_args[0][0][0] == resolved_cmake
         assert mock_popen.call_args[0][0][0] == resolved_cmake
 
     def test_raises_runtime_error_when_cmake_not_found(self, tmp_path):
-        from text_encoder_convert import ensure_plain_llama_quantize
+        from text_encoder_convert import build_plain_llama_quantize_for_maintenance
 
         build_dir = tmp_path / "build-quantize"
         with patch("text_encoder_convert._quantize_build_dir", return_value=build_dir), \
@@ -644,7 +646,7 @@ class TestEnsurePlainLlamaQuantize:
              patch("text_encoder_convert._locate_msvc_build_env", return_value=None), \
              patch("text_encoder_convert.subprocess.run", side_effect=FileNotFoundError()):
             try:
-                ensure_plain_llama_quantize()
+                build_plain_llama_quantize_for_maintenance()
                 assert False, "expected RuntimeError"
             except RuntimeError as exc:
                 assert "cmake" in str(exc).lower()
@@ -655,7 +657,7 @@ class TestConvertTextEncoderKquant:
         from text_encoder_convert import convert_text_encoder_kquant
 
         weights = tmp_path / "model.safetensors"
-        weights.write_bytes(b"stub")
+        _minimal_weights(weights)
         dst = str(tmp_path / "out-Q4_K_M.gguf")
         exe = tmp_path / "llama-quantize"
         exe.write_bytes(b"stub")

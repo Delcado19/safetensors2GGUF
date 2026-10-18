@@ -21,8 +21,21 @@ class CompiledFluxWriter(gguf.GGUFWriter):
     At most one encoded tensor plus bounded parallel input batches are retained.
     """
 
+    supported_arches = ('flux',)
+    accepts_nd_tensors = False
+    allows_special_shapes = False
+
+    def tensor_type(self, name, shape, source_type):
+        """Keep the legacy FLUX policy separate from other diffusion adapters."""
+        return quant.flux_q6_type(name, shape, source_type, preset=self.preset,
+                                  attention_v_index=self.attention_v_index)
+
+    def quantizable(self, name, shape):
+        """Count V tensors only after architecture eligibility exclusions."""
+        return quant._flux_quantizable(name, shape)
+
     def __init__(self, path, arch, use_temp_file, *, kernel, preset, source, cancel_event=None, on_log=None):
-        if arch != 'flux' or preset not in quant.FLUX_PRESETS or not use_temp_file:
+        if arch not in self.supported_arches or preset not in quant.FLUX_PRESETS or not use_temp_file:
             raise ValueError('Direct compiled writer requires FLUX, a supported K preset and a final spool')
         super().__init__(path, arch, use_temp_file=use_temp_file)
         # Match the existing requantizer's explicit alignment and metadata order.
@@ -50,12 +63,11 @@ class CompiledFluxWriter(gguf.GGUFWriter):
         _cancel(self.cancel_event)
         shape = list(data.shape)
         if (raw_dtype not in (gguf.GGMLQuantizationType.F16, gguf.GGMLQuantizationType.F32)
-                or not shape or len(shape) > 4 or min(shape) <= 0
-                or (len(shape) > 1 and shape[0] == 1)):
+                or not shape or min(shape) <= 0
+                or (not self.allows_special_shapes and (len(shape) > 4 or (len(shape) > 1 and shape[0] == 1)))):
             raise ValueError('Direct compiled writer requires canonical nonempty F16/F32 tensors')
-        target = quant.flux_q6_type(name, shape, raw_dtype, preset=self.preset,
-                                   attention_v_index=self.attention_v_index)
-        if quant._flux_quantizable(name, shape) and any(part in name for part in quant._ATTENTION_V):
+        target = self.tensor_type(name, shape, raw_dtype)
+        if self.quantizable(name, shape) and any(part in name for part in quant._ATTENTION_V):
             self.attention_v_index += 1
         self.prepared_bytes += data.nbytes
         values = data.reshape(-1)

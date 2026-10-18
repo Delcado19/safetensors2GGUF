@@ -501,7 +501,8 @@ def _is_hiprec_shape(
         numel *= d
     if numel <= QUANTIZATION_THRESHOLD:
         return True
-    if any(x in key for x in model_arch.keys_hiprec):
+    from models.architectures import protected_key
+    if protected_key(model_arch, key):
         return True
     return False
 

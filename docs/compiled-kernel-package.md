@@ -5,6 +5,15 @@ backend. Native remains the default.
 
 ## Ready-to-use Windows integration
 
+**Paused WIP notice (2026-10-18):** the sections below retain historical measured
+checkpoints. Later extended-model/VL routing and protection changes have known
+test failures and stale source-provenance assertions. They are not qualified by
+these earlier results. Read [CONTINUE.md](../CONTINUE.md) before use or continuation.
+
+The FLUX-only selection described in this historical section is superseded in
+the Workbench by `compiled_diffusion`; see [multi-model integration](#multi-model-integration).
+The `compiled_flux` API identifier retains its existing FLUX-only contract.
+
 Select **Bundled CPU kernel - FLUX only (experimental)** for FLUX safetensors
 and Q2_K, Q3_K_M, Q4_K_S, Q4_K_M, Q5_K_M or Q6_K. Windows x86_64 ships the verified package
 under `third_party/cpu-kernels/win32-x86_64`; no compiler, CMake, upstream fetch
@@ -37,6 +46,97 @@ FLUX checkpoint; Q2_K application/readback and supplied inference evidence are
 recorded below. Linux/macOS packages, clean-machine runtime qualification and an overall
 application installer remain open. This integration alone does not make every
 other converter backend ready to use.
+
+## Fresh Git export qualification
+
+Commit `8640e2f` was exported with `git archive` into a fresh directory and tested
+using the existing host Python environment. Git, CMake, MSVC, GCC and Ninja were
+absent from PATH. After OS detection and application imports, a Python audit hook
+rejected process launches and socket connection/address-resolution attempts.
+Package loading replayed 725 goldens and ten guards; all 55 tests from
+`test_compiled_flux_writer.py` and `test_compiled_kernel_package.py` passed with
+no rejected events. This checks committed package completeness and direct/retained
+conversion paths, including source-hash preservation after Git export.
+See `data/compiled-kernel-export-qualification.json`.
+
+This reused installed Python dependencies and the current Windows host. It does
+not qualify a clean Windows installation, an installer, imports under the audit
+hook, other platforms, or every application backend.
+
+## Multi-model integration
+
+The Workbench selection **Bundled CPU kernel - diffusion (experimental)** and API
+`gguf_backend: "compiled_diffusion"` support safetensors sources in these families:
+FLUX, SD1/SDXL, SD3, AuraFlow, HiDream, Cosmos/Anima, LTXV, HunyuanVideo, Wan,
+Lumina/Z-Image and Qwen Image. Presets are Q2_K, Q3_K_M, Q4_K_S/M, Q5_K_M and Q6_K.
+The same shipped block kernels are reused; architecture eligibility is separate.
+Native remains the default. Legacy Python and compiled FLUX identifiers remain
+FLUX-only. At the measured checkpoint Krea used its existing pinned Molbal adapter
+and explicit allowlist; ERNIE and unsupported text families retained safetensors-only
+guards. The paused tree adds unfinished extended Krea and original-key ERNIE/text
+routes; those routes require separate qualification and companion-loader work.
+
+`compiled_diffusion.py` ports the preserved City96 image exclusions and reuses
+the existing ordered V/QKV/FFN mixed-preset promotions. Source decoding, FP8
+reconstruction, SD reshaping/original-shape metadata and float precision guards
+remain in `convert.py`. Direct writing preserves SD3/Aura/Wan leading unit axes,
+Lumina pad tokens and 5D video tensors (F32), so no post-publication repair is
+needed. Keep intermediate retains F16 preparation and its checkpoint-specific
+video sidecar; final output consumes only that sidecar. Failures/cancellation
+preserve earlier output. Qwen Image conservatively uses the project's explicit
+protection list because the pinned old image reference has no Qwen architecture.
+
+`data/compiled-diffusion-validation.json` records 66 schematic application
+conversions (eleven native-supported families, all six presets), matching native
+tensor payloads, types, shapes and interpreted metadata after the existing native
+Lumina pad repair. Dedicated tests additionally cover Qwen Image, high-rank video
+tensors, retained preparation, cancellation and real API jobs for all twelve
+families. This does not establish full-checkpoint inference quality, performance,
+LoRA compatibility or offload behavior for these additional families.
+
+Reproduce the independent comparison with a qualified local reference build:
+
+```powershell
+uv run python -m scripts.check_compiled_diffusion --work build/new-diffusion-check --output build/new-diffusion-check.json
+```
+
+## Pinned text tools
+
+Normal text GGUF conversion now uses the complete shipped
+`llama-text-installed` archive at `687e7789271ec1276e3470f158428e11a4f80b6f`.
+`bundled_tools.text_source()` verifies the archive, atomically materializes its
+regular files under `build/pinned-text-converter/<commit>` and compares cached
+file bytes against the archive before reuse. Corruption fails explicitly.
+No Git clone, upstream checkout or runtime compilation occurs. The existing
+`S2G_LLAMA_CPP_HOME` environment variable explicitly opts into a custom local
+converter; this override is outside pinned-source qualification. Config/tokenizer
+downloads for explicitly requested non-vendored base repos remain separate.
+
+Text K-quants use `third_party/text-tools/win32-x86_64/llama-quantize.exe`, with
+MIT license, source identity, checksums and build commands in `tools.json`.
+This is an unpatched text quantizer, distinct from the City96 image policies.
+The package is built with the measured generic CPU flags and
+`-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded`; dependency inspection finds only
+`KERNEL32.dll` and `ADVAPI32.dll`. `data/bundled-text-quantizer-validation.json`
+records eighteen exact comparisons against the pinned earlier executable:
+Llama, encoder/decoder T5 and Qwen3 fixtures, each at all six K presets.
+The pinned converter script also passes an actual `--help` invocation with the
+current locked Python environment. A synthetic one-layer Qwen3 safetensors
+additionally passes the real HF-to-GGUF/F16 and shipped Q4_K_M pipeline with
+injected local fixture config/tokenizer files: all fourteen tensors are readable,
+source bytes are unchanged, and the result contains six Q4_K, three Q6_K and
+five F32 tensors. `data/bundled-text-export-smoke.json` retains hashes and scope.
+Full text checkpoint inference and clean-machine application qualification
+remain open. Missing platform packages
+fail instead of building or selecting an image executable.
+
+For maintenance rebuilds, extract the complete verified text archive with
+`scripts.compare_native_reference_vectors.extract_source`, then repeat the
+configure/build arguments recorded in `tools.json`, replacing its local source
+and build directory paths with fresh paths. Keep the generic CPU feature flags,
+static library/runtime options and pinned revision. Copy the resulting executable
+and preserved license, regenerate hashes, inspect dependencies and repeat the
+eighteen reference comparisons before distributing an updated package.
 
 ## Build and use
 

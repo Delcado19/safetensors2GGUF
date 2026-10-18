@@ -62,8 +62,8 @@ def test_krea_inspection_dispatch_and_format_guards(tmp_path):
     assert data['architecture'] == 'krea2' and data['backend'] == 'molbal'
     assert data['estimated_bytes'] is None and data['support'] == 'unknown'
     assert 'molbal GGUF loader' in data['support_reason']
-    assert data['formats'] == [list(choice) for choice in web_api.KREA_CHOICES]
-    assert client.post('/api/jobs', json=params).status_code == 400
+    assert {key for _, key in data['formats']} >= {'Q4_0', 'Q4_K_M', 'Q8_CR'}
+    assert client.post('/api/jobs', json=params | {'format': 'Q7_K'}).status_code == 400
     params['format'] = 'Q4_0'
     assert client.post('/api/jobs', json=params | {'threads': 2}).status_code == 400
     response = client.post('/api/jobs', json=params)
@@ -457,9 +457,10 @@ def test_text_encoder_gguf_dispatch_and_offline_guards(tmp_path, monkeypatch):
               'destination': str(tmp_path / 'encoder-{ftype}'), 'container': 'gguf', 'format': 'F16'}
     assert client.post('/api/jobs', json=params).status_code == 400  # Unknown family without override.
     monkeypatch.setattr(web_api, 'detect_text_encoder_family', lambda state: 'clip-l')
-    for route in ('inspect', 'jobs'):
-        rejected = client.post(f'/api/{route}', json=params)
-        assert rejected.status_code == 400 and 'safetensors' in rejected.json()['detail']
+    inspected_clip = client.post('/api/inspect', json=params)
+    assert inspected_clip.status_code == 200
+    assert 'S2GGUF' in inspected_clip.json()['support_reason']
+    assert inspected_clip.json()['support'] == 'unknown'
     # Detectable overrides must agree with the checkpoint, not change its identity.
     assert client.post('/api/jobs', json={**params, 'base_repo_id': 'Qwen/Qwen3-8B'}).status_code == 400
     monkeypatch.setattr(web_api, 'detect_text_encoder_family', lambda state: 'qwen3-8b')

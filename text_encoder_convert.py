@@ -16,13 +16,9 @@ Workflow implemented here:
      weights renamed to what convert_hf_to_gguf.py expects.
   4. Run convert_hf_to_gguf.py as a subprocess of THIS tool's own Python
      interpreter (sys.executable) -- no ComfyUI installation required.
-     llama.cpp itself is auto-cloned into a local cache directory on first
-     use (its convert_hf_to_gguf.py imports from a sibling `conversion/`
-     package, so it can't be vendored as a single file without also
-     vendoring and tracking ~90 per-architecture modules; a shallow git
-     clone stays in sync with upstream for free). transformers/
-     sentencepiece/protobuf are declared as this project's own dependencies
-     (pyproject.toml) so the clone's script runs in our venv.
+     The converter comes from the complete pinned source archive shipped with
+     this project. Text K-quants use a separate shipped unpatched CPU binary;
+     normal conversion does not download tools or compile them.
 """
 
 from __future__ import annotations
@@ -117,6 +113,7 @@ TEXT_ENCODER_OUTTYPES: list[tuple[str, str]] = [
 # added here; GGUF keys stay uppercase and safetensors labels start lowercase
 # as the grouping cue instead.
 TEXT_ENCODER_FORMAT_CHOICES: list[tuple[str, str]] = [
+    ('Q8_CR_TEXT_ONLY \u00b7 Krea Qwen3-VL (vision removed)', 'Q8_CR_TEXT_ONLY'),
     # ── GGUF ────────────────────────────────────────────────────────────
     ("F32 · full precision, 2× f16 size", "F32"),
     ("F16 · half precision, standard", "F16"),
@@ -161,7 +158,7 @@ def _llama_cpp_dir() -> Path:
     return Path(env_dir) if env_dir else DEFAULT_LLAMA_CPP_CACHE
 
 
-def ensure_llama_cpp(on_log=None) -> Path:
+def clone_llama_cpp_for_maintenance(on_log=None) -> Path:
     """Return the llama.cpp checkout directory, cloning it on first use.
 
     Raises RuntimeError if git isn't available or the clone fails.
@@ -188,6 +185,18 @@ def ensure_llama_cpp(on_log=None) -> Path:
         raise RuntimeError(f"Failed to clone llama.cpp: {exc.stderr or exc}") from exc
 
     return clone_dir
+
+
+def ensure_llama_cpp(on_log=None) -> Path:
+    """Use pinned shipped sources, or an explicitly configured local checkout."""
+    override = os.environ.get(LLAMA_CPP_HOME_ENV, '').strip()
+    if override:
+        directory = Path(override)
+        if not (directory / 'convert_hf_to_gguf.py').is_file():
+            raise RuntimeError('Configured llama.cpp directory has no converter script')
+        return directory
+    from bundled_tools import text_source
+    return text_source(Path(__file__).resolve().parent / 'build/pinned-text-converter')
 
 
 def find_convert_script() -> Path:
@@ -288,7 +297,7 @@ def _locate_msvc_build_env(on_log=None) -> dict[str, str] | None:
     return env
 
 
-def ensure_plain_llama_quantize(on_log=None) -> Path:
+def build_plain_llama_quantize_for_maintenance(on_log=None) -> Path:
     """Return a plain (unpatched) llama-quantize binary, building it once from
     the auto-cloned llama.cpp checkout via cmake.
 
@@ -350,6 +359,12 @@ def ensure_plain_llama_quantize(on_log=None) -> Path:
     if binary is None:
         raise RuntimeError(f"llama-quantize build finished but the binary was not found under {build_dir}")
     return binary
+
+
+def ensure_plain_llama_quantize(on_log=None) -> Path:
+    """Use the shipped pinned text binary; normal conversion never builds tools."""
+    from bundled_tools import text_quantizer
+    return text_quantizer()
 
 
 _MANDATORY_FILES = ("config.json",)
@@ -434,6 +449,13 @@ def detect_text_encoder_family(state_dict) -> str | None:
     model — caller falls back to requiring a manual repo ID).
     """
     keys = list(state_dict.keys())
+    if 'model.embed_tokens_prefill.weight' in state_dict and 'model.embed_tokens_audio.weight' in state_dict:
+        return 'minimax-music3'
+    if any(key.startswith('model.language_model.') for key in keys) and not any(key.startswith(('model.visual.', 'visual.')) for key in keys):
+        raise ValueError('VL language tensors without a vision tower are not a complete VL source')
+    if any(key.startswith(('model.visual.', 'visual.')) for key in keys):
+        if any(key.startswith('model.language_model.') for key in keys):
+            return 'qwen3-vl'
     embed_key = next((k for k in keys if k.endswith(_EMBED_KEY_SUFFIXES)), None)
     if embed_key is None:
         return None
@@ -442,12 +464,6 @@ def detect_text_encoder_family(state_dict) -> str | None:
     vocab_size, hidden_size = shape_of(embed_key) if shape_of else tuple(state_dict[embed_key].shape)
     num_layers = len({int(m.group(1)) for k in keys if (m := _LAYER_IDX_RE.search(k))})
     family = _FAMILY_SIGNATURES.get((hidden_size, num_layers, vocab_size))
-    if family == "qwen3-4b" and any(k.startswith(_VISION_TOWER_KEY_PREFIXES) for k in keys):
-        raise RuntimeError(
-            "Unsupported Qwen3-VL-4B vision-language text encoder detected: "
-            "this is not the text-only qwen3-4b family, and Krea 2's text "
-            "encoder is not wired for quantization yet."
-        )
     return family
 
 
@@ -565,7 +581,7 @@ def convert_text_encoder(
 
     Fetches config.json/tokenizer files for the base model, assembles a temp
     HF-style model directory with the local weights, then runs
-    convert_hf_to_gguf.py (auto-cloned from llama.cpp) with this tool's own
+    convert_hf_to_gguf.py (from the shipped pinned snapshot) with this tool's own
     Python interpreter.
 
     ``base_repo_id`` is optional: if omitted (or blank), the checkpoint's own
@@ -592,7 +608,15 @@ def convert_text_encoder(
     if dst_path is None:
         dst_path = f"{weights_path.rsplit('.', 1)[0]}-{outtype}.gguf"
 
+    from bundled_tools import validate_text_destination
+    validate_text_destination(dst_path)
     validate_output(weights_path, dst_path, overwrite)
+
+    family = detect_text_encoder_family(load_state_dict(weights_path, strip_prefixes=False))
+    from original_text_gguf import ORIGINAL_FAMILIES, export_original_text
+    if family in ORIGINAL_FAMILIES:
+        return export_original_text(weights_path, dst_path, family, outtype.upper(),
+                                    overwrite=overwrite, cancel_event=cancel_event, on_log=on_log)
 
     if base_repo_id and base_repo_id.strip():
         _reject_if_gguf_unsupported(_VENDORED_REPOS.get(base_repo_id.strip()))
@@ -606,9 +630,7 @@ def convert_text_encoder(
             )
         _reject_if_gguf_unsupported(family)
 
-    # find_convert_script() may clone llama.cpp (network + subprocess) --
-    # deferred until after the cheap, offline family check above so a
-    # rejected CLIP family fails fast instead of triggering a clone first.
+    # Reject unsupported families before materializing the pinned local converter.
     script = find_convert_script()
 
     with atomic_output(dst_path, overwrite) as temporary:
@@ -683,7 +705,15 @@ def convert_text_encoder_kquant(
     if dst_path is None:
         dst_path = f"{weights_path.rsplit('.', 1)[0]}-{quant_key}.gguf"
 
+    from bundled_tools import validate_text_destination
+    validate_text_destination(dst_path)
     validate_output(weights_path, dst_path, overwrite)
+    family = detect_text_encoder_family(load_state_dict(weights_path, strip_prefixes=False))
+    from original_text_gguf import ORIGINAL_FAMILIES, export_original_text
+    if family in ORIGINAL_FAMILIES:
+        return export_original_text(weights_path, dst_path, family, quant_key,
+                                    overwrite=overwrite, cancel_event=cancel_event, on_log=on_log)
+    exe = ensure_plain_llama_quantize(on_log=on_log)
     # The F16 intermediate is larger than the final quantized GGUF.
     with tempfile.TemporaryDirectory(
         prefix="s2g_te_kquant_", dir=Path(dst_path).resolve().parent,
@@ -694,7 +724,6 @@ def convert_text_encoder_kquant(
             on_log=on_log, cancel_event=cancel_event,
         )
 
-        exe = ensure_plain_llama_quantize(on_log=on_log)
         _log(f"INFO:  Quantizing to {quant_key} with plain llama-quantize…")
         run_quantize(
             intermediate, dst_path, quant_key, exe=exe,
@@ -816,6 +845,14 @@ def convert_text_encoder_any(
     overwrite is forwarded to the final output backend (default False).
     Intermediate files never require overwrite permission.
     """
+    if format_key == 'Q8_CR_TEXT_ONLY':
+        from extended_backend import convert_extended
+        family = detect_text_encoder_family(load_state_dict(weights_path, strip_prefixes=False))
+        if family != 'qwen3-vl':
+            raise ValueError('Text-only Q8_CR requires an original Qwen3-VL source')
+        destination = dst_path or str(Path(weights_path).with_suffix('')) + '-TEXT-ONLY-Q8_CR.gguf'
+        return convert_extended(weights_path, destination, 'Q8_CR', arch='qwen3vl_text_only',
+                                overwrite=overwrite, cancel_event=cancel_event, on_log=on_log)
     if format_key in TEXT_ENCODER_SAFETENSORS_FORMATS:
         real_target_key = _TEXT_ENCODER_SAFETENSORS_TARGET_KEY.get(format_key, format_key)
         return convert_text_encoder_to_safetensors(

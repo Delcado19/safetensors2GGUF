@@ -68,6 +68,11 @@ def flux_q6_type(name, shape, source_type, *, preset="Q6_K", attention_v_index=0
         raise ValueError('Unsupported FLUX research presets')
     if not _flux_quantizable(name, shape):
         return source_type
+    return image_k_type(name, shape, preset=preset, attention_v_index=attention_v_index)
+
+
+def image_k_type(name, shape, *, preset, attention_v_index=0):
+    """Select shared City96 image-role promotions after architecture eligibility."""
     qtype = gguf.GGMLQuantizationType
     target = qtype[preset[:4]]  # K-preset suffixes affect tensor policy, not block layout.
     # Image rules promote every matching role; text-model layer heuristics do not apply.

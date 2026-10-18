@@ -12,6 +12,18 @@ MAX_TENSOR_NAME_LENGTH = 127
 MAX_TENSOR_DIMS = 4
 
 
+def protected_key(model_arch, key):
+    """Match legacy substrings and frozen anchored/glob protection rules consistently."""
+    from fnmatch import fnmatchcase
+    for pattern in (*getattr(model_arch, 'keys_hiprec', ()), *getattr(model_arch, 'keys_noquant', ())):
+        if pattern.startswith('^'):
+            if fnmatchcase(key, pattern[1:] + '*'):
+                return True
+        elif pattern in key:
+            return True
+    return False
+
+
 class ModelTemplate:
     """Base class for all supported model architectures."""
 
@@ -414,7 +426,48 @@ class ModelKrea2(ModelTemplate):
     ]
 
 
+# Additional model declarations from the preserved Apache-2.0 Molbal b77b9d8 snapshot.
+class ModelLTXVUpsampler(ModelTemplate):
+    arch = 'ltxv_upscaler'
+    preserve_nd_shapes = True
+    keys_detect = [('initial_conv.weight', 'post_upsample_res_blocks.0.conv2.bias', 'upsampler.0.weight', 'final_conv.weight')]
+    keys_noquant = ['^']
+
+class ModelIdeogram(ModelTemplate):
+    arch = 'ideogram'
+    keys_detect = [('t_embedding.mlp_in.weight', 'layers.0.attention.qkv.weight', 'final_layer.linear.weight')]
+
+class ModelMinimaxH3(ModelTemplate):
+    arch = 'minimax_h3'
+    keys_detect = [('video_patch_proj.weight', 'audio_patch_proj.weight', 'blocks.0.attn.qkv_proj.weight', 'final_layer.video_out.weight')]
+    keys_hiprec = ['adaln_t_table', '^video_patch_proj.', '^audio_patch_proj.', '^final_layer.', 'adaln_proj', 'modulation', '^blocks.*.attn.qkv_proj.', '^blocks.*.attn.out_proj.', '^blocks.*.mlp.fc2.']
+    keys_noquant = ['^condition_proj.', '^token_refiner.', 'norm']
+
+class ModelMinimaxH3VAE(ModelTemplate):
+    arch = 'minimax_h3_vae'
+    preserve_nd_shapes = True
+    keys_detect = [('decoder.transformer_blocks.0.scale1', 'decoder.x_embedder.weight', 'encoder.down.5.block.0.conv1.weight')]
+
+class ModelMiniMaxMusic3DiT(ModelTemplate):
+    arch = 'minimax_music3'
+    keys_detect = [('cond_layer_logits', 'latent_conditioners.0.weight', 'diffusion_transformer.transformer.layers.0.self_attn.to_qkv.weight', 'diffusion_transformer.transformer.project_in.weight')]
+    keys_hiprec = ['cond_layer_', 'latent_conditioners.', 'preprocess_conv.', 'postprocess_conv.', 'timestep_features', 'rotary_pos_emb']
+
+class ModelMiniMaxMusic3TextEncoder(ModelTemplate):
+    arch = 'minimax_music3'
+    keys_detect = [('model.embed_tokens_prefill.weight', 'model.embed_tokens_audio.weight', 'model.lm_head_pruned.weight', 'model.audio_decoder.audio_heads.0.weight', 'model.layers.0.self_attn.qkv_proj.weight')]
+    keys_noquant = ['embed_tokens_prefill', 'embed_tokens_audio', 'audio_extra_embedding', 'audio_decoder.pos_embedding']
+
+class ModelQwenImage21(ModelTemplate):
+    arch = 'qwen_image21'
+    keys_detect = [('txt_in.text_norm.weight', 'modulation.1.weight', 'transformer_blocks.0.attn.norm_q.weight', 'img_in.weight', 'proj_out.weight')]
+    keys_noquant = ['^txt_in.', '^modulation.', '^time_text_embed.', '^norm_out.', '^img_in.', '^proj_out.', '.attn.norm_q.', '.attn.norm_k.']
+    keys_q8_cr = ['transformer_blocks.*.attn.to_q.*', 'transformer_blocks.*.attn.to_k.*', 'transformer_blocks.*.attn.to_v.*', 'transformer_blocks.*.attn.to_out.*']
+
+
 arch_list = [
+    ModelLTXVUpsampler, ModelIdeogram, ModelMinimaxH3, ModelMinimaxH3VAE,
+    ModelMiniMaxMusic3DiT, ModelQwenImage21,
     # ModelQwenImage must precede ModelFlux/ModelSD3 — Qwen-Image shares
     # transformer_blocks.0.attn.norm_added_k.weight and add_q_proj.weight
     # with those architectures, which would otherwise trigger their

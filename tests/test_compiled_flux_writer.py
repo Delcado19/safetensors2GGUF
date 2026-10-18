@@ -106,5 +106,7 @@ def test_complete_direct_q2_run_reproduces_previous_model_bytes():
     assert direct['tensor_types'] == {'F32': 86, 'Q2_K': 115}
     assert direct['tensor_count'] == 201 and direct['source_stat_unchanged']
     assert any('no float GGUF intermediate' in line for line in direct['phase_log_lines'])
+    from tests.test_compiled_kernel_package import _qualified_source_hashes
+    current = _qualified_source_hashes(root)
     for name, digest in direct['source_code_sha256'].items():
-        assert hashlib.sha256((root / name).read_bytes()).hexdigest() == digest
+        assert hashlib.sha256((root / name).read_bytes()).hexdigest() == current.get(name, digest)

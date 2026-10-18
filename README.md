@@ -1,6 +1,11 @@
 ![safetensors2GGUF](assets/safetensors2GGUF.jpg)
 # safetensors2GGUF
 
+> **Research branch WIP, paused 2026-10-18:** the latest multi-model/VL changes
+> are unfinished and have known failing tests. Earlier successful measurements
+> do not qualify the complete current tree. Read [CONTINUE.md](CONTINUE.md) for
+> the exact checkpoint, loader limitations, failures and remaining work.
+
 Converts Safetensors / CKPT diffusion model checkpoints to **GGUF** for use with
 **llama.cpp** and **ComfyUI-GGUF**, or to a quantized **Safetensors** file that
 ComfyUI can load natively without the GGUF loader node. Also converts bare
@@ -17,7 +22,7 @@ or quantized safetensors.
   select a cell to review details, then use **Use format** to prepare a conversion.
 - **Text-encoder → GGUF** — converts bare text-encoder checkpoints that lack
   `config.json`/tokenizer files, using a base model's HuggingFace repo ID; runs
-  fully standalone, auto-cloning `llama.cpp` on first use.
+  using the shipped pinned converter sources and a separate CPU quantizer.
 
 A React workbench with file browser, format selection, live size estimates,
 and cancellation is included for all conversion pipelines.
@@ -101,8 +106,8 @@ are checked when that backend runs:
 | --- | --- |
 | Native safetensors and direct diffusion GGUF FP16/BF16/Q8_0 | No llama-quantize executable; Python dependencies are managed by uv |
 | Diffusion GGUF K-quants | City96-patched `llama-quantize`; build with Git, CMake and a C++ compiler |
-| Text-encoder GGUF float/Q8_0 | Git for the current llama.cpp converter checkout |
-| Text-encoder GGUF K-quants | Git, CMake and a C++ compiler; the app builds its separate plain executable |
+| Text-encoder GGUF float/Q8_0 | Shipped pinned converter sources and Python dependencies |
+| Text-encoder GGUF K-quants | Shipped Windows x86_64 plain CPU executable; no compiler |
 | Allowlisted Krea GGUF formats | Shipped pinned molbal Python backend; no separate C++ executable |
 
 See [Building llama-quantize](docs/building-llama-quantize.md) for package installation,
@@ -223,16 +228,16 @@ pip install gguf torch safetensors tqdm fastapi uvicorn huggingface_hub transfor
 
 </details>
 
-`uv sync` covers everything except GGUF K-quants:
+`uv sync` installs the Python dependencies. On Windows x86_64:
 
-- **GGUF K-quants** (`Q6_K`, `Q5_K_M`, …) need a `llama-quantize` binary —
-  see [llama-quantize Sources](#llama-quantize-sources) below. F32/F16/BF16/Q8_0,
-  the Safetensors output mode, and text-encoder conversion all work with
-  `uv sync` alone.
-- **Text-encoder → GGUF conversion** needs `git` on `PATH`: it auto-clones
-  `llama.cpp` (for its `convert_hf_to_gguf.py`) into `.llama.cpp/` on first
-  use — no ComfyUI installation required. See
-  [Text-Encoder Conversion](#text-encoder-conversion) below.
+- **Diffusion GGUF K-quants** can use the bundled CPU backend without an external
+  executable. The separate **Native** option still uses a City96-patched
+  `llama-quantize`; see [llama-quantize Sources](#llama-quantize-sources).
+  F32/F16/BF16/Q8_0 and native safetensors outputs retain their existing writers.
+- **Text-encoder GGUF conversion** uses shipped pinned converter sources and a
+  separate Windows x86_64 CPU quantizer. No Git, CMake or compiler is needed.
+  Known base configurations/tokenizers are vendored; an explicitly entered
+  non-vendored base repo may still require a config/tokenizer download.
 
 ## Output Safety
 
@@ -690,15 +695,15 @@ The format dropdown covers three backends:
 
 | Formats | Backend | Needs base repo ID? | Extra prerequisites |
 |---|---|---|---|
-| `F32`/`F16`/`BF16`/`Q8_0` | `convert_hf_to_gguf.py` (llama.cpp, auto-cloned) | Yes | `git` |
-| `Q6_K`…`Q2_K` (K-quants) | Same, then a **plain** `llama-quantize` second pass | Yes | `git`, plus `cmake` + a C++ compiler ([install instructions](docs/building-llama-quantize.md#text-encoder-k-quants-build-automatically--you-dont-need-this-guide-for-them) — the build itself is automatic) |
-| `FP8`/`FP8_MIXED`/`INT8`/`INT8_MIXED`/`NVFP4`/`NVFP4_MIXED` | This tool's own safetensors quantizer (`safetensors_quant*.py`) | **No** | None — no llama.cpp, no download |
+| `F32`/`F16`/`BF16`/`Q8_0` | Shipped pinned HF-to-GGUF sources | Optional for known families | Python dependencies |
+| `Q6_K` through `Q2_K` | Same, then shipped **plain CPU** quantizer | Optional for known families | Windows x86_64 package; no compiler |
+| Native safetensors formats | Existing project quantizer | No | No converter downloads |
 
-The K-quant path deliberately builds its **own** plain llama-quantize from the
-auto-cloned llama.cpp checkout via `cmake` (cached under `.llama.cpp/build-quantize/`,
-built once) — **not** the City96-patched binary used for diffusion-model GGUFs
-(see [Building llama-quantize](docs/building-llama-quantize.md)), since that patch
-is documented as unsafe for LLM/text GGUFs.
+The text K-quant path uses its own verified unpatched binary from
+`third_party/text-tools/win32-x86_64`, linked with the static MSVC runtime.
+It never uses the City96 diffusion binary. The complete pinned converter source
+snapshot is shipped under `third_party/converter_references` and materialized
+locally without Git or upstream access. Other binary platforms remain open.
 
 ### Workflow
 
@@ -737,16 +742,16 @@ size under the format dropdown once a source file is selected.
 ### Implementation
 
 **GGUF path:**
-1. Clones `llama.cpp` into `.llama.cpp/` next to this repo if not already
-   present (skipped on subsequent runs).
+1. Verifies and materializes the shipped pinned converter archive into
+   `build/pinned-text-converter/<commit>`; cached source bytes are rechecked.
 2. Assembles a temporary directory with your source weights (renamed to
    `model.safetensors` to preserve the original file) and downloaded
    config/tokenizer files.
 3. Runs `convert_hf_to_gguf.py` with this tool's own Python interpreter
    (`transformers`/`sentencepiece`/`protobuf` are regular dependencies in
    `pyproject.toml`, installed by `uv sync`).
-4. For K-quants: builds a plain `llama-quantize` from the same clone (`cmake`,
-   cached after the first run) and runs it as a second pass on the F16 output.
+4. For K-quants: verifies the shipped plain CPU quantizer and runs it as a
+   second pass on the F16 output, without compilation or tool downloads.
 5. Returns the output at your chosen path.
 
 **Safetensors path (FP8/NVFP4):** loads the checkpoint, applies the same
@@ -764,7 +769,7 @@ pairing) is not automated — the generic HF-to-GGUF conversion handles supporte
 standard architectures. Unsupported or non-standard architectures require manual
 key mapping.
 
-Override the clone location with the `S2G_LLAMA_CPP_HOME` environment variable
+Explicitly override the converter source with the `S2G_LLAMA_CPP_HOME` environment variable
 if you already have a llama.cpp checkout elsewhere and want to reuse it.
 
 ### Reference: Encoder Family per Model Family
@@ -954,7 +959,22 @@ Workbench integration now ships a DLL; other platforms and clean-machine
 application qualification remain open.
 
 
-### Bundled FLUX CPU kernel (Windows x86_64)
+### Bundled diffusion CPU kernel (Windows x86_64)
+
+Select **Bundled CPU kernel - diffusion (experimental)** for safetensors K-quants.
+The `compiled_diffusion` API backend covers FLUX, SD1/SDXL, SD3, AuraFlow, HiDream,
+Cosmos/Anima, LTXV, HunyuanVideo, Wan, Lumina/Z-Image and Qwen Image. Model-specific
+protections, SD reshaping, Lumina pads and 5D video floats are preserved. Eleven
+families match the pinned native image converter on 66 schematic conversions;
+Qwen Image uses conservative project protections and has no old native reference.
+This is historical conversion evidence, not qualification of the paused current
+tree or full-checkpoint inference. Krea's extended formats and ERNIE's new
+original-key GGUF route are unfinished WIP; see [CONTINUE.md](CONTINUE.md). See
+[the package guide](docs/compiled-kernel-package.md#multi-model-integration).
+
+The older `compiled_flux` API identifier remains a FLUX-only compatibility route.
+
+### Earlier FLUX qualification
 
 Select **Bundled CPU kernel - FLUX only (experimental)** in the Workbench for
 Q2_K, Q3_K_M, Q4_K_S, Q4_K_M, Q5_K_M or Q6_K. The shipped verified DLL needs no compiler or

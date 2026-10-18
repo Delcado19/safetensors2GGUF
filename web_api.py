@@ -34,6 +34,7 @@ from conversion_io import validate_output
 from civitai_credentials import CivitaiCredentials, CredentialError
 from civitai_download import CivitaiError, download_model, inspect_version, parse_source
 from krea_backend import KREA_CHOICES, LOADER_NOTE, validate_krea_request
+from extended_backend import EXTENDED_ARCHES, CHOICES as EXTENDED_CHOICES, NOTE as EXTENDED_NOTE, validate_request as validate_extended_request
 from convert_safetensors import convert_to_safetensors
 from component_extract import analyze_components, default_output_root, extract_components
 from fix_pad_tokens import fix_pad_tokens
@@ -97,7 +98,7 @@ class ConversionRequest(BaseModel):
     precision_profile: Literal['auto', 'conservative', 'qwen_edit_2511', 'z_image_turbo'] = 'auto'
     overwrite: bool = False
     keep_intermediate: bool = False
-    gguf_backend: Literal['native', 'python_flux', 'python_flux_q6', 'compiled_flux'] = 'native'
+    gguf_backend: Literal['native', 'python_flux', 'python_flux_q6', 'compiled_flux', 'compiled_diffusion'] = 'native'
     threads: int = Field(default=0, ge=0, le=1024)
     executable: str = Field(default='', max_length=4096)
 
@@ -426,7 +427,7 @@ def create_app() -> FastAPI:
         params.source = str(source.resolve())
         if params.gguf_backend != 'native':
             if params.model_kind != 'diffusion' or params.container != 'gguf' or params.precision_profile != 'auto':
-                raise HTTPException(400, 'Python FLUX applies only to diffusion GGUF with the default precision profile')
+                raise HTTPException(400, 'Selected backend applies only to diffusion GGUF with the default precision profile')
             try:
                 validate_gguf_backend(params.source, params.format, params.gguf_backend,
                                       executable=params.executable, threads=params.threads)
@@ -435,7 +436,7 @@ def create_app() -> FastAPI:
         choices = TEXT_ENCODER_FORMAT_CHOICES if params.model_kind == 'text_encoder' else (
             ALL_QUANT_CHOICES if params.container == 'gguf' else SAFETENSORS_DTYPE_CHOICES)
         if params.model_kind == 'diffusion' and params.container == 'gguf':
-            choices = [*choices, *KREA_CHOICES]
+            choices = [*choices, *KREA_CHOICES, *EXTENDED_CHOICES]
         if params.format not in {key for _, key in choices}:
             raise HTTPException(400, 'Unsupported quantization format')
         if params.model_kind == 'text_encoder':
@@ -470,6 +471,15 @@ def create_app() -> FastAPI:
                _TEXT_ENCODER_SAFETENSORS_TARGET_KEY.get(params.format, params.format))
         support = text_encoder_support_level(family, key) if family else 'unknown'
         reason = text_encoder_support_reason(family, key) if family else None
+        from original_text_gguf import ORIGINAL_FAMILIES, LOADER_NOTE as ORIGINAL_NOTE
+        if params.container == 'gguf' and family in ORIGINAL_FAMILIES:
+            support, reason = 'unknown', ORIGINAL_NOTE
+            if params.format == 'Q8_CR_TEXT_ONLY':
+                if family != 'qwen3-vl':
+                    raise ValueError('Explicit text-only Q8_CR requires Qwen3-VL')
+                reason = 'Krea Q8_CR text-only export: removes the vision tower; not a full VL encoder.'
+        elif params.format == 'Q8_CR_TEXT_ONLY':
+            raise ValueError('Explicit text-only Q8_CR requires Qwen3-VL')
         if support == SUPPORT_BAD:
             raise ValueError((reason or f'{family} is not supported in {params.format} by ComfyUI.') +
                              ' Choose F16 safetensors or a supported format.')
@@ -494,9 +504,10 @@ def create_app() -> FastAPI:
                         'destination': params.destination, 'support': support, 'support_reason': reason}
             arch = detect_arch(load_state_dict(params.source))
             if params.container == 'gguf':
-                available = KREA_CHOICES if arch.arch == 'krea2' else ALL_QUANT_CHOICES
+                available = ([*KREA_CHOICES, *[(label, key) for label, key in EXTENDED_CHOICES if key not in {item[1] for item in KREA_CHOICES}]] if arch.arch == 'krea2' else
+                             EXTENDED_CHOICES if arch.arch in EXTENDED_ARCHES else ALL_QUANT_CHOICES)
                 # Molbal protection differs from our native planner. No borrowed estimate.
-                size = None if arch.arch == 'krea2' else estimate_output_size(params.source, params.format)
+                size = None if arch.arch in EXTENDED_ARCHES or arch.arch in ('krea2', 'ernie_image') else estimate_output_size(params.source, params.format)
                 breakdown = None
             else:
                 breakdown = safetensors_output_size_breakdown(params.source, params.format, arch,
@@ -506,6 +517,10 @@ def create_app() -> FastAPI:
                       'estimated_bytes': size, 'breakdown': breakdown, 'destination': params.destination}
             if params.container == 'gguf':
                 result['formats'] = available
+                if arch.arch == 'ernie_image':
+                    result.update(backend='original', support='unknown', support_reason='Requires Original Diffusion Model (S2GGUF); native ComfyUI architecture support and full weight RAM are required.')
+                if arch.arch in EXTENDED_ARCHES:
+                    result.update(backend='molbal', support='unknown', support_reason=EXTENDED_NOTE)
                 if arch.arch == 'krea2':
                     result.update(backend='molbal', support='unknown', support_reason=LOADER_NOTE)
             return result
@@ -526,7 +541,11 @@ def create_app() -> FastAPI:
         if params.model_kind == 'diffusion' and params.container == 'gguf':
             try:
                 arch = detect_arch(load_state_dict(params.source))
-                if arch.arch == 'krea2':
+                if arch.arch in EXTENDED_ARCHES or (arch.arch == 'krea2' and params.format not in {key for _, key in KREA_CHOICES}):
+                    validate_extended_request(params.source, params.format, arch.arch)
+                    if params.executable or params.threads or params.keep_intermediate or params.precision_profile != 'auto':
+                        raise ValueError('Extended models use their pinned CPU backend without diffusion overrides')
+                elif arch.arch == 'krea2':
                     validate_krea_request(params.source, params.format)
                     if params.executable or params.threads or params.keep_intermediate or params.precision_profile != 'auto':
                         raise ValueError('Krea GGUF uses its pinned streaming backend; diffusion advanced settings do not apply.')
@@ -534,7 +553,7 @@ def create_app() -> FastAPI:
                     raise ValueError('This GGUF format is available only for Krea models.')
             except Exception as exc:
                 raise HTTPException(400, str(exc)) from exc
-        if params.model_kind == 'diffusion' and params.container == 'gguf' and params.format in LLAMA_QUANT_KEYS and params.gguf_backend == 'native':
+        if params.model_kind == 'diffusion' and params.container == 'gguf' and params.format in LLAMA_QUANT_KEYS and params.gguf_backend == 'native' and arch.arch not in EXTENDED_ARCHES and arch.arch not in ('krea2', 'ernie_image'):
             executable = Path(params.executable) if params.executable else find_exe()
             if not executable or not Path(executable).is_file():
                 raise HTTPException(400, 'This format requires llama-quantize. Set its path in Advanced.')

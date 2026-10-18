@@ -396,10 +396,9 @@ Source weights (.safetensors, bare file — no config.json/tokenizer)
     │
     ▼
 ensure_llama_cpp() / find_convert_script()
-    │  - Clones ggml-org/llama.cpp (shallow, --depth 1) into .llama.cpp/ next
-    │      to this repo on first use, override via S2G_LLAMA_CPP_HOME env var
-    │  - Skipped if convert_hf_to_gguf.py is already present in that dir
-    │  - Raises RuntimeError if git is missing or the clone fails
+    - Verifies and extracts the shipped pinned source archive locally.
+    - Revalidates cached source bytes; no upstream access or runtime build.
+    - S2G_LLAMA_CPP_HOME explicitly selects an existing custom converter.
     │  - convert_hf_to_gguf.py's own imports (transformers, sentencepiece,
     │      protobuf) are satisfied by this repo's own venv — declared as
     │      regular pyproject.toml dependencies, not a separate environment
@@ -435,14 +434,12 @@ Output file (.gguf)
 ```
 
 **K-quant second pass** (`convert_text_encoder_kquant()`): after the F16 GGUF
-above, `ensure_plain_llama_quantize()` builds a **plain, unpatched**
-llama-quantize once via `cmake -B .llama.cpp/build-quantize` from the same
-auto-cloned checkout (needs `cmake` + a C++ compiler; cached after the first
-build) and `quantize.run_quantize()` (shared with the diffusion-model
-pipeline) runs it against the F16 intermediate. This binary is intentionally
-separate from the City96-patched `llama-quantize` used for diffusion-model
-GGUFs (see [building-llama-quantize.md](building-llama-quantize.md)) — that
-patch is documented as unsafe for LLM/text GGUFs.
+above, `ensure_plain_llama_quantize()` verifies the shipped **plain, unpatched**
+Windows x86_64 CPU quantizer from `third_party/text-tools`. Its static MSVC
+runtime requires no separate VC runtime installation. The binary remains
+separate from the City96 image converter because their preset policies differ.
+`quantize.run_quantize()` retains atomic output and cancellation handling.
+Other platform packages remain open; missing packages fail without building.
 
 **Safetensors branch** (`convert_text_encoder_to_safetensors()`): loads the
 checkpoint via `convert.load_state_dict()` and quantizes it with the same
@@ -459,8 +456,8 @@ needed here. No HuggingFace download or llama.cpp involved.
 `convert_hf_to_gguf.py` in current llama.cpp imports its per-architecture
 model classes from a sibling `conversion/` package (~90 files, one per
 architecture family) rather than being a single self-contained script —
-vendoring it would mean tracking that whole package. A shallow git clone
-avoids that maintenance burden and stays current with upstream automatically.
+the complete pinned source archive preserves that package together with licenses
+and provenance. Normal conversion never follows moving upstream HEAD.
 
 The base-model repo ID is always a manual text field — there is no
 auto-detection heuristic mapping a bare checkpoint to its base model's HF

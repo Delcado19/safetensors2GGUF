@@ -84,33 +84,42 @@ def _resolve_dst_st(src: str, dst: str | None, target_key: str) -> str | None:
 
 
 def validate_gguf_backend(src, quant_key, backend='native', *, executable='', threads=0):
-    """Reject unsupported explicit Python requests before expensive preparation.
+    """Reject unsupported explicit backend requests before expensive preparation.
 
-    The Python backend is opt-in and limited to header-detected FLUX safetensors
-    and supported K presets; it never silently retries native after conversion failure.
+    Python aliases remain FLUX-only; compiled_diffusion accepts supported image
+    architectures and K presets; it never silently retries native after conversion failure.
     """
-    if backend not in {'native', 'python_flux', 'python_flux_q6', 'compiled_flux'}:
+    if backend not in {'native', 'python_flux', 'python_flux_q6', 'compiled_flux', 'compiled_diffusion'}:
         raise ValueError('Unknown GGUF backend')
     if backend == 'native':
         return
     # Preserve the existing Q6-only API identifier for old clients.
-    allowed = (('Q2_K', 'Q3_K_M', 'Q4_K_S', 'Q4_K_M', 'Q5_K_M', 'Q6_K') if backend == 'compiled_flux' else
+    allowed = (('Q2_K', 'Q3_K_M', 'Q4_K_S', 'Q4_K_M', 'Q5_K_M', 'Q6_K') if backend in {'compiled_flux', 'compiled_diffusion'} else
                ('Q6_K',) if backend == 'python_flux_q6' else ('Q6_K', 'Q5_K_M'))
     if quant_key not in allowed or Path(src).suffix.lower() != '.safetensors':
-        raise ValueError('FLUX backend requires safetensors and a supported preset')
+        raise ValueError('Selected backend requires safetensors and a supported preset')
     if executable or threads:
         raise ValueError('Executable and thread settings apply only to the native GGUF backend')
-    if detect_arch(load_state_dict(src)).arch != 'flux':
+    arch = detect_arch(load_state_dict(src)).arch
+    if backend == 'compiled_diffusion':
+        from compiled_diffusion import PROTECTED
+        from extended_backend import EXTENDED_ARCHES
+        if arch in EXTENDED_ARCHES or arch in ('krea2', 'ernie_image'):
+            return
+        if arch not in PROTECTED:
+            raise ValueError('Bundled diffusion does not support this architecture; use its available dedicated format adapter')
+        return
+    if arch != 'flux':
         raise ValueError('FLUX backend supports FLUX only')
 
 
-def _pipeline_python_flux(src, final_dst, keep_intermediate, overwrite, cancel_event, log, progress, quant_key, backend='python_flux'):
-    """Reuse float preparation and atomic FLUX writing with optional bundled block math."""
+def _pipeline_k_backend(src, final_dst, keep_intermediate, overwrite, cancel_event, log, progress, quant_key, backend='python_flux'):
+    """Reuse model preparation and atomic K writing with optional bundled block math."""
     from scripts.requantize_flux_q6 import requantize
 
     phase_started = perf_counter()
     kernel = None
-    if backend == 'compiled_flux':
+    if backend in {'compiled_flux', 'compiled_diffusion'}:
         from scripts.compiled_kernel_package import load_package, verify_package, _platform
         host = _platform()
         package = Path(__file__).resolve().parent / 'third_party' / 'cpu-kernels' / (
@@ -126,6 +135,12 @@ def _pipeline_python_flux(src, final_dst, keep_intermediate, overwrite, cancel_e
 
     log(f'INFO: Kernel verification/self-tests: {perf_counter() - phase_started:.3f} s')
     label = 'bundled CPU FLUX' if kernel is not None else 'experimental Python FLUX'
+    if backend == 'compiled_diffusion':
+        from compiled_diffusion import convert_diffusion
+        return convert_diffusion(src, final_dst, quant_key, kernel,
+                                 keep_intermediate=keep_intermediate, overwrite=overwrite,
+                                 cancel_event=cancel_event, on_log=log,
+                                 on_progress=lambda index, total, key: progress(0.95 * index / total if total else 0, key))
     if kernel is not None and not keep_intermediate:
         from functools import partial
         from compiled_flux_writer import CompiledFluxWriter
@@ -185,7 +200,7 @@ def _pipeline(
     Single-step (Python types): safetensors → GGUF
     Two-step (K-quants):        safetensors → F16 GGUF → quantized GGUF
     Optional third step:        auto-run fix_5d when a side-car file exists
-    gguf_backend selects native (default), Python FLUX, or bundled compiled FLUX.
+    gguf_backend selects native (default), Python FLUX, or bundled compiled diffusion.
     """
     def _log(msg: str) -> None:
         q.put(("log", msg))
@@ -201,9 +216,24 @@ def _pipeline(
     # Check the final output before doing expensive work; honor the GUI checkbox.
     final_dst = _resolve_dst(src, dst_raw, quant_key) or str(_strip_model_suffix(src)) + f"-{quant_key}.gguf"
     validate_output(src, final_dst, overwrite)
+    if Path(src).suffix.lower() == '.safetensors':
+        from extended_backend import EXTENDED_ARCHES, convert_extended
+        extended_arch = detect_arch(load_state_dict(src)).arch
+        if extended_arch == 'ernie_image':
+            if exe or nthreads or keep_intermediate or gguf_backend not in ('native', 'compiled_diffusion'):
+                raise ValueError('Original-key ERNIE export does not use external quantizer overrides')
+            from original_text_gguf import export_original_text
+            return export_original_text(src, final_dst, extended_arch, quant_key,
+                                        overwrite=overwrite, cancel_event=cancel_event, on_log=_log)
+        if extended_arch in EXTENDED_ARCHES or (extended_arch == 'krea2' and quant_key not in ('F16', 'BF16', 'Q8_0', 'Q5_1', 'Q5_0', 'Q4_1', 'Q4_0')):
+            if exe or nthreads or keep_intermediate or gguf_backend not in ('native', 'compiled_diffusion'):
+                raise ValueError('Extended architecture uses its pinned CPU adapter without native overrides or intermediate retention')
+            return convert_extended(src, final_dst, quant_key, arch=extended_arch, overwrite=overwrite,
+                                    cancel_event=cancel_event, on_log=_log,
+                                    on_progress=lambda index, total, phase: _frac(index / total if total else 0, phase))
     validate_gguf_backend(src, quant_key, gguf_backend, executable=exe or '', threads=nthreads)
     if gguf_backend != 'native':
-        return _pipeline_python_flux(src, final_dst, keep_intermediate, overwrite, cancel_event, _log, _frac, quant_key, gguf_backend)
+        return _pipeline_k_backend(src, final_dst, keep_intermediate, overwrite, cancel_event, _log, _frac, quant_key, gguf_backend)
     # Safetensors detection reads headers; do not load eager .ckpt sources twice.
     if Path(src).suffix == '.safetensors' and detect_arch(load_state_dict(src)).arch == 'krea2':
         from krea_backend import convert_krea

@@ -150,12 +150,12 @@ function App() {
     choices: [string, string][];
     backend?: string;
   }>();
-  const kreaSource =
+  const adapterSource =
     modelKind === "diffusion" && container === "gguf" &&
-    sourceFormats?.source === source && sourceFormats.backend === "molbal";
+    sourceFormats?.source === source && ["molbal", "original"].includes(sourceFormats.backend || "");
   const pythonFlux = modelKind === "diffusion" && container === "gguf" &&
     (["Q6_K", "Q5_K_M"].includes(format) && ggufBackend === "python_flux" ||
-      ["Q2_K", "Q3_K_M", "Q4_K_S", "Q4_K_M", "Q5_K_M", "Q6_K"].includes(format) && ggufBackend === "compiled_flux") && !kreaSource;
+      ["Q2_K", "Q3_K_M", "Q4_K_S", "Q4_K_M", "Q5_K_M", "Q6_K"].includes(format) && ["compiled_flux", "compiled_diffusion"].includes(ggufBackend)) && !adapterSource;
   const [inspecting, setInspecting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [selectedJob, setJob] = useState<Job>();
@@ -320,12 +320,12 @@ function App() {
       destination,
       container,
       format,
-      precision_profile: modelKind === "diffusion" && !kreaSource && !pythonFlux ? profile : "auto",
+      precision_profile: modelKind === "diffusion" && !adapterSource && !pythonFlux ? profile : "auto",
       gguf_backend: pythonFlux ? ggufBackend : "native",
-      executable: modelKind === "diffusion" && !kreaSource && !pythonFlux ? executable : "",
-      threads: modelKind === "diffusion" && !kreaSource && !pythonFlux ? threads : 0,
+      executable: modelKind === "diffusion" && !adapterSource && !pythonFlux ? executable : "",
+      threads: modelKind === "diffusion" && !adapterSource && !pythonFlux ? threads : 0,
       overwrite,
-      keep_intermediate: modelKind === "diffusion" && !kreaSource && keepIntermediate,
+      keep_intermediate: modelKind === "diffusion" && !adapterSource && keepIntermediate,
     };
   }
 
@@ -767,11 +767,9 @@ function App() {
                           ]) as [string, string][]
                         }
                       />
-                      {kreaSource && (
+                      {adapterSource && (
                         <p className="preview-note">
-                          Krea GGUF requires a Krea-capable ComfyUI core and the molbal GGUF loader.
-                          Q4_0 was tested on one checkpoint with visible drift; other combinations remain untested. Choose an available format explicitly;
-                          size estimates are unavailable for this backend.
+                          {inspection?.support_reason || "This architecture uses its pinned adapter and requires a matching model loader. Size estimates are unavailable."}
                         </p>
                       )}
                       {modelKind === "text_encoder" && (
@@ -871,7 +869,7 @@ function App() {
                               </>
                             )}
                           {container === "gguf" &&
-                            modelKind === "diffusion" && !kreaSource && (
+                            modelKind === "diffusion" && !adapterSource && (
                               <>
                                 {["Q2_K", "Q3_K_M", "Q4_K_S", "Q4_K_M", "Q5_K_M", "Q6_K"].includes(format) && (
                                   <>
@@ -881,11 +879,11 @@ function App() {
                                       aria-describedby="gguf-backend-hint">
                                       <option value="native">Native (llama-quantize)</option>
                                       {["Q6_K", "Q5_K_M"].includes(format) && <option value="python_flux">Python - FLUX only (experimental)</option>}
-                                      <option value="compiled_flux">Bundled CPU kernel - FLUX only (experimental)</option>
+                                      <option value="compiled_diffusion">Bundled CPU kernel - diffusion (experimental)</option>
                                     </select>
                                     <p className="field-hint" id="gguf-backend-hint">
-                                      FLUX backends need a FLUX safetensors source. The bundled CPU kernel requires no compiler or external quantizer.
-                                      Validated with one klein Base 9B checkpoint; other checkpoints remain untested.
+                                      The Python option is FLUX-only. The bundled CPU kernel supports diffusion safetensors without a compiler or external quantizer.
+                                      Model-family fixture tests do not establish full-checkpoint image quality.
                                       {format === "Q5_K_M" && " Q5 matches native output; visible pose/composition drift versus the original was observed with two LoRAs."}
                                     </p>
                                   </>

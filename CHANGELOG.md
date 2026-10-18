@@ -6,6 +6,26 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Change: Save the user-requested paused WIP for extended Molbal model adapters,
+  full original-key vision-language/CLIP GGUFs, explicit text-only Qwen3-VL Q8_CR,
+  and distinct experimental ComfyUI loaders. This snapshot is incomplete, has
+  known failing tests, and does not qualify complete-model inference. See
+  `CONTINUE.md` before using or continuing these changes.
+
+- Add: Bundled CPU `compiled_diffusion` backend for twelve diffusion families,
+  preserving model-specific protections, 5D video floats and Lumina pad shapes.
+  Earlier eleven-family sources matched native across 66 schematic K-preset
+  conversions; those reports do not qualify later paused WIP changes. Qwen
+  Image had adapter coverage without an equivalent old native reference.
+- Change: Text GGUF conversion uses shipped pinned source snapshots and a separate
+  verified Windows CPU quantizer with static MSVC runtime. Normal conversion no
+  longer clones upstream or builds tools. Eighteen text fixture comparisons pass;
+  existing format/loader limitations remain in force.
+
+- Validate: Fresh Git export passes 55 bundled-kernel/writer tests without build
+  tools on PATH or process/network access during checked conversion. Existing
+  host Python dependencies are reused; clean-machine qualification remains open.
+
 - Improve: Encode shared F16/F32 preparation directly into final-payload spooling
   for compiled FLUX jobs without a requested intermediate. Preserve scaled FP8
   reconstruction, preset protection, readback and atomic cleanup. Six slice

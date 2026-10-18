@@ -2,6 +2,37 @@
 
 ## Persistent project TODO — load at every session start
 
+**Paused WIP checkpoint (2026-10-18): read `CONTINUE.md` first.** The user stopped
+implementation immediately and then requested documentation/push of the current
+state. Do not resume implementation automatically. Extended model/VL adapters and
+the new original-key companion loaders are unfinished, with known test failures
+and stale provenance assertions. Later source changes supersede current-tree
+qualification claims in the chronological notes below. No release or complete
+VL/CLIP/ERNIE inference qualification is claimed by this snapshot.
+
+Historical multi-model checkpoint (2026-10-18): Workbench/API `compiled_diffusion` extends
+the shipped CPU K writer to FLUX, SD1/SDXL, SD3, AuraFlow, HiDream, Cosmos/Anima,
+LTXV, HunyuanVideo, Wan, Lumina/Z-Image and Qwen Image. Eleven families match native
+on 66 schematic application conversions; Qwen has adapter tests but no old native
+reference. Video 5D floats, leading unit axes and Lumina pads are preserved directly.
+Legacy FLUX identifiers remain FLUX-only. At that checkpoint Krea kept its adapter
+and ERNIE its safetensors-only guard; later unfinished extensions supersede those
+restrictions in the paused tree (see `CONTINUE.md`). Text conversion uses the shipped pinned source archive
+and static-runtime unpatched Windows CPU executable, without normal-run cloning
+or compilation. Eighteen text quantizer fixtures match the pinned previous tool.
+An actual synthetic one-layer Qwen3 source also passes the complete pinned
+export/Q4_K_M pipeline (14 tensors); see `data/bundled-text-export-smoke.json`.
+Additional full-checkpoint inference, clean-machine and non-Windows qualification
+remain open. See `docs/compiled-kernel-package.md`,
+`data/compiled-diffusion-validation.json` and
+`data/bundled-text-quantizer-validation.json`. Native remains the default.
+
+Export qualification (2026-10-18): a fresh Git archive of `8640e2f` passes 55
+package/direct-writer tests and 725 kernel goldens with build tools absent from
+PATH and process/network audit guards active after OS detection and imports.
+Existing host Python dependencies were reused; clean-machine/installer validation
+remains open. See `data/compiled-kernel-export-qualification.json`.
+
 Integration update (2026-10-18): Workbench/API `compiled_flux` uses the shipped
 Windows x86_64 CPU package for FLUX Q2_K, Q3_K_M, Q4_K_S/M, Q5_K_M and Q6_K,
 without runtime compilation. All six K presets match native across 48 schematic

@@ -22,6 +22,13 @@ from safetensors_quant import _RENDER_VERIFIED_MIXED, _SIZE_RATIOS
 # project's own editorial choices, not values ComfyUI or any upstream
 # project defines -- review and correct freely.
 MODEL_DISPLAY_NAMES: dict[str, str] = {
+    'ideogram': 'Ideogram (ideogram)',
+    'ltxv_upscaler': 'LTXV Upscaler (ltxv_upscaler)',
+    'minimax_h3': 'MiniMax H3 (minimax_h3)',
+    'minimax_h3_vae': 'MiniMax H3 VAE (minimax_h3_vae)',
+    'minimax_music3': 'MiniMax Music 3 (minimax_music3)',
+    'qwen_image21': 'Qwen Image 2.1 (qwen_image21)',
+
     "ernie_image": "ERNIE-Image (ernie_image)",
     "krea2": "Krea 2 (krea2)",
     "qwen_image": "Qwen-Image Family (qwen_image)",
@@ -155,6 +162,8 @@ def support_reason(arch_key: str, format_key: str) -> str | None:
 def text_encoder_support_reason(family: str, format_key: str) -> str | None:
     """Tooltip text for a text-encoder support-table cell, or None if the
     cell needs no extra explanation beyond its symbol."""
+    if format_key == 'GGUF' and family in {'clip-l', 'clip-bigg', 'qwen2.5-vl-7b', 'qwen3-vl', 'minimax-music3'}:
+        return 'Original-key GGUF requires S2GGUFTextEncoderLoader, which retains vision and reconstructs weights in CPU RAM. Runtime inference remains untested; historical stock-loader failures do not qualify this new route.'
     return (_TE_STRUCTURALLY_IMPOSSIBLE.get((family, format_key)) or
             _TE_DRIFT_NOTES.get((family, format_key)))
 
@@ -304,7 +313,7 @@ _SCOPED_RENDER_NOTES: dict[tuple[str, str], str] = {
         'comparison. Source: model_support.py, 2026-08-18 render notes.'),
 }
 
-_UNTESTED_SAFETENSORS_ARCHES: frozenset[str] = frozenset({"ernie_image", "krea2"})
+_UNTESTED_SAFETENSORS_ARCHES: frozenset[str] = frozenset({"ernie_image", "krea2", "ideogram", "ltxv_upscaler", "minimax_h3", "minimax_h3_vae", "minimax_music3", "qwen_image21"})
 
 
 def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) -> str:
@@ -539,6 +548,9 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
       cleanly, so this reads as prompt-dependent severity of an accepted
       tradeoff, not a bug.
     """
+    if arch_key in {'ernie_image', 'ideogram', 'ltxv_upscaler', 'minimax_h3', 'minimax_h3_vae', 'minimax_music3', 'qwen_image21'}:
+        # Export/fixture qualification does not constitute native runtime evidence.
+        return SUPPORT_UNKNOWN
     if format_key == "GGUF":
         # Check remaining tooling gaps first. Qwen's historical issue #21
         # restriction is superseded by the recorded Easy-Install smoke test.
@@ -972,6 +984,8 @@ def text_encoder_support_level(family: str, format_key: str) -> str:
     lookup, so a family can't accidentally end up in _TE_RENDER_CONFIRMED_BAD
     for "F16" and silently flip this.
     """
+    if format_key == 'GGUF' and family in {'clip-l', 'clip-bigg', 'qwen2.5-vl-7b', 'qwen3-vl', 'minimax-music3'}:
+        return SUPPORT_UNKNOWN
     if format_key == "F16":
         return SUPPORT_VERIFIED
     if (family, format_key) in _TE_RENDER_CONFIRMED_BAD:
