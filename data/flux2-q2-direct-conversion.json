@@ -1,0 +1,63 @@
+{
+  "status": "succeeded",
+  "started_utc": "2026-10-18T16:53:32.009913+00:00",
+  "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\diffusion_models\\Flux.2 Klein 9B-base\\flux-2-klein-base-9b.safetensors",
+  "source_bytes": 18157185168,
+  "source_mtime_ns": 1786560662614530300,
+  "expected_tensors": 201,
+  "output": "I:\\safetensors2GGUF-flux2-q2-direct-2026-10-18\\flux-2-klein-base-9b-Q2_K.gguf",
+  "preset": "Q2_K",
+  "backend": "compiled_flux",
+  "free_bytes_before": 249643069440,
+  "kernel_library_sha256": "f0e914a6fa07d1050d03e99837567798d80a83f7c3179bd4e1e632ed821506c4",
+  "kernel_self_test": {
+    "golden_comparisons": 725,
+    "guard_checks": 10,
+    "formats": [
+      "Q2_K",
+      "Q3_K",
+      "Q4_K",
+      "Q5_K",
+      "Q6_K"
+    ]
+  },
+  "kernel_source": {
+    "id": "llama-b3962",
+    "commit": "c8c07d658a6cefc5a50cfdf6be7d726503612303",
+    "sha256": "13c8e23aedcc9a519cb3eafe95381e20dd9c4819ffee823b77c1b85a8d5cb6c4"
+  },
+  "runtime_compilation": false,
+  "comfyui_test": "not started",
+  "source_sha256": "4a54fad7f5f741b99eee217198daac20b8d8e515e2a1f5b064fd51cf074f95bd",
+  "progress": 1.0,
+  "phase": "txt_in.weight",
+  "pipeline_seconds": 115.86270940000031,
+  "tensor_types": {
+    "F32": 86,
+    "Q2_K": 115
+  },
+  "tensor_count": 201,
+  "general_file_type": 10,
+  "output_sha256": "b35a4fce26a4fdeafdadf40cd28128f1fc494f3c01bb5791e1ba98d8e47c9411",
+  "matches_previous_q2_output": true,
+  "previous_historical_pipeline_seconds": 662.2905252,
+  "timing_scope": "Complete current pipeline; historical previous run is not a controlled same-run speed comparison",
+  "source_code_sha256": {
+    "convert.py": "d7257c6a6602478fec321364dc274db43510da314900c0af50e5516c26e717c1",
+    "conversion_service.py": "ab58d373e9eefebc19859630d3b3594a0b2b3554e01f5cc0e81342a8c8d03c3a",
+    "compiled_flux_writer.py": "191fc315c8cb71703be787f1a603fae3663c343c5a8039ca021d066d89c51e94",
+    "scripts/requantize_flux_q6.py": "16d71b5c290d2d7ae9cd18da71307487847910dc754d9a8d48536269d1301bf0"
+  },
+  "output_bytes": 3356285248,
+  "source_stat_unchanged": true,
+  "intermediate_cleaned": true,
+  "writer_readback": "All tensors validated before atomic publication",
+  "finished_utc": "2026-10-18T16:55:40.768413+00:00",
+  "phase_log_lines": [
+    "INFO: Direct preparation/encode/spool/final-write: 109.547 s",
+    "INFO: Direct tensor readback: 2.602 s",
+    "INFO: Direct file hash: 1.940 s; SHA256 b35a4fce26a4fdeafdadf40cd28128f1fc494f3c01bb5791e1ba98d8e47c9411",
+    "INFO: Prepared bytes 19939762176; final spool bytes 3356270592; no float GGUF intermediate"
+  ],
+  "validation_scope": "Complete FLUX.2 klein Base 9B Q2_K application conversion; original source SHA256 and whole output SHA256 match the previous run. Full tensor readback before atomic publication. No new inference or controlled same-run timing comparison."
+}

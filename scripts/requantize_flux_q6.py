@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Experimental FLUX float-GGUF to Q4/Q5/Q6 K presets; native remains the application default.
+"""Experimental FLUX float-GGUF to Q2/Q3/Q4/Q5/Q6 K presets; native remains the application default.
 
 Policy port adapted from City96/ComfyUI-GGUF lcpp.patch at 6ea2651 and the
 MIT-licensed llama.cpp b3962 general exclusions. Preserved license notices:
@@ -9,6 +9,9 @@ The Python policy port and bounded writer are modifications, not upstream code.
 import argparse
 import hashlib
 import json
+import os
+from concurrent.futures import ThreadPoolExecutor
+from time import perf_counter
 from functools import partial
 from pathlib import Path
 
@@ -23,7 +26,20 @@ from scripts.reference_q4_k import iter_q4_k
 from scripts.gguf_research_io import open_gguf
 
 
-FLUX_PRESETS = ('Q6_K', 'Q5_K_M', 'Q4_K_S', 'Q4_K_M')
+_COMPILED_WORKERS = min(8, os.cpu_count() or 1)
+
+
+def _compiled_chunk(kernel, bits, data):
+    packed = kernel(data, bits)
+    expected = data.size // 256 * gguf.GGML_QUANT_SIZES[
+        gguf.GGMLQuantizationType[f'Q{bits}_K']][1]
+    if (not isinstance(packed, np.ndarray) or packed.dtype != np.uint8
+            or not packed.flags.c_contiguous or packed.nbytes != expected):
+        raise ValueError('Compiled kernel returned invalid packed bytes')
+    return packed
+
+
+FLUX_PRESETS = ('Q6_K', 'Q5_K_M', 'Q4_K_S', 'Q4_K_M', 'Q3_K_M', 'Q2_K')
 _ATTENTION_V = ('attn_v.weight', '.to_v.weight', '.v.weight', '.attn.w1v.weight',
                 '.attn.w2v.weight', '_attn.v_proj.weight')
 
@@ -44,7 +60,7 @@ def _flux_quantizable(name, shape):
 def flux_q6_type(name, shape, source_type, *, preset="Q6_K", attention_v_index=0):
     """Apply frozen City96 FLUX eligibility and mixed-preset rules.
 
-    For Q4_K_S, attention_v_index counts preceding eligible V tensors in file
+    For Q4_K_S and Q3_K_M, attention_v_index counts preceding eligible V tensors in file
     order, including incompatible-row fallbacks. Protected/rank-excluded tensors
     do not count. Source preparation and namespace repair remain separate.
     """
@@ -53,22 +69,30 @@ def flux_q6_type(name, shape, source_type, *, preset="Q6_K", attention_v_index=0
     if not _flux_quantizable(name, shape):
         return source_type
     qtype = gguf.GGMLQuantizationType
-    target = qtype.Q6_K if preset == 'Q6_K' else qtype.Q5_K if preset == 'Q5_K_M' else qtype.Q4_K
+    target = qtype[preset[:4]]  # K-preset suffixes affect tensor policy, not block layout.
     # Image rules promote every matching role; text-model layer heuristics do not apply.
     if any(part in name for part in _ATTENTION_V):
-        if preset in ('Q4_K_M', 'Q5_K_M'):
+        if preset == 'Q2_K':
+            target = qtype.Q3_K
+        elif preset == 'Q3_K_M':
+            target = qtype.Q5_K if attention_v_index < 2 else qtype.Q4_K
+        elif preset in ('Q4_K_M', 'Q5_K_M'):
             target = qtype.Q6_K
         elif preset == 'Q4_K_S' and attention_v_index < 4:
             target = qtype.Q5_K
     elif any(part in name for part in ('attn_qkv.weight', 'attn.qkv.weight', 'attention.qkv.weight')):
-        if preset == 'Q4_K_M':
+        if preset == 'Q3_K_M':
+            target = qtype.Q4_K
+        elif preset == 'Q4_K_M':
             target = qtype.Q5_K
         elif preset == 'Q5_K_M':
             target = qtype.Q6_K
     elif any(part in name for part in ('ffn_down', '.ffn.2.weight', '.ff.net.2.weight',
              '.mlp.layer2.weight', '.adaln_modulation_mlp.2.weight', '.feed_forward.w2.weight')) or (
             'experts.' in name and '.w2.weight' in name):
-        if preset == 'Q4_K_S':
+        if preset == 'Q3_K_M':
+            target = qtype.Q4_K
+        elif preset == 'Q4_K_S':
             target = qtype.Q5_K
         elif preset in ('Q4_K_M', 'Q5_K_M'):
             target = qtype.Q6_K
@@ -80,7 +104,7 @@ def requantize(source, destination, *, cancel_event=None, on_progress=None, over
     """Atomically requantize a little-endian, single-file FLUX F16/F32 GGUF.
 
     Preserve metadata and tensor order; only file type/quantization version are
-    updated. Use bounded copies and Q4/Q5/Q6 chunks, preserving noneligible bytes.
+    updated. Use bounded copies and K-quant chunks, preserving noneligible bytes.
     Reject quantized/BF16 input, sidecars, shards, empty tensors and leading unit
     dimensions requiring GGML rank canonicalization. No source reconstruction,
     shape repair, tokenizer conversion or runtime compatibility is inferred.
@@ -88,12 +112,18 @@ def requantize(source, destination, *, cancel_event=None, on_progress=None, over
     failure or cancellation preserves it. Source aliases are always rejected.
     An explicit compiled_kernel(data, bits) callback may replace block math only;
     it receives at most 65,536 F32 values and must return contiguous uint8 bytes.
+    Q2_K/Q3_K_M require this callback; there is no NumPy encoder for those blocks.
+    At most eight independent windows run concurrently; ordered bounded batches
+    preserve tensor bytes and cancellation/error cleanup without prefetching a model.
     Its exceptions abort atomically; there is no fallback to another encoder.
     """
     if preset not in FLUX_PRESETS:
         raise ValueError('Unsupported FLUX research presets')
+    if preset in ('Q2_K', 'Q3_K_M') and compiled_kernel is None:
+        raise ValueError('Q2_K/Q3_K_M require an explicitly selected compiled kernel')
     source, destination = Path(source), Path(destination)
     validate_output(source, destination, overwrite)
+    timings = {}
     before = source.stat()
     with open_gguf(source) as reader:
         if reader.endianess != gguf.GGUFEndian.LITTLE:
@@ -118,12 +148,15 @@ def requantize(source, destination, *, cancel_event=None, on_progress=None, over
             if _flux_quantizable(tensor.name, shape) and any(part in tensor.name for part in _ATTENTION_V):
                 attention_v_index += 1
             size = tensor.n_elements // 256 * gguf.GGML_QUANT_SIZES[target][1] if target in (
-                gguf.GGMLQuantizationType.Q6_K, gguf.GGMLQuantizationType.Q5_K, gguf.GGMLQuantizationType.Q4_K) else (
+                gguf.GGMLQuantizationType.Q6_K, gguf.GGMLQuantizationType.Q5_K, gguf.GGMLQuantizationType.Q4_K,
+                gguf.GGMLQuantizationType.Q3_K, gguf.GGMLQuantizationType.Q2_K) else (
                 tensor.n_elements * 2 if target == gguf.GGMLQuantizationType.F16 else tensor.n_bytes)
             plan.append({'name': tensor.name, 'shape': shape, 'source_type': tensor.tensor_type.name,
                          'type': target.name, 'bytes': size})
         _cancel(cancel_event)
-        with atomic_output(destination, overwrite=overwrite) as temporary:
+        write_started = perf_counter()
+        with atomic_output(destination, overwrite=overwrite) as temporary, ThreadPoolExecutor(
+                max_workers=_COMPILED_WORKERS) as pool:
             writer = gguf.GGUFWriter(temporary, 'flux')
             try:
                 writer.add_custom_alignment(reader.alignment)
@@ -151,20 +184,21 @@ def requantize(source, destination, *, cancel_event=None, on_progress=None, over
                     digest, written = hashlib.sha256(), 0
                     # Flattening a reader memmap is a view; only each window is expanded.
                     values = tensor.data.reshape(-1)
-                    for start in range(0, values.size, 65536):
+                    use_compiled = compiled_kernel is not None and row['type'] in (
+                        'Q2_K', 'Q3_K', 'Q4_K', 'Q5_K', 'Q6_K')
+                    # Never queue beyond one batch: at most eight 256 KiB F32 inputs.
+                    window = 65536 * _COMPILED_WORKERS if use_compiled else 65536
+                    for start in range(0, values.size, window):
                         _cancel(cancel_event)
-                        chunk = values[start:start + 65536]
+                        chunk = values[start:start + window]
                         if not np.isfinite(chunk).all():
                             raise ValueError('Source contains nonfinite values')
-                        if compiled_kernel is not None and row['type'] in ('Q4_K', 'Q5_K', 'Q6_K'):
-                            packed = compiled_kernel(chunk.astype(np.float32).reshape(-1, 256),
-                                                     int(row['type'][1]))
-                            expected = chunk.size // 256 * gguf.GGML_QUANT_SIZES[
-                                gguf.GGMLQuantizationType[row['type']]][1]
-                            if (not isinstance(packed, np.ndarray) or packed.dtype != np.uint8
-                                    or not packed.flags.c_contiguous or packed.nbytes != expected):
-                                raise ValueError('Compiled kernel returned invalid packed bytes')
-                            payloads = [packed]
+                        if use_compiled:
+                            inputs = [chunk[offset:offset + 65536].astype(np.float32).reshape(-1, 256)
+                                      for offset in range(0, chunk.size, 65536)]
+                            encode = partial(_compiled_chunk, compiled_kernel, int(row['type'][1]))
+                            payloads = (map(encode, inputs) if len(inputs) == 1 else
+                                        pool.map(encode, inputs))
                         elif row['type'] == 'Q6_K':
                             payloads = iter_q6_k(chunk.astype(np.float32))
                         elif row['type'] == 'Q5_K':
@@ -190,6 +224,8 @@ def requantize(source, destination, *, cancel_event=None, on_progress=None, over
                         on_progress(index + 1, len(plan), tensor.name)
             finally:
                 writer.close()
+            timings['encode_write_seconds'] = perf_counter() - write_started
+            readback_started = perf_counter()
             after = source.stat()
             if (before.st_size, before.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
                 raise ValueError('Source changed during requantization')
@@ -209,10 +245,14 @@ def requantize(source, destination, *, cancel_event=None, on_progress=None, over
                         digest.update(data[start:start + 1024 * 1024].tobytes())
                     if digest.hexdigest() != row['payload_sha256']:
                         raise ValueError('GGUF tensor readback mismatch')
+            timings['readback_seconds'] = perf_counter() - readback_started
+            hash_started = perf_counter()
             checksum = _file_hash(temporary, cancel_event)
+            timings['file_hash_seconds'] = perf_counter() - hash_started
             _cancel(cancel_event)
     return {'status': f'Experimental FLUX {preset} requantizer; native remains the default',
-            'output': str(destination), 'source': str(source), 'file_sha256': checksum, 'tensors': plan}
+            'output': str(destination), 'source': str(source), 'file_sha256': checksum, 'tensors': plan,
+            'timings': timings, 'compiled_workers': _COMPILED_WORKERS if compiled_kernel is not None else 0}
 
 
 def main():

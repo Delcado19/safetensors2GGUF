@@ -6,6 +6,31 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Improve: Encode shared F16/F32 preparation directly into final-payload spooling
+  for compiled FLUX jobs without a requested intermediate. Preserve scaled FP8
+  reconstruction, preset protection, readback and atomic cleanup. Six slice
+  presets are file-identical to the prior route. Complete FLUX.2 klein Base 9B
+  Q2_K conversion takes 115.863 s and reproduces the previous whole-file SHA256;
+  the earlier 662.291 s result is historical, not a controlled timing baseline.
+
+- Improve: Bound compiled FLUX encoding to at most eight parallel 65,536-value
+  windows with ordered results, validated callback bytes and atomic failure cleanup.
+  Log kernel verification, F16 preparation, encode/write, readback and hash phases.
+  Six real-weight slice presets match serial file bytes and independent native
+  tensor payloads; slice writer medians improve 1.53-2.86x on the measured host.
+  The direct-spool follow-up above avoids the full F16 intermediate; controlled
+  full-model speed ratios and peak memory remain unmeasured.
+
+- Add: Opt-in Workbench/API `compiled_flux` backend with shipped Windows x86_64
+  CPU kernel for FLUX Q2_K, Q3_K_M, Q4_K_S/M, Q5_K_M and Q6_K. Package verification precedes
+  F16 preparation; no runtime compilation, download or silent fallback.
+  Six K presets match native across 48 file fixtures; 725 block goldens pass.
+  Windows C runtime is statically linked. API/cancellation/overwrite guards pass;
+  supplied Q2 renders establish inference in the documented setups, including
+  pixel-identical Q2 export results for the same-seed distilled-model pair.
+  Clean-machine qualification, broader Q2 quality and full-model Q3 remain open.
+
+
 - Add: Explicit offline research CPU kernel package builder and verifier with
   platform/source/file checks, MIT license and 435 native golden self-tests.
   The research writer accepts --kernel-package while retaining the raw-library

@@ -20,7 +20,7 @@ from scripts.inventory_converter_sources import REFERENCES, verify_references
 
 
 ROOT = Path(__file__).resolve().parents[1]
-FORMATS = {4: 'Q4_K', 5: 'Q5_K', 6: 'Q6_K'}
+FORMATS = {2: 'Q2_K', 3: 'Q3_K', 4: 'Q4_K', 5: 'Q5_K', 6: 'Q6_K'}
 
 
 def _sha(path):
@@ -51,8 +51,11 @@ def _self_test(encode):
     count = 0
     vectors = list(pilot_vectors())
     for bits in FORMATS:
-        report = json.loads((ROOT / f'data/q{bits}-pilot-comparison.json').read_text(encoding='utf8'))
-        goldens = {row['vector']: row for row in report['results']}
+        report_path = ROOT / ('data/q2-q3-kernel-goldens.json' if bits < 4 else
+                              f'data/q{bits}-pilot-comparison.json')
+        report = json.loads(report_path.read_text(encoding='utf8'))
+        goldens = {row['vector']: row for row in report['results']
+                   if bits >= 4 or row['bits'] == bits}
         for name, data in vectors:
             row = goldens[name]
             if hashlib.sha256(data.tobytes()).hexdigest() != row['input_sha256']:
@@ -94,7 +97,7 @@ def verify_package(directory):
 
 
 def load_package(directory):
-    """Load an explicit trusted package, replay 435 goldens, return callback/manifest."""
+    """Load an explicit trusted package, replay 725 goldens, return callback/manifest."""
     manifest = verify_package(directory)
     library, encode = _load(Path(directory) / manifest['library'], manifest['files'][manifest['library']])
     checked = _self_test(encode)

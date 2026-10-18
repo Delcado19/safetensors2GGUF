@@ -4,6 +4,7 @@ from __future__ import annotations
 import queue
 import threading
 import uuid
+from time import perf_counter
 from pathlib import Path
 
 from convert import convert_file, load_state_dict
@@ -86,42 +87,77 @@ def validate_gguf_backend(src, quant_key, backend='native', *, executable='', th
     """Reject unsupported explicit Python requests before expensive preparation.
 
     The Python backend is opt-in and limited to header-detected FLUX safetensors
-    and Q6_K/Q5_K_M; it never silently retries native after conversion failure.
+    and supported K presets; it never silently retries native after conversion failure.
     """
-    if backend not in {'native', 'python_flux', 'python_flux_q6'}:
+    if backend not in {'native', 'python_flux', 'python_flux_q6', 'compiled_flux'}:
         raise ValueError('Unknown GGUF backend')
     if backend == 'native':
         return
     # Preserve the existing Q6-only API identifier for old clients.
-    allowed = ('Q6_K',) if backend == 'python_flux_q6' else ('Q6_K', 'Q5_K_M')
+    allowed = (('Q2_K', 'Q3_K_M', 'Q4_K_S', 'Q4_K_M', 'Q5_K_M', 'Q6_K') if backend == 'compiled_flux' else
+               ('Q6_K',) if backend == 'python_flux_q6' else ('Q6_K', 'Q5_K_M'))
     if quant_key not in allowed or Path(src).suffix.lower() != '.safetensors':
-        raise ValueError('Python FLUX requires safetensors and a supported Q6_K/Q5_K_M preset')
+        raise ValueError('FLUX backend requires safetensors and a supported preset')
     if executable or threads:
         raise ValueError('Executable and thread settings apply only to the native GGUF backend')
     if detect_arch(load_state_dict(src)).arch != 'flux':
-        raise ValueError('Python quantization supports FLUX only')
+        raise ValueError('FLUX backend supports FLUX only')
 
 
-def _pipeline_python_flux(src, final_dst, keep_intermediate, overwrite, cancel_event, log, progress, quant_key):
-    """Reuse float preparation, then the validated opt-in FLUX Q6_K/Q5_K_M writer."""
+def _pipeline_python_flux(src, final_dst, keep_intermediate, overwrite, cancel_event, log, progress, quant_key, backend='python_flux'):
+    """Reuse float preparation and atomic FLUX writing with optional bundled block math."""
     from scripts.requantize_flux_q6 import requantize
 
+    phase_started = perf_counter()
+    kernel = None
+    if backend == 'compiled_flux':
+        from scripts.compiled_kernel_package import load_package, verify_package, _platform
+        host = _platform()
+        package = Path(__file__).resolve().parent / 'third_party' / 'cpu-kernels' / (
+            host['system'] + '-' + host['machine'])
+        if not package.is_dir():
+            raise ValueError('No bundled CPU kernel for this platform; install a supported distribution')
+        # Verify shipped bytes and native goldens before preparing any model weights.
+        manifest = verify_package(package)
+        for name in ('kernel.json', *manifest['files']):
+            validate_output(package / name, final_dst, overwrite)
+        kernel, _ = load_package(package)
+        log('INFO: Using verified bundled CPU kernel; no compiler or downloads required')
+
+    log(f'INFO: Kernel verification/self-tests: {perf_counter() - phase_started:.3f} s')
+    label = 'bundled CPU FLUX' if kernel is not None else 'experimental Python FLUX'
+    if kernel is not None and not keep_intermediate:
+        from functools import partial
+        from compiled_flux_writer import CompiledFluxWriter
+        log(f'INFO: Preparing and quantizing directly to {quant_key}; only final payloads are spooled')
+        convert_file(
+            src, final_dst, interact=False, overwrite=overwrite,
+            target_quant=PYTHON_PRECISIONS['F16'][0], apply_unsqueeze=False,
+            cancel_event=cancel_event, on_log=log, log_tensor_every=GUI_TENSOR_LOG_EVERY,
+            on_progress=lambda index, total, key: progress(0.95 * index / total if total else 0, key),
+            writer_factory=partial(CompiledFluxWriter, kernel=kernel, preset=quant_key,
+                                   source=src, cancel_event=cancel_event, on_log=log))
+        return final_dst
     intermediate = Path(final_dst).parent / f'{_strip_model_suffix(src).name}-F16-tmp-{uuid.uuid4().hex}.gguf'
     try:
-        log(f'INFO:  [1/2] Preparing F16 GGUF for experimental Python FLUX {quant_key}')
+        log(f'INFO:  [1/2] Preparing F16 GGUF for {label} {quant_key}')
+        phase_started = perf_counter()
         _, arch = convert_file(
             src, str(intermediate), interact=False, overwrite=False,
             target_quant=PYTHON_PRECISIONS['F16'][0], apply_unsqueeze=False,
             cancel_event=cancel_event, on_log=log, log_tensor_every=GUI_TENSOR_LOG_EVERY,
             on_progress=lambda index, total, key: progress(
                 0.45 * index / total if total else 0, f'[1/2] {key}'))
+        log(f'INFO: F16 preparation/write: {perf_counter() - phase_started:.3f} s')
         # Prepared architecture must still agree; no sidecar/rank repairs are implemented here.
         if arch.arch != 'flux' or getattr(arch, '_nd_tensors', None) or getattr(arch, 'keys_unsqueeze', None):
-            raise ValueError('Python FLUX requires canonical FLUX tensors without sidecar/pad repairs')
-        log(f'INFO:  [2/2] Quantizing with experimental Python FLUX {quant_key}; native fallback is disabled')
-        requantize(intermediate, final_dst, overwrite=overwrite, cancel_event=cancel_event, preset=quant_key,
+            raise ValueError('FLUX backend requires canonical FLUX tensors without sidecar/pad repairs')
+        log(f'INFO:  [2/2] Quantizing with {label} {quant_key}; native fallback is disabled')
+        result = requantize(intermediate, final_dst, overwrite=overwrite, cancel_event=cancel_event, preset=quant_key, compiled_kernel=kernel,
                    on_progress=lambda index, total, key: progress(
                        0.45 + 0.5 * index / total if total else 0.45, f'[2/2] {key}; readback follows'))
+        for phase, seconds in result['timings'].items():
+            log(f'INFO: FLUX {phase}: {seconds:.3f} s')
         return final_dst
     finally:
         # Keep the user's requested intermediate, otherwise clean up failures as well as success.
@@ -149,7 +185,7 @@ def _pipeline(
     Single-step (Python types): safetensors → GGUF
     Two-step (K-quants):        safetensors → F16 GGUF → quantized GGUF
     Optional third step:        auto-run fix_5d when a side-car file exists
-    gguf_backend selects native (default) or experimental python_flux (Q6_K/Q5_K_M).
+    gguf_backend selects native (default), Python FLUX, or bundled compiled FLUX.
     """
     def _log(msg: str) -> None:
         q.put(("log", msg))
@@ -167,7 +203,7 @@ def _pipeline(
     validate_output(src, final_dst, overwrite)
     validate_gguf_backend(src, quant_key, gguf_backend, executable=exe or '', threads=nthreads)
     if gguf_backend != 'native':
-        return _pipeline_python_flux(src, final_dst, keep_intermediate, overwrite, cancel_event, _log, _frac, quant_key)
+        return _pipeline_python_flux(src, final_dst, keep_intermediate, overwrite, cancel_event, _log, _frac, quant_key, gguf_backend)
     # Safetensors detection reads headers; do not load eager .ckpt sources twice.
     if Path(src).suffix == '.safetensors' and detect_arch(load_state_dict(src)).arch == 'krea2':
         from krea_backend import convert_krea

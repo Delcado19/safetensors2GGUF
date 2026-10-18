@@ -1,0 +1,53 @@
+{
+  "status": "succeeded",
+  "started_utc": "2026-10-18T13:53:24.249820+00:00",
+  "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\diffusion_models\\Flux.2 Klein 9B-base\\flux-2-klein-base-9b.safetensors",
+  "source_bytes": 18157185168,
+  "source_mtime_ns": 1786560662614530300,
+  "expected_tensors": 201,
+  "output": "I:\\safetensors2GGUF-flux2-q2-bundled-2026-10-18\\flux-2-klein-base-9b-Q2_K.gguf",
+  "preset": "Q2_K",
+  "backend": "compiled_flux",
+  "free_bytes_before": 169532334080,
+  "kernel_library_sha256": "f0e914a6fa07d1050d03e99837567798d80a83f7c3179bd4e1e632ed821506c4",
+  "kernel_self_test": {
+    "golden_comparisons": 725,
+    "guard_checks": 10,
+    "formats": [
+      "Q2_K",
+      "Q3_K",
+      "Q4_K",
+      "Q5_K",
+      "Q6_K"
+    ]
+  },
+  "kernel_source": {
+    "id": "llama-b3962",
+    "commit": "c8c07d658a6cefc5a50cfdf6be7d726503612303",
+    "sha256": "13c8e23aedcc9a519cb3eafe95381e20dd9c4819ffee823b77c1b85a8d5cb6c4"
+  },
+  "runtime_compilation": false,
+  "comfyui_test": "not started",
+  "source_sha256": "4a54fad7f5f741b99eee217198daac20b8d8e515e2a1f5b064fd51cf074f95bd",
+  "progress": 1.0,
+  "phase": "[2/2] txt_in.weight; readback follows",
+  "pipeline_seconds": 662.2905252,
+  "tensor_types": {
+    "F32": 86,
+    "Q2_K": 115
+  },
+  "tensor_count": 201,
+  "general_file_type": 10,
+  "output_sha256": "b35a4fce26a4fdeafdadf40cd28128f1fc494f3c01bb5791e1ba98d8e47c9411",
+  "output_bytes": 3356285248,
+  "source_stat_unchanged": true,
+  "intermediate_cleaned": true,
+  "writer_readback": "All tensors validated before atomic publication",
+  "finished_utc": "2026-10-18T14:04:38.608066+00:00",
+  "validation_scope": "Full-checkpoint application conversion, internal tensor readback, structure and whole-file SHA256; independent full-model native comparison and ComfyUI loading/rendering not performed",
+  "source_code_sha256": {
+    "conversion_service.py": "9e1f46ef6f7226f5e26bf3681083160d64ae881479df07e4f2454a40a711292d",
+    "scripts/requantize_flux_q6.py": "1aa7713f84a2231e8126771389cf642d6a21cc2816005f06caf5a9d84113d58a",
+    "scripts/compiled_kernel_package.py": "232f950d8d618ef89a0f47f7b46922f926fa91879a2386e3c3e6cb78d78195be"
+  }
+}

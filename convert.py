@@ -457,6 +457,7 @@ def convert_file(
     cancel_event=None,
     log_tensor_every: int = 1,
     apply_unsqueeze: bool = True,
+    writer_factory=None,
 ):
     """Convert a model checkpoint to GGUF and write it to disk.
 
@@ -474,6 +475,8 @@ def convert_file(
         log_tensor_every: Emit every Nth tensor conversion log line while still
             reporting progress for each tensor.
         apply_unsqueeze: Reshape architecture-specific 1D tensors to [1, D].
+        writer_factory: Internal prepared-tensor sink factory with GGUFWriter
+            semantics. Its close() runs before atomic publication for readback.
 
     Output publication is atomic; cancellation or write failure preserves an
     existing destination. Source/destination aliases are rejected. 5D tensors
@@ -532,7 +535,7 @@ def convert_file(
     _info(f"Output: {dst_path}  [{ftype_name}]")
 
     # Keep the large spool beside the output; system temp may be a small tmpfs.
-    writer = gguf.GGUFWriter(path=None, arch=model_arch.arch, use_temp_file=True)
+    writer = (writer_factory or gguf.GGUFWriter)(path=None, arch=model_arch.arch, use_temp_file=True)
     # GGUFWriter.close() closes outputs only; own the spool on every exit path.
     with tempfile.SpooledTemporaryFile(
         mode="w+b", max_size=256 * 1024 * 1024, dir=Path(dst_path).resolve().parent,

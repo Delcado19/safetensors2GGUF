@@ -154,7 +154,8 @@ function App() {
     modelKind === "diffusion" && container === "gguf" &&
     sourceFormats?.source === source && sourceFormats.backend === "molbal";
   const pythonFlux = modelKind === "diffusion" && container === "gguf" &&
-    (format === "Q6_K" || format === "Q5_K_M") && !kreaSource && ggufBackend === "python_flux";
+    (["Q6_K", "Q5_K_M"].includes(format) && ggufBackend === "python_flux" ||
+      ["Q2_K", "Q3_K_M", "Q4_K_S", "Q4_K_M", "Q5_K_M", "Q6_K"].includes(format) && ggufBackend === "compiled_flux") && !kreaSource;
   const [inspecting, setInspecting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [selectedJob, setJob] = useState<Job>();
@@ -320,7 +321,7 @@ function App() {
       container,
       format,
       precision_profile: modelKind === "diffusion" && !kreaSource && !pythonFlux ? profile : "auto",
-      gguf_backend: pythonFlux ? "python_flux" : "native",
+      gguf_backend: pythonFlux ? ggufBackend : "native",
       executable: modelKind === "diffusion" && !kreaSource && !pythonFlux ? executable : "",
       threads: modelKind === "diffusion" && !kreaSource && !pythonFlux ? threads : 0,
       overwrite,
@@ -872,17 +873,18 @@ function App() {
                           {container === "gguf" &&
                             modelKind === "diffusion" && !kreaSource && (
                               <>
-                                {(format === "Q6_K" || format === "Q5_K_M") && (
+                                {["Q2_K", "Q3_K_M", "Q4_K_S", "Q4_K_M", "Q5_K_M", "Q6_K"].includes(format) && (
                                   <>
                                     <label className="field-label" htmlFor="gguf-backend">GGUF converter</label>
                                     <select id="gguf-backend" value={ggufBackend}
                                       onChange={(event) => setGgufBackend(event.target.value)}
                                       aria-describedby="gguf-backend-hint">
                                       <option value="native">Native (llama-quantize)</option>
-                                      <option value="python_flux">Python - FLUX only (experimental)</option>
+                                      {["Q6_K", "Q5_K_M"].includes(format) && <option value="python_flux">Python - FLUX only (experimental)</option>}
+                                      <option value="compiled_flux">Bundled CPU kernel - FLUX only (experimental)</option>
                                     </select>
                                     <p className="field-hint" id="gguf-backend-hint">
-                                      Python needs a FLUX safetensors source and no external quantizer.
+                                      FLUX backends need a FLUX safetensors source. The bundled CPU kernel requires no compiler or external quantizer.
                                       Validated with one klein Base 9B checkpoint; other checkpoints remain untested.
                                       {format === "Q5_K_M" && " Q5 matches native output; visible pose/composition drift versus the original was observed with two LoRAs."}
                                     </p>

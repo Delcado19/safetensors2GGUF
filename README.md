@@ -938,15 +938,35 @@ also match native on 16 schematic files (400 tensors); see [Q4 file validation](
 The [complete FLUX Q4_K_M comparison](docs/flux-q4m-full-model-validation.md) now also matches all 201 native
 tensor payloads/types/shapes and metadata. Supplied Python/native Q4_K_M renders
 are pixel-identical with two LoRAs; the same-seed original shows Visible drift in
-pose/composition. Full Q4_K_S, broader quality and app integration remain open; native Q4 defaults are unchanged.
+pose/composition. Full Q4_K_S and broader quality remain open; native Q4 defaults are unchanged.
 The [compiled CPU writer follow-up](docs/flux-compiled-kernel-full-model-validation.md)
 retains all 201 native-equal Q4_K_M payloads and the previous Python file hash,
 with a 461.685 s write/readback/checksum run. Explicit library/hash selection is
-research-only; the Workbench, packaged tools and platform support are unchanged.
+research-only. The later Windows Workbench integration is described below.
 Full Q5_K_M and Q6_K follow-ups also retain all 201 native-equal payloads per
 format and the earlier Python file hashes, with 410.520 s and 315.509 s runs.
 An [offline kernel package builder](docs/compiled-kernel-package.md) now records
-host/source/checksum/license information and 435 native self-tests. The research
+host/source/checksum/license information and originally 435 native self-tests
+(now 725, including Q2_K/Q3_K). The research
 CLI can select --kernel-package instead of a manual DLL/hash pair; actual Windows
-package builds and all four schematic preset exports pass. Release packaging,
-other platforms and Workbench integration remain open.
+package builds and the original four schematic preset exports pass. Windows
+Workbench integration now ships a DLL; other platforms and clean-machine
+application qualification remain open.
+
+
+### Bundled FLUX CPU kernel (Windows x86_64)
+
+Select **Bundled CPU kernel - FLUX only (experimental)** in the Workbench for
+Q2_K, Q3_K_M, Q4_K_S, Q4_K_M, Q5_K_M or Q6_K. The shipped verified DLL needs no compiler or
+external quantizer. Native remains the default. Other platforms and clean-machine
+qualification remain open. See [packaging](docs/compiled-kernel-package.md).
+
+The bundled FLUX CPU writer uses bounded parallel C calls (up to eight workers)
+and logs separate preparation, encode/write, readback and file-hash timings.
+Controlled small-slice benchmarks retain byte-identical serial/native outputs;
+a complete FLUX.2 klein Base 9B Q2_K conversion takes 115.863 s and reproduces
+the earlier output SHA256. A controlled full-checkpoint speed ratio remains unmeasured.
+
+With **Keep intermediate** disabled, compiled FLUX jobs spool final K-quant bytes
+directly after shared float preparation, avoiding a complete F16 GGUF intermediate.
+Enabling the checkbox retains the previous two-stage comparison path.

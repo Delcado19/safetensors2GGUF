@@ -21,3 +21,21 @@ scripts/reference_q4_k.py text eol=lf
 scripts/check_compiled_kernel.py text eol=lf
 scripts/compiled_kernel_package.py text eol=lf
 tools/converter-kernel/* text eol=lf
+
+# Shipped native package hashes cover exact bytes, including sources and license.
+third_party/cpu-kernels/** -text whitespace=cr-at-eol,-blank-at-eof
+# Current integration evidence hashes these sources and deterministic golden data.
+conversion_service.py text eol=lf
+web_api.py text eol=lf
+frontend/src/main.tsx text eol=lf
+scripts/check_flux_q6_path.py text eol=lf
+data/q2-q3-kernel-goldens.json text eol=lf
+data/compiled-kernel-levels-validation.json text eol=lf
+
+# Parallel writer qualification records the benchmark script checksum.
+scripts/benchmark_compiled_writer.py text eol=lf
+
+# Direct final-spool qualification records these source checksums.
+convert.py text eol=lf
+compiled_flux_writer.py text eol=lf
+scripts/benchmark_compiled_preparation.py text eol=lf

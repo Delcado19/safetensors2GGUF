@@ -1,9 +1,11 @@
-cmake_minimum_required(VERSION 3.14...3.28)
+cmake_minimum_required(VERSION 3.15...3.28)
 project(converter_kernel C CXX)
 
 if(NOT DEFINED REFERENCE_SOURCE)
     message(FATAL_ERROR "REFERENCE_SOURCE must point to verified frozen b3962 sources")
 endif()
+# Ship the Windows runtime inside the DLL; users do not install a compiler/redist.
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 foreach(option NATIVE AVX AVX2 AVX512 FMA F16C OPENMP CUDA METAL BLAS VULKAN KOMPUTE CCACHE)

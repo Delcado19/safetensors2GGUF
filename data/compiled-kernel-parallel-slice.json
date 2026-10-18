@@ -1,0 +1,233 @@
+{
+  "scope": "Warm prepared real-weight slice; excludes full-model I/O/preparation/readback. Parallel candidate is not an application default.",
+  "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\diffusion_models\\Flux.2 Klein 9B-base\\flux-2-klein-base-9b.safetensors",
+  "tensor": "double_blocks.0.img_attn.proj.weight",
+  "values": 4194304,
+  "input_sha256": "7cbdd8eac918c89bd6c27da81007d8642902ae629ab23cc377d365a79aadc626",
+  "slice_read_and_preparation_seconds": 0.033036699998774566,
+  "cpu_count": 32,
+  "kernel_sha256": "f0e914a6fa07d1050d03e99837567798d80a83f7c3179bd4e1e632ed821506c4",
+  "trials": [
+    {
+      "bits": 2,
+      "workers": 1,
+      "seconds": [
+        0.15543690000049537,
+        0.16534970000066096,
+        0.15522719999898982
+      ],
+      "median_seconds": 0.15543690000049537,
+      "payload_sha256": "738cf122109b9fc28af0bc4454105add64afb93a9a706c04bed97bcdfd5cc8fd"
+    },
+    {
+      "bits": 2,
+      "workers": 2,
+      "seconds": [
+        0.09519130000080622,
+        0.11123109999971348,
+        0.0878714000009495
+      ],
+      "median_seconds": 0.09519130000080622,
+      "payload_sha256": "738cf122109b9fc28af0bc4454105add64afb93a9a706c04bed97bcdfd5cc8fd"
+    },
+    {
+      "bits": 2,
+      "workers": 4,
+      "seconds": [
+        0.05776520000108576,
+        0.054251100000328734,
+        0.06262760000026901
+      ],
+      "median_seconds": 0.05776520000108576,
+      "payload_sha256": "738cf122109b9fc28af0bc4454105add64afb93a9a706c04bed97bcdfd5cc8fd"
+    },
+    {
+      "bits": 2,
+      "workers": 8,
+      "seconds": [
+        0.033660799999779556,
+        0.033214200000657,
+        0.03279880000081903
+      ],
+      "median_seconds": 0.033214200000657,
+      "payload_sha256": "738cf122109b9fc28af0bc4454105add64afb93a9a706c04bed97bcdfd5cc8fd"
+    },
+    {
+      "bits": 3,
+      "workers": 1,
+      "seconds": [
+        0.042647100000976934,
+        0.0406976999984181,
+        0.0386662000000797
+      ],
+      "median_seconds": 0.0406976999984181,
+      "payload_sha256": "82696452ea2f45d7502ca19c473b5e2bd19c79f3f7df3eb4eacf5db93d418dda"
+    },
+    {
+      "bits": 3,
+      "workers": 2,
+      "seconds": [
+        0.029485500001101173,
+        0.027875799998582806,
+        0.03161290000025474
+      ],
+      "median_seconds": 0.029485500001101173,
+      "payload_sha256": "82696452ea2f45d7502ca19c473b5e2bd19c79f3f7df3eb4eacf5db93d418dda"
+    },
+    {
+      "bits": 3,
+      "workers": 4,
+      "seconds": [
+        0.015372099998785416,
+        0.015313800000512856,
+        0.01416600000084145
+      ],
+      "median_seconds": 0.015313800000512856,
+      "payload_sha256": "82696452ea2f45d7502ca19c473b5e2bd19c79f3f7df3eb4eacf5db93d418dda"
+    },
+    {
+      "bits": 3,
+      "workers": 8,
+      "seconds": [
+        0.009887000000162516,
+        0.010149399999136222,
+        0.009568600000420702
+      ],
+      "median_seconds": 0.009887000000162516,
+      "payload_sha256": "82696452ea2f45d7502ca19c473b5e2bd19c79f3f7df3eb4eacf5db93d418dda"
+    },
+    {
+      "bits": 4,
+      "workers": 1,
+      "seconds": [
+        0.17354080000040994,
+        0.17129970000132744,
+        0.17601689999901282
+      ],
+      "median_seconds": 0.17354080000040994,
+      "payload_sha256": "bdb9bb09d3097fe9a9d9ffee756351fa20ab16537fcb50f0b4b5103752a63540"
+    },
+    {
+      "bits": 4,
+      "workers": 2,
+      "seconds": [
+        0.13380940000024566,
+        0.11820850000003702,
+        0.15358569999989413
+      ],
+      "median_seconds": 0.13380940000024566,
+      "payload_sha256": "bdb9bb09d3097fe9a9d9ffee756351fa20ab16537fcb50f0b4b5103752a63540"
+    },
+    {
+      "bits": 4,
+      "workers": 4,
+      "seconds": [
+        0.060715499999787426,
+        0.06112730000131705,
+        0.07653019999997923
+      ],
+      "median_seconds": 0.06112730000131705,
+      "payload_sha256": "bdb9bb09d3097fe9a9d9ffee756351fa20ab16537fcb50f0b4b5103752a63540"
+    },
+    {
+      "bits": 4,
+      "workers": 8,
+      "seconds": [
+        0.037111499999809894,
+        0.03786560000116879,
+        0.03725240000130725
+      ],
+      "median_seconds": 0.03725240000130725,
+      "payload_sha256": "bdb9bb09d3097fe9a9d9ffee756351fa20ab16537fcb50f0b4b5103752a63540"
+    },
+    {
+      "bits": 5,
+      "workers": 1,
+      "seconds": [
+        0.1488153999998758,
+        0.15220070000032138,
+        0.14925729999959003
+      ],
+      "median_seconds": 0.14925729999959003,
+      "payload_sha256": "22fbb99df1c73bb95f98e1ef399a63ed7f91760b480108756223400cd289517a"
+    },
+    {
+      "bits": 5,
+      "workers": 2,
+      "seconds": [
+        0.09033920000001672,
+        0.08673579999958747,
+        0.12477729999955045
+      ],
+      "median_seconds": 0.09033920000001672,
+      "payload_sha256": "22fbb99df1c73bb95f98e1ef399a63ed7f91760b480108756223400cd289517a"
+    },
+    {
+      "bits": 5,
+      "workers": 4,
+      "seconds": [
+        0.0519334999989951,
+        0.06297269999959099,
+        0.05220269999881566
+      ],
+      "median_seconds": 0.05220269999881566,
+      "payload_sha256": "22fbb99df1c73bb95f98e1ef399a63ed7f91760b480108756223400cd289517a"
+    },
+    {
+      "bits": 5,
+      "workers": 8,
+      "seconds": [
+        0.0318251999997301,
+        0.03144059999976889,
+        0.031930999999531195
+      ],
+      "median_seconds": 0.0318251999997301,
+      "payload_sha256": "22fbb99df1c73bb95f98e1ef399a63ed7f91760b480108756223400cd289517a"
+    },
+    {
+      "bits": 6,
+      "workers": 1,
+      "seconds": [
+        0.12340800000129093,
+        0.10878039999988687,
+        0.10972269999911077
+      ],
+      "median_seconds": 0.10972269999911077,
+      "payload_sha256": "1502ec6e8da70c52a22e4cbdf9fa65d0f537f9053cbfc2f25e35158ba80029c8"
+    },
+    {
+      "bits": 6,
+      "workers": 2,
+      "seconds": [
+        0.09553730000152427,
+        0.07624110000142537,
+        0.07331969999904686
+      ],
+      "median_seconds": 0.07624110000142537,
+      "payload_sha256": "1502ec6e8da70c52a22e4cbdf9fa65d0f537f9053cbfc2f25e35158ba80029c8"
+    },
+    {
+      "bits": 6,
+      "workers": 4,
+      "seconds": [
+        0.04657229999975243,
+        0.04598789999909059,
+        0.039813800000047195
+      ],
+      "median_seconds": 0.04598789999909059,
+      "payload_sha256": "1502ec6e8da70c52a22e4cbdf9fa65d0f537f9053cbfc2f25e35158ba80029c8"
+    },
+    {
+      "bits": 6,
+      "workers": 8,
+      "seconds": [
+        0.02545549999922514,
+        0.025631499998780782,
+        0.025964000000385568
+      ],
+      "median_seconds": 0.025631499998780782,
+      "payload_sha256": "1502ec6e8da70c52a22e4cbdf9fa65d0f537f9053cbfc2f25e35158ba80029c8"
+    }
+  ],
+  "method": "One discarded warmup and three measured repetitions for each worker count, grouped by format and worker count; includes payload hashing and executor startup, excludes source loading. No exclusive host load/frequency control."
+}

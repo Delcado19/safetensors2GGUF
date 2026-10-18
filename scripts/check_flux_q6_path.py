@@ -1,4 +1,4 @@
-"""Compare research FLUX Q4/Q5/Q6 K-preset file paths with pinned patched b3962."""
+"""Compare research FLUX K-preset file paths with pinned patched b3962."""
 import argparse
 import hashlib
 import json
@@ -31,7 +31,7 @@ def verified_flux_reference(references):
     return build
 
 
-def compare_path(artifacts, references, *, preset="Q6_K"):
+def compare_path(artifacts, references, *, preset="Q6_K", compiled_kernel=None):
     """Require pinned provenance, then compare types/shapes/bytes and all metadata."""
     if preset not in FLUX_PRESETS:
         raise ValueError("Unsupported FLUX research preset")
@@ -44,7 +44,8 @@ def compare_path(artifacts, references, *, preset="Q6_K"):
                                                     'executable_sha256')},
               'encoder_source_sha256': {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
                   for name in ('scripts/reference_q4_k.py', 'scripts/reference_q5_k.py', 'scripts/reference_q6_k.py')},
-              'encoder_sha256': hashlib.sha256((ROOT / ('scripts/reference_q4_k.py' if preset.startswith('Q4_') else
+              'encoder_sha256': hashlib.sha256((ROOT / ('tools/converter-kernel/kernel.c' if compiled_kernel is not None else
+                                                       'scripts/reference_q4_k.py' if preset.startswith('Q4_') else
                                                        'scripts/reference_q6_k.py' if preset == 'Q6_K' else 'scripts/reference_q5_k.py')).read_bytes()).hexdigest(),
               'q6_encoder_sha256': hashlib.sha256((ROOT / 'scripts/reference_q6_k.py').read_bytes()).hexdigest(),
               'requantizer_sha256': hashlib.sha256((ROOT / 'scripts/requantize_flux_q6.py').read_bytes()).hexdigest(),
@@ -55,7 +56,7 @@ def compare_path(artifacts, references, *, preset="Q6_K"):
                 label = f'{np.dtype(dtype).name}-reverse-{reverse}-unaligned-{odd}'
                 src, ours, native = [artifacts / f'{label}-{name}.gguf' for name in ('input', 'python', 'native')]
                 tensors = fixture_tensors('flux', reverse, odd)
-                if preset.startswith('Q4_') and odd:
+                if preset in ('Q4_K_S', 'Q4_K_M', 'Q3_K_M', 'Q2_K') and odd:
                     # Fallback V consumes the native counter before the following eight aligned V tensors.
                     tensors = {'prefix.to_v.weight': (8, 160), **tensors}
                 # Cover every architecture protection and general exclusion used here.
@@ -63,7 +64,7 @@ def compare_path(artifacts, references, *, preset="Q6_K"):
                                 ('txt_in', 'time_in', 'vector_in', 'guidance_in', 'final_layer',
                                  'blocks.0.attn_norm', 'blocks.0.ffn_gate_inp', 'blocks.0.attn_rel_b')})
                 write_fixture(src, 'flux', tensors, dtype=dtype)
-                requantize(str(src), str(ours), preset=preset)
+                requantize(str(src), str(ours), preset=preset, compiled_kernel=compiled_kernel)
                 result = run_command([str(executable), str(src), str(native), preset, '1'], text=True)
                 native.with_suffix('.log').write_text(result.stdout + result.stderr, encoding='utf-8')
                 if result.returncode:
@@ -88,10 +89,16 @@ def main():
     parser.add_argument('--artifacts', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--references', type=Path, default=ROOT / 'data/converter-policy-comparison.json')
+    parser.add_argument('--kernel-package', type=Path, help='Explicit trusted CPU kernel package')
     args = parser.parse_args()
     if args.output.exists():
         parser.error('Choose a new evidence report path')
-    report = compare_path(args.artifacts, json.loads(args.references.read_text()), preset=args.preset)
+    kernel = None
+    if args.kernel_package:
+        from scripts.compiled_kernel_package import load_package
+        kernel, _ = load_package(args.kernel_package)
+    report = compare_path(args.artifacts, json.loads(args.references.read_text()),
+                          preset=args.preset, compiled_kernel=kernel)
     args.output.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
     raise SystemExit(0 if report['all_equal'] else 1)
 

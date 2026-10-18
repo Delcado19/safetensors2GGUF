@@ -97,7 +97,7 @@ class ConversionRequest(BaseModel):
     precision_profile: Literal['auto', 'conservative', 'qwen_edit_2511', 'z_image_turbo'] = 'auto'
     overwrite: bool = False
     keep_intermediate: bool = False
-    gguf_backend: Literal['native', 'python_flux', 'python_flux_q6'] = 'native'
+    gguf_backend: Literal['native', 'python_flux', 'python_flux_q6', 'compiled_flux'] = 'native'
     threads: int = Field(default=0, ge=0, le=1024)
     executable: str = Field(default='', max_length=4096)
 

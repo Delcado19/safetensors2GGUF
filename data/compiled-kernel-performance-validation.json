@@ -1,0 +1,734 @@
+{
+  "scope": "Warm real-weight slice writer benchmark; excludes imports and full-model I/O. Serial and parallel timing includes encode/write/readback/file hash. No inference.",
+  "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\diffusion_models\\Flux.2 Klein 9B-base\\flux-2-klein-base-9b.safetensors",
+  "source_tensor": "double_blocks.0.img_attn.proj.weight",
+  "slice_shape": [
+    1024,
+    4096
+  ],
+  "slice_read_seconds": 0.0042739000000437954,
+  "kernel_verification_seconds": 0.032824199999595294,
+  "float_preparation_seconds": 0.03177299999879324,
+  "cpu_count": 32,
+  "parallel_workers": 8,
+  "kernel_sha256": "f0e914a6fa07d1050d03e99837567798d80a83f7c3179bd4e1e632ed821506c4",
+  "native_reference": {
+    "id": "llama-b3962",
+    "commit": "c8c07d658a6cefc5a50cfdf6be7d726503612303",
+    "archive_sha256": "13c8e23aedcc9a519cb3eafe95381e20dd9c4819ffee823b77c1b85a8d5cb6c4",
+    "city96_patch_sha256": "3f486d5be5a359061daa3ff208acae5afe6233262894b44103843914d7b986fa",
+    "patched_files_sha256": {
+      "ggml/include/ggml.h": "2efd31c78e5c8727fd3c1ff713e96c4044a15e7a575bd3a19a91112a0b1a418c",
+      "ggml/src/ggml.c": "e4a23e0c636a1629039b0b5e064f3ac1df750f07f6556a9759619e987e1d5d9f",
+      "src/llama.cpp": "cc93629de04b4aa975e0f1ba9ac61826122c5ad9c32e6e78632cff033bf466ba"
+    },
+    "compatibility_header_sha256": "49bf463353afdf767da4641567b8f3b2a5146966c472537ee256732d7a7844f8",
+    "compiler_version": "19.51.36260.0",
+    "commands": [
+      [
+        "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe",
+        "-S",
+        "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\kernel-levels-verified-2026-10-18\\quantizer\\source",
+        "-B",
+        "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\kernel-levels-verified-2026-10-18\\quantizer\\build",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DBUILD_SHARED_LIBS=OFF",
+        "-DGGML_NATIVE=OFF",
+        "-DGGML_AVX=OFF",
+        "-DGGML_AVX2=OFF",
+        "-DGGML_AVX512=OFF",
+        "-DGGML_FMA=OFF",
+        "-DGGML_F16C=OFF",
+        "-DGGML_OPENMP=OFF",
+        "-DGGML_CUDA=OFF",
+        "-DGGML_METAL=OFF",
+        "-DGGML_BLAS=OFF",
+        "-DGGML_VULKAN=OFF",
+        "-DGGML_KOMPUTE=OFF",
+        "-DGGML_CCACHE=OFF",
+        "-DLLAMA_CURL=OFF",
+        "-DLLAMA_OPENSSL=OFF",
+        "-DLLAMA_BUILD_TESTS=OFF",
+        "-DLLAMA_BUILD_SERVER=OFF",
+        "-DCMAKE_CXX_FLAGS=/FI\"C:/Users/Delcado/Documents/Software_Projects/ComfyUI/safetensors2GGUF/tools/converter-reference/compat-chrono.h\""
+      ],
+      [
+        "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe",
+        "--build",
+        "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\kernel-levels-verified-2026-10-18\\quantizer\\build",
+        "--config",
+        "Release",
+        "--target",
+        "llama-quantize",
+        "-j",
+        "2"
+      ]
+    ],
+    "flags": [
+      "BUILD_SHARED_LIBS:BOOL=OFF",
+      "CMAKE_CXX_FLAGS:STRING=/FI\"C:/Users/Delcado/Documents/Software_Projects/ComfyUI/safetensors2GGUF/tools/converter-reference/compat-chrono.h\"",
+      "CMAKE_CXX_FLAGS_DEBUG:STRING=/MDd /Zi /Ob0 /Od /RTC1",
+      "CMAKE_CXX_FLAGS_MINSIZEREL:STRING=/MD /O1 /Ob1 /DNDEBUG",
+      "CMAKE_CXX_FLAGS_RELEASE:STRING=/MD /O2 /Ob2 /DNDEBUG",
+      "CMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=/MD /Zi /O2 /Ob1 /DNDEBUG",
+      "CMAKE_C_FLAGS:STRING=/DWIN32 /D_WINDOWS /W3",
+      "CMAKE_C_FLAGS_DEBUG:STRING=/MDd /Zi /Ob0 /Od /RTC1",
+      "CMAKE_C_FLAGS_MINSIZEREL:STRING=/MD /O1 /Ob1 /DNDEBUG",
+      "CMAKE_C_FLAGS_RELEASE:STRING=/MD /O2 /Ob2 /DNDEBUG",
+      "CMAKE_C_FLAGS_RELWITHDEBINFO:STRING=/MD /Zi /O2 /Ob1 /DNDEBUG",
+      "GGML_ACCELERATE:BOOL=ON",
+      "GGML_ALL_WARNINGS_3RD_PARTY:BOOL=OFF",
+      "GGML_AMX_BF16:BOOL=OFF",
+      "GGML_AMX_INT8:BOOL=OFF",
+      "GGML_AMX_TILE:BOOL=OFF",
+      "GGML_AVX:BOOL=OFF",
+      "GGML_AVX2:BOOL=OFF",
+      "GGML_AVX512:BOOL=OFF",
+      "GGML_AVX512_BF16:BOOL=OFF",
+      "GGML_AVX512_VBMI:BOOL=OFF",
+      "GGML_AVX512_VNNI:BOOL=OFF",
+      "GGML_BLAS:BOOL=OFF",
+      "GGML_BLAS_VENDOR:STRING=Generic",
+      "GGML_BUILD_EXAMPLES:BOOL=OFF",
+      "GGML_BUILD_TESTS:BOOL=OFF",
+      "GGML_CCACHE:BOOL=OFF",
+      "GGML_CPU_HBM:BOOL=OFF",
+      "GGML_CUDA:BOOL=OFF",
+      "GGML_CUDA_DMMV_X:STRING=32",
+      "GGML_CUDA_F16:BOOL=OFF",
+      "GGML_CUDA_FA_ALL_QUANTS:BOOL=OFF",
+      "GGML_CUDA_FORCE_CUBLAS:BOOL=OFF",
+      "GGML_CUDA_FORCE_DMMV:BOOL=OFF",
+      "GGML_CUDA_FORCE_MMQ:BOOL=OFF",
+      "GGML_CUDA_GRAPHS:BOOL=ON",
+      "GGML_CUDA_KQUANTS_ITER:STRING=2",
+      "GGML_CUDA_MMV_Y:STRING=1",
+      "GGML_CUDA_NO_PEER_COPY:BOOL=OFF",
+      "GGML_CUDA_NO_VMM:BOOL=OFF",
+      "GGML_CUDA_PEER_MAX_BATCH_SIZE:STRING=128",
+      "GGML_F16C:UNINITIALIZED=OFF",
+      "GGML_FMA:BOOL=OFF",
+      "GGML_GPROF:BOOL=OFF",
+      "GGML_HIPBLAS:BOOL=OFF",
+      "GGML_HIP_UMA:BOOL=OFF",
+      "GGML_KOMPUTE:BOOL=OFF",
+      "GGML_LASX:BOOL=ON",
+      "GGML_LLAMAFILE:BOOL=ON",
+      "GGML_LSX:BOOL=ON",
+      "GGML_LTO:BOOL=OFF",
+      "GGML_METAL:BOOL=OFF",
+      "GGML_METAL_EMBED_LIBRARY:BOOL=OFF",
+      "GGML_METAL_MACOSX_VERSION_MIN:STRING=",
+      "GGML_METAL_NDEBUG:BOOL=OFF",
+      "GGML_METAL_SHADER_DEBUG:BOOL=OFF",
+      "GGML_METAL_STD:STRING=",
+      "GGML_MUSA:BOOL=OFF",
+      "GGML_NATIVE:BOOL=OFF",
+      "GGML_OPENMP:BOOL=OFF",
+      "GGML_RPC:BOOL=OFF",
+      "GGML_SCHED_MAX_COPIES:STRING=4",
+      "GGML_STATIC:BOOL=OFF",
+      "GGML_SVE:BOOL=OFF",
+      "GGML_SYCL:BOOL=OFF",
+      "GGML_SYCL_F16:BOOL=OFF",
+      "GGML_SYCL_TARGET:STRING=INTEL",
+      "GGML_VULKAN:BOOL=OFF",
+      "GGML_VULKAN_CHECK_RESULTS:BOOL=OFF",
+      "GGML_VULKAN_DEBUG:BOOL=OFF",
+      "GGML_VULKAN_MEMORY_DEBUG:BOOL=OFF",
+      "GGML_VULKAN_PERF:BOOL=OFF",
+      "GGML_VULKAN_RUN_TESTS:BOOL=OFF",
+      "GGML_VULKAN_SHADER_DEBUG_INFO:BOOL=OFF",
+      "GGML_VULKAN_VALIDATE:BOOL=OFF",
+      "GGML_WIN_VER:STRING=0x602",
+      "LLAMA_ALL_WARNINGS:BOOL=ON",
+      "LLAMA_ALL_WARNINGS_3RD_PARTY:BOOL=OFF",
+      "LLAMA_BIN_INSTALL_DIR:PATH=bin",
+      "LLAMA_BUILD_COMMON:BOOL=ON",
+      "LLAMA_BUILD_EXAMPLES:BOOL=ON",
+      "LLAMA_BUILD_SERVER:BOOL=OFF",
+      "LLAMA_BUILD_TESTS:BOOL=OFF",
+      "LLAMA_CURL:BOOL=OFF",
+      "LLAMA_FATAL_WARNINGS:BOOL=OFF",
+      "LLAMA_INCLUDE_INSTALL_DIR:PATH=include",
+      "LLAMA_LIB_INSTALL_DIR:PATH=lib",
+      "LLAMA_OPENSSL:UNINITIALIZED=OFF",
+      "LLAMA_SANITIZE_ADDRESS:BOOL=OFF",
+      "LLAMA_SANITIZE_THREAD:BOOL=OFF",
+      "LLAMA_SANITIZE_UNDEFINED:BOOL=OFF",
+      "CMAKE_CXX_FLAGS-ADVANCED:INTERNAL=1",
+      "CMAKE_CXX_FLAGS_DEBUG-ADVANCED:INTERNAL=1",
+      "CMAKE_CXX_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1",
+      "CMAKE_CXX_FLAGS_RELEASE-ADVANCED:INTERNAL=1",
+      "CMAKE_CXX_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1",
+      "CMAKE_C_FLAGS-ADVANCED:INTERNAL=1",
+      "CMAKE_C_FLAGS_DEBUG-ADVANCED:INTERNAL=1",
+      "CMAKE_C_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1",
+      "CMAKE_C_FLAGS_RELEASE-ADVANCED:INTERNAL=1",
+      "CMAKE_C_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1"
+    ],
+    "executable": "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\kernel-levels-verified-2026-10-18\\quantizer\\build\\bin\\Release\\llama-quantize.exe",
+    "executable_sha256": "735b934ed643f67b7116e9bc1c217234e6e5990ba1a861fa2cc02139525cdd52"
+  },
+  "results": [
+    {
+      "preset": "Q6_K",
+      "trials": {
+        "serial": [
+          {
+            "total_seconds": 0.14318289999937406,
+            "encode_write_seconds": 0.12953700000070967,
+            "readback_seconds": 0.009250000000974978,
+            "file_hash_seconds": 0.0023794000007910654
+          },
+          {
+            "total_seconds": 0.1538061999999627,
+            "encode_write_seconds": 0.13963309999962803,
+            "readback_seconds": 0.009879499999442487,
+            "file_hash_seconds": 0.002236599999378086
+          },
+          {
+            "total_seconds": 0.13660650000019814,
+            "encode_write_seconds": 0.12270159999934549,
+            "readback_seconds": 0.00981090000095719,
+            "file_hash_seconds": 0.0022308000006887596
+          }
+        ],
+        "parallel": [
+          {
+            "total_seconds": 0.05034619999969436,
+            "encode_write_seconds": 0.03528820000065025,
+            "readback_seconds": 0.010342999999920721,
+            "file_hash_seconds": 0.002292400000442285
+          },
+          {
+            "total_seconds": 0.062355799998840666,
+            "encode_write_seconds": 0.047490699998888886,
+            "readback_seconds": 0.01015459999871382,
+            "file_hash_seconds": 0.002301399999851128
+          },
+          {
+            "total_seconds": 0.06284349999987171,
+            "encode_write_seconds": 0.04694749999907799,
+            "readback_seconds": 0.01070369999979448,
+            "file_hash_seconds": 0.00237109999943641
+          }
+        ]
+      },
+      "median_seconds": {
+        "serial": 0.14318289999937406,
+        "parallel": 0.062355799998840666
+      },
+      "serial_parallel_file_bytes_equal": true,
+      "native_comparison": {
+        "left": "build\\compiled-writer-perf-final-2026-10-18\\Q6_K-parallel.gguf",
+        "right": "build\\compiled-writer-perf-final-2026-10-18\\Q6_K-native.gguf",
+        "tensors": [
+          {
+            "name": "double_blocks.0.img_attn.proj.weight",
+            "right_name": "double_blocks.0.img_attn.proj.weight",
+            "type": "Q6_K",
+            "right_type": "Q6_K",
+            "shape": [
+              1024,
+              4096
+            ],
+            "bytes": 3440640,
+            "left_sha256": "1502ec6e8da70c52a22e4cbdf9fa65d0f537f9053cbfc2f25e35158ba80029c8",
+            "right_sha256": "1502ec6e8da70c52a22e4cbdf9fa65d0f537f9053cbfc2f25e35158ba80029c8",
+            "equal": true
+          },
+          {
+            "name": "img_in.weight",
+            "right_name": "img_in.weight",
+            "type": "F32",
+            "right_type": "F32",
+            "shape": [
+              8,
+              128
+            ],
+            "bytes": 4096,
+            "left_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "right_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "equal": true
+          }
+        ],
+        "comparison_source_sha256": "47d87b0ba88efed711d69d91cc67697ecdfa4848a1541d0c06ccebbf55162f25",
+        "metadata_equal": true,
+        "alignment_equal": true,
+        "tensor_counts_equal": true,
+        "left_sha256": "21631292c07f1046eef9d7c51dc1ba65638542e225cc25acb0752d2193eb2c74",
+        "right_sha256": "281495ca7667ec80fd91f1dea8db4c7f8fdda5f47a7b04fa8fbf1b40a06870d0",
+        "all_equal": true
+      }
+    },
+    {
+      "preset": "Q5_K_M",
+      "trials": {
+        "serial": [
+          {
+            "total_seconds": 0.17856030000075407,
+            "encode_write_seconds": 0.16526420000081998,
+            "readback_seconds": 0.009425500000361353,
+            "file_hash_seconds": 0.001863599998614518
+          },
+          {
+            "total_seconds": 0.17540809999991325,
+            "encode_write_seconds": 0.1621384999998554,
+            "readback_seconds": 0.00954739999906451,
+            "file_hash_seconds": 0.0018832999994629063
+          },
+          {
+            "total_seconds": 0.17757700000038312,
+            "encode_write_seconds": 0.1633428000004642,
+            "readback_seconds": 0.010043000000223401,
+            "file_hash_seconds": 0.002091899999868474
+          }
+        ],
+        "parallel": [
+          {
+            "total_seconds": 0.0695330999988073,
+            "encode_write_seconds": 0.05495610000070883,
+            "readback_seconds": 0.009787100001631188,
+            "file_hash_seconds": 0.0019033999997191131
+          },
+          {
+            "total_seconds": 0.0686956999998074,
+            "encode_write_seconds": 0.054180500001166365,
+            "readback_seconds": 0.010045900000477559,
+            "file_hash_seconds": 0.0019482999996398576
+          },
+          {
+            "total_seconds": 0.07055220000074769,
+            "encode_write_seconds": 0.05562610000015411,
+            "readback_seconds": 0.00995599999987462,
+            "file_hash_seconds": 0.0019351000009919517
+          }
+        ]
+      },
+      "median_seconds": {
+        "serial": 0.17757700000038312,
+        "parallel": 0.0695330999988073
+      },
+      "serial_parallel_file_bytes_equal": true,
+      "native_comparison": {
+        "left": "build\\compiled-writer-perf-final-2026-10-18\\Q5_K_M-parallel.gguf",
+        "right": "build\\compiled-writer-perf-final-2026-10-18\\Q5_K_M-native.gguf",
+        "tensors": [
+          {
+            "name": "double_blocks.0.img_attn.proj.weight",
+            "right_name": "double_blocks.0.img_attn.proj.weight",
+            "type": "Q5_K",
+            "right_type": "Q5_K",
+            "shape": [
+              1024,
+              4096
+            ],
+            "bytes": 2883584,
+            "left_sha256": "22fbb99df1c73bb95f98e1ef399a63ed7f91760b480108756223400cd289517a",
+            "right_sha256": "22fbb99df1c73bb95f98e1ef399a63ed7f91760b480108756223400cd289517a",
+            "equal": true
+          },
+          {
+            "name": "img_in.weight",
+            "right_name": "img_in.weight",
+            "type": "F32",
+            "right_type": "F32",
+            "shape": [
+              8,
+              128
+            ],
+            "bytes": 4096,
+            "left_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "right_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "equal": true
+          }
+        ],
+        "comparison_source_sha256": "47d87b0ba88efed711d69d91cc67697ecdfa4848a1541d0c06ccebbf55162f25",
+        "metadata_equal": true,
+        "alignment_equal": true,
+        "tensor_counts_equal": true,
+        "left_sha256": "8896e106ef9e192c5c8031377aa8a09a55ac582802fe94206f27ecb91d1ddd17",
+        "right_sha256": "c24eb443324faccd3f6941a9e4f67a8a24e110a48f824d5fafa862a72beb6090",
+        "all_equal": true
+      }
+    },
+    {
+      "preset": "Q4_K_S",
+      "trials": {
+        "serial": [
+          {
+            "total_seconds": 0.21321179999904416,
+            "encode_write_seconds": 0.1993521000003966,
+            "readback_seconds": 0.009807899999941583,
+            "file_hash_seconds": 0.0017655999999988126
+          },
+          {
+            "total_seconds": 0.20738639999945008,
+            "encode_write_seconds": 0.1946808000011515,
+            "readback_seconds": 0.009020999999847845,
+            "file_hash_seconds": 0.0017043000007106457
+          },
+          {
+            "total_seconds": 0.20063040000059118,
+            "encode_write_seconds": 0.18818520000058925,
+            "readback_seconds": 0.00888900000063586,
+            "file_hash_seconds": 0.0016739999991841614
+          }
+        ],
+        "parallel": [
+          {
+            "total_seconds": 0.07519680000041262,
+            "encode_write_seconds": 0.06021069999951578,
+            "readback_seconds": 0.00971179999942251,
+            "file_hash_seconds": 0.0024146999985532602
+          },
+          {
+            "total_seconds": 0.0723508999999467,
+            "encode_write_seconds": 0.05966220000118483,
+            "readback_seconds": 0.008582200000091689,
+            "file_hash_seconds": 0.0016797000007500174
+          },
+          {
+            "total_seconds": 0.07263630000124977,
+            "encode_write_seconds": 0.058545199999571196,
+            "readback_seconds": 0.010045999999420019,
+            "file_hash_seconds": 0.0016789000001153909
+          }
+        ]
+      },
+      "median_seconds": {
+        "serial": 0.20738639999945008,
+        "parallel": 0.07263630000124977
+      },
+      "serial_parallel_file_bytes_equal": true,
+      "native_comparison": {
+        "left": "build\\compiled-writer-perf-final-2026-10-18\\Q4_K_S-parallel.gguf",
+        "right": "build\\compiled-writer-perf-final-2026-10-18\\Q4_K_S-native.gguf",
+        "tensors": [
+          {
+            "name": "double_blocks.0.img_attn.proj.weight",
+            "right_name": "double_blocks.0.img_attn.proj.weight",
+            "type": "Q4_K",
+            "right_type": "Q4_K",
+            "shape": [
+              1024,
+              4096
+            ],
+            "bytes": 2359296,
+            "left_sha256": "bdb9bb09d3097fe9a9d9ffee756351fa20ab16537fcb50f0b4b5103752a63540",
+            "right_sha256": "bdb9bb09d3097fe9a9d9ffee756351fa20ab16537fcb50f0b4b5103752a63540",
+            "equal": true
+          },
+          {
+            "name": "img_in.weight",
+            "right_name": "img_in.weight",
+            "type": "F32",
+            "right_type": "F32",
+            "shape": [
+              8,
+              128
+            ],
+            "bytes": 4096,
+            "left_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "right_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "equal": true
+          }
+        ],
+        "comparison_source_sha256": "47d87b0ba88efed711d69d91cc67697ecdfa4848a1541d0c06ccebbf55162f25",
+        "metadata_equal": true,
+        "alignment_equal": true,
+        "tensor_counts_equal": true,
+        "left_sha256": "8bf8f385f6005fc74d36f5deb958419664c4ba67e1e4da1d575972bbea6d4b9e",
+        "right_sha256": "5ae3c709fc9a8b0bcb176f193d69b0678b374004f8c3d4f835f80328e2710a9e",
+        "all_equal": true
+      }
+    },
+    {
+      "preset": "Q4_K_M",
+      "trials": {
+        "serial": [
+          {
+            "total_seconds": 0.20400599999993574,
+            "encode_write_seconds": 0.1908930000008695,
+            "readback_seconds": 0.00946750000002794,
+            "file_hash_seconds": 0.0017043999996531056
+          },
+          {
+            "total_seconds": 0.20296760000019276,
+            "encode_write_seconds": 0.18973860000005516,
+            "readback_seconds": 0.00944080000044778,
+            "file_hash_seconds": 0.0018297999995411374
+          },
+          {
+            "total_seconds": 0.21376090000012482,
+            "encode_write_seconds": 0.2010004999992816,
+            "readback_seconds": 0.008850799998981529,
+            "file_hash_seconds": 0.0016907999997783918
+          }
+        ],
+        "parallel": [
+          {
+            "total_seconds": 0.07456470000033733,
+            "encode_write_seconds": 0.06081319999975676,
+            "readback_seconds": 0.00896650000140653,
+            "file_hash_seconds": 0.001831300000048941
+          },
+          {
+            "total_seconds": 0.07415450000007695,
+            "encode_write_seconds": 0.060712099999364,
+            "readback_seconds": 0.009292500000810833,
+            "file_hash_seconds": 0.0016517000003659632
+          },
+          {
+            "total_seconds": 0.07522559999961231,
+            "encode_write_seconds": 0.06056140000146115,
+            "readback_seconds": 0.009799699999348377,
+            "file_hash_seconds": 0.0016973000001598848
+          }
+        ]
+      },
+      "median_seconds": {
+        "serial": 0.20400599999993574,
+        "parallel": 0.07456470000033733
+      },
+      "serial_parallel_file_bytes_equal": true,
+      "native_comparison": {
+        "left": "build\\compiled-writer-perf-final-2026-10-18\\Q4_K_M-parallel.gguf",
+        "right": "build\\compiled-writer-perf-final-2026-10-18\\Q4_K_M-native.gguf",
+        "tensors": [
+          {
+            "name": "double_blocks.0.img_attn.proj.weight",
+            "right_name": "double_blocks.0.img_attn.proj.weight",
+            "type": "Q4_K",
+            "right_type": "Q4_K",
+            "shape": [
+              1024,
+              4096
+            ],
+            "bytes": 2359296,
+            "left_sha256": "bdb9bb09d3097fe9a9d9ffee756351fa20ab16537fcb50f0b4b5103752a63540",
+            "right_sha256": "bdb9bb09d3097fe9a9d9ffee756351fa20ab16537fcb50f0b4b5103752a63540",
+            "equal": true
+          },
+          {
+            "name": "img_in.weight",
+            "right_name": "img_in.weight",
+            "type": "F32",
+            "right_type": "F32",
+            "shape": [
+              8,
+              128
+            ],
+            "bytes": 4096,
+            "left_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "right_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "equal": true
+          }
+        ],
+        "comparison_source_sha256": "47d87b0ba88efed711d69d91cc67697ecdfa4848a1541d0c06ccebbf55162f25",
+        "metadata_equal": true,
+        "alignment_equal": true,
+        "tensor_counts_equal": true,
+        "left_sha256": "68dccac1514cb9df67163fc79022950a4659c6a01523ccaa38e1cefc202f2bac",
+        "right_sha256": "1fda9e807dd0a87b6479d26b93027bc3165fb6c7e447f169fe8c128967fe4b24",
+        "all_equal": true
+      }
+    },
+    {
+      "preset": "Q3_K_M",
+      "trials": {
+        "serial": [
+          {
+            "total_seconds": 0.06514040000001842,
+            "encode_write_seconds": 0.053321400000641006,
+            "readback_seconds": 0.008791199999905075,
+            "file_hash_seconds": 0.001254799999514944
+          },
+          {
+            "total_seconds": 0.06471339999916381,
+            "encode_write_seconds": 0.0526255000004312,
+            "readback_seconds": 0.008951800000431831,
+            "file_hash_seconds": 0.001334599999609054
+          },
+          {
+            "total_seconds": 0.06649789999937639,
+            "encode_write_seconds": 0.054739700000936864,
+            "readback_seconds": 0.008689000000231317,
+            "file_hash_seconds": 0.001235100000485545
+          }
+        ],
+        "parallel": [
+          {
+            "total_seconds": 0.0424617999997281,
+            "encode_write_seconds": 0.029799400001138565,
+            "readback_seconds": 0.00885769999877084,
+            "file_hash_seconds": 0.001282100000025821
+          },
+          {
+            "total_seconds": 0.044059699999706936,
+            "encode_write_seconds": 0.03127420000055281,
+            "readback_seconds": 0.008948300001065945,
+            "file_hash_seconds": 0.001276700000744313
+          },
+          {
+            "total_seconds": 0.04063759999917238,
+            "encode_write_seconds": 0.028834400000050664,
+            "readback_seconds": 0.008002700000361074,
+            "file_hash_seconds": 0.001302399999985937
+          }
+        ]
+      },
+      "median_seconds": {
+        "serial": 0.06514040000001842,
+        "parallel": 0.0424617999997281
+      },
+      "serial_parallel_file_bytes_equal": true,
+      "native_comparison": {
+        "left": "build\\compiled-writer-perf-final-2026-10-18\\Q3_K_M-parallel.gguf",
+        "right": "build\\compiled-writer-perf-final-2026-10-18\\Q3_K_M-native.gguf",
+        "tensors": [
+          {
+            "name": "double_blocks.0.img_attn.proj.weight",
+            "right_name": "double_blocks.0.img_attn.proj.weight",
+            "type": "Q3_K",
+            "right_type": "Q3_K",
+            "shape": [
+              1024,
+              4096
+            ],
+            "bytes": 1802240,
+            "left_sha256": "82696452ea2f45d7502ca19c473b5e2bd19c79f3f7df3eb4eacf5db93d418dda",
+            "right_sha256": "82696452ea2f45d7502ca19c473b5e2bd19c79f3f7df3eb4eacf5db93d418dda",
+            "equal": true
+          },
+          {
+            "name": "img_in.weight",
+            "right_name": "img_in.weight",
+            "type": "F32",
+            "right_type": "F32",
+            "shape": [
+              8,
+              128
+            ],
+            "bytes": 4096,
+            "left_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "right_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "equal": true
+          }
+        ],
+        "comparison_source_sha256": "47d87b0ba88efed711d69d91cc67697ecdfa4848a1541d0c06ccebbf55162f25",
+        "metadata_equal": true,
+        "alignment_equal": true,
+        "tensor_counts_equal": true,
+        "left_sha256": "c1396a167d33f4896512178c1bf661e2757ab716f3554a256fbb2c0c5f4d500a",
+        "right_sha256": "fb2a01832be7d360fae28e3559ca2d8cb195231381df57000678bd2827c9b470",
+        "all_equal": true
+      }
+    },
+    {
+      "preset": "Q2_K",
+      "trials": {
+        "serial": [
+          {
+            "total_seconds": 0.19583109999985027,
+            "encode_write_seconds": 0.1831689999999071,
+            "readback_seconds": 0.008962099998825579,
+            "file_hash_seconds": 0.0011990999992121942
+          },
+          {
+            "total_seconds": 0.1820490999998583,
+            "encode_write_seconds": 0.17073309999977937,
+            "readback_seconds": 0.008178999998563086,
+            "file_hash_seconds": 0.0011307000004308065
+          },
+          {
+            "total_seconds": 0.17875110000022687,
+            "encode_write_seconds": 0.16798480000034033,
+            "readback_seconds": 0.007568999999421067,
+            "file_hash_seconds": 0.0011677999991661636
+          }
+        ],
+        "parallel": [
+          {
+            "total_seconds": 0.06765740000082587,
+            "encode_write_seconds": 0.05432999999902677,
+            "readback_seconds": 0.00919900000008056,
+            "file_hash_seconds": 0.0010892999998759478
+          },
+          {
+            "total_seconds": 0.06740259999969567,
+            "encode_write_seconds": 0.05477659999996831,
+            "readback_seconds": 0.008962500000052387,
+            "file_hash_seconds": 0.0011479999993753154
+          },
+          {
+            "total_seconds": 0.06768539999939094,
+            "encode_write_seconds": 0.05578789999890432,
+            "readback_seconds": 0.008346300000994233,
+            "file_hash_seconds": 0.001130399999965448
+          }
+        ]
+      },
+      "median_seconds": {
+        "serial": 0.1820490999998583,
+        "parallel": 0.06765740000082587
+      },
+      "serial_parallel_file_bytes_equal": true,
+      "native_comparison": {
+        "left": "build\\compiled-writer-perf-final-2026-10-18\\Q2_K-parallel.gguf",
+        "right": "build\\compiled-writer-perf-final-2026-10-18\\Q2_K-native.gguf",
+        "tensors": [
+          {
+            "name": "double_blocks.0.img_attn.proj.weight",
+            "right_name": "double_blocks.0.img_attn.proj.weight",
+            "type": "Q2_K",
+            "right_type": "Q2_K",
+            "shape": [
+              1024,
+              4096
+            ],
+            "bytes": 1376256,
+            "left_sha256": "738cf122109b9fc28af0bc4454105add64afb93a9a706c04bed97bcdfd5cc8fd",
+            "right_sha256": "738cf122109b9fc28af0bc4454105add64afb93a9a706c04bed97bcdfd5cc8fd",
+            "equal": true
+          },
+          {
+            "name": "img_in.weight",
+            "right_name": "img_in.weight",
+            "type": "F32",
+            "right_type": "F32",
+            "shape": [
+              8,
+              128
+            ],
+            "bytes": 4096,
+            "left_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "right_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "equal": true
+          }
+        ],
+        "comparison_source_sha256": "47d87b0ba88efed711d69d91cc67697ecdfa4848a1541d0c06ccebbf55162f25",
+        "metadata_equal": true,
+        "alignment_equal": true,
+        "tensor_counts_equal": true,
+        "left_sha256": "ba97246236e7f0368dbc5a3ed10819074af9fad9caa2cb56ff51988ce52fcd61",
+        "right_sha256": "c604827aacd1f0cbb5a96f776c0c7d98a6e36a25ab0e3697b13773c9aacb82e4",
+        "all_equal": true
+      }
+    }
+  ],
+  "application_phase_logs": [
+    "INFO: Kernel verification/self-tests: 0.028 s",
+    "INFO: F16 preparation/write: 0.028 s",
+    "INFO: FLUX encode_write_seconds: 0.056 s",
+    "INFO: FLUX readback_seconds: 0.009 s",
+    "INFO: FLUX file_hash_seconds: 0.001 s"
+  ],
+  "source_stat_unchanged": true,
+  "source_code_sha256": {
+    "conversion_service.py": "d8f5afeb89eb4cf60f4daa59c7c9a013c562ae4a0551b78a3c33a1c61901f48b",
+    "scripts/requantize_flux_q6.py": "16d71b5c290d2d7ae9cd18da71307487847910dc754d9a8d48536269d1301bf0",
+    "scripts/benchmark_compiled_writer.py": "4a9cc6b0fb26a4f46baa87d31f8b40335f4f3c4179e10b212fa2049ce5c96c7c"
+  }
+}

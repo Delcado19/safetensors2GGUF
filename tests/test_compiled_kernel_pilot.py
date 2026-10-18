@@ -18,8 +18,11 @@ def test_compiled_pilot_records_native_parity_and_source_provenance():
     assert report['build']['archive_sha256'] == report['native_reference']['archive_sha256']
     assert len(report['parity']) == 3
     assert all(row['all_equal'] and row['golden_inputs'] == 166 for row in report['parity'])
+    # Historical reports retain their original hashes; current adapters are requalified below.
+    followup = json.loads((root / 'data/compiled-kernel-levels-validation.json').read_text())
     for name, digest in report['source_code_sha256'].items():
-        assert hashlib.sha256((root / name).read_bytes()).hexdigest() == digest
+        expected = followup['source_code_sha256'].get(name, digest)
+        assert hashlib.sha256((root / name).read_bytes()).hexdigest() == expected
     for row in report['benchmarks']:
         assert row['native_equal']
         for backend in ('numpy', 'compiled', 'native_direct'):

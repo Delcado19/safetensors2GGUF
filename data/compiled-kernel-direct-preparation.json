@@ -1,0 +1,778 @@
+{
+  "scope": "Warm application slice timings and logical payload I/O; not full-model or physical disk throughput. No inference or large conversion.",
+  "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\diffusion_models\\Flux.2 Klein 9B-base\\flux-2-klein-base-9b.safetensors",
+  "source_bytes": 18157185168,
+  "source_mtime_ns": 1786560662614530300,
+  "slice_shape": [
+    1024,
+    4096
+  ],
+  "subset_sha256": "2bb4697c03b491c727d92a3cb4201c8cabcc149632b0791f35f8cb5afa663bf0",
+  "native_reference": {
+    "id": "llama-b3962",
+    "commit": "c8c07d658a6cefc5a50cfdf6be7d726503612303",
+    "archive_sha256": "13c8e23aedcc9a519cb3eafe95381e20dd9c4819ffee823b77c1b85a8d5cb6c4",
+    "city96_patch_sha256": "3f486d5be5a359061daa3ff208acae5afe6233262894b44103843914d7b986fa",
+    "patched_files_sha256": {
+      "ggml/include/ggml.h": "2efd31c78e5c8727fd3c1ff713e96c4044a15e7a575bd3a19a91112a0b1a418c",
+      "ggml/src/ggml.c": "e4a23e0c636a1629039b0b5e064f3ac1df750f07f6556a9759619e987e1d5d9f",
+      "src/llama.cpp": "cc93629de04b4aa975e0f1ba9ac61826122c5ad9c32e6e78632cff033bf466ba"
+    },
+    "compatibility_header_sha256": "49bf463353afdf767da4641567b8f3b2a5146966c472537ee256732d7a7844f8",
+    "compiler_version": "19.51.36260.0",
+    "commands": [
+      [
+        "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe",
+        "-S",
+        "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\kernel-levels-verified-2026-10-18\\quantizer\\source",
+        "-B",
+        "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\kernel-levels-verified-2026-10-18\\quantizer\\build",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DBUILD_SHARED_LIBS=OFF",
+        "-DGGML_NATIVE=OFF",
+        "-DGGML_AVX=OFF",
+        "-DGGML_AVX2=OFF",
+        "-DGGML_AVX512=OFF",
+        "-DGGML_FMA=OFF",
+        "-DGGML_F16C=OFF",
+        "-DGGML_OPENMP=OFF",
+        "-DGGML_CUDA=OFF",
+        "-DGGML_METAL=OFF",
+        "-DGGML_BLAS=OFF",
+        "-DGGML_VULKAN=OFF",
+        "-DGGML_KOMPUTE=OFF",
+        "-DGGML_CCACHE=OFF",
+        "-DLLAMA_CURL=OFF",
+        "-DLLAMA_OPENSSL=OFF",
+        "-DLLAMA_BUILD_TESTS=OFF",
+        "-DLLAMA_BUILD_SERVER=OFF",
+        "-DCMAKE_CXX_FLAGS=/FI\"C:/Users/Delcado/Documents/Software_Projects/ComfyUI/safetensors2GGUF/tools/converter-reference/compat-chrono.h\""
+      ],
+      [
+        "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe",
+        "--build",
+        "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\kernel-levels-verified-2026-10-18\\quantizer\\build",
+        "--config",
+        "Release",
+        "--target",
+        "llama-quantize",
+        "-j",
+        "2"
+      ]
+    ],
+    "flags": [
+      "BUILD_SHARED_LIBS:BOOL=OFF",
+      "CMAKE_CXX_FLAGS:STRING=/FI\"C:/Users/Delcado/Documents/Software_Projects/ComfyUI/safetensors2GGUF/tools/converter-reference/compat-chrono.h\"",
+      "CMAKE_CXX_FLAGS_DEBUG:STRING=/MDd /Zi /Ob0 /Od /RTC1",
+      "CMAKE_CXX_FLAGS_MINSIZEREL:STRING=/MD /O1 /Ob1 /DNDEBUG",
+      "CMAKE_CXX_FLAGS_RELEASE:STRING=/MD /O2 /Ob2 /DNDEBUG",
+      "CMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=/MD /Zi /O2 /Ob1 /DNDEBUG",
+      "CMAKE_C_FLAGS:STRING=/DWIN32 /D_WINDOWS /W3",
+      "CMAKE_C_FLAGS_DEBUG:STRING=/MDd /Zi /Ob0 /Od /RTC1",
+      "CMAKE_C_FLAGS_MINSIZEREL:STRING=/MD /O1 /Ob1 /DNDEBUG",
+      "CMAKE_C_FLAGS_RELEASE:STRING=/MD /O2 /Ob2 /DNDEBUG",
+      "CMAKE_C_FLAGS_RELWITHDEBINFO:STRING=/MD /Zi /O2 /Ob1 /DNDEBUG",
+      "GGML_ACCELERATE:BOOL=ON",
+      "GGML_ALL_WARNINGS_3RD_PARTY:BOOL=OFF",
+      "GGML_AMX_BF16:BOOL=OFF",
+      "GGML_AMX_INT8:BOOL=OFF",
+      "GGML_AMX_TILE:BOOL=OFF",
+      "GGML_AVX:BOOL=OFF",
+      "GGML_AVX2:BOOL=OFF",
+      "GGML_AVX512:BOOL=OFF",
+      "GGML_AVX512_BF16:BOOL=OFF",
+      "GGML_AVX512_VBMI:BOOL=OFF",
+      "GGML_AVX512_VNNI:BOOL=OFF",
+      "GGML_BLAS:BOOL=OFF",
+      "GGML_BLAS_VENDOR:STRING=Generic",
+      "GGML_BUILD_EXAMPLES:BOOL=OFF",
+      "GGML_BUILD_TESTS:BOOL=OFF",
+      "GGML_CCACHE:BOOL=OFF",
+      "GGML_CPU_HBM:BOOL=OFF",
+      "GGML_CUDA:BOOL=OFF",
+      "GGML_CUDA_DMMV_X:STRING=32",
+      "GGML_CUDA_F16:BOOL=OFF",
+      "GGML_CUDA_FA_ALL_QUANTS:BOOL=OFF",
+      "GGML_CUDA_FORCE_CUBLAS:BOOL=OFF",
+      "GGML_CUDA_FORCE_DMMV:BOOL=OFF",
+      "GGML_CUDA_FORCE_MMQ:BOOL=OFF",
+      "GGML_CUDA_GRAPHS:BOOL=ON",
+      "GGML_CUDA_KQUANTS_ITER:STRING=2",
+      "GGML_CUDA_MMV_Y:STRING=1",
+      "GGML_CUDA_NO_PEER_COPY:BOOL=OFF",
+      "GGML_CUDA_NO_VMM:BOOL=OFF",
+      "GGML_CUDA_PEER_MAX_BATCH_SIZE:STRING=128",
+      "GGML_F16C:UNINITIALIZED=OFF",
+      "GGML_FMA:BOOL=OFF",
+      "GGML_GPROF:BOOL=OFF",
+      "GGML_HIPBLAS:BOOL=OFF",
+      "GGML_HIP_UMA:BOOL=OFF",
+      "GGML_KOMPUTE:BOOL=OFF",
+      "GGML_LASX:BOOL=ON",
+      "GGML_LLAMAFILE:BOOL=ON",
+      "GGML_LSX:BOOL=ON",
+      "GGML_LTO:BOOL=OFF",
+      "GGML_METAL:BOOL=OFF",
+      "GGML_METAL_EMBED_LIBRARY:BOOL=OFF",
+      "GGML_METAL_MACOSX_VERSION_MIN:STRING=",
+      "GGML_METAL_NDEBUG:BOOL=OFF",
+      "GGML_METAL_SHADER_DEBUG:BOOL=OFF",
+      "GGML_METAL_STD:STRING=",
+      "GGML_MUSA:BOOL=OFF",
+      "GGML_NATIVE:BOOL=OFF",
+      "GGML_OPENMP:BOOL=OFF",
+      "GGML_RPC:BOOL=OFF",
+      "GGML_SCHED_MAX_COPIES:STRING=4",
+      "GGML_STATIC:BOOL=OFF",
+      "GGML_SVE:BOOL=OFF",
+      "GGML_SYCL:BOOL=OFF",
+      "GGML_SYCL_F16:BOOL=OFF",
+      "GGML_SYCL_TARGET:STRING=INTEL",
+      "GGML_VULKAN:BOOL=OFF",
+      "GGML_VULKAN_CHECK_RESULTS:BOOL=OFF",
+      "GGML_VULKAN_DEBUG:BOOL=OFF",
+      "GGML_VULKAN_MEMORY_DEBUG:BOOL=OFF",
+      "GGML_VULKAN_PERF:BOOL=OFF",
+      "GGML_VULKAN_RUN_TESTS:BOOL=OFF",
+      "GGML_VULKAN_SHADER_DEBUG_INFO:BOOL=OFF",
+      "GGML_VULKAN_VALIDATE:BOOL=OFF",
+      "GGML_WIN_VER:STRING=0x602",
+      "LLAMA_ALL_WARNINGS:BOOL=ON",
+      "LLAMA_ALL_WARNINGS_3RD_PARTY:BOOL=OFF",
+      "LLAMA_BIN_INSTALL_DIR:PATH=bin",
+      "LLAMA_BUILD_COMMON:BOOL=ON",
+      "LLAMA_BUILD_EXAMPLES:BOOL=ON",
+      "LLAMA_BUILD_SERVER:BOOL=OFF",
+      "LLAMA_BUILD_TESTS:BOOL=OFF",
+      "LLAMA_CURL:BOOL=OFF",
+      "LLAMA_FATAL_WARNINGS:BOOL=OFF",
+      "LLAMA_INCLUDE_INSTALL_DIR:PATH=include",
+      "LLAMA_LIB_INSTALL_DIR:PATH=lib",
+      "LLAMA_OPENSSL:UNINITIALIZED=OFF",
+      "LLAMA_SANITIZE_ADDRESS:BOOL=OFF",
+      "LLAMA_SANITIZE_THREAD:BOOL=OFF",
+      "LLAMA_SANITIZE_UNDEFINED:BOOL=OFF",
+      "CMAKE_CXX_FLAGS-ADVANCED:INTERNAL=1",
+      "CMAKE_CXX_FLAGS_DEBUG-ADVANCED:INTERNAL=1",
+      "CMAKE_CXX_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1",
+      "CMAKE_CXX_FLAGS_RELEASE-ADVANCED:INTERNAL=1",
+      "CMAKE_CXX_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1",
+      "CMAKE_C_FLAGS-ADVANCED:INTERNAL=1",
+      "CMAKE_C_FLAGS_DEBUG-ADVANCED:INTERNAL=1",
+      "CMAKE_C_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1",
+      "CMAKE_C_FLAGS_RELEASE-ADVANCED:INTERNAL=1",
+      "CMAKE_C_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1"
+    ],
+    "executable": "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\kernel-levels-verified-2026-10-18\\quantizer\\build\\bin\\Release\\llama-quantize.exe",
+    "executable_sha256": "735b934ed643f67b7116e9bc1c217234e6e5990ba1a861fa2cc02139525cdd52"
+  },
+  "results": [
+    {
+      "preset": "Q6_K",
+      "trials_seconds": {
+        "retained_float": [
+          0.11115989999962039,
+          0.11145829999986745,
+          0.11180570000033185
+        ],
+        "direct": [
+          0.09540649999871675,
+          0.09978880000016943,
+          0.09835019999991346
+        ]
+      },
+      "median_seconds": {
+        "retained_float": 0.11145829999986745,
+        "direct": 0.09835019999991346
+      },
+      "retained_direct_file_bytes_equal": true,
+      "native_comparison": {
+        "left": "build\\compiled-direct-preparation-2026-10-18\\Q6_K\\direct.gguf",
+        "right": "build\\compiled-direct-preparation-2026-10-18\\Q6_K\\native.gguf",
+        "tensors": [
+          {
+            "name": "double_blocks.0.img_attn.proj.weight",
+            "right_name": "double_blocks.0.img_attn.proj.weight",
+            "type": "Q6_K",
+            "right_type": "Q6_K",
+            "shape": [
+              1024,
+              4096
+            ],
+            "bytes": 3440640,
+            "left_sha256": "1502ec6e8da70c52a22e4cbdf9fa65d0f537f9053cbfc2f25e35158ba80029c8",
+            "right_sha256": "1502ec6e8da70c52a22e4cbdf9fa65d0f537f9053cbfc2f25e35158ba80029c8",
+            "equal": true
+          },
+          {
+            "name": "img_in.weight",
+            "right_name": "img_in.weight",
+            "type": "F32",
+            "right_type": "F32",
+            "shape": [
+              8,
+              128
+            ],
+            "bytes": 4096,
+            "left_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "right_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "equal": true
+          }
+        ],
+        "comparison_source_sha256": "47d87b0ba88efed711d69d91cc67697ecdfa4848a1541d0c06ccebbf55162f25",
+        "metadata_equal": true,
+        "alignment_equal": true,
+        "tensor_counts_equal": true,
+        "left_sha256": "21631292c07f1046eef9d7c51dc1ba65638542e225cc25acb0752d2193eb2c74",
+        "right_sha256": "281495ca7667ec80fd91f1dea8db4c7f8fdda5f47a7b04fa8fbf1b40a06870d0",
+        "all_equal": true
+      },
+      "prepared_payload_bytes": 8392704,
+      "final_payload_bytes": 3444736,
+      "logical_payload_writes": {
+        "retained_float": 20230144,
+        "direct": 6889472
+      },
+      "phase_logs": {
+        "retained_float": [
+          "INFO: Using verified bundled CPU kernel; no compiler or downloads required",
+          "INFO: Kernel verification/self-tests: 0.029 s",
+          "INFO:  [1/2] Preparing F16 GGUF for bundled CPU FLUX Q6_K",
+          "INFO:  Architecture: flux",
+          "INFO:  Output: build\\compiled-direct-preparation-2026-10-18\\Q6_K\\slice-F16-tmp-a0b699eb3bba45ccbff80becb75d1edb.gguf  [F16]",
+          "  double_blocks.0.img_attn.proj.weight    torch.bfloat16       -> F16       {4096, 1024}",
+          "  img_in.weight                           torch.bfloat16       -> F32       {128, 8}",
+          "INFO:  Writing GGUF file\u2026",
+          "INFO:  Done \u2192 build\\compiled-direct-preparation-2026-10-18\\Q6_K\\slice-F16-tmp-a0b699eb3bba45ccbff80becb75d1edb.gguf",
+          "INFO: F16 preparation/write: 0.020 s",
+          "INFO:  [2/2] Quantizing with bundled CPU FLUX Q6_K; native fallback is disabled",
+          "INFO: FLUX encode_write_seconds: 0.041 s",
+          "INFO: FLUX readback_seconds: 0.010 s",
+          "INFO: FLUX file_hash_seconds: 0.002 s"
+        ],
+        "direct": [
+          "INFO: Using verified bundled CPU kernel; no compiler or downloads required",
+          "INFO: Kernel verification/self-tests: 0.032 s",
+          "INFO: Preparing and quantizing directly to Q6_K; only final payloads are spooled",
+          "INFO:  Architecture: flux",
+          "INFO:  Output: build\\compiled-direct-preparation-2026-10-18\\Q6_K\\direct.gguf  [F16]",
+          "  double_blocks.0.img_attn.proj.weight    torch.bfloat16       -> F16       {4096, 1024}",
+          "  img_in.weight                           torch.bfloat16       -> F32       {128, 8}",
+          "INFO:  Writing GGUF file\u2026",
+          "INFO: Direct preparation/encode/spool/final-write: 0.051 s",
+          "INFO: Direct tensor readback: 0.009 s",
+          "INFO: Direct file hash: 0.002 s; SHA256 21631292c07f1046eef9d7c51dc1ba65638542e225cc25acb0752d2193eb2c74",
+          "INFO: Prepared bytes 8392704; final spool bytes 3444736; no float GGUF intermediate",
+          "INFO:  Done \u2192 build\\compiled-direct-preparation-2026-10-18\\Q6_K\\direct.gguf"
+        ]
+      }
+    },
+    {
+      "preset": "Q5_K_M",
+      "trials_seconds": {
+        "retained_float": [
+          0.11497290000079374,
+          0.11816259999977774,
+          0.12873209999997925
+        ],
+        "direct": [
+          0.0988338000006479,
+          0.10423660000014934,
+          0.10069830000065849
+        ]
+      },
+      "median_seconds": {
+        "retained_float": 0.11816259999977774,
+        "direct": 0.10069830000065849
+      },
+      "retained_direct_file_bytes_equal": true,
+      "native_comparison": {
+        "left": "build\\compiled-direct-preparation-2026-10-18\\Q5_K_M\\direct.gguf",
+        "right": "build\\compiled-direct-preparation-2026-10-18\\Q5_K_M\\native.gguf",
+        "tensors": [
+          {
+            "name": "double_blocks.0.img_attn.proj.weight",
+            "right_name": "double_blocks.0.img_attn.proj.weight",
+            "type": "Q5_K",
+            "right_type": "Q5_K",
+            "shape": [
+              1024,
+              4096
+            ],
+            "bytes": 2883584,
+            "left_sha256": "22fbb99df1c73bb95f98e1ef399a63ed7f91760b480108756223400cd289517a",
+            "right_sha256": "22fbb99df1c73bb95f98e1ef399a63ed7f91760b480108756223400cd289517a",
+            "equal": true
+          },
+          {
+            "name": "img_in.weight",
+            "right_name": "img_in.weight",
+            "type": "F32",
+            "right_type": "F32",
+            "shape": [
+              8,
+              128
+            ],
+            "bytes": 4096,
+            "left_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "right_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "equal": true
+          }
+        ],
+        "comparison_source_sha256": "47d87b0ba88efed711d69d91cc67697ecdfa4848a1541d0c06ccebbf55162f25",
+        "metadata_equal": true,
+        "alignment_equal": true,
+        "tensor_counts_equal": true,
+        "left_sha256": "8896e106ef9e192c5c8031377aa8a09a55ac582802fe94206f27ecb91d1ddd17",
+        "right_sha256": "c24eb443324faccd3f6941a9e4f67a8a24e110a48f824d5fafa862a72beb6090",
+        "all_equal": true
+      },
+      "prepared_payload_bytes": 8392704,
+      "final_payload_bytes": 2887680,
+      "logical_payload_writes": {
+        "retained_float": 19673088,
+        "direct": 5775360
+      },
+      "phase_logs": {
+        "retained_float": [
+          "INFO: Using verified bundled CPU kernel; no compiler or downloads required",
+          "INFO: Kernel verification/self-tests: 0.036 s",
+          "INFO:  [1/2] Preparing F16 GGUF for bundled CPU FLUX Q5_K_M",
+          "INFO:  Architecture: flux",
+          "INFO:  Output: build\\compiled-direct-preparation-2026-10-18\\Q5_K_M\\slice-F16-tmp-c791533da671484799fa1a471f9c0b1f.gguf  [F16]",
+          "  double_blocks.0.img_attn.proj.weight    torch.bfloat16       -> F16       {4096, 1024}",
+          "  img_in.weight                           torch.bfloat16       -> F32       {128, 8}",
+          "INFO:  Writing GGUF file\u2026",
+          "INFO:  Done \u2192 build\\compiled-direct-preparation-2026-10-18\\Q5_K_M\\slice-F16-tmp-c791533da671484799fa1a471f9c0b1f.gguf",
+          "INFO: F16 preparation/write: 0.026 s",
+          "INFO:  [2/2] Quantizing with bundled CPU FLUX Q5_K_M; native fallback is disabled",
+          "INFO: FLUX encode_write_seconds: 0.044 s",
+          "INFO: FLUX readback_seconds: 0.010 s",
+          "INFO: FLUX file_hash_seconds: 0.002 s"
+        ],
+        "direct": [
+          "INFO: Using verified bundled CPU kernel; no compiler or downloads required",
+          "INFO: Kernel verification/self-tests: 0.031 s",
+          "INFO: Preparing and quantizing directly to Q5_K_M; only final payloads are spooled",
+          "INFO:  Architecture: flux",
+          "INFO:  Output: build\\compiled-direct-preparation-2026-10-18\\Q5_K_M\\direct.gguf  [F16]",
+          "  double_blocks.0.img_attn.proj.weight    torch.bfloat16       -> F16       {4096, 1024}",
+          "  img_in.weight                           torch.bfloat16       -> F32       {128, 8}",
+          "INFO:  Writing GGUF file\u2026",
+          "INFO: Direct preparation/encode/spool/final-write: 0.056 s",
+          "INFO: Direct tensor readback: 0.009 s",
+          "INFO: Direct file hash: 0.002 s; SHA256 8896e106ef9e192c5c8031377aa8a09a55ac582802fe94206f27ecb91d1ddd17",
+          "INFO: Prepared bytes 8392704; final spool bytes 2887680; no float GGUF intermediate",
+          "INFO:  Done \u2192 build\\compiled-direct-preparation-2026-10-18\\Q5_K_M\\direct.gguf"
+        ]
+      }
+    },
+    {
+      "preset": "Q4_K_S",
+      "trials_seconds": {
+        "retained_float": [
+          0.12533999999868684,
+          0.12146279999979015,
+          0.12212170000020706
+        ],
+        "direct": [
+          0.10749349999969127,
+          0.10374339999907534,
+          0.10575620000054187
+        ]
+      },
+      "median_seconds": {
+        "retained_float": 0.12212170000020706,
+        "direct": 0.10575620000054187
+      },
+      "retained_direct_file_bytes_equal": true,
+      "native_comparison": {
+        "left": "build\\compiled-direct-preparation-2026-10-18\\Q4_K_S\\direct.gguf",
+        "right": "build\\compiled-direct-preparation-2026-10-18\\Q4_K_S\\native.gguf",
+        "tensors": [
+          {
+            "name": "double_blocks.0.img_attn.proj.weight",
+            "right_name": "double_blocks.0.img_attn.proj.weight",
+            "type": "Q4_K",
+            "right_type": "Q4_K",
+            "shape": [
+              1024,
+              4096
+            ],
+            "bytes": 2359296,
+            "left_sha256": "bdb9bb09d3097fe9a9d9ffee756351fa20ab16537fcb50f0b4b5103752a63540",
+            "right_sha256": "bdb9bb09d3097fe9a9d9ffee756351fa20ab16537fcb50f0b4b5103752a63540",
+            "equal": true
+          },
+          {
+            "name": "img_in.weight",
+            "right_name": "img_in.weight",
+            "type": "F32",
+            "right_type": "F32",
+            "shape": [
+              8,
+              128
+            ],
+            "bytes": 4096,
+            "left_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "right_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "equal": true
+          }
+        ],
+        "comparison_source_sha256": "47d87b0ba88efed711d69d91cc67697ecdfa4848a1541d0c06ccebbf55162f25",
+        "metadata_equal": true,
+        "alignment_equal": true,
+        "tensor_counts_equal": true,
+        "left_sha256": "8bf8f385f6005fc74d36f5deb958419664c4ba67e1e4da1d575972bbea6d4b9e",
+        "right_sha256": "5ae3c709fc9a8b0bcb176f193d69b0678b374004f8c3d4f835f80328e2710a9e",
+        "all_equal": true
+      },
+      "prepared_payload_bytes": 8392704,
+      "final_payload_bytes": 2363392,
+      "logical_payload_writes": {
+        "retained_float": 19148800,
+        "direct": 4726784
+      },
+      "phase_logs": {
+        "retained_float": [
+          "INFO: Using verified bundled CPU kernel; no compiler or downloads required",
+          "INFO: Kernel verification/self-tests: 0.029 s",
+          "INFO:  [1/2] Preparing F16 GGUF for bundled CPU FLUX Q4_K_S",
+          "INFO:  Architecture: flux",
+          "INFO:  Output: build\\compiled-direct-preparation-2026-10-18\\Q4_K_S\\slice-F16-tmp-ae5f7fb2ea6a43a7b3aab74150986b20.gguf  [F16]",
+          "  double_blocks.0.img_attn.proj.weight    torch.bfloat16       -> F16       {4096, 1024}",
+          "  img_in.weight                           torch.bfloat16       -> F32       {128, 8}",
+          "INFO:  Writing GGUF file\u2026",
+          "INFO:  Done \u2192 build\\compiled-direct-preparation-2026-10-18\\Q4_K_S\\slice-F16-tmp-ae5f7fb2ea6a43a7b3aab74150986b20.gguf",
+          "INFO: F16 preparation/write: 0.023 s",
+          "INFO:  [2/2] Quantizing with bundled CPU FLUX Q4_K_S; native fallback is disabled",
+          "INFO: FLUX encode_write_seconds: 0.049 s",
+          "INFO: FLUX readback_seconds: 0.009 s",
+          "INFO: FLUX file_hash_seconds: 0.002 s"
+        ],
+        "direct": [
+          "INFO: Using verified bundled CPU kernel; no compiler or downloads required",
+          "INFO: Kernel verification/self-tests: 0.033 s",
+          "INFO: Preparing and quantizing directly to Q4_K_S; only final payloads are spooled",
+          "INFO:  Architecture: flux",
+          "INFO:  Output: build\\compiled-direct-preparation-2026-10-18\\Q4_K_S\\direct.gguf  [F16]",
+          "  double_blocks.0.img_attn.proj.weight    torch.bfloat16       -> F16       {4096, 1024}",
+          "  img_in.weight                           torch.bfloat16       -> F32       {128, 8}",
+          "INFO:  Writing GGUF file\u2026",
+          "INFO: Direct preparation/encode/spool/final-write: 0.058 s",
+          "INFO: Direct tensor readback: 0.010 s",
+          "INFO: Direct file hash: 0.002 s; SHA256 8bf8f385f6005fc74d36f5deb958419664c4ba67e1e4da1d575972bbea6d4b9e",
+          "INFO: Prepared bytes 8392704; final spool bytes 2363392; no float GGUF intermediate",
+          "INFO:  Done \u2192 build\\compiled-direct-preparation-2026-10-18\\Q4_K_S\\direct.gguf"
+        ]
+      }
+    },
+    {
+      "preset": "Q4_K_M",
+      "trials_seconds": {
+        "retained_float": [
+          0.1186016000010568,
+          0.1238441999994393,
+          0.12488839999969059
+        ],
+        "direct": [
+          0.10459970000010799,
+          0.10895329999948444,
+          0.10738429999946675
+        ]
+      },
+      "median_seconds": {
+        "retained_float": 0.1238441999994393,
+        "direct": 0.10738429999946675
+      },
+      "retained_direct_file_bytes_equal": true,
+      "native_comparison": {
+        "left": "build\\compiled-direct-preparation-2026-10-18\\Q4_K_M\\direct.gguf",
+        "right": "build\\compiled-direct-preparation-2026-10-18\\Q4_K_M\\native.gguf",
+        "tensors": [
+          {
+            "name": "double_blocks.0.img_attn.proj.weight",
+            "right_name": "double_blocks.0.img_attn.proj.weight",
+            "type": "Q4_K",
+            "right_type": "Q4_K",
+            "shape": [
+              1024,
+              4096
+            ],
+            "bytes": 2359296,
+            "left_sha256": "bdb9bb09d3097fe9a9d9ffee756351fa20ab16537fcb50f0b4b5103752a63540",
+            "right_sha256": "bdb9bb09d3097fe9a9d9ffee756351fa20ab16537fcb50f0b4b5103752a63540",
+            "equal": true
+          },
+          {
+            "name": "img_in.weight",
+            "right_name": "img_in.weight",
+            "type": "F32",
+            "right_type": "F32",
+            "shape": [
+              8,
+              128
+            ],
+            "bytes": 4096,
+            "left_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "right_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "equal": true
+          }
+        ],
+        "comparison_source_sha256": "47d87b0ba88efed711d69d91cc67697ecdfa4848a1541d0c06ccebbf55162f25",
+        "metadata_equal": true,
+        "alignment_equal": true,
+        "tensor_counts_equal": true,
+        "left_sha256": "68dccac1514cb9df67163fc79022950a4659c6a01523ccaa38e1cefc202f2bac",
+        "right_sha256": "1fda9e807dd0a87b6479d26b93027bc3165fb6c7e447f169fe8c128967fe4b24",
+        "all_equal": true
+      },
+      "prepared_payload_bytes": 8392704,
+      "final_payload_bytes": 2363392,
+      "logical_payload_writes": {
+        "retained_float": 19148800,
+        "direct": 4726784
+      },
+      "phase_logs": {
+        "retained_float": [
+          "INFO: Using verified bundled CPU kernel; no compiler or downloads required",
+          "INFO: Kernel verification/self-tests: 0.029 s",
+          "INFO:  [1/2] Preparing F16 GGUF for bundled CPU FLUX Q4_K_M",
+          "INFO:  Architecture: flux",
+          "INFO:  Output: build\\compiled-direct-preparation-2026-10-18\\Q4_K_M\\slice-F16-tmp-5cbe69478a904a00be21896c34b91e54.gguf  [F16]",
+          "  double_blocks.0.img_attn.proj.weight    torch.bfloat16       -> F16       {4096, 1024}",
+          "  img_in.weight                           torch.bfloat16       -> F32       {128, 8}",
+          "INFO:  Writing GGUF file\u2026",
+          "INFO:  Done \u2192 build\\compiled-direct-preparation-2026-10-18\\Q4_K_M\\slice-F16-tmp-5cbe69478a904a00be21896c34b91e54.gguf",
+          "INFO: F16 preparation/write: 0.026 s",
+          "INFO:  [2/2] Quantizing with bundled CPU FLUX Q4_K_M; native fallback is disabled",
+          "INFO: FLUX encode_write_seconds: 0.050 s",
+          "INFO: FLUX readback_seconds: 0.009 s",
+          "INFO: FLUX file_hash_seconds: 0.002 s"
+        ],
+        "direct": [
+          "INFO: Using verified bundled CPU kernel; no compiler or downloads required",
+          "INFO: Kernel verification/self-tests: 0.029 s",
+          "INFO: Preparing and quantizing directly to Q4_K_M; only final payloads are spooled",
+          "INFO:  Architecture: flux",
+          "INFO:  Output: build\\compiled-direct-preparation-2026-10-18\\Q4_K_M\\direct.gguf  [F16]",
+          "  double_blocks.0.img_attn.proj.weight    torch.bfloat16       -> F16       {4096, 1024}",
+          "  img_in.weight                           torch.bfloat16       -> F32       {128, 8}",
+          "INFO:  Writing GGUF file\u2026",
+          "INFO: Direct preparation/encode/spool/final-write: 0.065 s",
+          "INFO: Direct tensor readback: 0.009 s",
+          "INFO: Direct file hash: 0.002 s; SHA256 68dccac1514cb9df67163fc79022950a4659c6a01523ccaa38e1cefc202f2bac",
+          "INFO: Prepared bytes 8392704; final spool bytes 2363392; no float GGUF intermediate",
+          "INFO:  Done \u2192 build\\compiled-direct-preparation-2026-10-18\\Q4_K_M\\direct.gguf"
+        ]
+      }
+    },
+    {
+      "preset": "Q3_K_M",
+      "trials_seconds": {
+        "retained_float": [
+          0.09577979999994568,
+          0.0992287999997643,
+          0.0991584999992483
+        ],
+        "direct": [
+          0.08544769999934942,
+          0.07369090000065626,
+          0.08555779999915103
+        ]
+      },
+      "median_seconds": {
+        "retained_float": 0.0991584999992483,
+        "direct": 0.08544769999934942
+      },
+      "retained_direct_file_bytes_equal": true,
+      "native_comparison": {
+        "left": "build\\compiled-direct-preparation-2026-10-18\\Q3_K_M\\direct.gguf",
+        "right": "build\\compiled-direct-preparation-2026-10-18\\Q3_K_M\\native.gguf",
+        "tensors": [
+          {
+            "name": "double_blocks.0.img_attn.proj.weight",
+            "right_name": "double_blocks.0.img_attn.proj.weight",
+            "type": "Q3_K",
+            "right_type": "Q3_K",
+            "shape": [
+              1024,
+              4096
+            ],
+            "bytes": 1802240,
+            "left_sha256": "82696452ea2f45d7502ca19c473b5e2bd19c79f3f7df3eb4eacf5db93d418dda",
+            "right_sha256": "82696452ea2f45d7502ca19c473b5e2bd19c79f3f7df3eb4eacf5db93d418dda",
+            "equal": true
+          },
+          {
+            "name": "img_in.weight",
+            "right_name": "img_in.weight",
+            "type": "F32",
+            "right_type": "F32",
+            "shape": [
+              8,
+              128
+            ],
+            "bytes": 4096,
+            "left_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "right_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "equal": true
+          }
+        ],
+        "comparison_source_sha256": "47d87b0ba88efed711d69d91cc67697ecdfa4848a1541d0c06ccebbf55162f25",
+        "metadata_equal": true,
+        "alignment_equal": true,
+        "tensor_counts_equal": true,
+        "left_sha256": "c1396a167d33f4896512178c1bf661e2757ab716f3554a256fbb2c0c5f4d500a",
+        "right_sha256": "fb2a01832be7d360fae28e3559ca2d8cb195231381df57000678bd2827c9b470",
+        "all_equal": true
+      },
+      "prepared_payload_bytes": 8392704,
+      "final_payload_bytes": 1806336,
+      "logical_payload_writes": {
+        "retained_float": 18591744,
+        "direct": 3612672
+      },
+      "phase_logs": {
+        "retained_float": [
+          "INFO: Using verified bundled CPU kernel; no compiler or downloads required",
+          "INFO: Kernel verification/self-tests: 0.030 s",
+          "INFO:  [1/2] Preparing F16 GGUF for bundled CPU FLUX Q3_K_M",
+          "INFO:  Architecture: flux",
+          "INFO:  Output: build\\compiled-direct-preparation-2026-10-18\\Q3_K_M\\slice-F16-tmp-9950281a3f004635b0fdba850dfd451e.gguf  [F16]",
+          "  double_blocks.0.img_attn.proj.weight    torch.bfloat16       -> F16       {4096, 1024}",
+          "  img_in.weight                           torch.bfloat16       -> F32       {128, 8}",
+          "INFO:  Writing GGUF file\u2026",
+          "INFO:  Done \u2192 build\\compiled-direct-preparation-2026-10-18\\Q3_K_M\\slice-F16-tmp-9950281a3f004635b0fdba850dfd451e.gguf",
+          "INFO: F16 preparation/write: 0.020 s",
+          "INFO:  [2/2] Quantizing with bundled CPU FLUX Q3_K_M; native fallback is disabled",
+          "INFO: FLUX encode_write_seconds: 0.027 s",
+          "INFO: FLUX readback_seconds: 0.009 s",
+          "INFO: FLUX file_hash_seconds: 0.001 s"
+        ],
+        "direct": [
+          "INFO: Using verified bundled CPU kernel; no compiler or downloads required",
+          "INFO: Kernel verification/self-tests: 0.031 s",
+          "INFO: Preparing and quantizing directly to Q3_K_M; only final payloads are spooled",
+          "INFO:  Architecture: flux",
+          "INFO:  Output: build\\compiled-direct-preparation-2026-10-18\\Q3_K_M\\direct.gguf  [F16]",
+          "  double_blocks.0.img_attn.proj.weight    torch.bfloat16       -> F16       {4096, 1024}",
+          "  img_in.weight                           torch.bfloat16       -> F32       {128, 8}",
+          "INFO:  Writing GGUF file\u2026",
+          "INFO: Direct preparation/encode/spool/final-write: 0.041 s",
+          "INFO: Direct tensor readback: 0.009 s",
+          "INFO: Direct file hash: 0.001 s; SHA256 c1396a167d33f4896512178c1bf661e2757ab716f3554a256fbb2c0c5f4d500a",
+          "INFO: Prepared bytes 8392704; final spool bytes 1806336; no float GGUF intermediate",
+          "INFO:  Done \u2192 build\\compiled-direct-preparation-2026-10-18\\Q3_K_M\\direct.gguf"
+        ]
+      }
+    },
+    {
+      "preset": "Q2_K",
+      "trials_seconds": {
+        "retained_float": [
+          0.12009609999950044,
+          0.1130038000010245,
+          0.12013290000140842
+        ],
+        "direct": [
+          0.09739749999971536,
+          0.09645830000044953,
+          0.10102050000023155
+        ]
+      },
+      "median_seconds": {
+        "retained_float": 0.12009609999950044,
+        "direct": 0.09739749999971536
+      },
+      "retained_direct_file_bytes_equal": true,
+      "native_comparison": {
+        "left": "build\\compiled-direct-preparation-2026-10-18\\Q2_K\\direct.gguf",
+        "right": "build\\compiled-direct-preparation-2026-10-18\\Q2_K\\native.gguf",
+        "tensors": [
+          {
+            "name": "double_blocks.0.img_attn.proj.weight",
+            "right_name": "double_blocks.0.img_attn.proj.weight",
+            "type": "Q2_K",
+            "right_type": "Q2_K",
+            "shape": [
+              1024,
+              4096
+            ],
+            "bytes": 1376256,
+            "left_sha256": "738cf122109b9fc28af0bc4454105add64afb93a9a706c04bed97bcdfd5cc8fd",
+            "right_sha256": "738cf122109b9fc28af0bc4454105add64afb93a9a706c04bed97bcdfd5cc8fd",
+            "equal": true
+          },
+          {
+            "name": "img_in.weight",
+            "right_name": "img_in.weight",
+            "type": "F32",
+            "right_type": "F32",
+            "shape": [
+              8,
+              128
+            ],
+            "bytes": 4096,
+            "left_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "right_sha256": "6358a5635d9b9ed1413792886a99a7be5f2d044a18e8da31b0720a6bb78353ab",
+            "equal": true
+          }
+        ],
+        "comparison_source_sha256": "47d87b0ba88efed711d69d91cc67697ecdfa4848a1541d0c06ccebbf55162f25",
+        "metadata_equal": true,
+        "alignment_equal": true,
+        "tensor_counts_equal": true,
+        "left_sha256": "ba97246236e7f0368dbc5a3ed10819074af9fad9caa2cb56ff51988ce52fcd61",
+        "right_sha256": "c604827aacd1f0cbb5a96f776c0c7d98a6e36a25ab0e3697b13773c9aacb82e4",
+        "all_equal": true
+      },
+      "prepared_payload_bytes": 8392704,
+      "final_payload_bytes": 1380352,
+      "logical_payload_writes": {
+        "retained_float": 18165760,
+        "direct": 2760704
+      },
+      "phase_logs": {
+        "retained_float": [
+          "INFO: Using verified bundled CPU kernel; no compiler or downloads required",
+          "INFO: Kernel verification/self-tests: 0.030 s",
+          "INFO:  [1/2] Preparing F16 GGUF for bundled CPU FLUX Q2_K",
+          "INFO:  Architecture: flux",
+          "INFO:  Output: build\\compiled-direct-preparation-2026-10-18\\Q2_K\\slice-F16-tmp-fcdd79f87a1b4337a1c92c2c86f8e0b7.gguf  [F16]",
+          "  double_blocks.0.img_attn.proj.weight    torch.bfloat16       -> F16       {4096, 1024}",
+          "  img_in.weight                           torch.bfloat16       -> F32       {128, 8}",
+          "INFO:  Writing GGUF file\u2026",
+          "INFO:  Done \u2192 build\\compiled-direct-preparation-2026-10-18\\Q2_K\\slice-F16-tmp-fcdd79f87a1b4337a1c92c2c86f8e0b7.gguf",
+          "INFO: F16 preparation/write: 0.026 s",
+          "INFO:  [2/2] Quantizing with bundled CPU FLUX Q2_K; native fallback is disabled",
+          "INFO: FLUX encode_write_seconds: 0.045 s",
+          "INFO: FLUX readback_seconds: 0.008 s",
+          "INFO: FLUX file_hash_seconds: 0.001 s"
+        ],
+        "direct": [
+          "INFO: Using verified bundled CPU kernel; no compiler or downloads required",
+          "INFO: Kernel verification/self-tests: 0.033 s",
+          "INFO: Preparing and quantizing directly to Q2_K; only final payloads are spooled",
+          "INFO:  Architecture: flux",
+          "INFO:  Output: build\\compiled-direct-preparation-2026-10-18\\Q2_K\\direct.gguf  [F16]",
+          "  double_blocks.0.img_attn.proj.weight    torch.bfloat16       -> F16       {4096, 1024}",
+          "  img_in.weight                           torch.bfloat16       -> F32       {128, 8}",
+          "INFO:  Writing GGUF file\u2026",
+          "INFO: Direct preparation/encode/spool/final-write: 0.056 s",
+          "INFO: Direct tensor readback: 0.008 s",
+          "INFO: Direct file hash: 0.001 s; SHA256 ba97246236e7f0368dbc5a3ed10819074af9fad9caa2cb56ff51988ce52fcd61",
+          "INFO: Prepared bytes 8392704; final spool bytes 1380352; no float GGUF intermediate",
+          "INFO:  Done \u2192 build\\compiled-direct-preparation-2026-10-18\\Q2_K\\direct.gguf"
+        ]
+      }
+    }
+  ],
+  "source_stat_unchanged": true,
+  "source_code_sha256": {
+    "convert.py": "d7257c6a6602478fec321364dc274db43510da314900c0af50e5516c26e717c1",
+    "conversion_service.py": "ab58d373e9eefebc19859630d3b3594a0b2b3554e01f5cc0e81342a8c8d03c3a",
+    "compiled_flux_writer.py": "191fc315c8cb71703be787f1a603fae3663c343c5a8039ca021d066d89c51e94",
+    "scripts/benchmark_compiled_preparation.py": "2885cbc521fedc47a31264289d702bdfd3dd0f3a26cd94981d25391c704f68d8"
+  }
+}

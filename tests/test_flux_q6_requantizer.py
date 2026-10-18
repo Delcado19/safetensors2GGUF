@@ -210,7 +210,7 @@ def test_q5_file_parity_evidence():
 
 def test_unknown_preset_rejected_before_output(tmp_path):
     with pytest.raises(ValueError, match='presets'):
-        requantize(tmp_path / 'missing', tmp_path / 'output', preset='Q3_K_M')
+        requantize(tmp_path / 'missing', tmp_path / 'output', preset='Q3_K_L')
     assert not (tmp_path / 'output').exists()
 
 
@@ -322,3 +322,96 @@ def test_compiled_cli_requires_explicit_library_and_hash_together(tmp_path, monk
         main()
     assert error.value.code == 2
     assert not destination.exists()
+
+
+@pytest.mark.parametrize('preset', ['Q2_K', 'Q3_K_M'])
+def test_low_bit_presets_require_explicit_kernel_before_io(tmp_path, preset):
+    with pytest.raises(ValueError, match='explicitly selected compiled kernel'):
+        requantize(tmp_path / 'missing', tmp_path / 'out.gguf', preset=preset)
+    assert not (tmp_path / 'out.gguf').exists()
+
+
+def test_q3_ordered_v_promotions_count_fallback_but_skip_protected():
+    from scripts.requantize_flux_q6 import flux_q6_type
+    q = gguf.GGMLQuantizationType
+    for index, expected in enumerate((q.Q5_K, q.Q5_K, q.Q4_K, q.Q4_K)):
+        assert flux_q6_type('block.to_v.weight', [8, 256], q.F32,
+                            preset='Q3_K_M', attention_v_index=index) == expected
+    assert flux_q6_type('block.to_v.weight', [8, 160], q.F32, preset='Q3_K_M') == q.F16
+    assert flux_q6_type('img_in.to_v.weight', [8, 256], q.F32, preset='Q3_K_M') == q.F32
+    assert flux_q6_type('block.attn.qkv.weight', [8, 256], q.F16, preset='Q3_K_M') == q.Q4_K
+    assert flux_q6_type('block.ffn_down.weight', [8, 256], q.F16, preset='Q3_K_M') == q.Q4_K
+    assert flux_q6_type('block.to_v.weight', [8, 256], q.F16, preset='Q2_K') == q.Q3_K
+    assert flux_q6_type('block.ffn_down.weight', [8, 256], q.F16, preset='Q2_K') == q.Q2_K
+
+
+@pytest.mark.parametrize('preset', ['Q2_K', 'Q3_K_M', 'Q4_K_S', 'Q4_K_M', 'Q5_K_M', 'Q6_K'])
+def test_parallel_compiled_writer_is_bounded_ordered_and_native_equal(tmp_path, monkeypatch, preset):
+    from scripts import requantize_flux_q6 as module
+    from scripts.compiled_kernel_package import load_package, _platform, ROOT
+    import time
+    if _platform() != {'system': 'win32', 'machine': 'x86_64', 'pointer_bits': 64}:
+        pytest.skip('Shipped Windows x86_64 package qualification')
+    kernel, _ = load_package(ROOT / 'third_party/cpu-kernels/win32-x86_64')
+    source = tmp_path / 'input.gguf'
+    _source(source, extra={'large.weight': np.linspace(-2, 3, 2305 * 256, dtype=np.float16).reshape(2305, 256)})
+    monkeypatch.setattr(module, '_COMPILED_WORKERS', 1)
+    serial = tmp_path / 'serial.gguf'
+    requantize(source, serial, preset=preset, compiled_kernel=kernel)
+    monkeypatch.setattr(module, '_COMPILED_WORKERS', 3)
+    lock = threading.Lock()
+    active = peak = 0
+    def tracked(data, bits):
+        nonlocal active, peak
+        assert data.size <= 65536
+        with lock:
+            active += 1
+            peak = max(peak, active)
+        try:
+            time.sleep(0.005)
+            return kernel(data, bits)
+        finally:
+            with lock:
+                active -= 1
+    parallel = tmp_path / 'parallel.gguf'
+    result = requantize(source, parallel, preset=preset, compiled_kernel=tracked)
+    assert serial.read_bytes() == parallel.read_bytes()
+    assert 1 < peak <= 3 and active == 0
+    assert result['compiled_workers'] == 3
+    assert set(result['timings']) == {'encode_write_seconds', 'readback_seconds', 'file_hash_seconds'}
+    assert all(t >= 0 for t in result['timings'].values())
+
+
+@pytest.mark.parametrize('outcome', ['cancel', 'failure', 'bad_bytes'])
+def test_parallel_worker_failure_keeps_atomic_output_and_stops_workers(tmp_path, monkeypatch, outcome):
+    from scripts import requantize_flux_q6 as module
+    monkeypatch.setattr(module, '_COMPILED_WORKERS', 3)
+    source, destination = tmp_path / 'input.gguf', tmp_path / 'output.gguf'
+    _source(source, extra={'large.weight': np.ones((2305, 256), dtype=np.float16)})
+    destination.write_bytes(b'previous output')
+    event = threading.Event()
+    active = 0
+    lock = threading.Lock()
+    def kernel(data, bits):
+        nonlocal active
+        with lock:
+            active += 1
+        try:
+            size = data.size // 256 * gguf.GGML_QUANT_SIZES[gguf.GGMLQuantizationType[f'Q{bits}_K']][1]
+            if data.size == 65536:
+                if outcome == 'failure':
+                    raise RuntimeError('worker failed')
+                if outcome == 'cancel':
+                    event.set()
+                if outcome == 'bad_bytes':
+                    size = 1
+            return np.zeros(size, dtype=np.uint8)
+        finally:
+            with lock:
+                active -= 1
+    expected = {'cancel': ConversionCancelled, 'failure': RuntimeError, 'bad_bytes': ValueError}[outcome]
+    with pytest.raises(expected):
+        requantize(source, destination, preset='Q2_K', compiled_kernel=kernel,
+                   cancel_event=event, overwrite=True)
+    assert destination.read_bytes() == b'previous output' and active == 0
+    assert not list(tmp_path.glob('.output.gguf.*'))

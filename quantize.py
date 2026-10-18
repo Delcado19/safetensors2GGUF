@@ -3,7 +3,7 @@
 Defines which types can be produced natively by the Python gguf library
 (PYTHON_PRECISIONS) and which require the external llama-quantize binary
 (LLAMA_QUANT_KEYS) by default. The service can explicitly select the experimental
-FLUX Q6_K second-stage backend; that does not change direct-writer eligibility.
+FLUX K-quant second-stage backends; that does not change direct-writer eligibility.
 The combined ALL_QUANT_CHOICES list is consumed by the
 GUI to populate the quantization dropdown.
 """

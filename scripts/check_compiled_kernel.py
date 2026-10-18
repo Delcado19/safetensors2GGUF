@@ -43,11 +43,11 @@ def _load(path, expected):
 
 def _encode(encode, data, bits):
     data = np.asarray(data)
-    if (data.dtype != np.float32 or not data.size or data.size > 1048576
+    if (bits not in (2, 3, 4, 5, 6) or data.dtype != np.float32 or not data.size or data.size > 1048576
             or data.ndim == 0 or data.shape[-1] % 256 or not np.isfinite(data).all()):
         raise ValueError('Expected bounded finite float32 rows divisible by 256')
     data = np.ascontiguousarray(data)
-    result = np.empty((data.size // 256, {4: 144, 5: 176, 6: 210}[bits]), dtype=np.uint8)
+    result = np.empty((data.size // 256, {2: 84, 3: 110, 4: 144, 5: 176, 6: 210}[bits]), dtype=np.uint8)
     status = encode(bits, data.ctypes.data, data.size, result.ctypes.data, result.size)
     if status:
         raise ValueError(f'Research kernel rejected input: {status}')
@@ -58,7 +58,7 @@ def _guard_checks(encode):
     data = np.zeros((1, 256), dtype=np.float32)
     output = np.full(144, 0xA5, dtype=np.uint8)
     for bits, pointer, count, target, capacity in (
-        (3, data.ctypes.data, 256, output.ctypes.data, 144),
+        (1, data.ctypes.data, 256, output.ctypes.data, 144),
         (4, None, 256, output.ctypes.data, 144),
         (4, data.ctypes.data, 256, None, 144),
         (4, data.ctypes.data, 0, output.ctypes.data, 144),
@@ -116,7 +116,7 @@ def main():
     for bits, iterator in ITERATORS.items():
         times = {'numpy': [], 'compiled': [], 'native_direct': []}
         hashes = {}
-        direct_output = np.empty((data.size // 256, {4: 144, 5: 176, 6: 210}[bits]), dtype=np.uint8)
+        direct_output = np.empty((data.size // 256, {2: 84, 3: 110, 4: 144, 5: 176, 6: 210}[bits]), dtype=np.uint8)
         # Initialize outside measurement; alternate order to reduce warm-cache bias.
         _encode(encode, data[:256], bits)
         for repeat in range(7):

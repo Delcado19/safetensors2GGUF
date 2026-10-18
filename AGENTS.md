@@ -2,6 +2,85 @@
 
 ## Persistent project TODO — load at every session start
 
+Integration update (2026-10-18): Workbench/API `compiled_flux` uses the shipped
+Windows x86_64 CPU package for FLUX Q2_K, Q3_K_M, Q4_K_S/M, Q5_K_M and Q6_K,
+without runtime compilation. All six K presets match native across 48 schematic
+files (1,192 tensor payloads); 725 block goldens pass. Q2/Q3 API fixtures match
+native; the Windows C runtime is statically linked. Original four DLL API
+fixtures match NumPy. This supersedes older Workbench/binary pending statements
+below for this backend/platform only. Native remains the default. Broader
+Q2 quality, full-model Q3, other platforms and clean-machine application qualification remain
+open. See `docs/compiled-kernel-package.md`.
+
+Full-model conversion update (2026-10-18): FLUX.2 klein Base 9B now completes
+Q2_K through the integrated `compiled_flux` pipeline. The 3,356,285,248-byte GGUF
+contains 115 Q2_K and 86 protected F32 tensors; all 201 passed internal readback.
+Pipeline time was 662.291 s including F16 preparation; source hashing/additional
+output hashing are separate. Original source size/mtime are unchanged and the
+intermediate is cleaned up. Output/logs are on `I:\safetensors2GGUF-flux2-q2-bundled-2026-10-18`;
+see `data/flux2-q2-bundled-conversion.json`. Full-model native parity and ComfyUI
+loading/rendering are not yet tested; do not infer image quality from conversion.
+
+Q2 runtime update (2026-10-18): A user-supplied original/Q2 PNG pair supports
+ComfyUI inference through UnetLoaderGGUF with the exact converted GGUF (installed
+SHA256 matches). Seed 572241167616859, 34 steps, er_sde, CFG 4, 768x1024 and
+prompts/VAE/text encoder match; both LoRAs are disabled. Visible drift affects
+pose/leg placement, face and car composition; Q2 looks less natural in this pair,
+without gross image collapse. See `data/flux-q2-user-render-comparison.json`.
+This supersedes the Q2 loading/rendering-untested note above for this setup only.
+Native Q2 render parity, broader quality, LoRA and offload remain untested.
+
+Additional distilled-model evidence (2026-10-18): The supplied Snofs distilledV12Fp8
+Q2_K and Q2_K-Python GGUFs match all 201 tensor payloads/types/shapes and interpreted
+metadata; whole-file hashes differ. Their export-command provenance is not verified
+by filenames. Three supplied PNGs use different seeds (...788 original, ...789 Q2,
+...790 Python), so visible differences do not establish quantization/backend drift.
+Both Q2 active graphs use UnetLoaderGGUF; LoRA is disabled. See
+`data/snofs-q2-user-render-comparison.json`. Repeat with one fixed seed before
+claiming render parity or a quality difference.
+
+Same-seed Snofs follow-up (2026-10-18): Replacement original/Q2/Python-Q2 PNGs
+all use seed 312380090853791 and matching saved sampling settings, no active LoRA.
+The two Q2 results are pixel-identical by direct decoded RGB comparison; installed
+GGUF hashes still match the earlier complete 201-tensor comparison. Original/Q2
+shows shared Visible drift in face/hand/composition. This resolves the earlier
+seed mismatch for this setup; there is no additional difference between the two
+Q2 exports here. Precision and loader still change together versus the original.
+See `data/snofs-q2-same-seed-render-comparison.json`; no new render was initiated.
+
+Artifact cleanup (2026-10-18): User approved removal of all 600 generated model/
+raw-Q6 artifacts on `I:` (77.73 GiB), including prepared-F16.gguf. All 357 JSON/log
+files remain and their hashes were verified unchanged. Original FLUX.2 source on
+`G:` remains present. Earlier `I:` model paths are historical; recreate verified
+preparation before performance experiments. Exact audit:
+`data/i-drive-cleanup-2026-10-18.json`.
+
+CPU performance update (2026-10-18): Compiled FLUX writing now uses up to eight
+bounded concurrent C calls, preserving ordered output and 65,536-value per-call
+bounds. Six real-weight slice presets are file-identical to serial writing and
+match verified patched native payloads; full slice-writer medians improve
+1.53-2.86x (Q2_K 2.69x) on this Windows host. This is not a full-model speed claim.
+Phase logs separate kernel checks, F16 preparation/write, encode/write, tensor
+readback and output hashing. The roughly 19.9 GB intermediate/spool-copy overhead
+was the next I/O candidate at this stage; the direct-spool update below supersedes
+that pending item. No new render or large model conversion was performed for this
+slice benchmark, and nothing was regenerated on cleaned `I:` during it. See `scripts/benchmark_compiled_writer.py`,
+`data/compiled-kernel-performance-validation.json` and the package guide.
+
+Direct-spool update (2026-10-18): Default compiled FLUX jobs without a Keep
+intermediate request now reuse shared float preparation and spool only final
+K-quant/protected bytes. No full F16 GGUF is written/re-read; the final spool is
+still copied atomically. Keeping an intermediate retains the old route. Six
+real-weight slice presets remain file-identical to that route and native-equal;
+F32/F16/BF16/raw/scaled FP8 and failure/cancel/readback guards pass. A complete
+FLUX.2 klein Base 9B Q2_K run takes 115.863 s and exactly reproduces the earlier
+source and output SHA256 (201 tensors). The earlier 662.291 s run is historical,
+not a controlled speed ratio. No new render was performed. New output/logs are
+on `I:\safetensors2GGUF-flux2-q2-direct-2026-10-18`; no F16 model intermediate
+was created. See `data/compiled-kernel-direct-preparation.json`,
+`data/flux2-q2-direct-conversion.json` and the package guide. Full-model peak
+memory and other platforms remain open.
+
 CPU performance follow-up (2026-10-16): read `docs/compiled-kernel-pilot.md`.
 Direct Python calls to the archived b3962 Q4_K/Q5_K/Q6_K C kernels pass 498
 golden comparisons and run within about 2% of the same directly called kernel on
@@ -14,13 +93,15 @@ Read `docs/flux-compiled-kernel-full-model-validation.md` for timing boundaries.
 Full-model Q5_K_M and Q6_K now also match all 201 native payloads each and their
 earlier Python whole-file hashes; write/readback/hash took 410.520 s and 315.509 s.
 The same validation guide records all 603 tensor comparisons and timing scopes.
-Binary packaging, Linux/macOS, other architectures, full Q4_K_S and Workbench
-integration remain pending. These results do not change application defaults.
+At this historical stage binary packaging and Workbench integration were pending;
+the 2026-10-18 Windows integration above supersedes those items. Linux/macOS,
+other architectures and full Q4_K_S remain open. Application defaults are unchanged.
 An explicit offline package builder/loader is now available; read
 `docs/compiled-kernel-package.md`. A fresh Windows package passes platform/source/
 file verification, 435 goldens and ten C guards; all four actual package CLI
-presets match NumPy. No binaries are distributed or automatically discovered.
-Non-Windows, clean-machine runtime qualification and Workbench integration remain open.
+presets match NumPy. The later Windows integration ships and explicitly selects
+the verified package; no runtime build or upstream download is performed.
+Non-Windows and clean-machine application qualification remain open.
 
 **Open: Build one unified model converter.** Preserve the tested diffusion and
 text-encoder GGUF paths while integrating the additional model/format capabilities
