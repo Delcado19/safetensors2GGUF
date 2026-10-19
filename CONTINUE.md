@@ -1,5 +1,23 @@
 # Multi-model / vision-language integration
 
+## Artifact cleanup and I: workspace (2026-10-19)
+
+The user requested cleanup and requires agent tests/conversion artifacts on I:.
+`build` is now a junction to `I:\safetensors2GGUF\build`; reference tools remain
+available at their historical logical paths and the native executable checksum
+still verifies. Large generated models were removed; installed G: models and the
+user's Pictures files were untouched. Reports/scripts were checksum-verified into
+`I:\safetensors2GGUF\archive\2026-10-19`; old I: report folders were consolidated
+there. See `data/test-artifact-cleanup-2026-10-19.json` for exact counts and bytes.
+Some old temporary directory ACLs prevent deletion. Their remaining directories are
+retained in ignored `.build-cleanup-recovery-2026-10-19` and `.pytest-tmp`; no
+project-wide permission reset was attempted. Future ad-hoc tests use
+`I:\safetensors2GGUF\tests`, conversions use `I:\safetensors2GGUF\conversions`, and
+uv uses `UV_CACHE_DIR=I:\safetensors2GGUF\uv-cache`.
+Next: expand tokenizer checks/repair for the existing model set, then integrate
+FLUX.3 from a separate pinned current Molbal snapshot. The local FLUX.3 BF16 source
+is present (359 tensors, 11,097,404,512 bytes); current detector does not support it.
+
 ## ERNIE app progress and visible terminal (2026-10-19)
 
 Original-key ERNIE exports now forward per-tensor progress through the shared

@@ -10,6 +10,7 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+.build-cleanup-recovery-*/
 node_modules/
 .venv/
 venv/

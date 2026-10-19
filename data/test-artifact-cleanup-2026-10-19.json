@@ -1,0 +1,57 @@
+{
+  "scope": "User-requested generated-artifact cleanup and I: relocation; installed originals untouched.",
+  "build_files_before": 35667,
+  "build_logical_bytes_before": 33321586055,
+  "retained_dependency_directories": [
+    "converter-policy",
+    "converter-reference",
+    "ernie-tokenizer-source",
+    "kernel-levels-verified-2026-10-18"
+  ],
+  "archived_build_reports": 861,
+  "archive_sha256": "bde56eff5a20dd56c50514ab956725231f4eaee5bccbf5316cd5015c6b3ac164",
+  "removed_i_models": [
+    {
+      "path": "I:\\safetensors2GGUF-flux2-q2-direct-2026-10-18\\flux-2-klein-base-9b-Q2_K.gguf",
+      "bytes": 3356285248,
+      "sha256": "b35a4fce26a4fdeafdadf40cd28128f1fc494f3c01bb5791e1ba98d8e47c9411"
+    }
+  ],
+  "archived_old_i_directories": 24,
+  "build_junction": "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build",
+  "build_target": "I:\\safetensors2GGUF\\build",
+  "work_root": "I:\\safetensors2GGUF",
+  "unrelated_i_files_unchanged": true,
+  "inaccessible_paths_retained": [
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\.pytest-tmp",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\converter-reference",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\converter-reference\\run-aj01vqpb",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\pinned-text-converter",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\pinned-text-converter\\687e7789271ec1276e3470f158428e11a4f80b6f",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\pytest-adapter-check",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\pytest-adapter-formats",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\pytest-companion-final",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\pytest-companion-full",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\pytest-companion-targeted",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\pytest-ernie-final",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\pytest-ernie-safetensors-notes",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\pytest-ernie-target",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\pytest-final-2026-10-19",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\pytest-fix-gate",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\pytest-requalification-initial",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\pytest-vl-complete-guard",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\pytest-vl-namespace",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\pytest-vl-namespace-v2",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\shipped-8640e2f",
+    "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\shipped-8640e2f\\.export-test-tmp"
+  ],
+  "recovery": "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\.build-cleanup-recovery-2026-10-19",
+  "c_free_delta_bytes": 33387810816,
+  "i_free_delta_bytes": 3134918656,
+  "post_cleanup_checks": {
+    "build_junction_verified": true,
+    "native_reference_checksum_verified": true,
+    "pytest_relocated_base_smoke_passed": 3
+  }
+}

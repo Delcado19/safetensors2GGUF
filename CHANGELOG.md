@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Maintenance: Clean generated model/test artifacts, archive verified reports on
+  I:, preserve required reference tools through the relocated build junction, and
+  route the local commit hook's temporary files/log to build. CI is unchanged.
+
 - Fix: Report original-key ERNIE GGUF tensor progress and writing/readback phases
   in the Workbench, show activity while preparation remains at zero, and mirror
   job logs to the launch terminal. Progress reporting preserves exported bytes.

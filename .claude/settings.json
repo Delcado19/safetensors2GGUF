@@ -9,7 +9,7 @@
             "if": "Bash(git commit*)",
             "statusMessage": "Tests werden geprüft...",
             "timeout": 300,
-            "command": "cmd=$(python -c \"import json,sys; print(json.load(sys.stdin).get('tool_input',{}).get('command',''))\"); case \"$cmd\" in git\\ commit*) : ;; *) echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}}'; exit 0 ;; esac; uv run pytest --tb=short -q --basetemp .pytest-tmp -p no:cacheprovider > .pytest-hook-last.log 2>&1; code=$?; if [ $code -eq 0 ] || [ $code -eq 5 ]; then echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}}'; else echo \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"PreToolUse\\\",\\\"permissionDecision\\\":\\\"deny\\\",\\\"permissionDecisionReason\\\":\\\"pytest exited $code - see .pytest-hook-last.log or rerun: uv run pytest\\\"}}\"; fi"
+            "command": "cmd=$(python -c \"import json,sys; print(json.load(sys.stdin).get('tool_input',{}).get('command',''))\"); case \"$cmd\" in git\\ commit*) : ;; *) echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}}'; exit 0 ;; esac; mkdir -p build; uv run python -m pytest --tb=short -q --basetemp build/pytest-hook -p no:cacheprovider > build/pytest-hook-last.log 2>&1; code=$?; if [ $code -eq 0 ] || [ $code -eq 5 ]; then echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}}'; else echo \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"PreToolUse\\\",\\\"permissionDecision\\\":\\\"deny\\\",\\\"permissionDecisionReason\\\":\\\"pytest exited $code - see build/pytest-hook-last.log or rerun: uv run pytest\\\"}}\"; fi"
           }
         ]
       }
@@ -20,7 +20,7 @@
       "Bash(uv run pytest*)",
       "Bash(pytest*)",
       "Bash(uv run pytest --tb=short -q)",
-      "Bash(uv run pytest --tb=short -q --basetemp .pytest-tmp -p no:cacheprovider)"
+      "Bash(uv run pytest --tb=short -q --basetemp build/pytest-hook -p no:cacheprovider)"
     ]
   }
 }

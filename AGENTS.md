@@ -2,6 +2,14 @@
 
 ## Persistent project TODO — load at every session start
 
+**Local artifact location (2026-10-19):** The user requires agent tests and
+conversion artifacts on `I:\safetensors2GGUF`. This workstation's ignored `build`
+directory is a junction to `I:\safetensors2GGUF\build`; preserve that junction.
+Use `I:\safetensors2GGUF\tests` for ad-hoc pytest bases and
+`I:\safetensors2GGUF\conversions` for large conversion outputs. Keep installed
+source models untouched. Use uv with `UV_CACHE_DIR=I:\safetensors2GGUF\uv-cache`.
+The local commit hook uses `build/pytest-hook`; CI retains its runner-local base.
+
 **Resumed WIP checkpoint (2026-10-19): read `CONTINUE.md` first.** The user explicitly
 resumed implementation, authorized regular commits/pushes and requested shutdown
 after a completed larger feature. The following pause notice is historical.
@@ -333,11 +341,11 @@ git commit
 **Type:** `command` (deterministic — not an LLM agent, unlike docs-agent above)
 
 ### What it does
-1. Runs `uv run pytest --tb=short -q --basetemp .pytest-tmp -p no:cacheprovider`
-   (output captured to `.pytest-hook-last.log`, gitignored)
+1. Runs `uv run python -m pytest --tb=short -q --basetemp build/pytest-hook -p no:cacheprovider`
+   (output captured to `build/pytest-hook-last.log`, gitignored)
 2. Exit code `0` or `5` ("no tests collected") → allows the commit
 3. Any other exit code → blocks the commit with the exit code and a pointer
-   to `.pytest-hook-last.log`/`uv run pytest` for details
+   to `build/pytest-hook-last.log`/`uv run pytest` for details
 
 This was originally a `type: "agent"` hook that ran a subagent to analyze and
 attempt to repair failing tests (up to 3 tries) before blocking. Converted to
@@ -349,7 +357,7 @@ directly as the hook's own subprocess. Test failures now block the commit
 outright rather than being auto-repaired; fix them in the normal editing flow
 before retrying the commit.
 
-The repo-local `.pytest-tmp` base directory avoids Windows temp-folder permission
+The `build/pytest-hook` base directory avoids Windows temp-folder permission
 issues in automated commit hooks. Pytest's cache provider is disabled for the
 hook so stale or locked `.pytest_cache` files cannot block a commit.
 
@@ -381,7 +389,7 @@ The CI workflow runs on `windows-latest` and mirrors the local validation gates:
 
 ```bash
 # Run tests only
-uv run pytest --tb=short -q --basetemp .pytest-tmp -p no:cacheprovider
+uv run python -m pytest --tb=short -q --basetemp build/pytest-hook -p no:cacheprovider
 
 # Trigger documentation check manually
 # (start agent via Claude Code)
