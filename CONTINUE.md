@@ -1,5 +1,20 @@
 # Multi-model / vision-language integration
 
+## Tokenizer inspection and explicit repair (2026-10-19)
+
+Workbench inspection and post-download results now expose missing/invalid Tekken
+blobs for ERNIE/Ministral 3 3B and Mistral Small 3.2 24B. The user supplies the
+exact repository's tokenizer.json or tekken.json; no network request or guessed
+tokenizer is used. Repair publishes a separate checkpoint only after validating
+token IDs/byte fallback and complete unchanged-weight payload readback. Existing
+files cannot be overwritten. Structural checks do not prove tokenizer provenance,
+generation quality, other families, or GGUF tokenizer compatibility.
+Validation: 1097 tests pass in 263.98 s through uv; Ruff and frontend build pass.
+Live API checks against both installed ponpoke originals report missing blobs;
+both repaired copies report valid structures. The idle Workbench was restarted
+through uv to activate the API; refresh the browser session before using it.
+See `data/tokenizer-check-validation-2026-10-19.json`. No render was started.
+
 ## ERNIE complete-checkpoint construction passed (2026-10-19)
 
 The user supplied the complete local

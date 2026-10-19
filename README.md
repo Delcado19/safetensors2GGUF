@@ -151,6 +151,14 @@ files. Local matches alone do not certify stock provenance.
 folder, and downloads/merges its safetensors shards into one local file. Downloads
 share job history/cancellation and use server-side `HF_TOKEN`,
 `CODEX_HUGGINGFACE_API_KEY`, or a stored Hub login for restricted repositories.
+Model inspection and completed Safetensors downloads check embedded Tekken
+tokenizers for ERNIE/Ministral 3 3B and Mistral Small 3.2 24B. Missing or invalid
+data exposes **Create repaired copy**: supply a local `tokenizer.json` or
+`tekken.json` from the exact model repository. The new
+`-tokenizer-fixed.safetensors` file preserves and verifies every weight byte;
+existing files are never overwritten. No tokenizer is guessed or downloaded.
+Checks validate structure and vocabulary size, not provenance or inference
+quality. Other families and GGUF tokenizer contracts are not checked yet.
 **Downloads → Civitai** accepts version IDs, version-specific model links, or
 direct download links with `fileId`. Inspect first, select a safetensors/GGUF file,
 then choose **Download / resume**. Partials survive cancellation, network errors

@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Detect missing/invalid embedded ERNIE/Ministral and Mistral Small Tekken
+  tokenizers during model inspection and after Safetensors downloads. Offer an
+  explicit local-tokenizer repair into a separate checkpoint with complete weight
+  payload readback, cancellation, and no overwrite. Other tokenizer contracts and
+  exact tokenizer provenance remain outside this structural check.
+
 - Fix: Inspect diffusion GGUF sources before starting so ERNIE and Molbal adapters
   do not receive native quantizer defaults when the preview was skipped.
 

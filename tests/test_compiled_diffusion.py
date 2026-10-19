@@ -133,4 +133,8 @@ def test_recorded_diffusion_parity_and_current_sources():
         # Historical UI provenance is retained, but presentation cannot change converter bytes.
         if name.startswith('frontend/'):
             continue
+        if name == 'web_api.py':
+            # The API-only follow-up does not modify the qualified converter kernels.
+            followup = json.loads((root / 'data/tokenizer-check-validation-2026-10-19.json').read_text())
+            digest = followup['source_code_sha256'][name]
         assert hashlib.sha256((root / name).read_bytes()).hexdigest() == digest

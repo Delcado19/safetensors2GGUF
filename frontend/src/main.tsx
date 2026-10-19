@@ -27,6 +27,7 @@ import {
 import "./styles.css";
 import { ToolForm } from "./ToolForm";
 import { TechnicalLog } from "./TechnicalLog";
+import { TokenizerRepair, type TokenizerStatus } from "./TokenizerRepair";
 import { HuggingFaceForm } from "./HuggingFaceForm";
 import { CivitaiCredentials } from "./CivitaiCredentials";
 import { CivitaiForm } from "./CivitaiForm";
@@ -44,6 +45,7 @@ type Config = {
   hf_authenticated: boolean;
 };
 type Job = {
+  tokenizer?: TokenizerStatus | null;
   id: string;
   status: string;
   progress: number;
@@ -76,6 +78,7 @@ type Job = {
     | null;
 };
 type Inspection = {
+  tokenizer?: TokenizerStatus;
   architecture: string;
   source_bytes: number;
   estimated_bytes: number | null;
@@ -107,6 +110,7 @@ const jobLabel = (job: Job) =>
       analyze: "Component comparison",
       pad_tokens: "Pad-token repair",
       restore_5d: "5D restoration",
+      tokenizer_repair: "Tokenizer repair",
       download: "Hub download",
       civitai_download: "Civitai download",
     }) as Record<string, string>
@@ -1051,6 +1055,8 @@ function App() {
                           : "No estimated storage saving"}
                       </div>
                     )}
+                    <TokenizerRepair key={source} source={source} check={inspection?.tokenizer}
+                      busy={busy || submitting} repair={body => start(body)} />
                     <button
                       className="secondary inspect-button"
                       disabled={
@@ -1140,6 +1146,8 @@ function App() {
                           <span>{job.output}</span>
                         </div>
                       )}
+                      <TokenizerRepair key={job.output} source={job.output} check={job.tokenizer}
+                        busy={busy || submitting} repair={body => start(body)} />
                       {job.result && (
                         <div className="component-results">
                           {job.result.map((item) => (

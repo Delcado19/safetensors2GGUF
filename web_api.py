@@ -40,6 +40,7 @@ from component_extract import analyze_components, default_output_root, extract_c
 from fix_pad_tokens import fix_pad_tokens
 from fix_5d_tensors import fix_5d_tensors
 from hf_download import download_repo_as_single_safetensors, inspect_repo, _hub_token, _validate_relative_path
+from tokenizer_check import check_tokenizer, repair_tokenizer
 from huggingface_hub import get_token
 from huggingface_hub.utils import validate_repo_id
 from models.architectures import detect_arch
@@ -123,6 +124,7 @@ class Job:
         self.thread = None
         self.outputs = []
         self.result = None
+        self.tokenizer = None
 
     def snapshot(self):
         """Return a JSON-ready, internally consistent state."""
@@ -133,9 +135,9 @@ class Job:
                     'format': self.parameters.format, 'started': self.started,
                     'model_kind': self.parameters.model_kind,
                     'operation': getattr(self.parameters, 'operation', 'convert'),
-                    'outputs': list(self.outputs), 'result': self.result,
+                    'outputs': list(self.outputs), 'result': self.result, 'tokenizer': self.tokenizer,
                     'indeterminate': (self.parameters.model_kind == 'text_encoder' or
-                                      getattr(self.parameters, 'operation', '') in {'components', 'analyze', 'download'}) and self.status in {'queued', 'running', 'cancelling'},
+                                      getattr(self.parameters, 'operation', '') in {'components', 'analyze', 'download', 'tokenizer_repair'}) and self.status in {'queued', 'running', 'cancelling'},
                     'finished': self.finished}
 
     def emit(self, event):
@@ -179,6 +181,9 @@ class Job:
                 output = download_repo_as_single_safetensors(params.source, params.destination,
                     subfolder=params.subfolder, revision=revision,
                     overwrite=params.overwrite, on_progress=transfer_phase, **callbacks)
+            elif operation == 'tokenizer_repair':
+                output = repair_tokenizer(params.source, params.destination, params.tokenizer,
+                                          **callbacks)
             elif operation == 'analyze':
                 results = analyze_components(params.source, params.destination, cancel_event=self.cancel)
                 with self.lock:
@@ -229,6 +234,13 @@ class Job:
                     cancel_event=self.cancel, log_tensor_every=25,
                     on_log=lambda message: self.emit(('log', message)),
                     on_progress=lambda index, total, key: self.emit(('progress', index, total, key)))
+            if (operation in {'download', 'civitai_download', 'tokenizer_repair'} or params.model_kind == 'text_encoder') and str(output).lower().endswith('.safetensors'):
+                # A successful download need not be a self-contained native encoder.
+                try:
+                    self.tokenizer = check_tokenizer(output)
+                except Exception:
+                    self.tokenizer = {'status': 'not_checked', 'repairable': False,
+                                      'message': 'Tokenizer inspection could not complete.'}
             with self.lock:
                 # Publishing an output wins a late cancellation: report success
                 # truthfully if the atomic writer already completed.
@@ -256,10 +268,11 @@ class ToolRequest(BaseModel):
     """Local extraction/repair inputs; destination means models root for extraction."""
 
     model_config = ConfigDict(extra='forbid')
-    operation: Literal['analyze', 'components', 'diffusion', 'pad_tokens', 'restore_5d']
+    operation: Literal['analyze', 'components', 'diffusion', 'pad_tokens', 'restore_5d', 'tokenizer_repair']
     source: str = Field(min_length=1, max_length=4096)
     destination: str = Field(default='', max_length=4096)
     sidecar: str = Field(default='', max_length=4096)
+    tokenizer: str = Field(default='', max_length=4096)
     components: list[Literal['vae', 'clip_l', 'clip_g']] = Field(default_factory=lambda: ['clip_l', 'clip_g'], max_length=3)
     overwrite: bool = False
     reuse_identical: bool = True
@@ -501,7 +514,8 @@ def create_app() -> FastAPI:
                     if params.container == 'safetensors' else None)
                 return {'architecture': family, 'source_bytes': Path(params.source).stat().st_size,
                         'estimated_bytes': breakdown['total'] if breakdown else None,
-                        'destination': params.destination, 'support': support, 'support_reason': reason}
+                        'destination': params.destination, 'support': support, 'support_reason': reason,
+                        'tokenizer': check_tokenizer(params.source)}
             arch = detect_arch(load_state_dict(params.source))
             if params.container == 'gguf':
                 available = ([*KREA_CHOICES, *[(label, key) for label, key in EXTENDED_CHOICES if key not in {item[1] for item in KREA_CHOICES}]] if arch.arch == 'krea2' else
@@ -655,6 +669,25 @@ def create_app() -> FastAPI:
         if not source.is_file() or source.suffix.lower() != ('.gguf' if repair else '.safetensors'):
             raise HTTPException(400, 'Choose an existing GGUF' if repair else 'Choose an existing safetensors checkpoint')
         params.source = str(source.resolve())
+        if params.operation == 'tokenizer_repair':
+            try:
+                tokenizer = Path(params.tokenizer.strip()).expanduser()
+                if not params.tokenizer.strip() or not tokenizer.is_file() or tokenizer.suffix.lower() != '.json':
+                    raise ValueError('Choose an existing tokenizer.json or tekken.json from this model repository')
+                destination = source.with_name(source.stem + '-tokenizer-fixed.safetensors')
+                if params.destination.strip():
+                    destination = Path(params.destination.strip()).expanduser()
+                if destination.suffix.lower() != '.safetensors' or params.overwrite:
+                    raise ValueError('Tokenizer repair requires a new safetensors output; overwrite is disabled')
+                validate_output(source, destination, False)
+                params.tokenizer, params.destination = str(tokenizer.resolve()), str(destination.resolve())
+                if params.sidecar:
+                    raise ValueError('A sidecar only applies to 5D restoration')
+            except (ValueError, OSError) as exc:
+                raise HTTPException(400, str(exc)) from exc
+            return enqueue(params)
+        if params.tokenizer:
+            raise HTTPException(400, 'Tokenizer input only applies to tokenizer repair')
         if params.sidecar and params.operation != 'restore_5d':
             raise HTTPException(400, 'A sidecar only applies to 5D restoration')
         try:

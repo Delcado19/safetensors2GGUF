@@ -1,0 +1,48 @@
+{
+  "scope": "API/tokenizer structural inspection and atomic repair only; no new numerical converter, inference, or tokenizer-provenance qualification.",
+  "targeted_tests": {
+    "command": "uv run --no-sync python -m pytest tests/test_tokenizer_check.py tests/test_web_api.py tests/test_hf_download.py --tb=short -q --basetemp .pytest-tmp -p no:cacheprovider",
+    "passed": 44
+  },
+  "local_header_checks": {
+    "ponpoke TE original": "missing",
+    "ponpoke PE original": "missing",
+    "ponpoke TE repaired": "valid",
+    "ponpoke PE repaired": "valid"
+  },
+  "source_code_sha256": {
+    "web_api.py": "324c05f3ca77698fffdf2873cfbd578293ba008509f835fd00c5d9555d6c4c61",
+    "tokenizer_check.py": "f8ed6565784c0ee179f4047acd7ba3729b3f32ff007a2277a7fb5272f2c01f2a",
+    "frontend/src/TokenizerRepair.tsx": "0005951b1825619ca9a68945ae8b3a4ee868f3f1775027ffcbfde16e6cfdc285",
+    "frontend/src/main.tsx": "54c28879b585232669b7bac529252f549f8a103c371d82fa48632e44453da6e8"
+  },
+  "full_suite": {
+    "passed": 1097,
+    "seconds": 263.98,
+    "command": "uv run --no-sync python -m pytest --tb=short -q --basetemp .pytest-tmp -p no:cacheprovider"
+  },
+  "live_api_checks": [
+    {
+      "file": "ponpoke-ernie-prompt-enhancer-abliterated-comfy.safetensors",
+      "status": "valid",
+      "repairable": false
+    },
+    {
+      "file": "ponpoke-ernie-prompt-enhancer-abliterated.safetensors",
+      "status": "missing",
+      "repairable": true
+    },
+    {
+      "file": "ponpoke-ministral-3-3b-aliterated-comfy.safetensors",
+      "status": "valid",
+      "repairable": false
+    },
+    {
+      "file": "ponpoke-ministral-3-3b-aliterated.safetensors",
+      "status": "missing",
+      "repairable": true
+    }
+  ],
+  "production_api_active": true,
+  "frontend_component_static_render_check": "missing/invalid show repair; valid/not_checked do not"
+}
