@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Fix: Inspect diffusion GGUF sources before starting so ERNIE and Molbal adapters
+  do not receive native quantizer defaults when the preview was skipped.
+
 - Fix: Show a visible activity bar for indeterminate jobs, including Hugging Face
   downloads between shard updates; respect reduced-motion preferences without
   presenting shard counts as byte percentages.

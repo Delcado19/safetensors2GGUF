@@ -351,7 +351,18 @@ function App() {
     setSubmitting(true);
     setError("");
     try {
-      setJob(await api<Job>(body ? endpoint : "jobs", body || parameters()));
+      const request = parameters();
+      if (!body && modelKind === "diffusion" && container === "gguf") {
+        // Starting without a preview must still discard native-only defaults for adapters.
+        const result = await api<Inspection>("inspect", request);
+        setInspection(result);
+        if (result.formats) setSourceFormats({ source, choices: result.formats, backend: result.backend });
+        if (["original", "molbal"].includes(result.backend || "")) {
+          Object.assign(request, { executable: "", threads: 0, keep_intermediate: false,
+            precision_profile: "auto", gguf_backend: "native" });
+        }
+      }
+      setJob(await api<Job>(body ? endpoint : "jobs", body || request));
     } catch (reason) {
       setError((reason as Error).message);
     } finally {
