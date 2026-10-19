@@ -88,3 +88,34 @@ Repeat the complete diffusion check using fresh paths and `--family ernie_image`
 ```powershell
 G:/ComfyUI-Easy-Install/python_embeded/python.exe scripts/validate_companion_model.py --comfy-root G:/ComfyUI-Easy-Install/ComfyUI --source <ernie.safetensors> --family ernie_image --work build/new-ernie-check --output data/new-ernie-check.json
 ```
+
+### Native Safetensors output
+
+The user additionally requested Safetensors conversion. A separate INT8_MIXED
+file was generated using the existing `convert_to_safetensors` path, preserving
+the original BF16 file. The 8,221,839,352-byte output retains all 409 source
+tensor shapes: 252 INT8 weights plus 157 protected tensors that compare exactly
+with the source. Its 661 entries include scale sidecars. Normal native
+`comfy.sd.load_diffusion_model` constructs an `ErnieImage` on CPU without
+missing/unexpected weights; no GGUF companion loader is involved.
+An additional independent comparison of the BF16 tensors' raw byte views confirms
+that all 157 protected payloads are byte-identical, including signed-zero bits.
+
+See `data/ernie-int8-mixed-safetensors-validation.json` for source/output hashes,
+local artifact path and pinned writer hashes. The original source SHA256 matches
+the preceding GGUF validation. The final check reused the already-published
+conversion after correcting a local report-script name collision; no conversion
+timing is claimed. GPU inference, quality, LoRA and forced offload remain untested.
+The report retains raw executed-checkout hashes and separate canonical Git-blob
+hashes: Windows line endings differ, while normalized source bytes match Git.
+
+Recreate with a fresh output path using the project API:
+
+```python
+from convert_safetensors import convert_to_safetensors
+convert_to_safetensors(source, destination, target_key="INT8_MIXED")
+```
+
+For the native CPU construction check, the installed ComfyUI uses CPU mode and
+BF16 diffusion weights; it loads the file with its ordinary Safetensors loader.
+This verifies loading, not reduced inference memory or faster inference.

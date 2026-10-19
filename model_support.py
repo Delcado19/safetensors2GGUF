@@ -160,6 +160,11 @@ _TE_STRUCTURALLY_IMPOSSIBLE: dict[tuple[str, str], str] = {
 def support_reason(arch_key: str, format_key: str) -> str | None:
     """Tooltip text for a diffusion-model support-table cell, or None if the
     cell needs no extra explanation beyond its symbol."""
+    if arch_key == 'ernie_image' and format_key == 'INT8_MIXED':
+        return ('BigLoveEryn1 BF16 to INT8_MIXED Safetensors: all 409 source tensor '
+                'shapes retained, 157 protected tensors byte-exact, and normal native '
+                'ComfyUI CPU construction passed without missing/unexpected weights. '
+                'Inference remains untested. Source: docs/companion-loader-validation.md.')
     return (_STRUCTURALLY_IMPOSSIBLE.get((arch_key, format_key)) or
             _SCOPED_RENDER_NOTES.get((arch_key, format_key)))
 
@@ -1060,6 +1065,8 @@ def build_support_table() -> list[dict]:
             if instance.arch == 'ernie_image' and format_key == 'GGUF':
                 row[f'{format_key}__scope'] = 'Q4_K_M / CPU BF16 construction'
                 row[f'{format_key}__format'] = 'Q4_K_M'
+            if instance.arch == 'ernie_image' and format_key == 'INT8_MIXED':
+                row[f'{format_key}__scope'] = 'BigLoveEryn1 / native CPU load'
             if instance.arch == 'krea2' and format_key == 'GGUF':
                 row[f'{format_key}__scope'] = 'Requires molbal · tests pending'
         rows.append(row)

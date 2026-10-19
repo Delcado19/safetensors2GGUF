@@ -1,0 +1,33 @@
+{
+  "scope": "Complete local INT8_MIXED Safetensors conversion, protected-byte readback and normal native CPU model construction; no inference/rendering.",
+  "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\diffusion_models\\Ernie\\BigLoveEryn1_bf16.safetensors",
+  "source_bytes": 16067034480,
+  "source_sha256": "de6755e5e5868ccd441f6e1273e4c5e80697fb465b3c5794c25ec162980caf64",
+  "source_unchanged": true,
+  "output": "C:\\Users\\Delcado\\Documents\\Software_Projects\\ComfyUI\\safetensors2GGUF\\build\\ernie-safetensors\\BigLoveEryn1-INT8_MIXED.safetensors",
+  "output_bytes": 8221839352,
+  "output_sha256": "51ee8bbb1b74f66925bdfbb5cf705e5884a2d158fbb9bf737dd46a8d82a9f4d9",
+  "architecture": "ernie_image",
+  "target": "INT8_MIXED",
+  "conversion_seconds": null,
+  "source_tensor_count": 409,
+  "output_tensor_count": 661,
+  "protected_tensors_exact": 157,
+  "int8_weight_tensors": 252,
+  "native_model_class": "ErnieImage",
+  "native_warnings": [],
+  "comfy_sd_sha256": "8dc8b77fe54a46e35120a13c266a2241c4e32158dfc36cc9960c2fac5df1947b",
+  "source_code_sha256": {
+    "convert_safetensors.py": "0b5d65168db0cccb1859a5e061bed351e7d356e690e6418f5f47dc64d0e95ecf",
+    "safetensors_quant.py": "d700932c9090af0dd7dc90002a28b7378c916eb27bf46e924702783a4f701c43",
+    "safetensors_quant_int8.py": "e8376652666ad2589bed77e1308c76f140e6f4513b109114e319d5d1e68eab09",
+    "models/architectures.py": "23d3e706d92ceea067dce69666672af907849c2742acbf4bac9276bb0b8e81a3"
+  },
+  "source_code_git_blob_sha256": {
+    "convert_safetensors.py": "485692e5ad5f351e0ce2dcd0811994869a1ea51832a5bcfbf31aaae0d28050a1",
+    "safetensors_quant.py": "d700932c9090af0dd7dc90002a28b7378c916eb27bf46e924702783a4f701c43",
+    "safetensors_quant_int8.py": "5f93130ef7d41032877eb76d6d27990156c3315944a32b5b1e5e5e8768344733",
+    "models/architectures.py": "23d3e706d92ceea067dce69666672af907849c2742acbf4bac9276bb0b8e81a3"
+  },
+  "protected_tensor_bytes_exact": 157
+}

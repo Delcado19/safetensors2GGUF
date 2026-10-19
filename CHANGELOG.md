@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Change: Record complete BigLoveEryn1 INT8_MIXED Safetensors conversion and
+  normal native ComfyUI CPU loading: 252 INT8 weights, 157 unchanged protected
+  tensors, 8.22 GB output versus 16.07 GB source. Inference remains untested.
+
 - Change: Validate the complete BigLoveEryn1 BF16 ERNIE Q4_K_M export: all 409
   tensors survive readback and the real diffusion companion loader constructs
   the native CPU BF16 model without missing/unexpected weights. Keep inference

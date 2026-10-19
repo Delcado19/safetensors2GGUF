@@ -17,8 +17,15 @@ of checking only text warnings. The user's final commit/push/shutdown instructio
 remains active after the final test/documentation gates and verified push.
 The final ERNIE gate passes **1087 tests** in 267.50 s; Ruff, frontend build
 and the documentation check pass. The user additionally asked for Safetensors
-conversion. A separate INT8_MIXED output and normal native Safetensors loading
-check are in progress; shutdown is deferred until that additional work finishes.
+conversion. A separate INT8_MIXED output now passes normal native CPU Safetensors
+loading with no missing/unexpected weights: 8,221,839,352 bytes, 252 INT8 weights,
+157 protected tensors exactly preserved, all 409 source shapes retained (661
+output entries including scales). Original source SHA256 is unchanged. See
+`data/ernie-int8-mixed-safetensors-validation.json` for artifact path and hashes.
+The GGUF checkpoint was committed/pushed as `1534d42`; the next checkpoint records
+the additional Safetensors evidence and table notes. After its verified push,
+the requested shutdown can proceed. No further conversion work remains in this
+session; image/GPU inference is still not qualified.
 Original models and the installed ComfyUI remain unchanged; no renders or
 inference were started. All three requested complete-model construction points
 are now covered at one representative Q4_K_M precision per family. GPU execution,

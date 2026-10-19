@@ -90,6 +90,10 @@ class TestSupportLevel:
         assert row['GGUF__scope'] == 'Q4_K_M / CPU BF16 construction'
         assert '409 tensors' in row['GGUF__reason']
         assert 'inference remains untested' in row['GGUF__reason']
+        assert row['INT8_MIXED'] == SUPPORT_UNKNOWN
+        assert row['INT8_MIXED__scope'] == 'BigLoveEryn1 / native CPU load'
+        assert '157 protected tensors byte-exact' in row['INT8_MIXED__reason']
+        assert 'Inference remains untested' in row['INT8_MIXED__reason']
 
     def test_te_gguf_reason_requires_unqualified_companion_loader(self):
         assert text_encoder_support_reason("qwen2.5-vl-7b", "GGUF") is not None

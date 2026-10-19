@@ -11,6 +11,9 @@ now pass real native ComfyUI CPU model construction through the companion loader
 (ERNIE uses BF16 CPU weights).
 This is loading evidence, not inference/render qualification; see the
 [complete-checkpoint validation](docs/companion-loader-validation.md).
+The same ERNIE checkpoint also passes normal native CPU loading as INT8 Mixed
+Safetensors (8.22 GB versus 16.07 GB, protected tensors unchanged); image inference
+for this output remains untested.
 
 Converts Safetensors / CKPT diffusion model checkpoints to **GGUF** for use with
 **llama.cpp** and **ComfyUI-GGUF**, or to a quantized **Safetensors** file that
