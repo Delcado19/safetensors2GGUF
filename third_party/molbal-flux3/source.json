@@ -1,0 +1,12 @@
+{
+  "archive": "source.tar.gz",
+  "license": "Apache-2.0",
+  "integration_status": "FLUX.3 only; existing architecture adapters retain their prior snapshots",
+  "commit": "b07c7e0437eeb4b2dab6e96509cbb8efdabf1b01",
+  "snapshot_date": "2026-10-19",
+  "repository": "https://github.com/molbal/ComfyUI-GGUF",
+  "file_count": 54,
+  "size_bytes": 947843,
+  "sha256": "c097b27ec81d78c8c0fce6c84581b38939e96b7d614bf6076e86c6eb5451c77f",
+  "archive_root": "ComfyUI-GGUF-b07c7e0437eeb4b2dab6e96509cbb8efdabf1b01"
+}

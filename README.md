@@ -71,6 +71,7 @@ policies remain separate from block mathematics.
 |---|---|
 | FLUX.1 | Diffusers |
 | FLUX.2 (klein / Dev) | Diffusers (shares `flux` arch tag with Flux.1) |
+| FLUX.3 Klein | Native ComfyUI keys (`flux3`); pinned Molbal GGUF adapter, matching FLUX.3-capable loader required |
 | Stable Diffusion 3 | Diffusers |
 | SDXL | Diffusers / Non-Diffusers |
 | SD 1.x | Diffusers / Non-Diffusers |
@@ -83,8 +84,8 @@ policies remain separate from block mathematics.
 | Lumina 2 | Diffusers |
 | Z-Image (Turbo / Base) | Diffusers (shares `lumina2` arch tag) |
 | Qwen-Image / Qwen-Image-Edit (incl. 2511) | Diffusers |
-| ERNIE-Image | Safetensors only (`ernie_image`; GGUF unsupported) |
-| Krea 2 | Safetensors only (`krea2`; GGUF unsupported) |
+| ERNIE-Image | Safetensors and original-key GGUF (`ernie_image`); GGUF requires Original Diffusion Model (S2GGUF) |
+| Krea 2 | Safetensors and pinned Molbal GGUF (`krea2`); matching Molbal loader required |
 
 ## Installation
 
@@ -151,14 +152,38 @@ files. Local matches alone do not certify stock provenance.
 folder, and downloads/merges its safetensors shards into one local file. Downloads
 share job history/cancellation and use server-side `HF_TOKEN`,
 `CODEX_HUGGINGFACE_API_KEY`, or a stored Hub login for restricted repositories.
-Model inspection and completed Safetensors downloads check embedded Tekken
-tokenizers for ERNIE/Ministral 3 3B and Mistral Small 3.2 24B. Missing or invalid
-data exposes **Create repaired copy**: supply a local `tokenizer.json` or
-`tekken.json` from the exact model repository. The new
+**Extract & repair → Check tokenizer** inspects an existing Safetensors text
+encoder without converting it. Model inspection and completed downloads also
+check embedded Tekken for ERNIE/Ministral 3 3B and Mistral Small 3.2 24B, and
+SentencePiece for UMT5-XXL. Missing or invalid embedded data exposes
+**Create repaired copy**: supply a local `tokenizer.json`, `tekken.json`, or
+`spiece.model` from the exact model repository. The new
 `-tokenizer-fixed.safetensors` file preserves and verifies every weight byte;
 existing files are never overwritten. No tokenizer is guessed or downloaded.
 Checks validate structure and vocabulary size, not provenance or inference
-quality. Other families and GGUF tokenizer contracts are not checked yet.
+quality. Installed Qwen3 4B/8B, Qwen3-VL and Qwen2.5-VL encoders instead use
+ComfyUI's shared `qwen25_tokenizer` resources. The check loads that native tokenizer
+offline, tests encoding and checks vocabulary/chat-token IDs against the model.
+For missing/invalid resources, select a healthy `qwen25_tokenizer` directory from
+the same ComfyUI version and choose **Repair shared runtime tokenizer**. The old
+directory is retained as a uniquely named backup; failed publication rolls back.
+This changes shared runtime resources for all Qwen encoders; restart ComfyUI after
+repair. Model weights remain untouched. Models outside a discoverable ComfyUI
+`models/` installation, other families and GGUF tokenizer contracts report
+`not_checked`; no speculative repair is offered.
+
+FLUX.3 conversion uses the complete Apache-2.0 Molbal snapshot
+`b07c7e0437eeb4b2dab6e96509cbb8efdabf1b01` under `third_party/molbal-flux3`,
+verified offline before execution. Other adapters retain their previous snapshots.
+The existing 17 GGUF presets use the adapter's architecture policy and the owned
+CPU K kernels. Final image patch projection stays F32 and K=128 input projections
+are excluded from K quantization. Successful conversion/readback does not qualify
+render quality; the support table therefore remains Untested for FLUX.3.
+The installed Klein BF16 checkpoint has passed complete Q4_K_M export/readback
+and CPU construction (359 tensors, 3,123,680,032-byte GGUF); see
+`data/flux3-q4km-native-validation-2026-10-19.json`. This includes no forward pass
+or render. `scripts/check_flux3_native.py` reproduces the CPU construction check
+with an explicitly supplied installed ComfyUI and extracted pinned backend.
 ERNIE GGUF exports report preparation, completed tensors, writing and readback
 phases in the job panel. Percentages represent work stages, not estimated time.
 Job messages also appear in the launch terminal; keep `start_gui.bat`'s terminal

@@ -1,0 +1,116 @@
+{
+  "scope": "Live localhost Workbench FLUX.3 inspection and schematic conversion; installed-model tokenizer inspection. No render and no live tokenizer resource replacement.",
+  "inspection": {
+    "architecture": "flux3",
+    "source_bytes": 11097404512,
+    "estimated_bytes": null,
+    "breakdown": null,
+    "destination": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\diffusion_models\\Flux.3 Klein\\flux3_image_klein_sd_bf16-Q4_K_M.gguf",
+    "formats": [
+      [
+        "F16",
+        "F16"
+      ],
+      [
+        "BF16",
+        "BF16"
+      ],
+      [
+        "Q8_0",
+        "Q8_0"
+      ],
+      [
+        "Q5_1",
+        "Q5_1"
+      ],
+      [
+        "Q5_0",
+        "Q5_0"
+      ],
+      [
+        "Q4_1",
+        "Q4_1"
+      ],
+      [
+        "Q4_0",
+        "Q4_0"
+      ],
+      [
+        "Q2_K",
+        "Q2_K"
+      ],
+      [
+        "Q3_K_M",
+        "Q3_K_M"
+      ],
+      [
+        "Q4_K_S",
+        "Q4_K_S"
+      ],
+      [
+        "Q4_K_M",
+        "Q4_K_M"
+      ],
+      [
+        "Q5_K_S",
+        "Q5_K_S"
+      ],
+      [
+        "Q5_K_M",
+        "Q5_K_M"
+      ],
+      [
+        "Q6_K",
+        "Q6_K"
+      ],
+      [
+        "Q8_CR",
+        "Q8_CR"
+      ],
+      [
+        "Q4_CR",
+        "Q4_CR"
+      ],
+      [
+        "Q4_CR_W4A4",
+        "Q4_CR_W4A4"
+      ]
+    ],
+    "backend": "molbal",
+    "support": "unknown",
+    "support_reason": "Requires the matching molbal/ComfyUI architecture loader; export checks do not establish inference quality."
+  },
+  "app_conversion": {
+    "status": "succeeded",
+    "output": "I:\\safetensors2GGUF\\conversions\\flux3-app-smoke.gguf",
+    "progress": 1.0
+  },
+  "installed_tokenizer_counts": {
+    "total": 14,
+    "valid": 12,
+    "missing_retained_raw_ernie_originals": 2
+  },
+  "native_parity_cases": 66,
+  "frontend_build": "passed",
+  "ruff": "passed",
+  "source_code_sha256": {
+    "tokenizer_check.py": "e0db03171e2529fdb936ffa3fb6c14e2e983c22c554e407548016608c0ecb5a8",
+    "web_api.py": "c3291e95996834306bf9dc757161035a21828caf1114093609c0d73ab11bab92",
+    "extended_backend.py": "2d1f655f73a6bb82e685c2cb76f454c03154388614ac59be504f17215407ed44",
+    "models/architectures.py": "d38e1dbd6343dbe0ce5fa4a1c21a5d90efdefb47f0148bd0b1ee22b4627dae03",
+    "frontend/src/TokenizerRepair.tsx": "dcf9c46cecf02763239bd90081b6b4b296f0d7145050a8088e6aa3b138fccfe7",
+    "frontend/src/ToolForm.tsx": "d9a8cbdb933ae223869fe73130eff4db3322d4479d7c586e77ac27595d1cdd6f"
+  },
+  "tests": {
+    "command": "uv run --no-sync python -m pytest --tb=short -q --basetemp I:/safetensors2GGUF/tests/full-tokenizer-flux3-final -p no:cacheprovider",
+    "passed": 1125,
+    "seconds": 264.29,
+    "log": "I:/safetensors2GGUF/tests/full-tokenizer-flux3-final.log"
+  },
+  "live_support": {
+    "architecture": "flux3",
+    "display_name": "FLUX.3 Klein",
+    "GGUF": "unknown",
+    "reason": "No render qualification"
+  }
+}

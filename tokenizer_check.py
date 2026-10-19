@@ -1,13 +1,16 @@
-"""Check native Mistral/ERNIE tokenizer blobs and repair explicit local copies.
+"""Check installed Qwen runtime resources and native Tekken/SentencePiece blobs.
 
-Structural checks cannot establish tokenizer provenance. Repairs require the user
-to supply tokenizer.json or tekken.json from the exact checkpoint repository.
+Structural checks cannot establish tokenizer provenance. Embedded repairs require
+the exact checkpoint's tokenizer; runtime repairs require matching ComfyUI assets.
 """
 import base64
 import hashlib
 import json
 from pathlib import Path
 import struct
+import shutil
+import tempfile
+import uuid
 
 from safetensors import safe_open
 from conversion_io import atomic_output, validate_output
@@ -52,27 +55,128 @@ def _context(source):
     return state.shape_of(key)[0]
 
 
+def _blob_context(source):
+    """Select only embedded formats actually consumed by the native encoder."""
+    vocab = _context(source)
+    if vocab is not None:
+        return 'tekken_model', vocab
+    state = load_state_dict(str(source), strip_prefixes=False)
+    if detect_text_encoder_family(state) == 'umt5-xxl':
+        key = next(key for key in state if key.endswith(('shared.weight', 'embed_tokens.weight')))
+        return 'spiece_model', state.shape_of(key)[0]
+    return None
+
+
+def _validate_blob(data, key, vocab):
+    """Allow padded embedding rows, but never token IDs outside the model vocabulary."""
+    if key == 'tekken_model':
+        _validate(data, vocab)
+    else:
+        import sentencepiece
+        tokenizer = sentencepiece.SentencePieceProcessor(model_proto=data)
+        if not 0 < tokenizer.vocab_size() <= vocab:
+            raise ValueError('SentencePiece vocabulary exceeds checkpoint embeddings')
+
+
+def _runtime_context(source):
+    """Resolve Qwen's shared native assets from the selected installed model path."""
+    state = load_state_dict(str(source), strip_prefixes=False)
+    family = detect_text_encoder_family(state)
+    if family not in {'qwen3-4b', 'qwen3-8b', 'qwen3-vl', 'qwen2.5-vl-7b'}:
+        return None
+    key = next(key for key in state if key.endswith('embed_tokens.weight'))
+    for parent in Path(source).resolve().parents:
+        if parent.name == 'models' and (parent.parent / 'comfy/text_encoders').is_dir():
+            return parent.parent / 'comfy/text_encoders/qwen25_tokenizer', state.shape_of(key)[0]
+    return None
+
+
+def _validate_runtime(folder, vocab):
+    """Use the same tokenizer class and fixed chat token IDs as native ComfyUI."""
+    from transformers import Qwen2Tokenizer
+    for name in ('vocab.json', 'merges.txt', 'tokenizer_config.json'):
+        path = Path(folder) / name
+        if not path.is_file() or not 0 < path.stat().st_size <= MAX_TOKENIZER_BYTES:
+            raise ValueError('Missing or oversized native tokenizer resource: ' + name)
+    tokenizer = Qwen2Tokenizer.from_pretrained(str(folder), local_files_only=True)
+    values = list(tokenizer.get_vocab().values())
+    if len(values) < 151646 or min(values) < 0 or max(values) >= vocab or len(set(values)) != len(values):
+        raise ValueError('Runtime tokenizer vocabulary does not fit checkpoint embeddings')
+    for token, expected in (('<|endoftext|>', 151643), ('<|im_start|>', 151644), ('<|im_end|>', 151645)):
+        if tokenizer.convert_tokens_to_ids(token) != expected:
+            raise ValueError('Runtime tokenizer chat-token IDs do not match native Qwen')
+    if not tokenizer.encode('Tokenizer check: English, Deutsch, 中文.', add_special_tokens=False):
+        raise ValueError('Runtime tokenizer cannot encode text')
+
+
+def repair_runtime_tokenizer(source, reference, *, on_log=None, cancel_event=None):
+    """Restore explicit healthy runtime assets, retaining a rollback directory."""
+    context = _runtime_context(source)
+    if context is None:
+        raise ValueError('Cannot locate native Qwen tokenizer resources for this model')
+    target, vocab = context
+    reference = Path(reference).resolve()
+    if reference == target.resolve():
+        raise ValueError('Choose a separate healthy tokenizer resource directory')
+    _validate_runtime(reference, vocab)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    backup = target.with_name(target.name + '.backup-' + uuid.uuid4().hex)
+    with tempfile.TemporaryDirectory(prefix='tokenizer-repair-', dir=target.parent) as scratch:
+        staged = Path(scratch) / 'resources'
+        staged.mkdir()
+        for name in ('vocab.json', 'merges.txt', 'tokenizer_config.json'):
+            shutil.copyfile(reference / name, staged / name)
+        _validate_runtime(staged, vocab)
+        if cancel_event is not None and cancel_event.is_set():
+            raise ConversionCancelled('cancelled')
+        # Keep the complete old directory; restore it if publishing the validated copy fails.
+        existed = target.exists()
+        if existed:
+            target.rename(backup)
+        try:
+            staged.rename(target)
+        except OSError:
+            if existed:
+                backup.rename(target)
+            raise
+    if on_log:
+        on_log(f'INFO: Native Qwen tokenizer restored; previous resources retained at {backup if existed else "no previous directory"}. Restart ComfyUI.')
+    return str(source)
+
+
 def check_tokenizer(source):
     """Return scoped structural status without loading model weights or networking."""
     if Path(source).suffix.lower() != '.safetensors':
         return {'status': 'not_checked', 'repairable': False}
-    vocab_size = _context(source)
-    if vocab_size is None:
+    context = _blob_context(source)
+    if context is None:
+        runtime = _runtime_context(source)
+        if runtime is not None:
+            folder, vocab = runtime
+            result = {'repairable': True, 'repair_kind': 'runtime', 'resource_path': str(folder)}
+            try:
+                _validate_runtime(folder, vocab)
+            except (ValueError, OSError, TypeError, KeyError, IndexError):
+                return result | {'status': 'invalid' if folder.exists() else 'missing',
+                                 'message': 'Native Qwen resources need repair. Select a healthy qwen25_tokenizer directory from the same ComfyUI version. Shared by Qwen encoders; a backup is retained.'}
+            return {'status': 'valid', 'repairable': False, 'resource_path': str(folder),
+                    'message': 'Native Qwen runtime tokenizer loads locally and token IDs fit the model. Tokenizer provenance is not verified.'}
         return {'status': 'not_checked', 'repairable': False}
+    blob_key, vocab_size = context
     header = _read_safetensors_header(str(source))
     result = {'repairable': True,
-              'message': 'Select tokenizer.json or tekken.json from this exact model repository.'}
-    if 'tekken_model' not in header:
-        return result | {'status': 'missing', 'message': 'Native ComfyUI loading requires an embedded Tekken tokenizer. ' + result['message']}
+              'message': 'Select tokenizer.json or tekken.json from this exact model repository.' if blob_key == 'tekken_model' else 'Select spiece.model from this exact model repository.'}
+    if blob_key not in header:
+        return result | {'status': 'missing', 'message': f'Native ComfyUI loading requires embedded {blob_key}. ' + result['message']}
     try:
-        item = header['tekken_model']
+        item = header[blob_key]
         length = item['data_offsets'][1] - item['data_offsets'][0]
         if item['dtype'] != 'U8' or item['shape'] != [length] or not 0 < length <= MAX_TOKENIZER_BYTES:
             raise ValueError('Invalid tokenizer tensor')
         with safe_open(str(source), framework='pt') as checkpoint:
-            data = checkpoint.get_tensor('tekken_model').numpy().tobytes()
-        _validate(data, vocab_size)
-    except (ValueError, TypeError, KeyError, IndexError, OverflowError):
+            data = checkpoint.get_tensor(blob_key).numpy().tobytes()
+        _validate_blob(data, blob_key, vocab_size)
+    except (ValueError, TypeError, KeyError, IndexError, OverflowError, RuntimeError):
         return result | {'status': 'invalid', 'message': 'Embedded tokenizer data is invalid. ' + result['message']}
     return {'status': 'valid', 'repairable': False,
             'message': 'Embedded tokenizer structure and vocabulary size are valid; provenance is not verified.'}
@@ -114,10 +218,17 @@ def _tokenizer_bytes(path, vocab_size):
 def repair_tokenizer(source, destination, tokenizer, *, on_log=None, cancel_event=None):
     """Write a new atomic checkpoint, preserving and verifying all weight payloads."""
     validate_output(source, destination, False)
-    vocab_size = _context(source)
-    if vocab_size is None:
-        raise ValueError('Tokenizer repair currently supports ERNIE/Ministral and Mistral Small only')
-    data = _tokenizer_bytes(tokenizer, vocab_size)
+    context = _blob_context(source)
+    if context is None:
+        raise ValueError('This encoder does not use a supported embedded tokenizer')
+    blob_key, vocab_size = context
+    if blob_key == 'tekken_model':
+        data = _tokenizer_bytes(tokenizer, vocab_size)
+    else:
+        if Path(tokenizer).stat().st_size > MAX_TOKENIZER_BYTES:
+            raise ValueError('Tokenizer exceeds 64 MiB')
+        data = Path(tokenizer).read_bytes()
+        _validate_blob(data, blob_key, vocab_size)
     before = Path(source).stat()
     def cancelled():
         if cancel_event is not None and cancel_event.is_set():
@@ -128,14 +239,14 @@ def repair_tokenizer(source, destination, tokenizer, *, on_log=None, cancel_even
         old_size = struct.unpack('<Q', original.read(8))[0]
         old = json.loads(original.read(old_size))
         header = {'__metadata__': old['__metadata__']} if '__metadata__' in old else {}
-        entries = sorted(((key, value) for key, value in old.items() if key not in {'__metadata__', 'tekken_model'}),
+        entries = sorted(((key, value) for key, value in old.items() if key not in {'__metadata__', blob_key}),
                          key=lambda row: row[1]['data_offsets'][0])
         offset = 0
         for key, value in entries:
             length = value['data_offsets'][1] - value['data_offsets'][0]
             header[key] = value | {'data_offsets': [offset, offset + length]}
             offset += length
-        header['tekken_model'] = {'dtype': 'U8', 'shape': [len(data)], 'data_offsets': [offset, offset + len(data)]}
+        header[blob_key] = {'dtype': 'U8', 'shape': [len(data)], 'data_offsets': [offset, offset + len(data)]}
         with atomic_output(destination) as temporary:
             digest = hashlib.sha256()
             with open(temporary, 'wb') as output:

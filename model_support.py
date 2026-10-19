@@ -22,6 +22,7 @@ from safetensors_quant import _RENDER_VERIFIED_MIXED, _SIZE_RATIOS
 # project's own editorial choices, not values ComfyUI or any upstream
 # project defines -- review and correct freely.
 MODEL_DISPLAY_NAMES: dict[str, str] = {
+    'flux3': 'FLUX.3 Klein (flux3)',
     'ideogram': 'Ideogram (ideogram)',
     'ltxv_upscaler': 'LTXV Upscaler (ltxv_upscaler)',
     'minimax_h3': 'MiniMax H3 (minimax_h3)',
@@ -568,7 +569,7 @@ def support_level(arch_key: str, keys_hiprec_nonempty: bool, format_key: str) ->
       cleanly, so this reads as prompt-dependent severity of an accepted
       tradeoff, not a bug.
     """
-    if arch_key in {'ernie_image', 'ideogram', 'ltxv_upscaler', 'minimax_h3', 'minimax_h3_vae', 'minimax_music3', 'qwen_image21'}:
+    if arch_key in {'flux3', 'ernie_image', 'ideogram', 'ltxv_upscaler', 'minimax_h3', 'minimax_h3_vae', 'minimax_music3', 'qwen_image21'}:
         # Export/fixture qualification does not constitute native runtime evidence.
         return SUPPORT_UNKNOWN
     if format_key == "GGUF":

@@ -3,8 +3,9 @@ import { ArrowRight, FolderOpen, ShieldCheck } from "lucide-react";
 import { FormatSelect } from "./FormatSelect";
 
 type Operation =
-  "components" | "diffusion" | "pad_tokens" | "restore_5d";
+  "components" | "diffusion" | "pad_tokens" | "restore_5d" | "tokenizer_check";
 const operations: [Operation, string, string][] = [
+  ["tokenizer_check", "Check tokenizer", "Inspect an existing text encoder: embedded Tekken/SentencePiece or installed native Qwen resources. Offers repair for missing or invalid data."],
   [
     "components",
     "Extract components",
@@ -69,10 +70,10 @@ export function ToolForm({
           submit({
             operation,
             source,
-            destination,
+            destination: operation === "tokenizer_check" ? "" : destination,
             sidecar: operation === "restore_5d" ? sidecar : "",
             components,
-            overwrite,
+            overwrite: operation === "tokenizer_check" ? false : overwrite,
             reuse_identical: reuseIdentical,
             container,
             format,
@@ -125,6 +126,7 @@ export function ToolForm({
               <FolderOpen size={17} />
             </button>
           </div>
+          {operation !== "tokenizer_check" && <>
           <label className="field-label" htmlFor="tool-destination">
             {repair ? "Output GGUF or folder" : "ComfyUI models root"}
           </label>
@@ -153,6 +155,7 @@ export function ToolForm({
               ? "Writes a separate file. The source is preserved."
               : "VAE goes to vae/, CLIP to clip/, diffusion to diffusion_models/."}
           </p>
+          </>}
           {operation === "components" && (
             <>
             <div className="tool-components">
@@ -230,14 +233,14 @@ export function ToolForm({
               />
             </>
           )}
-            <label className="checkbox tool-overwrite">
+            {operation !== "tokenizer_check" && <label className="checkbox tool-overwrite">
               <input
                 type="checkbox"
                 checked={overwrite}
                 onChange={(event) => setOverwrite(event.target.checked)}
               />
               Replace existing output files
-            </label>
+            </label>}
         </fieldset>
         <div className="form-actions">
           <span>

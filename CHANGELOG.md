@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: FLUX.3 Klein detection and a separately pinned complete Molbal source snapshot,
+  preserving existing adapters, owned CPU K math, progress and atomic readback.
+- Add: Existing-model tokenizer inspection in Extract & repair, UMT5 SentencePiece
+  check/copy repair, and native Qwen resource checks with explicit backed-up runtime
+  repair and rollback. Display valid and untested results as well as errors.
+
 - Maintenance: Clean generated model/test artifacts, archive verified reports on
   I:, preserve required reference tools through the relocated build junction, and
   route the local commit hook's temporary files/log to build. CI is unchanged.

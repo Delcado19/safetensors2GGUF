@@ -41,7 +41,7 @@ from component_extract import analyze_components, default_output_root, extract_c
 from fix_pad_tokens import fix_pad_tokens
 from fix_5d_tensors import fix_5d_tensors
 from hf_download import download_repo_as_single_safetensors, inspect_repo, _hub_token, _validate_relative_path
-from tokenizer_check import check_tokenizer, repair_tokenizer
+from tokenizer_check import check_tokenizer, repair_tokenizer, repair_runtime_tokenizer
 from huggingface_hub import get_token
 from huggingface_hub.utils import validate_repo_id
 from models.architectures import detect_arch
@@ -184,8 +184,14 @@ class Job:
                     subfolder=params.subfolder, revision=revision,
                     overwrite=params.overwrite, on_progress=transfer_phase, **callbacks)
             elif operation == 'tokenizer_repair':
-                output = repair_tokenizer(params.source, params.destination, params.tokenizer,
-                                          **callbacks)
+                if check_tokenizer(params.source).get('repair_kind') == 'runtime':
+                    output = repair_runtime_tokenizer(params.source, params.tokenizer, **callbacks)
+                else:
+                    output = repair_tokenizer(params.source, params.destination, params.tokenizer,
+                                              **callbacks)
+            elif operation == 'tokenizer_check':
+                self.tokenizer = check_tokenizer(params.source)
+                output = params.source
             elif operation == 'analyze':
                 results = analyze_components(params.source, params.destination, cancel_event=self.cancel)
                 with self.lock:
@@ -270,7 +276,7 @@ class ToolRequest(BaseModel):
     """Local extraction/repair inputs; destination means models root for extraction."""
 
     model_config = ConfigDict(extra='forbid')
-    operation: Literal['analyze', 'components', 'diffusion', 'pad_tokens', 'restore_5d', 'tokenizer_repair']
+    operation: Literal['analyze', 'components', 'diffusion', 'pad_tokens', 'restore_5d', 'tokenizer_repair', 'tokenizer_check']
     source: str = Field(min_length=1, max_length=4096)
     destination: str = Field(default='', max_length=4096)
     sidecar: str = Field(default='', max_length=4096)
@@ -671,11 +677,21 @@ def create_app() -> FastAPI:
         if not source.is_file() or source.suffix.lower() != ('.gguf' if repair else '.safetensors'):
             raise HTTPException(400, 'Choose an existing GGUF' if repair else 'Choose an existing safetensors checkpoint')
         params.source = str(source.resolve())
+        if params.operation == 'tokenizer_check':
+            if params.destination.strip() or params.tokenizer or params.sidecar or params.overwrite:
+                raise HTTPException(400, 'Tokenizer inspection is read-only; output and repair options must be empty')
+            return enqueue(params)
         if params.operation == 'tokenizer_repair':
             try:
                 tokenizer = Path(params.tokenizer.strip()).expanduser()
-                if not params.tokenizer.strip() or not tokenizer.is_file() or tokenizer.suffix.lower() != '.json':
-                    raise ValueError('Choose an existing tokenizer.json or tekken.json from this model repository')
+                runtime = check_tokenizer(source).get('repair_kind') == 'runtime'
+                if runtime:
+                    if not params.tokenizer.strip() or not tokenizer.is_dir() or params.destination.strip() or params.overwrite or params.sidecar:
+                        raise ValueError('Runtime repair requires a healthy tokenizer directory; destination and overwrite must be empty/disabled')
+                    params.tokenizer = str(tokenizer.resolve())
+                    return enqueue(params)
+                if not params.tokenizer.strip() or not tokenizer.is_file() or tokenizer.suffix.lower() not in {'.json', '.model'}:
+                    raise ValueError('Choose the exact model repository tokenizer JSON or SentencePiece .model file')
                 destination = source.with_name(source.stem + '-tokenizer-fixed.safetensors')
                 if params.destination.strip():
                     destination = Path(params.destination.strip()).expanduser()

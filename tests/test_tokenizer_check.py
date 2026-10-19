@@ -3,6 +3,7 @@ import base64
 import json
 import threading
 import shutil
+from pathlib import Path
 
 import pytest
 import torch
@@ -133,3 +134,110 @@ def test_download_success_reports_missing_tokenizer_without_repairing(model, tmp
     assert result['tokenizer']['status'] == 'missing'
     assert output.read_bytes() == source.read_bytes()
     assert not list(tmp_path.glob('*-tokenizer-fixed.safetensors'))
+
+
+def test_sentencepiece_repair_preserves_weights(tmp_path, monkeypatch):
+    import io
+    import sentencepiece
+    writer = io.BytesIO()
+    sentencepiece.SentencePieceTrainer.train(
+        sentence_iterator=iter(['a small tokenizer fixture', 'another sentence for the tokenizer']),
+        model_writer=writer, vocab_size=32, hard_vocab_limit=False, minloglevel=2)
+    tokenizer = tmp_path / 'spiece.model'
+    tokenizer.write_bytes(writer.getvalue())
+    monkeypatch.setattr(check, '_blob_context', lambda _: ('spiece_model', 64))
+    source = tmp_path / 'umt5.safetensors'
+    save_file({'shared.weight': torch.ones(64, 4)}, source)
+    original = source.read_bytes()
+    assert check.check_tokenizer(source)['status'] == 'missing'
+    output = tmp_path / 'fixed.safetensors'
+    check.repair_tokenizer(source, output, tokenizer)
+    assert check.check_tokenizer(output)['status'] == 'valid'
+    assert source.read_bytes() == original
+    assert torch.equal(load_file(source)['shared.weight'], load_file(output)['shared.weight'])
+    monkeypatch.setattr(check, '_blob_context', lambda _: ('spiece_model', 2))
+    assert check.check_tokenizer(output)['status'] == 'invalid'
+    with pytest.raises(ValueError, match='vocabulary'):
+        check.repair_tokenizer(source, tmp_path / 'bad.safetensors', tokenizer)
+
+
+@pytest.fixture
+def qwen_resources(tmp_path, monkeypatch):
+    # Build native ComfyUI resources from the complete owned vocabulary, without network access.
+    configs = Path(__file__).parents[1] / 'text_encoder_configs/qwen3-4b'
+    obj = json.loads((configs / 'tokenizer.json').read_text(encoding='utf8'))
+    reference = tmp_path / 'healthy'
+    reference.mkdir()
+    (reference / 'vocab.json').write_text(json.dumps(obj['model']['vocab']), encoding='utf8')
+    merges = obj['model']['merges']
+    (reference / 'merges.txt').write_text('#version: 0.2\n' + '\n'.join(
+        ' '.join(row) if isinstance(row, list) else row for row in merges), encoding='utf8')
+    shutil.copyfile(configs / 'tokenizer_config.json', reference / 'tokenizer_config.json')
+    target = tmp_path / 'runtime/qwen25_tokenizer'
+    source = tmp_path / 'qwen.safetensors'
+    save_file({'weight': torch.ones(2)}, source)
+    monkeypatch.setattr(check, '_blob_context', lambda _: None)
+    monkeypatch.setattr(check, '_runtime_context', lambda _: (target, 151936))
+    return source, reference, target
+
+
+def test_runtime_check_repair_and_backup(qwen_resources):
+    source, reference, target = qwen_resources
+    original = source.read_bytes()
+    assert check.check_tokenizer(source)['status'] == 'missing'
+    check.repair_runtime_tokenizer(source, reference)
+    assert check.check_tokenizer(source)['status'] == 'valid'
+    (target / 'vocab.json').write_text('{}')
+    assert check.check_tokenizer(source)['status'] == 'invalid'
+    check.repair_runtime_tokenizer(source, reference)
+    assert check.check_tokenizer(source)['status'] == 'valid'
+    backups = list(target.parent.glob('qwen25_tokenizer.backup-*'))
+    assert len(backups) == 1 and (backups[0] / 'vocab.json').read_text() == '{}'
+    assert source.read_bytes() == original
+    with pytest.raises(ValueError, match='separate'):
+        check.repair_runtime_tokenizer(source, target)
+
+
+def test_runtime_repair_cancellation_and_failed_publish_roll_back(qwen_resources, monkeypatch):
+    source, reference, target = qwen_resources
+    check.repair_runtime_tokenizer(source, reference)
+    before = {path.name: path.read_bytes() for path in target.iterdir()}
+    event = threading.Event()
+    event.set()
+    with pytest.raises(ConversionCancelled):
+        check.repair_runtime_tokenizer(source, reference, cancel_event=event)
+    rename = Path.rename
+    def fail_publish(path, destination):
+        if path.name == 'resources':
+            raise OSError('publication failed')
+        return rename(path, destination)
+    monkeypatch.setattr(Path, 'rename', fail_publish)
+    with pytest.raises(OSError, match='publication'):
+        check.repair_runtime_tokenizer(source, reference)
+    assert {path.name: path.read_bytes() for path in target.iterdir()} == before
+    assert not list(target.parent.glob('qwen25_tokenizer.backup-*'))
+
+
+def test_runtime_invalid_reference_does_not_change_assets(qwen_resources):
+    source, reference, target = qwen_resources
+    (reference / 'tokenizer_config.json').write_text('{broken')
+    with pytest.raises(ValueError):
+        check.repair_runtime_tokenizer(source, reference)
+    assert not target.exists()
+
+
+def test_api_check_existing_and_runtime_repair(qwen_resources):
+    source, reference, target = qwen_resources
+    client = _client()
+    request = {'operation': 'tokenizer_check', 'source': str(source)}
+    assert client.post('/api/tools', json=request | {'overwrite': True}).status_code == 400
+    response = client.post('/api/tools', json=request)
+    assert response.status_code == 202
+    result = _wait(client, response.json()['id'])
+    assert result['status'] == 'succeeded' and result['tokenizer']['status'] == 'missing'
+    response = client.post('/api/tools', json={'operation': 'tokenizer_repair',
+                           'source': str(source), 'tokenizer': str(reference)})
+    assert response.status_code == 202, response.text
+    result = _wait(client, response.json()['id'])
+    assert result['status'] == 'succeeded' and result['tokenizer']['status'] == 'valid'
+    assert target.is_dir() and not list(source.parent.glob('*-tokenizer-fixed.safetensors'))

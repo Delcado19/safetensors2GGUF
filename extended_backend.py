@@ -19,7 +19,7 @@ from scripts.gguf_research_io import open_gguf
 
 ROOT = Path(__file__).resolve().parent
 EXTENDED_ARCHES = {'ideogram', 'ltxv_upscaler', 'minimax_h3', 'minimax_h3_vae',
-                   'minimax_music3', 'qwen_image21'}
+                   'minimax_music3', 'qwen_image21', 'flux3'}
 FORMATS = ('F16', 'BF16', 'Q8_0', 'Q5_1', 'Q5_0', 'Q4_1', 'Q4_0',
            'Q2_K', 'Q3_K_M', 'Q4_K_S', 'Q4_K_M', 'Q5_K_S', 'Q5_K_M', 'Q6_K',
            'Q8_CR', 'Q4_CR', 'Q4_CR_W4A4')
@@ -43,9 +43,16 @@ def convert_extended(source, destination, format_key, *, arch=None, overwrite=Fa
     from bundled_tools import validate_text_destination
     validate_text_destination(destination)
     validate_output(source, destination, overwrite)
-    references = ROOT / 'third_party/converter_references'
-    entry = next(row for row in json.loads((references / 'sources.json').read_text())['sources']
-                 if row['id'] == 'molbal-current')
+    if arch == 'flux3':
+        # FLUX.3 needs the newer snapshot; keep existing adapters on their qualified source.
+        references = ROOT / 'third_party/molbal-flux3'
+        from scripts.verify_vendor_sources import verify_snapshot
+        verify_snapshot(references)
+        entry = json.loads((references / 'source.json').read_text())
+    else:
+        references = ROOT / 'third_party/converter_references'
+        entry = next(row for row in json.loads((references / 'sources.json').read_text())['sources']
+                     if row['id'] == 'molbal-current')
     archive = references / entry['archive']
     with archive.open('rb') as stream:
         digest = hashlib.sha256()

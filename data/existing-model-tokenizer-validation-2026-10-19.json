@@ -1,0 +1,126 @@
+{
+  "scope": "Header-only model inspection plus native local tokenizer parsing; no inference or tokenizer provenance claim. No repair initiated.",
+  "models": [
+    {
+      "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\text_encoders\\Ernie\\ponpoke-ernie-prompt-enhancer-abliterated-comfy.safetensors",
+      "check": {
+        "status": "valid",
+        "repairable": false,
+        "message": "Embedded tokenizer structure and vocabulary size are valid; provenance is not verified."
+      }
+    },
+    {
+      "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\text_encoders\\Ernie\\ponpoke-ernie-prompt-enhancer-abliterated.safetensors",
+      "check": {
+        "repairable": true,
+        "message": "Native ComfyUI loading requires embedded tekken_model. Select tokenizer.json or tekken.json from this exact model repository.",
+        "status": "missing"
+      }
+    },
+    {
+      "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\text_encoders\\Ernie\\ponpoke-ministral-3-3b-aliterated-comfy.safetensors",
+      "check": {
+        "status": "valid",
+        "repairable": false,
+        "message": "Embedded tokenizer structure and vocabulary size are valid; provenance is not verified."
+      }
+    },
+    {
+      "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\text_encoders\\Ernie\\ponpoke-ministral-3-3b-aliterated.safetensors",
+      "check": {
+        "repairable": true,
+        "message": "Native ComfyUI loading requires embedded tekken_model. Select tokenizer.json or tekken.json from this exact model repository.",
+        "status": "missing"
+      }
+    },
+    {
+      "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\text_encoders\\Flux.2 klein 9b\\qwen3-8b-heretic_fp8_e4m3fn.safetensors",
+      "check": {
+        "status": "valid",
+        "repairable": false,
+        "resource_path": "G:\\ComfyUI-Easy-Install\\ComfyUI\\comfy\\text_encoders\\qwen25_tokenizer",
+        "message": "Native Qwen runtime tokenizer loads locally and token IDs fit the model. Tokenizer provenance is not verified."
+      }
+    },
+    {
+      "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\text_encoders\\Flux.2 klein 9b\\Qwen3-8b-vanilla.safetensors",
+      "check": {
+        "status": "valid",
+        "repairable": false,
+        "resource_path": "G:\\ComfyUI-Easy-Install\\ComfyUI\\comfy\\text_encoders\\qwen25_tokenizer",
+        "message": "Native Qwen runtime tokenizer loads locally and token IDs fit the model. Tokenizer provenance is not verified."
+      }
+    },
+    {
+      "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\text_encoders\\Krea 2 - Flux.3 Klein\\Huihui-Qwen3-4b-VL.safetensors",
+      "check": {
+        "status": "valid",
+        "repairable": false,
+        "resource_path": "G:\\ComfyUI-Easy-Install\\ComfyUI\\comfy\\text_encoders\\qwen25_tokenizer",
+        "message": "Native Qwen runtime tokenizer loads locally and token IDs fit the model. Tokenizer provenance is not verified."
+      }
+    },
+    {
+      "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\text_encoders\\Qwen 2.1\\qwen3vl_8b_int8_convrot_uncensored.safetensors",
+      "check": {
+        "status": "valid",
+        "repairable": false,
+        "resource_path": "G:\\ComfyUI-Easy-Install\\ComfyUI\\comfy\\text_encoders\\qwen25_tokenizer",
+        "message": "Native Qwen runtime tokenizer loads locally and token IDs fit the model. Tokenizer provenance is not verified."
+      }
+    },
+    {
+      "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\text_encoders\\Wan 2.2\\umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "check": {
+        "status": "valid",
+        "repairable": false,
+        "message": "Embedded tokenizer structure and vocabulary size are valid; provenance is not verified."
+      }
+    },
+    {
+      "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\text_encoders\\Z-Image\\BennyDaBall-Qwen3-4b-Engineer-V6.safetensors",
+      "check": {
+        "status": "valid",
+        "repairable": false,
+        "resource_path": "G:\\ComfyUI-Easy-Install\\ComfyUI\\comfy\\text_encoders\\qwen25_tokenizer",
+        "message": "Native Qwen runtime tokenizer loads locally and token IDs fit the model. Tokenizer provenance is not verified."
+      }
+    },
+    {
+      "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\text_encoders\\Z-Image\\Huihui-Qwen3-4B-abliterated-v2.safetensors",
+      "check": {
+        "status": "valid",
+        "repairable": false,
+        "resource_path": "G:\\ComfyUI-Easy-Install\\ComfyUI\\comfy\\text_encoders\\qwen25_tokenizer",
+        "message": "Native Qwen runtime tokenizer loads locally and token IDs fit the model. Tokenizer provenance is not verified."
+      }
+    },
+    {
+      "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\text_encoders\\Z-Image\\Josiefied-Qwen3-4B-abliterated-v1.safetensors",
+      "check": {
+        "status": "valid",
+        "repairable": false,
+        "resource_path": "G:\\ComfyUI-Easy-Install\\ComfyUI\\comfy\\text_encoders\\qwen25_tokenizer",
+        "message": "Native Qwen runtime tokenizer loads locally and token IDs fit the model. Tokenizer provenance is not verified."
+      }
+    },
+    {
+      "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\text_encoders\\Z-Image\\Lockout-Qwen3-4b-heretic-v2.safetensors",
+      "check": {
+        "status": "valid",
+        "repairable": false,
+        "resource_path": "G:\\ComfyUI-Easy-Install\\ComfyUI\\comfy\\text_encoders\\qwen25_tokenizer",
+        "message": "Native Qwen runtime tokenizer loads locally and token IDs fit the model. Tokenizer provenance is not verified."
+      }
+    },
+    {
+      "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\text_encoders\\Z-Image\\Vanilla-Qwen3-4b.safetensors",
+      "check": {
+        "status": "valid",
+        "repairable": false,
+        "resource_path": "G:\\ComfyUI-Easy-Install\\ComfyUI\\comfy\\text_encoders\\qwen25_tokenizer",
+        "message": "Native Qwen runtime tokenizer loads locally and token IDs fit the model. Tokenizer provenance is not verified."
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "scope": "Complete Molbal FLUX.3 GGUF loading and native ComfyUI CPU construction; no forward pass or render.",
+  "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\diffusion_models\\Flux.3 Klein\\flux3_image_klein_sd_bf16.safetensors",
+  "source_bytes": 11097404512,
+  "source_sha256": "c3e9813cdd049c831c836b2e9db61150e49a93fc1a4c63b256494642fee0bd7c",
+  "output": "I:\\safetensors2GGUF\\conversions\\flux3_image_klein_sd-Q4_K_M.gguf",
+  "output_bytes": 3123680032,
+  "output_sha256": "af3fc3c0dc01fae26b39f978666341a95490bbc3c2f6683bc37e923f2cac35d1",
+  "architecture": "flux3",
+  "source_tensors": 359,
+  "loaded_tensors": 359,
+  "native_state_tensors": 359,
+  "missing": [],
+  "unexpected": [],
+  "shape_mismatches": [],
+  "native_class": "Flux3",
+  "device": "cpu",
+  "inference_tested": false,
+  "backend_commit": "b07c7e0437eeb4b2dab6e96509cbb8efdabf1b01",
+  "backend_archive_sha256": "c097b27ec81d78c8c0fce6c84581b38939e96b7d614bf6076e86c6eb5451c77f",
+  "source_code_sha256": {
+    "extended_backend.py": "2d1f655f73a6bb82e685c2cb76f454c03154388614ac59be504f17215407ed44",
+    "models/architectures.py": "d38e1dbd6343dbe0ce5fa4a1c21a5d90efdefb47f0148bd0b1ee22b4627dae03",
+    "scripts/check_flux3_native.py": "c846d2909951797a5e680e6ae56ffa168ead43e67e41ec94297dec01b0abe8ca"
+  }
+}

@@ -16,7 +16,8 @@ def _qualified_source_hashes(root):
                  'compiled-kernel-direct-preparation', 'compiled-diffusion-validation',
                  'compiled-diffusion-requalification-2026-10-19',
                  'tokenizer-check-validation-2026-10-19',
-                 'compiled-diffusion-progress-requalification-2026-10-19'):
+                 'compiled-diffusion-progress-requalification-2026-10-19',
+                 'compiled-diffusion-tokenizer-flux3-requalification-2026-10-19'):
         hashes.update(json.loads((root / f'data/{name}.json').read_text())['source_code_sha256'])
     return hashes
 

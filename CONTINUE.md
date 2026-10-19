@@ -1,5 +1,31 @@
 # Multi-model / vision-language integration
 
+## FLUX.3 and existing-model tokenizer extension (2026-10-19)
+
+Implementation resumed after the user's reboot pause. FLUX.3 uses a separate
+complete Molbal b07c7e0 source archive; older adapters keep their frozen versions.
+The interrupted full-model run stopped at 307/359 tensors without publishing a
+GGUF. The resumed Q4_K_M run published 3,123,680,032 bytes on I: after complete
+359-tensor payload readback. Matching Molbal loading and installed ComfyUI CPU
+construction pass for all 359 logical shapes/parameters, with no missing or
+unexpected parameters. See `data/flux3-q4km-native-validation-2026-10-19.json` and
+`scripts/check_flux3_native.py`. No forward pass or render is qualified.
+The existing-model tokenizer tool covers the installed Tekken, UMT5 SentencePiece
+and shared native Qwen assets. Embedded repairs create a verified separate model;
+runtime repairs require an explicit healthy resource directory, keep the old
+directory as backup and roll back failed publication. No live resource repair was
+needed: all 14 installed text encoders were checked, 12 valid and the two retained
+raw ERNIE originals missing Tekken as expected. Their fixed copies are valid.
+Tokenizer/API/support tests pass (88 tests), and 66 schematic existing diffusion
+conversions still match native. The first full suite exposed a Windows mmap lock
+in the new fixture's file replacement; cloning before rewriting fixes it, and
+the targeted projection/application test passes. Final validation: 1125 tests pass
+in 264.29 s; Ruff and frontend build pass. The visible uv Workbench is running;
+live FLUX.3 inspection exposes the Molbal formats, a schematic API export succeeds,
+and the existing Qwen tokenizer job reports valid. See
+`data/tokenizer-flux3-app-validation-2026-10-19.json`. No installed weights or native
+tokenizer assets were changed by validation. FLUX.3 render quality remains open.
+
 ## Artifact cleanup and I: workspace (2026-10-19)
 
 The user requested cleanup and requires agent tests/conversion artifacts on I:.

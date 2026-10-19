@@ -17,3 +17,11 @@ def test_snapshot_is_complete_and_detects_corruption(tmp_path):
         output.write(b'corruption')
     with pytest.raises(ValueError, match='checksum'):
         verify_snapshot(tmp_path)
+
+
+def test_flux3_snapshot_is_complete_and_separately_pinned():
+    folder = Path(__file__).resolve().parents[1] / 'third_party/molbal-flux3'
+    result = verify_snapshot(folder)
+    assert result['files'] == 54
+    assert result['commit'] == 'b07c7e0437eeb4b2dab6e96509cbb8efdabf1b01'
+    assert result['commit'] != verify_snapshot()['commit']

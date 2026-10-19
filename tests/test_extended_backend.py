@@ -94,3 +94,25 @@ def test_mismatched_architecture_preserves_existing_destination(tmp_path):
         convert_extended(source, output, 'F16', arch='minimax_h3', overwrite=True)
     assert output.read_bytes() == b'previous output'
     assert {p.name for p in tmp_path.iterdir()} == {'source.safetensors', 'out.gguf'}
+
+
+def test_flux3_application_dispatch_and_patch_projection_protection(tmp_path):
+    import gguf
+    from conversion_service import _pipeline
+    source, output = tmp_path / 'flux3.safetensors', tmp_path / 'flux3.gguf'
+    source_file(source, 'flux3')
+    from safetensors.torch import load_file
+    # Detach mmap-backed tensors before replacing the fixture file on Windows.
+    tensors = {key: value.clone() for key, value in load_file(source).items()}
+    tensors['final_layer.image.linear.weight'] = torch.ones(32, 256, dtype=torch.bfloat16)
+    tensors['emb_in.image.weight'] = torch.ones(32, 128, dtype=torch.bfloat16)
+    save_file(tensors, source)
+    events = queue.Queue()
+    _pipeline(str(source), str(output), 'Q4_K_M', '', 0, False, False, events)
+    with open_gguf(output) as reader:
+        assert reader.get_field('general.architecture').contents() == 'flux3'
+        types = {tensor.name: tensor.tensor_type for tensor in reader.tensors}
+        assert types['final_layer.image.linear.weight'] == gguf.GGMLQuantizationType.F32
+        assert types['emb_in.image.weight'] in {gguf.GGMLQuantizationType.F16, gguf.GGMLQuantizationType.BF16}
+        assert types['probe.weight'] in {gguf.GGMLQuantizationType.Q4_K, gguf.GGMLQuantizationType.Q6_K}
+    assert any(event[0] == 'progress_frac' and event[1] > 0 for event in list(events.queue))

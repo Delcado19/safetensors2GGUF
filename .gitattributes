@@ -56,3 +56,7 @@ tests/test_extended_backend.py text eol=lf
 comfyui_s2gguf/__init__.py text eol=lf
 scripts/validate_companion_model.py text eol=lf
 scripts/check_qwen3vl_text_only.py text eol=lf
+# FLUX.3 snapshot verification compares the upstream license byte-for-byte.
+third_party/molbal-flux3/LICENSE -text whitespace=-blank-at-eof
+scripts/check_flux3_native.py text eol=lf
+tokenizer_check.py text eol=lf

@@ -405,6 +405,19 @@ class ModelErnieImage(ModelTemplate):
     keys_shape_critical = []
 
 
+class ModelFlux3(ModelTemplate):
+    """FLUX.3 Klein detection and precision guards from the pinned Molbal adapter."""
+
+    arch = 'flux3'
+    keys_detect = [('content_mode_blocks.image.0.attn_out.weight',
+                    'content_mode_blocks.image_cond.0.attn_out.weight',
+                    'single_stream_modulations.txt.lin.weight')]
+    # The final latent projection is sensitive to patch-grid errors; input K=128 cannot use K256.
+    keys_hiprec = ['^final_layer.image.linear.']
+    keys_noquant = ['^emb_in.']
+    keys_shape_critical = ['emb_in.']
+
+
 class ModelKrea2(ModelTemplate):
     arch = "krea2"
     keys_detect = [
@@ -466,6 +479,7 @@ class ModelQwenImage21(ModelTemplate):
 
 
 arch_list = [
+    ModelFlux3,
     ModelLTXVUpsampler, ModelIdeogram, ModelMinimaxH3, ModelMinimaxH3VAE,
     ModelMiniMaxMusic3DiT, ModelQwenImage21,
     # ModelQwenImage must precede ModelFlux/ModelSD3 — Qwen-Image shares
