@@ -6,8 +6,9 @@
 > complete-model inference. See [CONTINUE.md](CONTINUE.md) for current validation
 > and the [adapter contract](docs/extended-adapter-validation.md) for loader limits.
 
-Complete CLIP-L/bigG and Qwen3-VL-4B original-key Q4_K_M exports now pass real
-native ComfyUI CPU model construction through the companion text loader.
+Complete CLIP-L/bigG, Qwen3-VL-4B and BigLoveEryn1 ERNIE original-key Q4_K_M exports
+now pass real native ComfyUI CPU model construction through the companion loaders
+(ERNIE uses BF16 CPU weights).
 This is loading evidence, not inference/render qualification; see the
 [complete-checkpoint validation](docs/companion-loader-validation.md).
 

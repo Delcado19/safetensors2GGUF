@@ -58,8 +58,10 @@ def test_complete_vl_export_keeps_vision_and_original_shapes(tmp_path, preset):
 def test_other_original_layout_families_roundtrip(tmp_path, family):
     source, output = tmp_path / 'source.safetensors', tmp_path / 'out.gguf'
     expected = fixture_source(source)
-    export_original_text(source, output, family, 'Q4_K_M')
+    messages = []
+    export_original_text(source, output, family, 'Q4_K_M', on_log=messages.append)
     assert set(load_original_text(output)) == set(expected)
+    assert ('Original Diffusion Model' if family == 'ernie_image' else 'Original Text / Vision Encoder') in messages[-1]
 
 
 def test_cancellation_and_corruption_preserve_previous_output(tmp_path):

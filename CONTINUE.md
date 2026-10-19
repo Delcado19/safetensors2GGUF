@@ -1,6 +1,30 @@
 # Multi-model / vision-language integration
 
-## Complete companion-model checks (2026-10-19)
+## ERNIE complete-checkpoint construction passed (2026-10-19)
+
+The user supplied the complete local
+`G:\ComfyUI-Easy-Install\ComfyUI\models\diffusion_models\Ernie\BigLoveEryn1_bf16.safetensors`
+checkpoint (409 BF16 tensors, 16,067,034,480 bytes). The earlier source blocker
+below is historical; no download is needed. Complete Q4_K_M export/readback and
+native CPU BF16 source/companion construction passed: all 409 source tensors
+survive, the native 410-entry model states match in shape, both load without
+missing/unexpected weights, and actual parameters use BF16. The GGUF is
+5,299,410,112 bytes; export including internal readback/hash takes 77.144 s.
+See `data/companion-ernie-full.json` for source/output SHA256 and precise scope.
+The validation
+runner now rejects native diffusion missing/unexpected-weight warnings instead
+of checking only text warnings. The user's final commit/push/shutdown instruction
+remains active after the final test/documentation gates and verified push.
+The final ERNIE gate passes **1087 tests** in 267.50 s; Ruff, frontend build
+and the documentation check pass. The user additionally asked for Safetensors
+conversion. A separate INT8_MIXED output and normal native Safetensors loading
+check are in progress; shutdown is deferred until that additional work finishes.
+Original models and the installed ComfyUI remain unchanged; no renders or
+inference were started. All three requested complete-model construction points
+are now covered at one representative Q4_K_M precision per family. GPU execution,
+quality, offload and broader checkpoint/precision coverage remain open.
+
+## Previous CLIP/VL checkpoint (2026-10-19)
 
 The user requested complete CLIP-L/bigG, full-VL and ERNIE loader checks, regular
 commits/pushes, and shutdown after completion. CLIP-L/bigG extracted from the full
@@ -18,10 +42,10 @@ requalified without modifying historical data. Support-table evidence now
 distinguishes CPU construction from still-unqualified inference.
 
 See `docs/companion-loader-validation.md` and the new `data/companion-*-full.json`
-reports. No complete ERNIE checkpoint was found, including a header-based local
-architecture scan. A source-path question and optional download-authorization
-question are pending; do not treat silence as download approval. ERNIE full-model
-validation and the requested final shutdown remain pending until this is resolved.
+reports. At this preceding checkpoint, no complete ERNIE checkpoint had been
+found, including a header-based local architecture scan. The later user-supplied
+source resolved that blocker; see the completed ERNIE check above. No download
+authorization is needed for the supplied local source.
 No node installation files or original model files were changed, and no renders
 were started. The final full suite passes **1082 tests** in 244.67 s; Ruff,
 frontend build and the documentation gate pass. The source/converted-model

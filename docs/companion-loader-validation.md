@@ -2,7 +2,7 @@
 
 ## Scope
 
-On 2026-10-19, the actual companion text-loader node was executed against the
+On 2026-10-19, the actual companion text/diffusion loader nodes were executed against the
 installed ComfyUI on CPU, using complete locally installed checkpoint components.
 No mock native model constructor, model download, node installation, server change
 or image render was used. These checks establish export/readback and native model
@@ -13,15 +13,19 @@ construction, not inference quality, VRAM savings or low-bit inference.
 | RealVisXL V50 Lightning SDXL CLIP-L | Q4_K_M | 196 | Matches native source parameter shapes; both report the same absent optional text projection |
 | RealVisXL V50 Lightning SDXL OpenCLIP-bigG | Q4_K_M | 518 | Matches native source parameter shapes, no missing weights |
 | Huihui Qwen3-VL-4B, Krea2 type | Q4_K_M | 713, including 315 vision and 18 DeepStack | Matches native source parameter shapes, no missing weights |
+| BigLoveEryn1 BF16, ERNIE-Image | Q4_K_M | 409 | Matches native source parameter shapes on CPU with BF16 weights, no missing/unexpected weights |
 
 Reports are `data/companion-clip-l-full.json`,
-`data/companion-clip-bigg-full.json` and `data/companion-qwen3vl4b-full.json`.
+`data/companion-clip-bigg-full.json`, `data/companion-qwen3vl4b-full.json` and
+`data/companion-ernie-full.json`.
 Sources are read-only. SDXL encoders were extracted into isolated repository-local
 `build/` directories; bigG's old OpenCLIP namespace was converted with the installed
 ComfyUI helper before export. Model files remain local and untracked.
 Source and output SHA256 hashes were recorded after construction with unchanged
-source size/mtime. The final full suite passes 1082 tests in 244.67 s; Ruff and
-the TypeScript/Vite build pass.
+source size/mtime. The preceding CLIP/VL checkpoint passed 1082 tests in 244.67 s;
+the final ERNIE regression gate is recorded in `CONTINUE.md`. Reports retain their
+original source hashes; the later ERNIE-specific log/validator changes do not
+rewrite earlier measurements.
 
 The companion nodes reconstruct complete CPU weights before native construction;
 they do not provide low-bit execution. The support table remains **unknown** for
@@ -64,9 +68,23 @@ native implementation. Do not interpret a newly installed ComfyUI as revalidated
 
 ## ERNIE
 
-The installed native ComfyUI contains ERNIE model detection and construction.
-No complete ERNIE diffusion checkpoint was found in the local model directories,
-including a header-based architecture scan rather than filenames alone.
-A local source path or authorization to obtain the Comfy-Org checkpoint is
-required before the complete-checkpoint diffusion-loader check can run.
-Schematic tests are not substituted for that missing runtime evidence.
+The user supplied `diffusion_models/Ernie/BigLoveEryn1_bf16.safetensors`, resolving
+the earlier missing-source blocker without a download. All 409 source tensors
+survive Q4_K_M export/readback. The 5,299,410,112-byte GGUF constructs the same
+410-entry native model state as the original through `S2GGUFDiffusionLoader`.
+Both native source and companion construction report no missing/unexpected
+weights, and actual model parameters remain BF16 on CPU. Export including internal
+readback/hashing takes 77.144 s; complete reconstruction/construction and later
+source hashing are outside that export timing.
+
+The validator sets the native CPU BF16 weight option for ERNIE so simultaneous
+source/model copies fit the host's RAM. This is not a GPU, inference, performance
+or memory-saving claim. Missing/unexpected native diffusion-weight warnings now
+fail validation rather than being silently ignored by the text-only warning
+check. ERNIE export logs name the diffusion loader instead of the text loader.
+
+Repeat the complete diffusion check using fresh paths and `--family ernie_image`:
+
+```powershell
+G:/ComfyUI-Easy-Install/python_embeded/python.exe scripts/validate_companion_model.py --comfy-root G:/ComfyUI-Easy-Install/ComfyUI --source <ernie.safetensors> --family ernie_image --work build/new-ernie-check --output data/new-ernie-check.json
+```

@@ -149,5 +149,7 @@ def export_original_text(source, destination, family, preset, *, overwrite=False
             if (before.st_size, before.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
                 raise ValueError('Original text source changed during conversion')
     if on_log:
-        on_log('INFO: ' + LOADER_NOTE)
+        note = ('Requires Original Diffusion Model (S2GGUF). Loading reconstructs CPU weights; inference is unqualified.'
+                if family == 'ernie_image' else LOADER_NOTE)
+        on_log('INFO: ' + note)
     return str(destination)

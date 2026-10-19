@@ -84,6 +84,13 @@ class TestSupportLevel:
         assert support_reason("qwen_image", "NVFP4") is None
         assert support_reason("lumina2", "GGUF") is None
 
+    def test_ernie_construction_evidence_does_not_qualify_inference(self):
+        row = next(row for row in build_support_table() if row['arch'] == 'ernie_image')
+        assert row['GGUF'] == SUPPORT_UNKNOWN
+        assert row['GGUF__scope'] == 'Q4_K_M / CPU BF16 construction'
+        assert '409 tensors' in row['GGUF__reason']
+        assert 'inference remains untested' in row['GGUF__reason']
+
     def test_te_gguf_reason_requires_unqualified_companion_loader(self):
         assert text_encoder_support_reason("qwen2.5-vl-7b", "GGUF") is not None
         assert "S2GGUFTextEncoderLoader" in text_encoder_support_reason("qwen2.5-vl-7b", "GGUF")

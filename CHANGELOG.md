@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Change: Validate the complete BigLoveEryn1 BF16 ERNIE Q4_K_M export: all 409
+  tensors survive readback and the real diffusion companion loader constructs
+  the native CPU BF16 model without missing/unexpected weights. Keep inference
+  unqualified and record scoped construction evidence in the support table.
+- Fix: Reject native diffusion-weight mismatch warnings in the full-model
+  validator and name the diffusion loader correctly in ERNIE export logs.
+
 - Fix: Detect complete Qwen3-VL repacks with flat language keys before the plain
   Qwen3 text signature, preserving the full vision/DeepStack export route.
 - Change: Complete CLIP-L, bigG and Qwen3-VL-4B Q4_K_M exports retain all source

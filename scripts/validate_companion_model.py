@@ -22,6 +22,16 @@ def _digest(path):
     return digest.hexdigest()
 
 
+def _check_warnings(family, warnings):
+    # Native SDXL CLIP-L has no learned projection; no other missing weights
+    # (especially diffusion weights) may silently qualify a constructed model.
+    allowed = {"clip missing: ['text_projection.weight']"} if family == 'clip-l' else set()
+    invalid = [line for line in warnings if line not in allowed and
+               any(marker in line for marker in ('clip missing:', 'unet missing:', 'unet unexpected:'))]
+    if invalid:
+        raise ValueError('Native model has missing or unexpected weights: ' + repr(invalid))
+
+
 def main():
     """Preserve sources and record independent export, tensor and construction evidence."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -41,6 +51,9 @@ def main():
     os.environ['HF_HUB_OFFLINE'] = '1'
     import comfy.cli_args
     comfy.cli_args.args.cpu = True
+    if args.family == 'ernie_image':
+        # Keep both complete 8B source/model copies within this CPU host's RAM.
+        comfy.cli_args.args.bf16_unet = True
     import comfy.sd
     import folder_paths
     import torch
@@ -121,11 +134,8 @@ def main():
         model = S2GGUFTextEncoderLoader().load(output.name, args.clip_type, device='cpu')[0]
     actual = signature(model)
     assert actual == expected, 'Native/companion constructed parameter shapes differ'
-    # CLIP-L's standard SDXL source has no learned projection; native loading
-    # supplies it too. Do not tolerate missing language/vision weights by analogy.
-    allowed = {"clip missing: ['text_projection.weight']"} if args.family == 'clip-l' else set()
-    assert not any('clip missing:' in line and line not in allowed for line in warnings), warnings
-    assert not any('clip missing:' in line and line not in allowed for line in baseline_warnings), baseline_warnings
+    _check_warnings(args.family, warnings)
+    _check_warnings(args.family, baseline_warnings)
     after = args.source.stat()
     assert (before.st_size, before.st_mtime_ns) == (after.st_size, after.st_mtime_ns)
     report = {
@@ -138,6 +148,8 @@ def main():
         'source_tensor_count': count, 'vision_tensor_count': len(vision), 'deepstack_tensor_count': len(deepstack),
         'native_parameter_shapes_equal': True, 'native_parameter_count': len(actual),
         'baseline_warnings': baseline_warnings, 'companion_warnings': warnings,
+        'diffusion_parameter_dtypes': (sorted({str(value.dtype) for value in model.model.parameters()})
+                                      if args.family == 'ernie_image' else []),
         'comfy_root': str(args.comfy_root),
         'source_code_sha256': {name: hashlib.sha256((root / name).read_bytes()).hexdigest()
                                for name in ('original_text_gguf.py', 'comfyui_s2gguf/codec.py', 'comfyui_s2gguf/__init__.py',

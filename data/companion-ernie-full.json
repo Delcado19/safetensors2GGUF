@@ -1,0 +1,34 @@
+{
+  "scope": "Complete local checkpoint export/readback and real CPU model construction; no inference/rendering.",
+  "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\diffusion_models\\Ernie\\BigLoveEryn1_bf16.safetensors",
+  "prefix": "",
+  "family": "ernie_image",
+  "preset": "Q4_K_M",
+  "clip_type": "stable_diffusion",
+  "source_bytes": 16067034480,
+  "source_mtime_ns": 1792400819228760700,
+  "source_stat_unchanged": true,
+  "source_sha256_after_construction": "de6755e5e5868ccd441f6e1273e4c5e80697fb465b3c5794c25ec162980caf64",
+  "output_sha256": "70827766b00441a054bab5f3b9af519b9aefad2ad379a0aaeca2b0852ce0d355",
+  "output": "build\\companion-ernie-full\\ernie_image-Q4_K_M.gguf",
+  "output_bytes": 5299410112,
+  "export_seconds": 77.14395719999993,
+  "source_tensor_count": 409,
+  "vision_tensor_count": 0,
+  "deepstack_tensor_count": 0,
+  "native_parameter_shapes_equal": true,
+  "native_parameter_count": 410,
+  "baseline_warnings": [],
+  "companion_warnings": [],
+  "diffusion_parameter_dtypes": [
+    "torch.bfloat16"
+  ],
+  "comfy_root": "G:\\ComfyUI-Easy-Install\\ComfyUI",
+  "source_code_sha256": {
+    "original_text_gguf.py": "996b840c44c1904730000911ec829db41ac5ae7d8623aa827d1b5787f0de77f5",
+    "comfyui_s2gguf/codec.py": "0a929b9104b0fe225d9a5284094cf861975dbd30a9cd377c5ed4023e00a4f6ec",
+    "comfyui_s2gguf/__init__.py": "b0dc9d22ae3158b3e1b8f860f8f093f8eb9ec94c0afc9fdcf09cc5627a01054e",
+    "scripts/validate_companion_model.py": "33b740166cb23bd15c63a1f18f79018ecbfeb5ec5c27b6be9ee8ce4b3e7a3f0f"
+  },
+  "comfy_sd_sha256": "8dc8b77fe54a46e35120a13c266a2241c4e32158dfc36cc9960c2fac5df1947b"
+}

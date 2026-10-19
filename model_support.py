@@ -100,7 +100,10 @@ _STRUCTURALLY_IMPOSSIBLE: dict[tuple[str, str], str] = {
         "Original-key GGUF requires S2GGUFDiffusionLoader and reconstructs weights "
         "in CPU RAM. Runtime inference remains untested. The stock city96 "
         "lcpp.patch has no ernie_image entry; that historical restriction does "
-        "not qualify the new companion-loader route."
+        "not qualify the new companion-loader route. BigLoveEryn1 BF16, Q4_K_M: "
+        "all 409 tensors survive export/readback, and native CPU BF16 construction "
+        "matches the source without missing or unexpected weights. "
+        "Source: docs/companion-loader-validation.md."
     ),
     ("krea2", "GGUF"): (
         "Krea 2 GGUF requires the Krea-capable molbal/ComfyUI-GGUF loader "
@@ -1054,6 +1057,9 @@ def build_support_table() -> list[dict]:
                 row[f'{format_key}__scope'] = 'Profile-dependent drift'
             if instance.arch == 'qwen_image' and format_key == 'GGUF':
                 row[f'{format_key}__scope'] = 'Q4_K_M smoke test'
+            if instance.arch == 'ernie_image' and format_key == 'GGUF':
+                row[f'{format_key}__scope'] = 'Q4_K_M / CPU BF16 construction'
+                row[f'{format_key}__format'] = 'Q4_K_M'
             if instance.arch == 'krea2' and format_key == 'GGUF':
                 row[f'{format_key}__scope'] = 'Requires molbal · tests pending'
         rows.append(row)
