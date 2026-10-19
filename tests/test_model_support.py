@@ -72,27 +72,27 @@ class TestSupportLevel:
         assert row['GGUF__scope'] == 'Q4_K_M smoke test'
         assert row["GGUF__reason"] == support_reason("qwen_image", "GGUF")
 
-    def test_gguf_bad_for_safetensors_only_new_architectures(self):
-        for arch_key in ("ernie_image", "krea2"):
-            assert support_level(arch_key, True, "GGUF") == SUPPORT_BAD
+    def test_new_gguf_routes_do_not_inherit_runtime_qualification(self):
+        for arch_key, expected in (("ernie_image", SUPPORT_UNKNOWN), ("krea2", SUPPORT_BAD)):
+            assert support_level(arch_key, True, "GGUF") == expected
             assert support_reason(arch_key, "GGUF") is not None
             row = next(r for r in build_support_table() if r["arch"] == arch_key)
-            assert row["GGUF"] == SUPPORT_BAD
+            assert row["GGUF"] == expected
             assert row["GGUF__reason"] == support_reason(arch_key, "GGUF")
 
     def test_gguf_reason_none_when_not_structurally_impossible(self):
         assert support_reason("qwen_image", "NVFP4") is None
         assert support_reason("lumina2", "GGUF") is None
 
-    def test_te_gguf_reason_matches_confirmed_bad(self):
+    def test_te_gguf_reason_requires_unqualified_companion_loader(self):
         assert text_encoder_support_reason("qwen2.5-vl-7b", "GGUF") is not None
-        assert "vision tower" in text_encoder_support_reason("qwen2.5-vl-7b", "GGUF")
+        assert "S2GGUFTextEncoderLoader" in text_encoder_support_reason("qwen2.5-vl-7b", "GGUF")
         assert text_encoder_support_reason("clip-l", "GGUF") is not None
         assert text_encoder_support_reason("t5-xxl", "GGUF") is None
         row = next(
             r for r in build_text_encoder_support_table() if r["family"] == "qwen2.5-vl-7b"
         )
-        assert row["GGUF"] == SUPPORT_BAD
+        assert row["GGUF"] == SUPPORT_UNKNOWN
         assert row["GGUF__reason"] == text_encoder_support_reason("qwen2.5-vl-7b", "GGUF")
 
     def test_f16_always_verified(self):
@@ -424,14 +424,12 @@ class TestTextEncoderSupport:
             assert text_encoder_support_level("mistral-small-3.2-24b", fmt) == SUPPORT_VERIFIED, fmt
         assert text_encoder_support_level("mistral-small-3.2-24b", "GGUF") == SUPPORT_BAD
 
-    def test_qwen25vl_gguf_confirmed_bad(self):
-        # 2026-08-23: our GGUF Q4_K_M build for qwen2.5-vl-7b loads but
-        # crashes any image-conditioning workflow -- llama.cpp's plain
-        # convert_hf_to_gguf.py (no --mmproj) drops the vision tower
-        # entirely (0/339 tensors start with "visual.", confirmed via
-        # gguf.GGUFReader). Upstream/tooling gap, not fixable in this
-        # project's own code -- see docs/issues_analysis.md #22.
-        assert text_encoder_support_level("qwen2.5-vl-7b", "GGUF") == SUPPORT_BAD
+    def test_qwen25vl_original_gguf_is_unqualified(self):
+        # Issue #22 describes the historical language-only stock-loader export.
+        # The new complete-VL companion route needs independent runtime evidence.
+        assert text_encoder_support_level("qwen2.5-vl-7b", "GGUF") == SUPPORT_UNKNOWN
+        reason = text_encoder_support_reason("qwen2.5-vl-7b", "GGUF")
+        assert "retains vision" in reason and "untested" in reason
 
     def test_mistral_small_gguf_confirmed_bad(self):
         # 2026-08-23: FLUX.2 dev's mistral_3_small_flux2_*.safetensors is a
@@ -463,14 +461,11 @@ class TestTextEncoderSupport:
             for fmt in ("FP8", "FP8_MIXED", "INT8", "INT8_MIXED", "NVFP4", "NVFP4_MIXED"):
                 assert text_encoder_support_level(family, fmt) == SUPPORT_BAD, (family, fmt)
 
-    def test_clip_families_gguf_confirmed_bad(self):
-        # Not a render defect -- llama.cpp's convert_hf_to_gguf.py has no
-        # CLIPModel/CLIPTextModel converter at all, so GGUF conversion fails
-        # before it could ever render (see model_support.py's
-        # _TE_RENDER_CONFIRMED_BAD comment and
-        # text_encoder_convert._reject_if_gguf_unsupported).
-        assert text_encoder_support_level("clip-l", "GGUF") == SUPPORT_BAD
-        assert text_encoder_support_level("clip-bigg", "GGUF") == SUPPORT_BAD
+    def test_clip_original_gguf_requires_companion_loader(self):
+        # Stock llama.cpp/CLIPLoaderGGUF restrictions remain historical evidence.
+        for family in ("clip-l", "clip-bigg"):
+            assert text_encoder_support_level(family, "GGUF") == SUPPORT_UNKNOWN
+            assert "CPU RAM" in text_encoder_support_reason(family, "GGUF")
 
     def test_pile_t5xl_confirmed_bad(self):
         # 2026-08-18: aura_t5 (Pile-T5-XL) render-tested via the verified

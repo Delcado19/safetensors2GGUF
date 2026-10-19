@@ -1,4 +1,25 @@
-# Paused multi-model / vision-language integration
+# Multi-model / vision-language integration
+
+## Resumed 2026-10-19
+
+The user explicitly resumed implementation, authorized regular commits/pushes,
+and requested shutdown after a completed larger feature. The paused snapshot
+below is historical, not the current execution instruction.
+
+The BF16/Q8 empty-buffer bug is fixed without dropping buffers. Support tests
+now distinguish unqualified original-key companion routes from historical
+stock-loader failures. Workbench encoder help no longer claims normal conversion
+downloads or compiles tools. The focused export/support/API/provenance gate passes
+264 tests. Ruff and frontend build pass.
+
+New immutable reports requalify the changed sources: all 66 schematic diffusion
+comparisons match the pinned native reference; the real one-layer Qwen3 export
+matches all 14 historical tensor payloads and model metadata except the random
+temporary-directory display name. Historical performance/full-model measurements
+are retained, not rerun or broadened. See the dated requalification JSON files in
+`data/`. Extended adapter hardening and complete-format checks are in progress.
+
+## Historical paused snapshot
 
 Status: **paused, unfinished WIP snapshot** on 2026-10-18.
 The user requested an immediate pause, then documentation and a push of the

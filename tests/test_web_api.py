@@ -87,7 +87,7 @@ def test_support_matrix_uses_shared_classifications_and_reasons():
     assert data['diffusion']['formats'] == [key for _, key in model_support.TABLE_FORMATS]
     assert data['text_encoder']['formats'] == [key for _, key in model_support.TEXT_ENCODER_TABLE_FORMATS]
     clip = next(row for row in data['text_encoder']['rows'] if row['family'] == 'clip-l')
-    assert clip['GGUF'] == 'bad' and clip['GGUF__reason']
+    assert clip['GGUF'] == 'unknown' and 'S2GGUFTextEncoderLoader' in clip['GGUF__reason']
     assert clip['F16'] == 'verified'
     qwen = next(row for row in data['diffusion']['rows'] if row['arch'] == 'qwen_image')
     assert qwen['GGUF'] == 'verified' and qwen['GGUF__scope'] == 'Q4_K_M smoke test'

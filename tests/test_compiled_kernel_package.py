@@ -13,7 +13,8 @@ def _qualified_source_hashes(root):
     # Keep historical measurements immutable; each follow-up qualifies changed sources.
     hashes = {}
     for name in ('compiled-kernel-levels-validation', 'compiled-kernel-performance-validation',
-                 'compiled-kernel-direct-preparation', 'compiled-diffusion-validation'):
+                 'compiled-kernel-direct-preparation', 'compiled-diffusion-validation',
+                 'compiled-diffusion-requalification-2026-10-19'):
         hashes.update(json.loads((root / f'data/{name}.json').read_text())['source_code_sha256'])
     return hashes
 

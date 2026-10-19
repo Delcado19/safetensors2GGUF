@@ -781,7 +781,7 @@ function App() {
                           </strong>
                           <p>
                             {container === "gguf"
-                              ? "Auto-detected families use bundled tokenizer files. First use may download llama.cpp; K-quants need CMake and a C++ compiler. CLIP-L/bigG require safetensors."
+                              ? "Auto-detected families use bundled tools and tokenizer files. Original-key CLIP/VL exports require S2GGUFTextEncoderLoader and reconstruct weights in CPU RAM; inference remains untested."
                               : "No tokenizer download or llama.cpp needed. Use ComfyUI’s native CLIPLoader. Compatibility depends on the encoder family; inspect before converting."}
                           </p>
                         </div>

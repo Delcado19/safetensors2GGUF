@@ -23,6 +23,8 @@ def fixture_source(path):
             'tokenizer_json': torch.arange(32, dtype=torch.uint8),
             'indices': torch.tensor(7, dtype=torch.int64),
             'empty_buffer': torch.empty(0),
+            'empty_matrix': torch.empty(2, 0),
+            'empty_rows': torch.empty(0, 256),
             'scalar': torch.tensor(0.5)}
     save_file(data, str(path))
     return data
@@ -39,6 +41,9 @@ def test_complete_vl_export_keeps_vision_and_original_shapes(tmp_path, preset):
     for name, tensor in actual.items():
         assert tensor.shape == expected[name].shape and torch.isfinite(tensor).all()
     assert torch.equal(actual['tokenizer_json'], expected['tokenizer_json'])
+    assert torch.equal(actual['indices'], expected['indices'])
+    for name in ('empty_buffer', 'empty_matrix', 'empty_rows'):
+        assert torch.equal(actual[name], expected[name])
     assert torch.equal(actual['model.visual.patch_embed.proj.weight'], expected['model.visual.patch_embed.proj.weight'])
     if preset == 'F32':
         for name in actual:

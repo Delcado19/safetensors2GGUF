@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Fix: Preserve empty floating buffers in BF16/Q8 original-key exports and align
+  support-table tests and Workbench help with unqualified companion-loader routes.
+- Validate: Re-run 66 native diffusion comparisons and the real pinned one-layer
+  Qwen3 export without rewriting historical measurements.
+
 - Change: Save the user-requested paused WIP for extended Molbal model adapters,
   full original-key vision-language/CLIP GGUFs, explicit text-only Qwen3-VL Q8_CR,
   and distinct experimental ComfyUI loaders. This snapshot is incomplete, has

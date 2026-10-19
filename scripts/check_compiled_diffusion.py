@@ -22,11 +22,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--work', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--references', type=Path, default=Path('data/converter-policy-comparison.json'))
     args = parser.parse_args()
     if args.work.exists() or args.output.exists():
         parser.error('Choose fresh work and output paths')
     root = Path(__file__).resolve().parents[1]
-    reference = verified_flux_reference(json.loads((root / 'data/converter-policy-comparison.json').read_text()))
+    references = json.loads(args.references.read_text())
+    # Follow-up reports may pin a relocated binary; the same provenance checks apply.
+    if 'native_reference' in references:
+        references = {'builds': [references['native_reference']]}
+    reference = verified_flux_reference(references)
     source_file = runpy.run_path(str(root / 'tests/test_compiled_diffusion.py'))['source_file']
     args.work.mkdir(parents=True)
     rows = []

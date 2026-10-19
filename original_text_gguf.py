@@ -114,9 +114,10 @@ def export_original_text(source, destination, family, preset, *, overwrite=False
                     # Preserve finite outliers instead of emitting overflowing half floats.
                     if values.size == 0 or np.max(np.abs(values)) <= np.finfo(np.float16).max:
                         qtype = gguf.GGMLQuantizationType.F16
-                elif preset == 'BF16':
+                elif preset == 'BF16' and values.size:
+                    # gguf's grouped BF16 codec cannot reshape empty rows; keep empty buffers as F32.
                     qtype = gguf.GGMLQuantizationType.BF16
-                elif preset == 'Q8_0' and values.ndim == 2 and values.shape[-1] % 32 == 0:
+                elif preset == 'Q8_0' and values.size and values.ndim == 2 and values.shape[-1] % 32 == 0:
                     qtype = gguf.GGMLQuantizationType.Q8_0
                 data = gguf.quants.quantize(values, qtype)
             data = np.ascontiguousarray(data)

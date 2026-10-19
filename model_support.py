@@ -97,8 +97,10 @@ SUPPORT_SYMBOL: dict[str, str] = {
 # tooltip so the difference is visible without reading source comments.
 _STRUCTURALLY_IMPOSSIBLE: dict[tuple[str, str], str] = {
     ("ernie_image", "GGUF"): (
-        "No GGUF build exists with this project's tooling -- city96/ComfyUI-GGUF's "
-        "lcpp.patch has no ernie_image llm_arch entry. Safetensors only."
+        "Original-key GGUF requires S2GGUFDiffusionLoader and reconstructs weights "
+        "in CPU RAM. Runtime inference remains untested. The stock city96 "
+        "lcpp.patch has no ernie_image entry; that historical restriction does "
+        "not qualify the new companion-loader route."
     ),
     ("krea2", "GGUF"): (
         "Krea 2 GGUF requires the Krea-capable molbal/ComfyUI-GGUF loader "

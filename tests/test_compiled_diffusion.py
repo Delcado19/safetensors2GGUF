@@ -124,7 +124,7 @@ def test_recorded_diffusion_parity_and_current_sources():
     import json
     from pathlib import Path
     root = Path(__file__).parents[1]
-    report = json.loads((root / 'data/compiled-diffusion-validation.json').read_text())
+    report = json.loads((root / 'data/compiled-diffusion-requalification-2026-10-19.json').read_text())
     assert report['all_equal'] and len(report['results']) == 66
     assert {row['architecture'] for row in report['results']} == set(PROTECTED) - {'qwen_image'}
     for row in report['results']:

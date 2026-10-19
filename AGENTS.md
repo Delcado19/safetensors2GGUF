@@ -2,7 +2,10 @@
 
 ## Persistent project TODO — load at every session start
 
-**Paused WIP checkpoint (2026-10-18): read `CONTINUE.md` first.** The user stopped
+**Resumed WIP checkpoint (2026-10-19): read `CONTINUE.md` first.** The user explicitly
+resumed implementation, authorized regular commits/pushes and requested shutdown
+after a completed larger feature. The following pause notice is historical.
+**Paused WIP checkpoint (2026-10-18):** The user stopped
 implementation immediately and then requested documentation/push of the current
 state. Do not resume implementation automatically. Extended model/VL adapters and
 the new original-key companion loaders are unfinished, with known test failures
