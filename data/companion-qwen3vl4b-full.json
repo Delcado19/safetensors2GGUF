@@ -1,0 +1,31 @@
+{
+  "scope": "Complete local checkpoint export/readback and real CPU model construction; no inference/rendering.",
+  "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\text_encoders\\Krea 2 - Flux.3 Klein\\Huihui-Qwen3-4b-VL.safetensors",
+  "prefix": "",
+  "family": "qwen3-vl",
+  "preset": "Q4_K_M",
+  "clip_type": "krea2",
+  "source_bytes": 8875719384,
+  "source_mtime_ns": 1786964526468612400,
+  "source_stat_unchanged": true,
+  "output": "build\\companion-qwen3vl4b-full\\qwen3-vl-Q4_K_M.gguf",
+  "output_bytes": 4113819008,
+  "export_seconds": 46.533833200000004,
+  "source_tensor_count": 713,
+  "vision_tensor_count": 315,
+  "deepstack_tensor_count": 18,
+  "native_parameter_shapes_equal": true,
+  "native_parameter_count": 714,
+  "baseline_warnings": [],
+  "companion_warnings": [],
+  "comfy_root": "G:\\ComfyUI-Easy-Install\\ComfyUI",
+  "source_code_sha256": {
+    "original_text_gguf.py": "dacf61a16cbac73c96921b622ef91b9b7bfef3251ecb01558511c68d07d4affc",
+    "comfyui_s2gguf/codec.py": "0a929b9104b0fe225d9a5284094cf861975dbd30a9cd377c5ed4023e00a4f6ec",
+    "comfyui_s2gguf/__init__.py": "b0dc9d22ae3158b3e1b8f860f8f093f8eb9ec94c0afc9fdcf09cc5627a01054e",
+    "scripts/validate_companion_model.py": "dc679a28a557b288616775b0282d27c019d56d6d922dd89e0f5090dfaeb5eb15"
+  },
+  "comfy_sd_sha256": "8dc8b77fe54a46e35120a13c266a2241c4e32158dfc36cc9960c2fac5df1947b",
+  "source_sha256_after_construction": "59c9eaa46562da63e355c6a0db2e9a74c7ab6310729d2914972219f9b695906f",
+  "output_sha256": "4390cffcdca52de16805d2b59bb1aff9cd464c66a09b018190d496565283af2e"
+}

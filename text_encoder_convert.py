@@ -454,7 +454,12 @@ def detect_text_encoder_family(state_dict) -> str | None:
     if any(key.startswith('model.language_model.') for key in keys) and not any(key.startswith(('model.visual.', 'visual.')) for key in keys):
         raise ValueError('VL language tensors without a vision tower are not a complete VL source')
     if any(key.startswith(('model.visual.', 'visual.')) for key in keys):
-        if any(key.startswith('model.language_model.') for key in keys):
+        # ComfyUI repacks full Qwen3-VL with flat model.layers.* language keys;
+        # detect its vision merger before the colliding plain Qwen3 signature.
+        if (any(key.startswith('model.language_model.') for key in keys)
+                or any('deepstack_merger_list.' in key or key.endswith('visual.merger.linear_fc2.weight') for key in keys)):
+            if not any(key.endswith(_EMBED_KEY_SUFFIXES) for key in keys):
+                raise ValueError('VL vision tensors without language embeddings are not a complete VL source')
             return 'qwen3-vl'
     embed_key = next((k for k in keys if k.endswith(_EMBED_KEY_SUFFIXES)), None)
     if embed_key is None:

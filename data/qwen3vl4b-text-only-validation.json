@@ -1,0 +1,14 @@
+{
+  "scope": "Complete local 4B BF16 source to explicit text-only Q8_CR; conversion/readback, not inference.",
+  "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\text_encoders\\Krea 2 - Flux.3 Klein\\Huihui-Qwen3-4b-VL.safetensors",
+  "output": "build\\qwen3vl4b-TEXT-ONLY-Q8_CR-final.gguf",
+  "text_only_marker": true,
+  "vision_tensor_count": 0,
+  "tensor_count": 650,
+  "architecture": "qwen3vl",
+  "source_stat_unchanged": true,
+  "source_code_sha256": {
+    "text_encoder_convert.py": "9835e6c9f5394d2454d98ae285ab5f62bae4ec45b15713ec2659da0891b84b63",
+    "extended_backend.py": "65b8b4765e2fc82e764bcc2da93bed9fe6565bcbc439ff78a7068d4de9ca779c"
+  }
+}

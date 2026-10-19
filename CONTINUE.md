@@ -1,5 +1,32 @@
 # Multi-model / vision-language integration
 
+## Complete companion-model checks (2026-10-19)
+
+The user requested complete CLIP-L/bigG, full-VL and ERNIE loader checks, regular
+commits/pushes, and shutdown after completion. CLIP-L/bigG extracted from the full
+RealVisXL SDXL checkpoint and the complete Huihui Qwen3-VL-4B source now pass
+Q4_K_M export, full source-key/shape readback and actual native CPU model
+construction through `S2GGUFTextEncoderLoader`. Counts are 196, 518 and 713
+respectively; the VL export retains all 315 vision and 18 DeepStack tensors.
+Only CLIP-L has a missing optional projection, identical to its native baseline.
+
+The separately requested explicit text-only Q8_CR source conversion passes and
+has its marker plus zero retained vision tensors. The installed flat-language
+Qwen3-VL-8B repack exposed a real plain-Qwen3 routing collision; detection and
+public-path regressions now fix it. The ordinary synthetic text pipeline was
+requalified without modifying historical data. Support-table evidence now
+distinguishes CPU construction from still-unqualified inference.
+
+See `docs/companion-loader-validation.md` and the new `data/companion-*-full.json`
+reports. No complete ERNIE checkpoint was found, including a header-based local
+architecture scan. A source-path question and optional download-authorization
+question are pending; do not treat silence as download approval. ERNIE full-model
+validation and the requested final shutdown remain pending until this is resolved.
+No node installation files or original model files were changed, and no renders
+were started. The final full suite passes **1082 tests** in 244.67 s; Ruff,
+frontend build and the documentation gate pass. The source/converted-model
+SHA256 hashes were recorded after construction with unchanged source stats.
+
 ## Resumed 2026-10-19
 
 The user explicitly resumed implementation, authorized regular commits/pushes,

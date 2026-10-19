@@ -90,7 +90,7 @@ def test_real_export_smoke_records_current_sources():
     assert report['tensor_count'] == 14
     assert report['tensor_types'] == {'Q4_K': 6, 'Q6_K': 3, 'F32': 5}
     # Keep the original measurement immutable; the follow-up reruns the real pipeline.
-    current = json.loads((tools.ROOT / 'data/bundled-text-requalification-2026-10-19.json').read_text())
+    current = json.loads((tools.ROOT / 'data/bundled-text-vl-routing-requalification-2026-10-19.json').read_text())
     assert current['source_unchanged'] and current['metadata_equal_except_temporary_name']
     assert current['comparison']['alignment_equal'] and current['comparison']['tensor_counts_equal']
     assert all(row['equal'] for row in current['comparison']['tensors'])

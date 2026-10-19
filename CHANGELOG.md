@@ -6,6 +6,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Fix: Detect complete Qwen3-VL repacks with flat language keys before the plain
+  Qwen3 text signature, preserving the full vision/DeepStack export route.
+- Change: Complete CLIP-L, bigG and Qwen3-VL-4B Q4_K_M exports retain all source
+  tensors and construct real native ComfyUI CPU models via companion nodes.
+  Record the separate full-source text-only Q8_CR conversion without claiming inference.
+- Change: Expose scoped CPU construction evidence and the missing Qwen3-VL/MiniMax
+  text rows in the support table; new GGUF routes remain unqualified for inference.
+
 - Add: Independent complete tensor-payload readback before publishing extended
   Molbal adapter exports. All 102 combinations of six new architectures and
   17 formats pass schematic tests, alongside corruption/atomic-output guards.

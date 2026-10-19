@@ -6,6 +6,11 @@
 > complete-model inference. See [CONTINUE.md](CONTINUE.md) for current validation
 > and the [adapter contract](docs/extended-adapter-validation.md) for loader limits.
 
+Complete CLIP-L/bigG and Qwen3-VL-4B original-key Q4_K_M exports now pass real
+native ComfyUI CPU model construction through the companion text loader.
+This is loading evidence, not inference/render qualification; see the
+[complete-checkpoint validation](docs/companion-loader-validation.md).
+
 Converts Safetensors / CKPT diffusion model checkpoints to **GGUF** for use with
 **llama.cpp** and **ComfyUI-GGUF**, or to a quantized **Safetensors** file that
 ComfyUI can load natively without the GGUF loader node. Also converts bare

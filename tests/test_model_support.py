@@ -353,6 +353,15 @@ class TestBuildSupportTable:
                 assert row[format_key] == SUPPORT_UNKNOWN
 
 class TestTextEncoderSupport:
+    def test_companion_construction_does_not_claim_inference(self):
+        rows = {row['family']: row for row in build_text_encoder_support_table()}
+        for family in ('clip-l', 'clip-bigg', 'qwen3-vl'):
+            assert rows[family]['GGUF'] == SUPPORT_UNKNOWN
+            assert rows[family]['GGUF__scope'] == 'Q4_K_M / CPU construction'
+            assert 'construction passed' in rows[family]['GGUF__reason']
+            assert 'inference remains untested' in rows[family]['GGUF__reason']
+        assert '18 DeepStack' in rows['qwen3-vl']['GGUF__reason']
+
     def test_covers_gguf_and_safetensors_formats(self):
         keys = {key for _, key in TEXT_ENCODER_TABLE_FORMATS}
         assert keys == {

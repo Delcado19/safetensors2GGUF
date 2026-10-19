@@ -100,3 +100,35 @@ def test_vl_detected_before_plain_qwen_signature(tmp_path):
     source = tmp_path / 'vl.safetensors'
     fixture_source(source)
     assert detect_text_encoder_family(load_state_dict(str(source), strip_prefixes=False)) == 'qwen3-vl'
+
+
+def test_flat_qwen3vl_language_namespace_keeps_full_vl_routing():
+    from text_encoder_convert import detect_text_encoder_family
+    # The installed INT8 Qwen3-VL-8B repack uses the plain-Qwen3 text signature.
+    state = {'model.embed_tokens.weight': torch.empty(151936, 4096, device='meta'),
+             'model.visual.merger.linear_fc2.weight': torch.empty(4096, 4608, device='meta')}
+    state.update({f'model.layers.{index}.self_attn.q_proj.weight': torch.empty(4096, 4096, device='meta')
+                  for index in range(36)})
+    assert detect_text_encoder_family(state) == 'qwen3-vl'
+    del state['model.visual.merger.linear_fc2.weight']
+    assert detect_text_encoder_family(state) == 'qwen3-8b'
+
+
+def test_vision_only_qwen_source_is_not_a_complete_vl_encoder():
+    from text_encoder_convert import detect_text_encoder_family
+    with pytest.raises(ValueError, match='without language embeddings'):
+        detect_text_encoder_family({'model.visual.merger.linear_fc2.weight': torch.empty(2, 2)})
+
+
+def test_public_flat_vl_export_retains_vision_without_plain_text_converter(tmp_path, monkeypatch):
+    from text_encoder_convert import convert_text_encoder_kquant
+    source, output = tmp_path / 'flat-vl.safetensors', tmp_path / 'flat-vl.gguf'
+    state = fixture_source(source)
+    state = {key.replace('model.language_model.', 'model.'): value for key, value in state.items()}
+    save_file(state, str(source))
+    monkeypatch.setattr('text_encoder_convert.ensure_plain_llama_quantize',
+                        lambda **kwargs: pytest.fail('Full VL must not use the plain text quantizer'))
+    convert_text_encoder_kquant(str(source), '', str(output))
+    restored = load_original_text(output)
+    assert set(restored) == set(state)
+    assert 'model.visual.deepstack_merger_list.0.linear_fc2.weight' in restored

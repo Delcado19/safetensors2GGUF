@@ -1,0 +1,35 @@
+{
+  "scope": "Complete local checkpoint export/readback and real CPU model construction; no inference/rendering.",
+  "source": "G:\\ComfyUI-Easy-Install\\ComfyUI\\models\\checkpoints\\SDXL 1.0\\realvisxlV50_v50LightningBakedvae.safetensors",
+  "prefix": "conditioner.embedders.0.transformer.",
+  "family": "clip-l",
+  "preset": "Q4_K_M",
+  "clip_type": "stable_diffusion",
+  "source_bytes": 6938065512,
+  "source_mtime_ns": 1781556931160423500,
+  "source_stat_unchanged": true,
+  "output": "build\\companion-clip-l-full-v2\\clip-l-Q4_K_M.gguf",
+  "output_bytes": 125887552,
+  "export_seconds": 2.005610899999965,
+  "source_tensor_count": 196,
+  "vision_tensor_count": 0,
+  "deepstack_tensor_count": 0,
+  "native_parameter_shapes_equal": true,
+  "native_parameter_count": 198,
+  "baseline_warnings": [
+    "clip missing: ['text_projection.weight']"
+  ],
+  "companion_warnings": [
+    "clip missing: ['text_projection.weight']"
+  ],
+  "comfy_root": "G:\\ComfyUI-Easy-Install\\ComfyUI",
+  "source_code_sha256": {
+    "original_text_gguf.py": "dacf61a16cbac73c96921b622ef91b9b7bfef3251ecb01558511c68d07d4affc",
+    "comfyui_s2gguf/codec.py": "0a929b9104b0fe225d9a5284094cf861975dbd30a9cd377c5ed4023e00a4f6ec",
+    "comfyui_s2gguf/__init__.py": "b0dc9d22ae3158b3e1b8f860f8f093f8eb9ec94c0afc9fdcf09cc5627a01054e",
+    "scripts/validate_companion_model.py": "dc679a28a557b288616775b0282d27c019d56d6d922dd89e0f5090dfaeb5eb15"
+  },
+  "comfy_sd_sha256": "8dc8b77fe54a46e35120a13c266a2241c4e32158dfc36cc9960c2fac5df1947b",
+  "source_sha256_after_construction": "fabcadd9330dcc4f9702063428d40b9d4d07168d8acefc819b8d1d9db466b3ec",
+  "output_sha256": "eab3ce1731281a94ace6b18f99a0a4c2f8fe644c77933135b41bb1ad8b33ba66"
+}

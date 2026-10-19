@@ -161,11 +161,21 @@ def support_reason(arch_key: str, format_key: str) -> str | None:
             _SCOPED_RENDER_NOTES.get((arch_key, format_key)))
 
 
+_COMPANION_CONSTRUCTION_NOTES = {
+    'clip-l': 'Q4_K_M from the complete RealVisXL SDXL CLIP-L: export/readback and native CPU construction passed. The optional projection is absent in both source and export.',
+    'clip-bigg': 'Q4_K_M from the complete RealVisXL SDXL bigG: export/readback and native CPU construction passed without missing weights.',
+    'qwen3-vl': 'Huihui Qwen3-VL-4B, Q4_K_M: all 713 tensors, including 315 vision and 18 DeepStack tensors, survive export; native Krea2 CPU construction passed. This does not qualify the 8B variant.',
+}
+
+
 def text_encoder_support_reason(family: str, format_key: str) -> str | None:
     """Tooltip text for a text-encoder support-table cell, or None if the
     cell needs no extra explanation beyond its symbol."""
     if format_key == 'GGUF' and family in {'clip-l', 'clip-bigg', 'qwen2.5-vl-7b', 'qwen3-vl', 'minimax-music3'}:
-        return 'Original-key GGUF requires S2GGUFTextEncoderLoader, which retains vision and reconstructs weights in CPU RAM. Runtime inference remains untested; historical stock-loader failures do not qualify this new route.'
+        reason = 'Original-key GGUF requires S2GGUFTextEncoderLoader, which retains vision and reconstructs weights in CPU RAM. Runtime inference remains untested; historical stock-loader failures do not qualify this new route.'
+        if family in _COMPANION_CONSTRUCTION_NOTES:
+            reason += ' ' + _COMPANION_CONSTRUCTION_NOTES[family] + ' Source: docs/companion-loader-validation.md.'
+        return reason
     return (_TE_STRUCTURALLY_IMPOSSIBLE.get((family, format_key)) or
             _TE_DRIFT_NOTES.get((family, format_key)))
 
@@ -635,6 +645,8 @@ TEXT_ENCODER_TABLE_FORMATS: list[tuple[str, str]] = [
 # _FAMILY_SIGNATURES in text_encoder_convert.py). Format matches
 # MODEL_DISPLAY_NAMES above: "<public name> (<short name>)".
 TEXT_ENCODER_FAMILY_DISPLAY_NAMES: dict[str, str] = {
+    'qwen3-vl': 'Qwen3-VL Full encoder (qwen3-vl)',
+    'minimax-music3': 'MiniMax Music 3 Text (minimax-music3)',
     "qwen3-4b": "Qwen3 4B — Z-Image / FLUX.2 klein 4B (qwen3-4b)",
     "qwen3-8b": "Qwen3 8B — FLUX.2 klein 9B (qwen3-8b)",
     "qwen2.5-vl-7b": "Qwen2.5-VL 7B — Qwen-Image / Qwen-Image-Edit (qwen2.5-vl-7b)",
@@ -1009,6 +1021,10 @@ def build_text_encoder_support_table() -> list[dict]:
         for _, format_key in TEXT_ENCODER_TABLE_FORMATS:
             row[format_key] = text_encoder_support_level(family, format_key)
             row[f"{format_key}__reason"] = text_encoder_support_reason(family, format_key)
+        if family in _COMPANION_CONSTRUCTION_NOTES:
+            # Construction is useful evidence but cannot promote an unrendered route.
+            row['GGUF__scope'] = 'Q4_K_M / CPU construction'
+            row['GGUF__format'] = 'Q4_K_M'
         rows.append(row)
     rows.sort(key=lambda r: r["display_name"])
     return rows
