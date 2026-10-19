@@ -1,5 +1,26 @@
 # Multi-model / vision-language integration
 
+## ERNIE app progress and visible terminal (2026-10-19)
+
+Original-key ERNIE exports now forward per-tensor progress through the shared
+application pipeline and report writing/readback phases. Initial zero-progress
+preparation remains visibly active; job logs also reach the launch terminal.
+The user explicitly requested a visible terminal. The idle Workbench was restarted
+through uv in a visible PowerShell window; ComfyUI was not restarted.
+The user's preceding app job completed successfully at
+`G:\ComfyUI-Easy-Install\ComfyUI\models\unet\BigLoveEryn1_bf16-Q4_K_M.gguf`
+(5,299,410,112 bytes). No new image render was started.
+New progress-versus-no-progress export fixtures are byte-identical; 66 schematic
+application conversions still match the pinned native reference. See
+`data/compiled-diffusion-progress-requalification-2026-10-19.json`.
+The complete progress gate passes 1100 tests in 254.26 s. The subsequent missing
+loader installation exposed a selector-extension bug: companion nodes now use
+GGUF-only folder aliases while preserving native loader filters. All 24 companion
+tests pass after that follow-up. The two standalone files are installed under
+`G:\ComfyUI-Easy-Install\ComfyUI\custom_nodes\comfyui_s2gguf`; an isolated installed
+import finds the completed ERNIE GGUF. ComfyUI itself was not restarted: a restart
+is required to register **Original Diffusion Model (S2GGUF)** in the live server.
+
 ## Tokenizer inspection and explicit repair (2026-10-19)
 
 Workbench inspection and post-download results now expose missing/invalid Tekken

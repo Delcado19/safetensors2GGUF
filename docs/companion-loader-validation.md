@@ -1,5 +1,21 @@
 # Complete-checkpoint companion-loader validation
 
+## Local installation and model selection (2026-10-19)
+
+The user requested installation of the missing companion loader. The standalone
+`comfyui_s2gguf` directory (`__init__.py`, `codec.py`) is now copied to the installed
+ComfyUI `custom_nodes` directory. Existing gguf/NumPy/PyTorch dependencies suffice;
+no package changes were required. Restart ComfyUI after copying the directory.
+Select **Original Diffusion Model (S2GGUF)** for original-key ERNIE exports.
+
+The nodes use their own GGUF-only folder aliases, retaining ComfyUI's configured
+model directories without adding GGUF to native loader file lists. An isolated
+import with the installed ComfyUI interpreter finds the user's completed
+`BigLoveEryn1_bf16-Q4_K_M.gguf`; source/installed node files match by SHA256.
+The already running ComfyUI process was not restarted or runtime-qualified by
+this installation check. Full CPU weight reconstruction still requires model RAM;
+this compatibility loader does not implement low-bit GPU inference kernels.
+
 ## Scope
 
 On 2026-10-19, the actual companion text/diffusion loader nodes were executed against the

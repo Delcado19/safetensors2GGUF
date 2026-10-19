@@ -124,7 +124,7 @@ def test_recorded_diffusion_parity_and_current_sources():
     import json
     from pathlib import Path
     root = Path(__file__).parents[1]
-    report = json.loads((root / 'data/compiled-diffusion-requalification-2026-10-19.json').read_text())
+    report = json.loads((root / 'data/compiled-diffusion-progress-requalification-2026-10-19.json').read_text())
     assert report['all_equal'] and len(report['results']) == 66
     assert {row['architecture'] for row in report['results']} == set(PROTECTED) - {'qwen_image'}
     for row in report['results']:
@@ -133,8 +133,4 @@ def test_recorded_diffusion_parity_and_current_sources():
         # Historical UI provenance is retained, but presentation cannot change converter bytes.
         if name.startswith('frontend/'):
             continue
-        if name == 'web_api.py':
-            # The API-only follow-up does not modify the qualified converter kernels.
-            followup = json.loads((root / 'data/tokenizer-check-validation-2026-10-19.json').read_text())
-            digest = followup['source_code_sha256'][name]
         assert hashlib.sha256((root / name).read_bytes()).hexdigest() == digest

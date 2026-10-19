@@ -58,7 +58,8 @@ class OriginalTextKWriter(CompiledFluxWriter):
             super().add_tensor(name, data, raw_dtype=raw_dtype)
 
 
-def export_original_text(source, destination, family, preset, *, overwrite=False, cancel_event=None, on_log=None):
+def export_original_text(source, destination, family, preset, *, overwrite=False, cancel_event=None, on_log=None,
+                         on_progress=None):
     """Preserve every source component and publish only after complete payload readback."""
     if family not in ORIGINAL_ARCHES or preset not in (*FLUX_PRESETS, 'F16', 'F32', 'BF16', 'Q8_0'):
         raise ValueError('Unsupported original-key text family or precision')
@@ -67,6 +68,14 @@ def export_original_text(source, destination, family, preset, *, overwrite=False
     validate_text_destination(destination)
     state = load_state_dict(str(source), strip_prefixes=False)
     quantized, skip = _scan_quantized_layers(state)
+    total = sum(name not in skip for name in state)
+    def progress(fraction, phase, log=False):
+        if on_progress:
+            on_progress(fraction, phase)
+        if log and on_log:
+            on_log('INFO: ' + phase)
+    # These are completed work stages, not a prediction of elapsed time or bytes.
+    progress(0.0, f'Preparing {family} {preset}: {total} tensors', True)
     before = Path(source).stat()
     descriptors, expected = {}, {}
     is_k = preset in FLUX_PRESETS
@@ -123,6 +132,9 @@ def export_original_text(source, destination, family, preset, *, overwrite=False
             data = np.ascontiguousarray(data)
             writer.add_tensor(name, data, raw_dtype=qtype)
             descriptors[name] = row
+            count = len(descriptors)
+            progress(0.8 * (count / total), f'Encoding tensor {count}/{total}: {name}',
+                     count == 1 or count % 25 == 0 or count == total)
             if not is_k:
                 expected[name] = hashlib.sha256(data).hexdigest()
         if not descriptors:
@@ -131,6 +143,7 @@ def export_original_text(source, destination, family, preset, *, overwrite=False
         writer.add_uint32('comfy.s2g.vision_tensor_count', sum(
             name.startswith(('model.visual.', 'visual.')) for name in descriptors))
         with atomic_output(destination, overwrite) as temporary:
+            progress(0.8, 'Writing GGUF file', True)
             try:
                 writer.write_header_to_file(path=temporary)
                 writer.write_kv_data_to_file()
@@ -139,6 +152,7 @@ def export_original_text(source, destination, family, preset, *, overwrite=False
                 writer.close()
             cancelled()
             with open_gguf(temporary) as reader:
+                progress(0.9, 'Validating GGUF readback', True)
                 if {tensor.name for tensor in reader.tensors} != set(descriptors):
                     raise ValueError('Original text output tensor set mismatch')
                 for tensor in reader.tensors:
@@ -152,4 +166,5 @@ def export_original_text(source, destination, family, preset, *, overwrite=False
         note = ('Requires Original Diffusion Model (S2GGUF). Loading reconstructs CPU weights; inference is unqualified.'
                 if family == 'ernie_image' else LOADER_NOTE)
         on_log('INFO: ' + note)
+    progress(1.0, 'GGUF export complete')
     return str(destination)

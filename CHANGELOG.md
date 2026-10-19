@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Fix: Report original-key ERNIE GGUF tensor progress and writing/readback phases
+  in the Workbench, show activity while preparation remains at zero, and mirror
+  job logs to the launch terminal. Progress reporting preserves exported bytes.
+- Fix: Give companion loaders independent GGUF-only model selectors; preserve
+  native ComfyUI extension filters. Document local companion-node installation.
+
 - Add: Detect missing/invalid embedded ERNIE/Ministral and Mistral Small Tekken
   tokenizers during model inspection and after Safetensors downloads. Offer an
   explicit local-tokenizer repair into a separate checkpoint with complete weight

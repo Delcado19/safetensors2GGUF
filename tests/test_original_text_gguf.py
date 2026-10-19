@@ -1,6 +1,7 @@
 """Complete VL/CLIP/audio tensor preservation and companion node contracts."""
 import sys
 import threading
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -64,6 +65,35 @@ def test_other_original_layout_families_roundtrip(tmp_path, family):
     assert ('Original Diffusion Model' if family == 'ernie_image' else 'Original Text / Vision Encoder') in messages[-1]
 
 
+def test_progress_reports_encoding_writing_and_readback_without_changing_bytes(tmp_path):
+    source = tmp_path / 'source.safetensors'
+    fixture_source(source)
+    baseline, observed = tmp_path / 'baseline.gguf', tmp_path / 'observed.gguf'
+    export_original_text(source, baseline, 'ernie_image', 'Q4_K_M')
+    events = []
+    export_original_text(source, observed, 'ernie_image', 'Q4_K_M',
+                         on_progress=lambda fraction, phase: events.append((fraction, phase)))
+    assert baseline.read_bytes() == observed.read_bytes()
+    assert events[0][0] == 0 and events[-1][0] == 1
+    assert [fraction for fraction, _ in events] == sorted(fraction for fraction, _ in events)
+    assert any('Encoding tensor' in phase for _, phase in events)
+    assert any('Writing GGUF' in phase for _, phase in events)
+    assert any('readback' in phase for _, phase in events)
+
+
+def test_diffusion_pipeline_forwards_original_export_progress(tmp_path, monkeypatch):
+    import queue
+    import conversion_service
+    source, output = tmp_path / 'source.safetensors', tmp_path / 'out.gguf'
+    fixture_source(source)
+    monkeypatch.setattr(conversion_service, 'detect_arch', lambda _: SimpleNamespace(arch='ernie_image'))
+    events = queue.Queue()
+    conversion_service._pipeline(str(source), str(output), 'Q4_K_M', '', 0, False, False, events)
+    recorded = list(events.queue)
+    assert any(event[0] == 'progress_frac' and 'Encoding tensor' in event[2] for event in recorded)
+    assert any(event[0] == 'progress_frac' and event[1] == 1 for event in recorded)
+
+
 def test_cancellation_and_corruption_preserve_previous_output(tmp_path):
     from convert import ConversionCancelled
     source, output = tmp_path / 'vl.safetensors', tmp_path / 'out.gguf'
@@ -89,11 +119,29 @@ def test_companion_node_passes_complete_state_to_native_comfyui(tmp_path, monkey
     monkeypatch.setitem(sys.modules, 'comfy', SimpleNamespace(sd=fake_sd))
     monkeypatch.setitem(sys.modules, 'comfy.sd', fake_sd)
     monkeypatch.setitem(sys.modules, 'folder_paths', SimpleNamespace(
+        folder_names_and_paths={},
         get_full_path_or_raise=lambda category, name: str(output), get_folder_paths=lambda name: []))
     assert S2GGUFTextEncoderLoader().load('out.gguf', 'krea2') == ('clip-result',)
     assert set(captured['state_dicts'][0]) == set(expected)
     assert captured['clip_type'] == 'krea2'
     assert set(NODE_CLASS_MAPPINGS) == {'S2GGUFTextEncoderLoader', 'S2GGUFDiffusionLoader'}
+
+
+def test_companion_selector_finds_gguf_without_changing_native_extensions(tmp_path, monkeypatch):
+    from comfyui_s2gguf import S2GGUFDiffusionLoader
+    native_extensions = {'.safetensors'}
+    registry = {'diffusion_models': ([str(tmp_path)], native_extensions)}
+    def names(category):
+        paths, extensions = registry[category]
+        return [path.name for folder in paths for path in Path(folder).iterdir()
+                if path.suffix in extensions]
+    (tmp_path / 'ernie.gguf').touch()
+    (tmp_path / 'ernie.safetensors').touch()
+    monkeypatch.setitem(sys.modules, 'folder_paths', SimpleNamespace(
+        folder_names_and_paths=registry, get_folder_paths=lambda category: registry[category][0],
+        get_filename_list=names))
+    assert S2GGUFDiffusionLoader.INPUT_TYPES()['required']['model'][0] == ['ernie.gguf']
+    assert registry['diffusion_models'][1] == {'.safetensors'}
 
 
 def test_vl_detected_before_plain_qwen_signature(tmp_path):

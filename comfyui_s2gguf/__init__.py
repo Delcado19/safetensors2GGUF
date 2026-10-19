@@ -2,6 +2,16 @@
 from .codec import load_original_text
 
 
+def _gguf_category(category):
+    """Keep GGUF-only selectors separate from ComfyUI's native file extensions."""
+    import folder_paths
+    alias = 's2gguf_' + category
+    existing, _ = folder_paths.folder_names_and_paths.get(alias, ([], set()))
+    paths = list(dict.fromkeys([*folder_paths.get_folder_paths(category), *existing]))
+    folder_paths.folder_names_and_paths[alias] = (paths, {'.gguf'})
+    return alias
+
+
 class S2GGUFTextEncoderLoader:
     """Use native ComfyUI text construction after complete GGUF dequantization."""
     @classmethod
@@ -9,7 +19,7 @@ class S2GGUFTextEncoderLoader:
         """Expose encoder files, native CLIP types and optional CPU placement."""
         import folder_paths
         import comfy.sd
-        choices = folder_paths.get_filename_list('text_encoders')
+        choices = folder_paths.get_filename_list(_gguf_category('text_encoders'))
         return {'required': {'encoder': (choices,),
                              'type': ([item.name.lower() for item in comfy.sd.CLIPType],)},
                 'optional': {'encoder_2': (['none', *choices],),
@@ -28,7 +38,7 @@ class S2GGUFTextEncoderLoader:
         import torch
         clip_type = comfy.sd.CLIPType[type.upper()]
         names = [encoder] + ([encoder_2] if encoder_2 != 'none' else [])
-        states = [load_original_text(folder_paths.get_full_path_or_raise('text_encoders', name)) for name in names]
+        states = [load_original_text(folder_paths.get_full_path_or_raise(_gguf_category('text_encoders'), name)) for name in names]
         options = {} if device != 'cpu' else {'load_device': torch.device('cpu'), 'offload_device': torch.device('cpu')}
         return (comfy.sd.load_text_encoder_state_dicts(
             state_dicts=states, embedding_directory=folder_paths.get_folder_paths('embeddings'),
@@ -41,7 +51,7 @@ class S2GGUFDiffusionLoader:
     def INPUT_TYPES(cls):
         """Expose files from ComfyUI's diffusion model directories."""
         import folder_paths
-        return {'required': {'model': (folder_paths.get_filename_list('diffusion_models'),)}}
+        return {'required': {'model': (folder_paths.get_filename_list(_gguf_category('diffusion_models')),)}}
 
     RETURN_TYPES = ('MODEL',)
     FUNCTION = 'load'
@@ -51,7 +61,7 @@ class S2GGUFDiffusionLoader:
         """Decode original-key weights and return a supported native diffusion model."""
         import folder_paths
         import comfy.sd
-        state = load_original_text(folder_paths.get_full_path_or_raise('diffusion_models', model))
+        state = load_original_text(folder_paths.get_full_path_or_raise(_gguf_category('diffusion_models'), model))
         result = comfy.sd.load_diffusion_model_state_dict(state)
         if result is None:
             raise ValueError('Installed ComfyUI does not support this diffusion architecture')

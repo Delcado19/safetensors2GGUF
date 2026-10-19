@@ -208,6 +208,7 @@ def _pipeline(
     def _frac(frac: float, desc: str) -> None:
         q.put(("progress_frac", max(0.0, min(1.0, frac)), desc))
 
+    _frac(0.0, 'Inspecting source model for GGUF export')
     src = src.strip()
     dst_raw = dst.strip() if dst else ""
     exe = exe_path.strip() or None
@@ -224,7 +225,8 @@ def _pipeline(
                 raise ValueError('Original-key ERNIE export does not use external quantizer overrides')
             from original_text_gguf import export_original_text
             return export_original_text(src, final_dst, extended_arch, quant_key,
-                                        overwrite=overwrite, cancel_event=cancel_event, on_log=_log)
+                                        overwrite=overwrite, cancel_event=cancel_event, on_log=_log,
+                                        on_progress=_frac)
         if extended_arch in EXTENDED_ARCHES or (extended_arch == 'krea2' and quant_key not in ('F16', 'BF16', 'Q8_0', 'Q5_1', 'Q5_0', 'Q4_1', 'Q4_0')):
             if exe or nthreads or keep_intermediate or gguf_backend not in ('native', 'compiled_diffusion'):
                 raise ValueError('Extended architecture uses its pinned CPU adapter without native overrides or intermediate retention')

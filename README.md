@@ -159,6 +159,15 @@ data exposes **Create repaired copy**: supply a local `tokenizer.json` or
 existing files are never overwritten. No tokenizer is guessed or downloaded.
 Checks validate structure and vocabulary size, not provenance or inference
 quality. Other families and GGUF tokenizer contracts are not checked yet.
+ERNIE GGUF exports report preparation, completed tensors, writing and readback
+phases in the job panel. Percentages represent work stages, not estimated time.
+Job messages also appear in the launch terminal; keep `start_gui.bat`'s terminal
+open to follow them alongside the Workbench's Technical Log.
+For original-key ERNIE GGUF loading, copy the standalone `comfyui_s2gguf` folder
+into ComfyUI's `custom_nodes` and restart ComfyUI. Its gguf, NumPy and PyTorch
+dependencies must be available in ComfyUI's environment. Use **Original Diffusion
+Model (S2GGUF)**; it reconstructs full CPU weights before native model loading.
+See [companion-loader validation](docs/companion-loader-validation.md).
 **Downloads → Civitai** accepts version IDs, version-specific model links, or
 direct download links with `fileId`. Inspect first, select a safetensors/GGUF file,
 then choose **Download / resume**. Partials survive cancellation, network errors

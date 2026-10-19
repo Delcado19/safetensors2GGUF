@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import gc
+import logging
 import os
 import re
 import secrets
@@ -136,7 +137,7 @@ class Job:
                     'model_kind': self.parameters.model_kind,
                     'operation': getattr(self.parameters, 'operation', 'convert'),
                     'outputs': list(self.outputs), 'result': self.result, 'tokenizer': self.tokenizer,
-                    'indeterminate': (self.parameters.model_kind == 'text_encoder' or
+                    'indeterminate': (self.progress == 0 or self.parameters.model_kind == 'text_encoder' or
                                       getattr(self.parameters, 'operation', '') in {'components', 'analyze', 'download', 'tokenizer_repair'}) and self.status in {'queued', 'running', 'cancelling'},
                     'finished': self.finished}
 
@@ -145,6 +146,7 @@ class Job:
         with self.lock:
             if event[0] == 'log':
                 self.logs.append(str(event[1]))
+                logging.info('[job %s] %s', self.id[:8], event[1])
             elif event[0] == 'progress_frac':
                 self.progress = max(0.0, min(1.0, event[1]))
                 self.phase = event[2]

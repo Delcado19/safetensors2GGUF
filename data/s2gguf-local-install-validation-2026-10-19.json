@@ -1,0 +1,13 @@
+{
+  "installed": "G:\\ComfyUI-Easy-Install\\ComfyUI\\custom_nodes\\comfyui_s2gguf",
+  "files_sha256": {
+    "__init__.py": "89ad499ab86615ec2d51979177fe2c199cd185aa03ca8802ab61db3c3fab1135",
+    "codec.py": "0a929b9104b0fe225d9a5284094cf861975dbd30a9cd377c5ed4023e00a4f6ec"
+  },
+  "ernie_selectable": "BigLoveEryn1_bf16-Q4_K_M.gguf",
+  "inference_tested": false,
+  "scope": "Isolated installed-node import and GGUF selector check only; live ComfyUI was not restarted.",
+  "comfyui_restart_required": true,
+  "native_dependency_changes": false,
+  "companion_tests_passed": 24
+}

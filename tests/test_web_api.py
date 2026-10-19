@@ -27,6 +27,21 @@ def _client():
     return client
 
 
+def test_preparation_is_visible_and_logs_reach_terminal(caplog):
+    import logging
+    job = web_api.Job(web_api.ConversionRequest(source='model.safetensors'))
+    assert job.snapshot()['indeterminate']
+    job.status = 'running'
+    with caplog.at_level(logging.INFO):
+        job.emit(('log', 'Encoding tensor 1/409'))
+    assert 'Encoding tensor 1/409' in caplog.text
+    assert job.snapshot()['logs'] == ['Encoding tensor 1/409']
+    job.emit(('progress_frac', 0.5, 'Encoding tensor 205/409'))
+    state = job.snapshot()
+    assert not state['indeterminate'] and state['progress'] == 0.5
+    assert state['phase'] == 'Encoding tensor 205/409'
+
+
 def _source(tmp_path):
     source = tmp_path / 'qwen.safetensors'
     save_file({'transformer_blocks.0.img_mod.1.weight': torch.randn(128, 256),

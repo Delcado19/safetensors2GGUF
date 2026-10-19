@@ -1,0 +1,47 @@
+{
+  "scope": "Progress delivery and visible-terminal launch; schematic application smoke, no new inference or full-model rerun.",
+  "targeted_tests": {
+    "passed": 171
+  },
+  "native_parity_report": "data/compiled-diffusion-progress-requalification-2026-10-19.json",
+  "native_comparisons": 66,
+  "live_smoke": {
+    "status": "succeeded",
+    "progress": 1.0,
+    "logs": [
+      "INFO: Preparing ernie_image Q4_K_M: 3 tensors",
+      "INFO: Encoding tensor 1/3: adaLN_modulation.1.weight",
+      "INFO: Encoding tensor 3/3: x_embedder.proj.weight",
+      "INFO: Writing GGUF file",
+      "INFO: Direct preparation/encode/spool/final-write: 0.003 s",
+      "INFO: Direct tensor readback: 0.007 s",
+      "INFO: Direct file hash: 0.000 s; SHA256 ea3a1929de1c75326d80cef119684176143abfea7d52635178f862b2f8b618c4",
+      "INFO: Prepared bytes 24576; final spool bytes 17536; no float GGUF intermediate",
+      "INFO: Validating GGUF readback",
+      "INFO: Requires Original Diffusion Model (S2GGUF). Loading reconstructs CPU weights; inference is unqualified."
+    ]
+  },
+  "visible_terminal": {
+    "launcher": "uv run --no-sync python web_api.py --port 8765",
+    "window": "PowerShell normal window",
+    "verified_http": true
+  },
+  "preceding_user_conversion": {
+    "status": "succeeded",
+    "path": "G:/ComfyUI-Easy-Install/ComfyUI/models/unet/BigLoveEryn1_bf16-Q4_K_M.gguf",
+    "bytes": 5299410112
+  },
+  "source_code_sha256": {
+    "original_text_gguf.py": "8a8ea53ee285b4c22612577e43140ccb7336262c17830bf746b0f048b5a19d85",
+    "conversion_service.py": "3cb96a93c487d13ab4a5d1f834e95ab090cc8098c7fde9b19bd4e776b837b05f",
+    "web_api.py": "de445c57cd276bc03699a726823b220913f865f105b1d07d83f899d29461eb90"
+  },
+  "full_suite": {
+    "passed": 1100,
+    "seconds": 254.26,
+    "scope": "Progress change before the subsequent loader-selector fix; all 24 companion tests rerun after the selector fix."
+  },
+  "companion_selector_followup_tests": {
+    "passed": 24
+  }
+}
