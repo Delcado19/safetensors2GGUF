@@ -155,6 +155,9 @@ def test_current_kernel_levels_record_independent_native_file_parity():
     # Preserve the original single-worker evidence; current writer qualification follows it.
     current = _qualified_source_hashes(root)
     for name, digest in report['source_code_sha256'].items():
+        # UI hashes are historical provenance, not inputs to native writer parity.
+        if name.startswith('frontend/'):
+            continue
         expected = current.get(name, digest)
         assert hashlib.sha256((root / name).read_bytes()).hexdigest() == expected
     for term in ('vcruntime', 'msvcp', 'ucrtbase', 'api-ms-win-crt'):

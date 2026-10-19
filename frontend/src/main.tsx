@@ -1095,7 +1095,7 @@ function App() {
                   {job && (
                     <>
                       <div
-                        className="progress-track"
+                        className={job.indeterminate ? "progress-track indeterminate" : "progress-track"}
                         role="progressbar"
                         aria-label="Job progress"
                         aria-valuemin={0}
@@ -1112,7 +1112,7 @@ function App() {
                         }
                       >
                         <span
-                          style={{ transform: `scaleX(${job.progress})` }}
+                          style={job.indeterminate ? undefined : { transform: `scaleX(${job.progress})` }}
                         />
                       </div>
                       <div className="progress-caption">

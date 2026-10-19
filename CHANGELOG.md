@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Fix: Show a visible activity bar for indeterminate jobs, including Hugging Face
+  downloads between shard updates; respect reduced-motion preferences without
+  presenting shard counts as byte percentages.
+- Test: Keep historical frontend hashes as provenance without blocking UI-only
+  changes in converter parity checks; converter source hashes remain enforced.
+
 - Change: Record complete BigLoveEryn1 INT8_MIXED Safetensors conversion and
   normal native ComfyUI CPU loading: 252 INT8 weights, 157 unchanged protected
   tensors, 8.22 GB output versus 16.07 GB source. Inference remains untested.
