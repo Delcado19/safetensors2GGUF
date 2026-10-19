@@ -1,10 +1,10 @@
 ![safetensors2GGUF](assets/safetensors2GGUF.jpg)
 # safetensors2GGUF
 
-> **Research branch WIP, paused 2026-10-18:** the latest multi-model/VL changes
-> are unfinished and have known failing tests. Earlier successful measurements
-> do not qualify the complete current tree. Read [CONTINUE.md](CONTINUE.md) for
-> the exact checkpoint, loader limitations, failures and remaining work.
+> **Research branch WIP, resumed 2026-10-19:** multi-model/VL integration is
+> under development. New original-key companion loaders remain unqualified for
+> complete-model inference. See [CONTINUE.md](CONTINUE.md) for current validation
+> and the [adapter contract](docs/extended-adapter-validation.md) for loader limits.
 
 Converts Safetensors / CKPT diffusion model checkpoints to **GGUF** for use with
 **llama.cpp** and **ComfyUI-GGUF**, or to a quantized **Safetensors** file that

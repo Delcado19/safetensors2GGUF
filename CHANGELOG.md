@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- Add: Independent complete tensor-payload readback before publishing extended
+  Molbal adapter exports. All 102 combinations of six new architectures and
+  17 formats pass schematic tests, alongside corruption/atomic-output guards.
+  Complete-model inference remains unqualified; see `docs/extended-adapter-validation.md`.
+
 - Fix: Preserve empty floating buffers in BF16/Q8 original-key exports and align
   support-table tests and Workbench help with unqualified companion-loader routes.
 - Validate: Re-run 66 native diffusion comparisons and the real pinned one-layer

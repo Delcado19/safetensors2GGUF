@@ -17,7 +17,35 @@ comparisons match the pinned native reference; the real one-layer Qwen3 export
 matches all 14 historical tensor payloads and model metadata except the random
 temporary-directory display name. Historical performance/full-model measurements
 are retained, not rerun or broadened. See the dated requalification JSON files in
-`data/`. Extended adapter hardening and complete-format checks are in progress.
+`data/`.
+
+### Completed adapter feature and shutdown checkpoint
+
+The extended Molbal worker now independently checks every emitted tensor's name,
+count, type, shape and encoded payload checksum after writing and before atomic
+publication. Architecture mismatches, duplicate/missing tensors and corrupt bytes
+fail the job. Existing output survives failed conversions. This verifies emitted
+bytes, not completeness/correctness of upstream source filtering.
+
+All 102 combinations of six extended architectures and all 17 advertised formats
+pass schematic export tests; seven readback-damage cases and an architecture
+mismatch/overwrite regression pass. The complete final suite passes **1078 tests**
+in 245.80 s. Ruff, frontend build and both documentation gates pass. See
+`data/extended-adapter-validation-2026-10-19.json` and
+`docs/extended-adapter-validation.md`. The fix checkpoint is committed/pushed as
+`d09aad8`; the following commit contains this adapter feature and checkpoint.
+
+No models were converted outside repository-local synthetic/smoke fixtures, no
+ComfyUI installation files changed and no new renders were started. Original
+model files remain unchanged. Full-checkpoint companion-loader construction and
+inference (VL/CLIP/ERNIE), package installation, clean-machine and non-Windows
+qualification remain open. Next work should use representative complete sources
+and distinguish full-VL from explicit text-only paths before claiming runtime
+support. Do not silently certify historical performance or render measurements.
+
+The requested larger adapter-validation feature is complete. Save and push this
+checkpoint before honoring the user's shutdown request; do not force-close apps
+or discard unsaved work.
 
 ## Historical paused snapshot
 

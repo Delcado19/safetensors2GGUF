@@ -116,11 +116,51 @@ def _convrot8(weight, convrot_groupsize=256, device=None):
     return data, scale, conf, shape
 
 
+def _verify_payloads(path, plan, arch, *, text_only=False):
+    """Read back every emitted payload before the parent atomically publishes it."""
+    with open_gguf(path) as reader:
+        field = reader.get_field('general.architecture')
+        if field is None or field.contents() != arch:
+            raise ValueError('Extended output architecture mismatch')
+        if not plan or len(reader.tensors) != len(plan) or {t.name for t in reader.tensors} != set(plan):
+            raise ValueError('Extended output tensor manifest mismatch')
+        for tensor in reader.tensors:
+            qtype, shape, digest = plan[tensor.name]
+            if (tensor.tensor_type != qtype or list(reversed(tensor.shape.tolist())) != list(shape)
+                    or hashlib.sha256(tensor.data).hexdigest() != digest):
+                raise ValueError('Extended output payload readback mismatch: ' + tensor.name)
+        if text_only:
+            marker = reader.get_field('comfy.gguf.qwen3vl.text_only')
+            if marker is None or not marker.contents():
+                raise ValueError('Text-only VL output must be explicitly marked')
+
+
 def _worker(backend, source, destination, format_key, expected_arch):
+    """Adapt pinned math and verify encoded bytes independently of the upstream writer."""
     spec = importlib.util.spec_from_file_location('molbal_extended', backend)
     upstream = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(upstream)
     upstream.quantize_int8_convrot = _convrot8
+    plan = {}
+
+    class CheckedWriter(gguf.GGUFWriter):
+        """Record exact encoded tensors before the upstream writer spools them."""
+
+        def add_tensor(self, name, tensor, *, raw_dtype=None):
+            """Reject duplicate names and retain a small independent readback manifest."""
+            if name in plan:
+                raise ValueError('Duplicate extended output tensor: ' + name)
+            qtype = raw_dtype
+            if qtype is None:
+                qtype = {np.dtype('float32'): gguf.GGMLQuantizationType.F32,
+                         np.dtype('float16'): gguf.GGMLQuantizationType.F16}[tensor.dtype]
+            shape = (gguf.quants.quant_shape_from_byte_shape(tensor.shape, qtype)
+                     if tensor.dtype == np.uint8 else tensor.shape)
+            plan[name] = (qtype, shape, hashlib.sha256(tensor).hexdigest())
+            super().add_tensor(name, tensor, raw_dtype=raw_dtype)
+
+    # The worker is isolated; replacing its writer cannot affect other jobs or loaders.
+    upstream.gguf.GGUFWriter = CheckedWriter
     # Replace the known clipping NumPy K encoders, retaining frozen architecture policy.
     if format_key.startswith(('Q2_', 'Q3_', 'Q4_K', 'Q5_K', 'Q6_K')):
         from scripts.compiled_kernel_package import load_package, _platform
@@ -164,13 +204,7 @@ def _worker(backend, source, destination, format_key, expected_arch):
     upstream.convert_file(source, dst_path=destination, interact=False, overwrite=True,
                           quant_type_name=format_key, streamed=True, quantization_device='cpu',
                           progress_callback=progress)
-    with open_gguf(destination) as reader:
-        if reader.get_field('general.architecture').contents() != actual:
-            raise ValueError('Extended output architecture mismatch')
-        if wanted == 'qwen3vl':
-            marker = reader.get_field('comfy.gguf.qwen3vl.text_only')
-            if marker is None or not marker.contents():
-                raise ValueError('Text-only VL output must be explicitly marked')
+    _verify_payloads(destination, plan, actual, text_only=wanted == 'qwen3vl')
 
 
 if __name__ == '__main__':

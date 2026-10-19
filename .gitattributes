@@ -46,3 +46,10 @@ bundled_tools.py text eol=lf
 text_encoder_convert.py text eol=lf
 scripts/check_compiled_diffusion.py text eol=lf
 third_party/text-tools/** -text whitespace=cr-at-eol,-blank-at-eof
+
+# Extended adapter qualification records exact source bytes across checkouts.
+extended_backend.py text eol=lf
+original_text_gguf.py text eol=lf
+comfyui_s2gguf/codec.py text eol=lf
+models/architectures.py text eol=lf
+tests/test_extended_backend.py text eol=lf
